@@ -102,8 +102,6 @@ export interface MountOptions {
   /** Parked detection: |ω| (rad/s) and own acceleration (m/s²) below which the car is standing still. */
   parkedRate: number;
   parkedAccel: number;
-  /** Knock reference: the inertial up is compared with its own low-pass of this time constant, seconds. */
-  knockRefTau: number;
   /** Memory (trust-weighted seconds) of the accelerometer-fit residual and the angle (rad) at
    * which that residual drives the up-axis quality to 0. */
   fitTau: number;
@@ -235,7 +233,6 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   upBiasGain: 0.05,
   parkedRate: 0.02,
   parkedAccel: 0.25,
-  knockRefTau: 1.0,
   fitTau: 1,
   fitQualityRad: 0.06,
   upSepTau: 3,
@@ -394,9 +391,6 @@ export class MountCalibrator {
   private mx = 0; // medium low-pass of the inertial up (its slow, drifting part)
   private my = 0;
   private mz = 1;
-  private kx = 0; // knock reference: medium low-pass of the inertial up
-  private ky = 0;
-  private kz = 1;
   // ---- stage 2: body up = slow low-pass of the inertial up (unnormalised gs, unit u)
   private gsx = 0;
   private gsy = 0;
@@ -420,7 +414,6 @@ export class MountCalibrator {
   private ahx = 0;
   private ahy = 0;
   private ahz = 0;
-  private aUpLp = 0;
   private rLp = 0;
   private inEvent = false;
   private evStart = 0;
@@ -460,11 +453,6 @@ export class MountCalibrator {
   private dz = 0;
   private lineValid = false;
   private lineAniso = 0;
-  // 3-D principal axis (for grade compensation), unit
-  private px = 1;
-  private py = 0;
-  private pz = 0;
-  private gradeTilt = 0;
 
   // ---- sign votes (phone-frame vectors) with evidence
   private wx = 0;
@@ -489,7 +477,6 @@ export class MountCalibrator {
   private prevCx = 0;
   private prevCy = 0;
   private prevCz = 0;
-  private prevPsi = 0;
   private prevCw = 0;
 
   // ---- slip proxy: integrated gyro yaw vs GPS course
@@ -622,9 +609,6 @@ export class MountCalibrator {
     this.mx = 0;
     this.my = 0;
     this.mz = 1;
-    this.kx = 0;
-    this.ky = 0;
-    this.kz = 1;
     this.gsx = 0;
     this.gsy = 0;
     this.gsz = 1;
@@ -647,7 +631,6 @@ export class MountCalibrator {
     this.gpsVerified = 0;
     this.expired = 0;
     this.ahx = this.ahy = this.ahz = 0;
-    this.aUpLp = 0;
     this.rLp = 0;
     this.inEvent = false;
     this.cx = this.cy = this.cz = 0;
@@ -710,9 +693,9 @@ export class MountCalibrator {
       this.iz = -this.flz / fn;
     }
     const before = this.angleBetween(this.gsx, this.gsy, this.gsz, this.ix, this.iy, this.iz);
-    this.gsx = this.kx = this.ix;
-    this.gsy = this.ky = this.iy;
-    this.gsz = this.kz = this.iz;
+    this.gsx = this.mx = this.ix;
+    this.gsy = this.my = this.iy;
+    this.gsz = this.mz = this.iz;
     this.updateUpFromSlow();
     this.devEma = 0;
     this.upAge = Math.max(this.upAge, 1.5);
@@ -821,7 +804,6 @@ export class MountCalibrator {
     this.prevCx = cxNow;
     this.prevCy = cyNow;
     this.prevCz = czNow;
-    this.prevPsi = psiNow;
     this.prevCw = cwNow;
   }
 
@@ -872,9 +854,9 @@ export class MountCalibrator {
         this.flx = fx;
         this.fly = fy;
         this.flz = fz;
-        this.gsx = this.kx = this.mx = this.ix;
-        this.gsy = this.ky = this.my = this.iy;
-        this.gsz = this.kz = this.mz = this.iz;
+        this.gsx = this.mx = this.ix;
+        this.gsy = this.my = this.iy;
+        this.gsz = this.mz = this.iz;
         this.updateUpFromSlow();
       } else if (gap) {
         // sample gap: the rotation during it is unknown — re-seed from the OS attitude filter
@@ -1025,11 +1007,7 @@ export class MountCalibrator {
         iy = this.iy;
         iz = this.iz;
 
-        // ---- knock reference: medium low-pass of the inertial up (a knock is a step, banking a ramp)
-        const kk = dt / (o.knockRefTau + dt);
-        this.kx += (ix - this.kx) * kk;
-        this.ky += (iy - this.ky) * kk;
-        this.kz += (iz - this.kz) * kk;
+        // ---- the inertial up's slow, drifting part (see the separation up below)
         const km = dt / (o.upSepTau + dt);
         this.mx += (ix - this.mx) * km;
         this.my += (iy - this.my) * km;
@@ -1120,13 +1098,11 @@ export class MountCalibrator {
       this.ahy += (hy - this.ahy) * ka;
       this.ahz += (hz - this.ahz) * ka;
       this.rLp += (r - this.rLp) * ka;
-      this.aUpLp += (aUp - this.aUpLp) * ka;
     } else {
       this.ahx = hx;
       this.ahy = hy;
       this.ahz = hz;
       this.rLp = r;
-      this.aUpLp = aUp;
     }
     const ahx = this.ahx;
     const ahy = this.ahy;
@@ -1425,7 +1401,6 @@ export class MountCalibrator {
     this.q00 = this.q01 = this.q02 = this.q11 = this.q12 = this.q22 = this.qE = 0;
     this.lineValid = false;
     this.lineAniso = 0;
-    this.gradeTilt = 0;
     this.wx = this.wy = this.wz = this.wE = 0;
     this.vx = this.vy = this.vz = this.vE = 0;
     this.signScore = 0;
@@ -1455,9 +1430,6 @@ export class MountCalibrator {
     this.knocks++;
     this.fastUpUntil = this.lastT + this.opts.knockFastS;
     this.fwdBlockUntil = this.lastT + this.opts.forwardBlockS;
-    this.kx = this.ix;
-    this.ky = this.iy;
-    this.kz = this.iz;
     this.devEma = dev;
     this.upAge = 0;
     this.jumpSince = -1;
@@ -1528,9 +1500,6 @@ export class MountCalibrator {
       this.dy = py / n;
       this.dz = pz / n;
     }
-    this.px = this.dx;
-    this.py = this.dy;
-    this.pz = this.dz;
   }
 
   private makeBasis(): void {
@@ -1623,37 +1592,6 @@ export class MountCalibrator {
     this.lineAniso = this.outAniso;
     this.lineValid = true;
 
-    if (o.gradeCompensation) {
-      // 3-D principal axis by a few power iterations seeded with the previous one
-      let px = this.px;
-      let py = this.py;
-      let pz = this.pz;
-      if (px * nx + py * ny + pz * nz < 0.3) {
-        px = nx;
-        py = ny;
-        pz = nz;
-      }
-      for (let i = 0; i < 3; i++) {
-        const tx = this.m00 * px + this.m01 * py + this.m02 * pz;
-        const ty = this.m01 * px + this.m11 * py + this.m12 * pz;
-        const tz = this.m02 * px + this.m12 * py + this.m22 * pz;
-        const n = Math.sqrt(tx * tx + ty * ty + tz * tz);
-        if (n < EPS) break;
-        px = tx / n;
-        py = ty / n;
-        pz = tz / n;
-      }
-      if (px * nx + py * ny + pz * nz < 0) {
-        px = -px;
-        py = -py;
-        pz = -pz;
-      }
-      this.px = px;
-      this.py = py;
-      this.pz = pz;
-      // tilt of the road-forward axis against the gravity horizon (sin of the angle), capped at ~17°
-      this.gradeTilt = clamp(px * this.ux + py * this.uy + pz * this.uz, -0.3, 0.3);
-    }
   }
 
   /**
