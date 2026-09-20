@@ -35,6 +35,7 @@ import {
   GradeReveal,
   GradeScale,
   gradeWord,
+  heroSurface,
   IntegrityPanel,
   LapTable,
   Odometer,
@@ -322,6 +323,7 @@ function ResultsPage({
               reduceMotion={reduceMotion}
               fontSize={Math.min(untrusted ? 40 : 56, content * (untrusted ? 0.11 : 0.15))}
               color={untrusted ? colors.muted : colors.ember}
+              background={heroSurface(untrusted ? colors.red : model.gradeColor)}
               testID="score-odometer"
             />
             {untrusted ? (

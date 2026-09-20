@@ -332,6 +332,10 @@ may have asked the system for less motion):
 | `motion=reduce` | forces reduce-motion: no letterbox, no shake, no embers; the letter and the numbers still arrive |
 | `motion=full` | forces full motion even when the OS asks for less (screenshots only) |
 
+The two frozen reveal shots warn that a corner pixel is `#000000` rather than `#07090D`. That is
+the letterbox, and it is deliberate: the bars have to read as bars against the bg0 stage between
+them, which they cannot do if they are painted in bg0. Same device as the replay's letterbox.
+
 A frozen reveal never completes, so the page underneath is rendered in its settled state and the
 overlay sits on top for as long as you like — which is what makes `results-reveal-slam.png`
 reproducible. With `reveal=full` the whole thing is skippable: a tap anywhere jumps to the end.

@@ -173,7 +173,7 @@ export function orientationOf(g: Vec3): { rollDeg: number; reclineDeg: number; m
 
 /** Plain words for the attitude, e.g. `UPRIGHT · 15° BACK` or `LYING FLAT, SCREEN UP`. */
 export function attitudeWords(r: CalibrationReading): string {
-  if (!r.has) return 'Waiting for the first reading';
+  if (!r.has) return 'No reading yet';
   if (isFlat(r)) return r.reclineDeg > 0 ? 'Lying flat, screen up' : 'Lying flat, screen down';
   const roll = Math.abs(r.rollDeg);
   const side = roll < 25 ? 'Upright' : roll > 155 ? 'Upside down' : r.rollDeg > 0 ? 'On its left edge' : 'On its right edge';

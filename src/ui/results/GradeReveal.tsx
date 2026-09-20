@@ -230,6 +230,10 @@ const styles = StyleSheet.create({
   kicker: { marginTop: space[2] },
   hint: { position: 'absolute', top: '22%' },
   skipHint: { position: 'absolute', bottom: '14%' },
+  // Pure black on purpose, and the only place this screen leaves the palette: the bars have to
+  // read as bars against the bg0 stage between them, which they cannot do in bg0. It is the same
+  // letterbox device the replay uses, and it is why the harness warns that the corner pixels of
+  // `results-reveal-hold` / `results-reveal-slam` are #000000 rather than #07090D.
   barTop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000000', borderTopWidth: 0, borderTopColor: 'transparent' },
   barBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#000000', borderBottomWidth: 0, borderBottomColor: 'transparent' },
   scan: { position: 'absolute', height: 2, opacity: 0 },

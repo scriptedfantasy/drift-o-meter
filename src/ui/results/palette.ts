@@ -82,3 +82,19 @@ export function calloutColor(kind: StyleCalloutKind | string): string {
       return colors.ember;
   }
 }
+
+/** Blend two `#rrggbb` colours; `t` is how much of `b` to take. */
+export function mixColor(a: string, b: string, t: number): string {
+  const p = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  const f = Math.max(0, Math.min(1, t));
+  const ch = (i: number) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * f).toString(16).padStart(2, '0');
+  return `#${ch(0)}${ch(1)}${ch(2)}`;
+}
+
+/**
+ * What is actually behind the hero's number: the page background under the grade-coloured wash.
+ * The odometer's fade masks are painted in it, so a flat `bg0` would leave a visible rectangle.
+ */
+export function heroSurface(gradeColor: string): string {
+  return mixColor(colors.bg0, gradeColor, 0.07);
+}

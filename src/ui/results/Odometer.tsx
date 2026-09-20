@@ -1,21 +1,26 @@
 /**
- * Odometer: the session total rolling up, the way a score should arrive.
+ * The session total, counting up.
  *
- * Only the low columns actually turn (`rollPlaces`, default the ones and tens). Everything above
- * them SNAPS to its digit on carry, exactly like a mechanical drum whose higher wheels only move
- * when the one below completes a revolution — and, more importantly, because a number with five
- * columns caught mid-glyph at five different offsets is not a number, it is confetti. The count
- * is the moment the driver is watching; it has to stay readable the whole way up.
+ * The digits themselves are the DRIVE DISPLAY's odometer (`src/ui/hud/Odometer.tsx`), not a
+ * second implementation of one: it worked out the three rules that keep a rolling number
+ * legible — only the units column spins, every column above it carries in the last 4 % of the
+ * decade below, and each window is fade-masked so a glyph leaving it dissolves instead of being
+ * sliced — and a driver should not meet two different odometers in one app.
  *
- * There is deliberately no gradient cap over the turning columns: painting the page background
- * across the top and bottom of each digit leaves a hard-edged rectangle wherever the page behind
- * is not flat (the hero wash), which is worse than the half-glyph it was hiding.
+ * What lives here is the only thing the results screen needs on top: a value that counts from
+ * zero to the session total once, when the page is allowed to start. (The HUD's third rule,
+ * filtering at sample rate rather than re-aiming a tween, is about a value that keeps moving;
+ * this one has a known target, so a single tween is right.)
+ *
+ * `background` is the surface the number sits on, because the fade masks paint it: pass the
+ * colour actually behind the digits or the mask leaves a rectangle.
  */
 import { useEffect } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming, type SharedValue } from 'react-native-reanimated';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { cancelAnimation, Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { colors, fontFamilies } from '../theme';
+import HudOdometer from '../hud/Odometer';
+import { colors } from '../theme';
 
 export interface OdometerProps {
   /** Final value. */
@@ -25,132 +30,43 @@ export interface OdometerProps {
   durationMs?: number;
   fontSize: number;
   color?: string;
-  /** Keep the digits still (reduce-motion): the value simply appears. */
+  /** The surface behind the digits; the fade masks are drawn in it. */
+  background?: string;
+  /** Keep the digits still: the value arrives quickly instead of rolling. */
   reduceMotion?: boolean;
-  /** How many of the lowest columns roll continuously; the rest snap on carry. */
-  rollPlaces?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-const CELLS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-
-export function Odometer({ value, run = true, durationMs = 1300, fontSize, color = colors.ember, reduceMotion = false, rollPlaces = 2, style, testID }: OdometerProps) {
+export function Odometer({
+  value,
+  run = true,
+  durationMs = 1300,
+  fontSize,
+  color = colors.ember,
+  background = colors.bg0,
+  reduceMotion = false,
+  style,
+  testID,
+}: OdometerProps) {
   const target = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
-  const text = target.toLocaleString('en-US');
   const v = useSharedValue(0);
-  // 0 while the drums are turning, 1 once they have to sit still on the final digits: the carry
-  // fraction is only correct mid-count, so it is eased out at the end
-  const settle = useSharedValue(0);
-  const digitH = Math.round(fontSize * 0.98);
-  const digitW = Math.round(fontSize * 0.52);
+  const columns = Math.min(7, Math.max(1, String(target).length));
 
   useEffect(() => {
     cancelAnimation(v);
-    cancelAnimation(settle);
     if (!run) {
       // waiting behind the reveal: zero, never a glimpse of the total before it counts up
       v.value = 0;
-      settle.value = 0;
       return;
     }
-    const d = reduceMotion ? 320 : durationMs;
     v.value = 0;
-    settle.value = 0;
-    v.value = withTiming(target, { duration: d, easing: Easing.bezier(0.16, 1, 0.3, 1) });
-    settle.value = withDelay(Math.max(0, d - 220), withTiming(1, { duration: 220, easing: Easing.linear }));
-  }, [run, target, durationMs, reduceMotion, v, settle]);
-
-  // place exponent per character: the rightmost digit is 10^0
-  const digitsAfter: number[] = [];
-  let seen = 0;
-  for (let i = text.length - 1; i >= 0; i--) {
-    digitsAfter[i] = seen;
-    if (text[i] !== ',') seen++;
-  }
+    v.value = withTiming(target, { duration: reduceMotion ? 320 : durationMs, easing: Easing.bezier(0.16, 1, 0.3, 1) });
+  }, [run, target, durationMs, reduceMotion, v]);
 
   return (
-    <View style={[styles.row, { height: digitH }, style]} testID={testID} accessibilityLabel={`${target} points`}>
-      {text.split('').map((ch, i) =>
-        ch === ',' ? (
-          <Text key={`c${i}`} style={[styles.comma, { color, fontSize, lineHeight: digitH, width: Math.round(fontSize * 0.24) }]}>
-            ,
-          </Text>
-        ) : (
-          <Digit
-            key={`d${i}`}
-            place={digitsAfter[i]}
-            rolls={digitsAfter[i] < rollPlaces && !reduceMotion}
-            v={v}
-            settle={settle}
-            digitH={digitH}
-            digitW={digitW}
-            fontSize={fontSize}
-            color={color}
-          />
-        ),
-      )}
+    <View style={style} accessibilityLabel={`${target} points`}>
+      <HudOdometer value={v} columns={columns} size={fontSize} color={color} background={background} testID={testID} />
     </View>
   );
 }
-
-function Digit({
-  place,
-  rolls,
-  v,
-  settle,
-  digitH,
-  digitW,
-  fontSize,
-  color,
-}: {
-  place: number;
-  rolls: boolean;
-  v: SharedValue<number>;
-  settle: SharedValue<number>;
-  digitH: number;
-  digitW: number;
-  fontSize: number;
-  color: string;
-}) {
-  const scale = Math.pow(10, place);
-  const strip = useAnimatedStyle(() => {
-    const pos = v.value / scale;
-    const whole = Math.floor(pos);
-    const digit = ((whole % 10) + 10) % 10;
-    if (!rolls) return { transform: [{ translateY: -digit * digitH }] };
-    // sit still, then flip: the drum only turns in the last quarter of each count
-    const frac = pos - whole;
-    const f = Math.min(1, Math.max(0, (frac - 0.72) / 0.28)) * (1 - settle.value);
-    return { transform: [{ translateY: -(digit + f) * digitH }] };
-  });
-  // A leading zero is not a digit of the score, it is padding: the drive display hides them and
-  // so does this one, rather than leaving 1.16:1 ghosts beside the biggest number on the page.
-  const dim = useAnimatedStyle(() => ({ opacity: v.value >= scale || place === 0 ? 1 : 0 }));
-
-  return (
-    <Animated.View style={[styles.window, { height: digitH, width: digitW }, dim]}>
-      <Animated.View style={strip}>
-        {CELLS.map((c, i) => (
-          <Text key={i} style={[styles.digit, { color, fontSize, lineHeight: digitH, height: digitH }]}>
-            {c}
-          </Text>
-        ))}
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
-const numberStyle: TextStyle = {
-  fontFamily: fontFamilies.display.extraboldItalic,
-  fontVariant: ['tabular-nums'],
-  textAlign: 'center',
-  letterSpacing: -1,
-};
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden' },
-  window: { overflow: 'hidden' },
-  digit: { ...numberStyle },
-  comma: { ...numberStyle, textAlign: 'left' },
-});

@@ -125,7 +125,14 @@ export default function CalibrateScreen() {
       />
       {/* The one honest number, and what it has to clear. Beside the glyph, never over it. */}
       <View style={styles.readout}>
-        <AppText variant="hero" color={band.color} numeric style={styles.percent} testID="confidence">
+        {/* `--` is the absence of a number, not a number: muted and smaller, so it reads as
+            nothing-to-report rather than as a bright cyan bar where a figure should be. */}
+        <AppText
+          variant="hero"
+          color={band.display === '--' ? colors.muted : band.color}
+          numeric
+          style={[styles.percent, band.display === '--' && styles.percentEmpty]}
+          testID="confidence">
           {band.display}
         </AppText>
         <Micro color={band.color === 'red' ? 'red' : 'muted'}>Confidence in this mount</Micro>
@@ -241,8 +248,9 @@ const styles = StyleSheet.create({
   instrument: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
   readout: { flex: 1, minWidth: 0, gap: 0 },
   percent: { fontSize: 56, lineHeight: 54, letterSpacing: -3, includeFontPadding: false },
+  percentEmpty: { fontSize: 40, lineHeight: 46, opacity: 0.6 },
   legend: { marginTop: space[2], opacity: 0.75, textTransform: 'none', letterSpacing: 0.3 },
-  attitude: { marginTop: space[2] },
+  attitude: { marginTop: space[2], flexShrink: 1, maxWidth: '100%' },
 
   verdict: { gap: space[1], alignSelf: 'stretch' },
   title: { fontSize: 34, lineHeight: 35 },

@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T23:21:43.632Z",
+  "startedAt": "2026-09-20T23:25:01.894Z",
   "viewport": {
     "width": 852,
     "height": 393
@@ -9,503 +9,15 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "home-landscape",
-      "path": "/",
-      "url": "http://127.0.0.1:42559/",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/home-landscape.png",
-      "video": null,
-      "ms": 2484,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 27,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 620096,
-        "cyanPixels": 3664,
-        "textPixels": 42892,
-        "nonBgFraction": 0.4543
-      }
-    },
-    {
-      "name": "garage-landscape",
-      "path": "/?demo=night",
-      "url": "http://127.0.0.1:42559/?demo=night",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-landscape.png",
-      "video": null,
-      "ms": 9608,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 618552,
-        "cyanPixels": 3664,
-        "textPixels": 38676,
-        "nonBgFraction": 0.4538
-      }
-    },
-    {
-      "name": "garage-bests-landscape",
-      "path": "/?demo=night",
-      "url": "http://127.0.0.1:42559/?demo=night",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-bests-landscape.png",
-      "video": null,
-      "ms": 10461,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 22056,
-        "cyanPixels": 0,
-        "textPixels": 6444,
-        "nonBgFraction": 0.705
-      }
-    },
-    {
-      "name": "garage-runs-landscape",
-      "path": "/?demo=night",
-      "url": "http://127.0.0.1:42559/?demo=night",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-runs-landscape.png",
-      "video": null,
-      "ms": 10328,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 28696,
-        "cyanPixels": 6472,
-        "textPixels": 14104,
-        "nonBgFraction": 0.5939
-      }
-    },
-    {
-      "name": "garage-bests-harbor-landscape",
-      "path": "/?demo=harbor",
-      "url": "http://127.0.0.1:42559/?demo=harbor",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-bests-harbor-landscape.png",
-      "video": null,
-      "ms": 9712,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 12132,
-        "cyanPixels": 7464,
-        "textPixels": 9292,
-        "nonBgFraction": 0.5098
-      }
-    },
-    {
-      "name": "garage-simbay-landscape",
-      "path": "/?demo=first",
-      "url": "http://127.0.0.1:42559/?demo=first",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-simbay-landscape.png",
-      "video": null,
-      "ms": 8301,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 29,
-        "bodyTextNodes": 35,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 0,
-        "cyanPixels": 18252,
-        "textPixels": 0,
-        "nonBgFraction": 0.4808
-      }
-    },
-    {
-      "name": "garage-flagged-landscape",
-      "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:42559/?demo=flagged",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-flagged-landscape.png",
-      "video": null,
-      "ms": 9396,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 644640,
-        "cyanPixels": 3664,
-        "textPixels": 47204,
-        "nonBgFraction": 0.5571
-      }
-    },
-    {
-      "name": "garage-delete-landscape",
-      "path": "/?demo=first",
-      "url": "http://127.0.0.1:42559/?demo=first",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-delete-landscape.png",
-      "video": null,
-      "ms": 8867,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 29,
-        "bodyTextNodes": 35,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 26168,
-        "cyanPixels": 0,
-        "textPixels": 5828,
-        "nonBgFraction": 0.6568
-      }
-    },
-    {
       "name": "calibrate-nothing-landscape",
       "path": "/calibrate?sim=harbor&hold=1",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&hold=1",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-nothing-landscape.png",
       "video": null,
-      "ms": 3449,
+      "ms": 3678,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -553,21 +65,21 @@
         "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 4900,
-        "cyanPixels": 29256,
+        "cyanPixels": 23236,
         "textPixels": 26328,
-        "nonBgFraction": 0.3102
+        "nonBgFraction": 0.3084
       }
     },
     {
       "name": "calibrate-landscape",
       "path": "/calibrate?sim=harbor&at=0.5&hold=1",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&at=0.5&hold=1",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&at=0.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-landscape.png",
       "video": null,
-      "ms": 3503,
+      "ms": 3637,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -623,13 +135,13 @@
     {
       "name": "calibrate-level-landscape",
       "path": "/calibrate?sim=harbor&at=3&hold=1",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&at=3&hold=1",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&at=3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-level-landscape.png",
       "video": null,
-      "ms": 3574,
+      "ms": 3510,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -685,13 +197,13 @@
     {
       "name": "calibrate-ready-landscape",
       "path": "/calibrate?sim=harbor&at=12&hold=1",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&at=12&hold=1",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-ready-landscape.png",
       "video": null,
-      "ms": 3761,
+      "ms": 3752,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -747,13 +259,13 @@
     {
       "name": "calibrate-loose-landscape",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-loose-landscape.png",
       "video": null,
-      "ms": 3728,
+      "ms": 3731,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -809,13 +321,13 @@
     {
       "name": "calibrate-flat-landscape",
       "path": "/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-flat-landscape.png",
       "video": null,
-      "ms": 3750,
+      "ms": 3706,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -871,13 +383,13 @@
     {
       "name": "calibrate-rejected-landscape",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
-      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "url": "http://127.0.0.1:43145/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-rejected-landscape.png",
       "video": null,
-      "ms": 3729,
+      "ms": 3696,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -929,318 +441,8 @@
         "textPixels": 32984,
         "nonBgFraction": 0.3744
       }
-    },
-    {
-      "name": "calibrate-fault-permission-landscape",
-      "path": "/calibrate?fault=permission",
-      "url": "http://127.0.0.1:42559/calibrate?fault=permission",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-permission-landscape.png",
-      "video": null,
-      "ms": 2020,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 499728,
-        "cyanPixels": 0,
-        "textPixels": 22008,
-        "nonBgFraction": 0.3772
-      }
-    },
-    {
-      "name": "calibrate-fault-unsupported-landscape",
-      "path": "/calibrate?fault=unsupported",
-      "url": "http://127.0.0.1:42559/calibrate?fault=unsupported",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-unsupported-landscape.png",
-      "video": null,
-      "ms": 2063,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 19,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 37880,
-        "cyanPixels": 0,
-        "textPixels": 21252,
-        "nonBgFraction": 0.1515
-      }
-    },
-    {
-      "name": "calibrate-fault-services-landscape",
-      "path": "/calibrate?fault=services",
-      "url": "http://127.0.0.1:42559/calibrate?fault=services",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-services-landscape.png",
-      "video": null,
-      "ms": 2051,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 492004,
-        "cyanPixels": 0,
-        "textPixels": 18528,
-        "nonBgFraction": 0.3744
-      }
-    },
-    {
-      "name": "calibrate-fault-failed-landscape",
-      "path": "/calibrate?fault=failed",
-      "url": "http://127.0.0.1:42559/calibrate?fault=failed",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-failed-landscape.png",
-      "video": null,
-      "ms": 2129,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 504648,
-        "cyanPixels": 0,
-        "textPixels": 14604,
-        "nonBgFraction": 0.3768
-      }
-    },
-    {
-      "name": "settings-landscape",
-      "path": "/settings",
-      "url": "http://127.0.0.1:42559/settings",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/settings-landscape.png",
-      "video": null,
-      "ms": 1707,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 45,
-        "bodyTextNodes": 35,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 3216,
-        "cyanPixels": 4636,
-        "textPixels": 50932,
-        "nonBgFraction": 0.4599
-      }
     }
   ],
-  "finishedAt": "2026-09-20T23:23:28.327Z",
+  "finishedAt": "2026-09-20T23:25:27.677Z",
   "failed": 0
 }
