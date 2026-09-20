@@ -52,7 +52,7 @@ export default function DriveScreen() {
       <EdgeBloom signals={signals} />
       <Animated.View style={[styles.fill, shake]}>
         <SafeAreaView style={styles.fill} edges={['top', 'bottom', 'left', 'right']}>
-          <View style={[styles.frame, landscape && styles.frameLandscape]}>
+          <View style={[styles.frame, landscape && styles.frameLandscape, live && styles.frameLive]}>
             {landscape ? (
               <View style={styles.landscapeRow}>
                 <View style={styles.leftColumn}>
@@ -199,7 +199,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   // Bands, not a stack with a hole in it: whatever height is left over after the gauge, the
   // callout band and the numbers is shared between the gaps, so nothing pools in one place.
-  frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3], justifyContent: 'space-between' },
+  frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
+  frameLive: { justifyContent: 'space-between' },
   frameLandscape: { paddingTop: space[2], paddingBottom: space[2] },
 
   stage: { alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2] },

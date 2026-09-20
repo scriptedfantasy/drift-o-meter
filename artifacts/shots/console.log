@@ -1,6 +1,4 @@
 
-===== drive  http://127.0.0.1:40111/drive?sim=harbor&rate=1&at=96.3
+===== drive-idle  http://127.0.0.1:39713/drive?sim=harbor&rate=1
 
-===== drive-peak  http://127.0.0.1:40111/drive?sim=harbor&rate=1&at=100.85&hold=1
-
-===== drive-bank  http://127.0.0.1:40111/drive?sim=harbor&rate=1&at=50.75&hold=1
+===== drive-peak  http://127.0.0.1:39713/drive?sim=harbor&rate=1&at=100.85&hold=1
