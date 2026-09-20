@@ -129,6 +129,7 @@ phone is sitting:
 | `hold=1` | stop there. The frame is then deterministic: same URL, same pixels |
 | `mount=portrait-vent\|landscape-dash\|flat-console` | REGENERATE the recording with the phone sitting that way. Not a presentational override — the simulator really puts the phone on the console, and the screen reads it back out of the gravity vector like any other mount |
 | `why=rejected\|loose\|unresolved\|suspect` | why the driver was sent here. The garage sets it when the last run left evidence, and the screen leads with that instead of a generic invitation |
+| `fault=permission\|unsupported\|services\|failed` | show one of the four faults instead of starting the sensors. Presentation only, exactly like the drive display's `?integrity=`: these four states are the reason the screen exists and are otherwise unreachable without breaking a phone |
 
 The usual `sim=` / `rate=` / `seed=` / `laps=` / `looseness=` / `dropouts=` still pick the
 recording, which is how the loose-mount state is photographed from a genuinely hand-held drive
@@ -153,6 +154,10 @@ On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below 
 | `calibrate-loose` | a real hand-held recording (`looseness=1&dropouts=1`): the monitor's own words |
 | `calibrate-flat` | the phone lying flat on the console, detected from gravity |
 | `calibrate-rejected` | arrived because a run was thrown out — the normal way into this screen |
+| `calibrate-fault-permission` | motion access denied |
+| `calibrate-fault-unsupported` | no gyroscope on this device |
+| `calibrate-fault-services` | location services off |
+| `calibrate-fault-failed` | the motion stream would not open |
 
 **This screen is not a step in the flow.** Calibration happens by itself while driving
 (docs/DESIGN.md, "the whole app is four steps"), so the garage never invites anyone here. It
@@ -168,6 +173,14 @@ a car. The screen instead uses the bar the ENGINE uses before it will believe a 
 `IntegrityMonitor`'s `calibrationOk`: `quality >= minCalibrationQuality` (0.3) with the forward
 axis resolved — and marks 0.75 as the second, softer tick, because that is where the results
 screen stops qualifying a score for its mount. Both ticks are drawn on the dial.
+
+**Nothing is claimed before there is evidence.** `IntegrityMonitor` starts life with
+`calibrationOk` true, because a monitor that has seen nothing must not veto a run. That is the
+engine declining to object, not the engine asserting a good mount — and reading it as a verdict
+put CALIBRATED / "Ready to measure" on screen with zero samples, dashes for confidence and a red
+"No reading" light underneath. `phaseOf` now tests `samples === 0` first and requires a resolved
+forward axis before READY. Worth remembering as a shape: an engine's internal permissiveness is
+not an assertion a screen may repeat.
 
 **Mount warm-up.** Every mount cue in the integrity monitor is an exponential RMS over
 `windowS`, so for the first two windows a perfectly bolted phone reads `suspect` — on the

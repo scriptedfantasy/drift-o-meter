@@ -91,6 +91,13 @@ export const defaultRoutes = [
   // Arrived here because a run was thrown out (`?why=`): the screen leads with that, not with
   // a generic invitation. This is how a driver normally reaches this screen at all.
   { name: 'calibrate-rejected', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected', waitMs: 2400, expectCanvas: true },
+  // The four faults. They are the whole reason this screen exists now, and none of them is
+  // reachable in a browser without `?fault=` (the drive display's `?integrity=` for the same
+  // reason). No canvas: the screen never starts the sensors in this state.
+  { name: 'calibrate-fault-permission', path: '/calibrate?fault=permission', waitMs: 1200 },
+  { name: 'calibrate-fault-unsupported', path: '/calibrate?fault=unsupported', waitMs: 1200 },
+  { name: 'calibrate-fault-services', path: '/calibrate?fault=services', waitMs: 1200 },
+  { name: 'calibrate-fault-failed', path: '/calibrate?fault=failed', waitMs: 1200 },
 
   // ---- drive: the live HUD at the moments that matter -----------------------------------
   // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
