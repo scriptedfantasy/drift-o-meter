@@ -99,7 +99,7 @@ export default function DriveScreen() {
                   {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
                   <View style={styles.stageRow}>
                     <View style={styles.stageCallouts}>
-                      <CalloutStack events={run.events} size={24} testID="hud-callouts" />
+                      <CalloutStack events={run.events} size={24} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
                     </View>
                     {live ? (
                       <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
