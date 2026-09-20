@@ -23,9 +23,9 @@
       "id": "mount",
       "name": "Mount calibration",
       "layer": "engine",
-      "status": "fixing",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "Rebuilt against the new sensor model: lever arm, leaning OS gravity, timestamp jitter. Test suite being written now.",
+      "verdict": "Worst forward-axis error fell from 10.87 to 1.81 degrees by separating gravity with the vehicle body attitude rather than the instantaneous inertial vertical. 17 tests.",
       "note": "Phone frame \u2192 vehicle frame from gravity and forward acceleration"
     },
     {
@@ -78,11 +78,11 @@
       "id": "replay",
       "name": "Replay scene",
       "layer": "engine",
-      "status": "fixing",
-      "rounds": 2,
-      "verdict": "Round 2 verified fixed on every original finding. Held back at 8.0 against an 8.5 bar by three small regressions the rebuild introduced.",
+      "status": "critique",
+      "rounds": 3,
+      "verdict": "Round 3: camera opens straight again, all five grades reachable, the cutter no longer severs transitions, and the ghost is a car beside you rather than a badge at the edge.",
       "note": "Session \u2192 timeline, glow trail, camera, ghost",
-      "score": "4.5 \u2192 8.0"
+      "score": "4.5 \u2192 8.0 \u2192 ?"
     },
     {
       "id": "pipeline",
@@ -271,28 +271,36 @@
     {
       "t": "20:35",
       "text": "Replay round 2 re-judged at 8.0, up from 4.5. Every original finding confirmed fixed with the critic\u2019s own instruments; three regressions from the rebuild block the pass and went back for round 3."
+    },
+    {
+      "t": "21:10",
+      "text": "Replay round 3 fixed all four regressions. The grade collapse turned out to be points scored PER DRIFT, which changes when a drift is split; it now scores per second of session. Frames render from the real pipeline output rather than a fixture."
+    },
+    {
+      "t": "21:15",
+      "text": "Caught a cross-module conflict from the orchestrator seat: calibration and the slip estimator had each begun removing the phone\u2019s lever arm, so the pipeline compensated twice. The contract now names one owner."
     }
   ],
   "shots": [
     {
-      "path": "artifacts/replay-chase-drift.png",
-      "caption": "Replay after round 2: lit ground, kerbs, a gold escalation at 49 degrees, the ghost in green with its points gap. Before the critique this frame was 74 percent empty black.",
+      "path": "artifacts/replay-ghost-lap2.png",
+      "caption": "Replay round 3: the ghost is distance-synced, so it is a green car beside you through the same corner instead of an off-screen badge. Median separation 2.7 metres, down from 60 to 100.",
       "width": 560
     },
     {
-      "path": "artifacts/slip-touge.png",
-      "caption": "The slip estimator against ground truth on the mountain pass, learning 11 percent of road camber as it goes.",
-      "width": 560
+      "path": "artifacts/shots/results.png",
+      "caption": "The results verdict, written from the run\u2019s own data: which corner, which lap, how many points came from one slide.",
+      "width": 300
     },
     {
       "path": "artifacts/shots/drive-peak.png",
-      "caption": "The live drive display at a 44 degree slide. The score counter below it is visibly broken and has been sent back.",
-      "width": 240
+      "caption": "The live display at a 44 degree slide. The score counter is illegible mid-roll and has gone back.",
+      "width": 300
     },
     {
-      "path": "artifacts/shots/home.png",
-      "caption": "Garage screen in the real app bundle.",
-      "width": 240
+      "path": "artifacts/slip-touge.png",
+      "caption": "The slip estimator against ground truth, learning road camber as it goes.",
+      "width": 560
     }
   ]
 }
