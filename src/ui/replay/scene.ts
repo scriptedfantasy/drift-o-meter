@@ -328,14 +328,34 @@ function drawRoad(canvas: SkCanvas, f: Frame): void {
   }
 }
 
-/** Build the part of a polyline that has been played, in world metres. */
+/**
+ * The part of a polyline that has been played, in world metres — broken wherever the position
+ * was not measured, so the line is never drawn confidently through a hole in the data.
+ */
 function partialPath(f: Frame, from: number, to: number): SkPath | null {
   if (to <= from) return null;
   const tr = f.replay.trail;
+  const dead = f.view.dead;
   const b = Skia.PathBuilder.Make();
+  let open = false;
+  let drawn = 0;
   for (let i = from; i <= to; i++) {
-    if (i === from) b.moveTo(tr.x[i], tr.y[i]);
-    else b.lineTo(tr.x[i], tr.y[i]);
+    if (dead[i] === 1) {
+      open = false;
+      continue;
+    }
+    if (!open) {
+      b.moveTo(tr.x[i], tr.y[i]);
+      open = true;
+    } else {
+      b.lineTo(tr.x[i], tr.y[i]);
+      drawn++;
+    }
+  }
+  if (drawn === 0) {
+    const p = b.detach();
+    p.dispose();
+    return null;
   }
   return b.detach();
 }
@@ -347,16 +367,18 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
 
   // the driven line where the car was NOT drifting (the future is never drawn: it spoils the route)
   const lineW = mOrPx(f, 0.35, 1);
+  // stretches with no GPS behind them are a guess: dashed, never lit, whatever the car was doing
+  const gapDash = mOrPx(f, 1.6, 4);
+  for (const run of g.gaps) {
+    if (run.startIndex > cur || !overlaps(f, run.bounds)) continue;
+    const whole = run.endIndex <= cur;
+    const path = whole ? run.path : gapPath(f, run.startIndex, cur);
+    if (!path) continue;
+    canvas.drawPath(path, dashPaint(f, MUTED, mOrPx(f, 0.35, 1.2), gapDash, gapDash, 0.5));
+    if (!whole) path.dispose();
+  }
   for (const run of g.runs) {
     if (run.startIndex > cur || !overlaps(f, run.bounds)) continue;
-    if (run.dead) {
-      // a stretch with no GPS behind it is a guess: dash it, never glow it
-      const path = run.endIndex <= cur ? run.path : partialPath(f, run.startIndex, cur);
-      if (!path) continue;
-      canvas.drawPath(path, dashPaint(f, MUTED, mOrPx(f, 0.3, 1.1), mOrPx(f, 1.6, 4), mOrPx(f, 1.6, 4), 0.5));
-      if (run.endIndex > cur) path.dispose();
-      continue;
-    }
     if (run.endIndex <= cur) {
       canvas.drawPath(run.path, strokePaint(f, colors.ember, lineW, 0.18));
     } else {
@@ -420,6 +442,16 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
   }
 }
 
+
+/** The straight line across a gap, up to the played index (the dashed "we do not know" line). */
+function gapPath(f: Frame, from: number, to: number): SkPath | null {
+  if (to <= from) return null;
+  const tr = f.replay.trail;
+  const b = Skia.PathBuilder.Make();
+  b.moveTo(tr.x[from], tr.y[from]);
+  for (let i = from + 1; i <= to; i++) b.lineTo(tr.x[i], tr.y[i]);
+  return b.detach();
+}
 
 function drawSmoke(canvas: SkCanvas, f: Frame): void {
   const live = liveSmoke(f.replay.smoke, f.t);

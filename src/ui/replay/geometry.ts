@@ -77,6 +77,8 @@ export interface SceneGeometry {
   corners: Array<{ x: number; y: number; radiusM: number }>;
   gate: { ax: number; ay: number; bx: number; by: number } | null;
   runs: LineRun[];
+  /** Stretches where the position was dead-reckoned: drawn dashed, never lit. */
+  gaps: LineRun[];
   segments: SegmentGeometry[];
   car: CarShapes;
   /** Unit shapes, scaled at draw time. */
@@ -112,6 +114,18 @@ function polyline(pts: Pt[], close = false): SkPath {
     else b.lineTo(x, y);
   }
   if (close) b.close();
+  return b.detach();
+}
+
+/** Several contours in one path: the trail is BROKEN wherever the positions were not measured. */
+function contours(runs: Pt[][]): SkPath {
+  const b = Skia.PathBuilder.Make();
+  for (const run of runs) {
+    for (let i = 0; i < run.length; i++) {
+      if (i === 0) b.moveTo(run[i][0], run[i][1]);
+      else b.lineTo(run[i][0], run[i][1]);
+    }
+  }
   return b.detach();
 }
 
@@ -232,46 +246,64 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     }
   }
 
-  // ---- the driven line, split into runs at every drift and every data gap --------------
+  // ---- the driven line, broken at every drift and every data gap ----------------------
   const runs: LineRun[] = [];
+  const gaps: LineRun[] = [];
   {
     let run: Pt[] = [];
     let startIndex = 0;
-    let deadRun = false;
     const flush = (endIndex: number) => {
-      if (run.length > 1) runs.push({ path: keep(polyline(run)), bounds: boundsOf(run), startIndex, endIndex, dead: deadRun });
+      if (run.length > 1) runs.push({ path: keep(polyline(run)), bounds: boundsOf(run), startIndex, endIndex, dead: false });
       run = [];
     };
     for (let i = 0; i < tr.n; i++) {
-      const isDead = dead[i] === 1;
-      if (tr.segmentOf[i] >= 0) {
+      if (tr.segmentOf[i] >= 0 || dead[i] === 1) {
         flush(i - 1);
         continue;
       }
-      if (run.length > 0 && isDead !== deadRun) {
-        // keep the two runs joined: the gap run starts where the good one stopped
-        run.push([tr.x[i], tr.y[i]]);
-        flush(i - 1);
-      }
-      if (run.length === 0) {
-        startIndex = i;
-        deadRun = isDead;
-      }
+      if (run.length === 0) startIndex = i;
       run.push([tr.x[i], tr.y[i]]);
     }
     flush(tr.n - 1);
+    // the stretches with no measured position at all, drift or not: these are dashed, never lit
+    let gap: Pt[] = [];
+    let gapStart = 0;
+    const flushGap = (endIndex: number) => {
+      if (gap.length > 1) gaps.push({ path: keep(polyline(gap)), bounds: boundsOf(gap), startIndex: gapStart, endIndex, dead: true });
+      gap = [];
+    };
+    for (let i = 0; i < tr.n; i++) {
+      if (dead[i] !== 1) {
+        flushGap(i - 1);
+        continue;
+      }
+      if (gap.length === 0) gapStart = Math.max(0, i - 1);
+      if (gap.length === 0 && i > 0) gap.push([tr.x[i - 1], tr.y[i - 1]]);
+      gap.push([tr.x[i], tr.y[i]]);
+    }
+    flushGap(tr.n - 1);
   }
 
   // ---- drift ribbons ------------------------------------------------------------------
   const segments: SegmentGeometry[] = [];
   for (const seg of replay.segments) {
-    const pts: Pt[] = [];
+    const parts: Pt[][] = [];
+    let part: Pt[] = [];
     let peak = 0;
+    let count = 0;
     for (let i = seg.startIndex; i <= seg.endIndex; i++) {
-      pts.push([tr.x[i], tr.y[i]]);
+      if (dead[i] === 1) {
+        if (part.length > 1) parts.push(part);
+        part = [];
+        continue;
+      }
+      part.push([tr.x[i], tr.y[i]]);
+      count++;
       if (Math.abs(tr.beta[i]) > peak) peak = Math.abs(tr.beta[i]);
     }
-    if (pts.length < 2) continue;
+    if (part.length > 1) parts.push(part);
+    const pts: Pt[] = parts.flat();
+    if (count < 2 || parts.length === 0) continue;
     const chunks: TrailChunk[] = [];
     for (const hot of [false, true]) {
       const step = 3;
@@ -281,11 +313,13 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         let mag = 0;
         const cp: Pt[] = [];
         for (let i = a; i <= b; i++) {
+          if (dead[i] === 1) continue;
           inten += tr.intensity[i];
           mag = Math.max(mag, Math.abs(tr.beta[i]));
           cp.push([tr.x[i], tr.y[i]]);
         }
-        inten /= b - a + 1;
+        if (cp.length < 2) continue;
+        inten /= cp.length;
         if (hot && inten < 0.1) continue;
         chunks.push({
           path: keep(polyline(cp)),
@@ -298,7 +332,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         });
       }
     }
-    segments.push({ seg, ribbon: keep(polyline(pts)), bounds: boundsOf(pts), color: heatColor(peak), chunks });
+    segments.push({ seg, ribbon: keep(contours(parts)), bounds: boundsOf(pts), color: heatColor(peak), chunks });
   }
 
   const car = carShapes();
@@ -343,6 +377,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     corners,
     gate: replay.track?.gate ?? null,
     runs,
+    gaps,
     segments,
     car,
     diamond,

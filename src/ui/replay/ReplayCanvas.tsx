@@ -142,7 +142,9 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
     camera.setViewport(actionRect(layout, mode));
     markDirty(600);
   }, [camera, layout, mode]);
-  useEffect(() => markDirty(600), [fontBook, geo, view, focusDriftId]);
+  useEffect(() => {
+    markDirty(600);
+  }, [fontBook, geo, view, focusDriftId]);
 
   useEffect(() => {
     if (!onSnapshotReady) return;
@@ -166,6 +168,9 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
     let last = typeof performance !== 'undefined' ? performance.now() : Date.now();
     let cutWall = -Infinity;
     let lastDrawnT = NaN;
+    /** What the last drawn frame was made of. A paused replay stops drawing, so anything that
+     *  arrives late — the Skia typefaces above all — has to force one more frame. */
+    let lastInputs = '';
     const retired: SkPicture[] = [];
 
     const loop = (now: number) => {
@@ -227,8 +232,10 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       if (chipNow && sv.playing.value !== 1 && sv.scrubbing.value !== 1) chipNow.until = Math.max(chipNow.until, Date.now() + 200);
       const chipAlpha = chipNow ? clamp((chipNow.until - Date.now()) / 400, 0, 1) : 0;
       const moving = sv.playing.value === 1 || scrubbing || cutFade > 0 || chipAlpha > 0 || now < dirtyUntil.current;
-      if (!moving && t === lastDrawnT) return;
+      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}`;
+      if (!moving && t === lastDrawnT && inputs === lastInputs) return;
       lastDrawnT = t;
+      lastInputs = inputs;
 
       const pic = createPicture(
         (canvas) => {

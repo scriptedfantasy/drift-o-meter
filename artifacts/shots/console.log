@@ -1,8 +1,129 @@
 
-===== replay-overview  http://127.0.0.1:45845/replay/demo?cam=overview&t=60&play=0&ui=1
+===== home  http://127.0.0.1:37377/
 
-===== replay-cinematic  http://127.0.0.1:45845/replay/demo?cam=cinematic&t=39.14&play=0&ui=1
+===== garage  http://127.0.0.1:37377/?demo=night
 
-===== replay-ghost  http://127.0.0.1:45845/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=1
+===== garage-bests  http://127.0.0.1:37377/?demo=night
 
-===== replay-highlight  http://127.0.0.1:45845/replay/demo?hl=1&play=0&cam=chase&ui=1
+===== garage-runs  http://127.0.0.1:37377/?demo=night
+
+===== garage-bests-harbor  http://127.0.0.1:37377/?demo=harbor
+
+===== garage-simbay  http://127.0.0.1:37377/?demo=first
+
+===== garage-delete  http://127.0.0.1:37377/?demo=first
+[garage-delete] pageerror: TypeError: Cannot read properties of undefined (reading 'force')
+    at f (http://127.0.0.1:37377/_expo/static/js/web/entry-ff7b9b99cfb8a0fc0045681b6df251e6.js:210:378)
+    at HTMLDocument.P (http://127.0.0.1:37377/_expo/static/js/web/entry-ff7b9b99cfb8a0fc0045681b6df251e6.js:209:1514)
+    at eval (eval at evaluate (:311:30), <anonymous>:7:8)
+    at eval (eval at evaluate (:311:30), <anonymous>:10:5)
+    at eval (<anonymous>)
+    at UtilityScript.evaluate (<anonymous>:311:30)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+
+===== calibrate  http://127.0.0.1:37377/calibrate?sim=harbor&at=0.5&hold=1
+
+===== calibrate-level  http://127.0.0.1:37377/calibrate?sim=harbor&at=3&hold=1
+
+===== calibrate-ready  http://127.0.0.1:37377/calibrate?sim=harbor&at=12&hold=1
+
+===== calibrate-loose  http://127.0.0.1:37377/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
+
+===== calibrate-flat  http://127.0.0.1:37377/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
+
+===== drive-idle  http://127.0.0.1:37377/drive?sim=harbor&rate=1
+
+===== drive-start  http://127.0.0.1:37377/drive?sim=harbor&rate=1&at=2.2&hold=1
+
+===== drive  http://127.0.0.1:37377/drive?sim=harbor&rate=1&at=38
+
+===== drive-peak  http://127.0.0.1:37377/drive?sim=harbor&rate=1&at=100.85&hold=1
+
+===== drive-transition  http://127.0.0.1:37377/drive?sim=harbor&rate=1&at=85.55&hold=1
+
+===== drive-bank  http://127.0.0.1:37377/drive?sim=harbor&rate=1&at=50.75&hold=1
+
+===== drive-loose  http://127.0.0.1:37377/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1
+
+===== drive-lost  http://127.0.0.1:37377/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1
+
+===== drive-gps  http://127.0.0.1:37377/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1
+
+===== results-reveal  http://127.0.0.1:37377/results/fixture-hero
+
+===== results-skip  http://127.0.0.1:37377/results/fixture-hero?reveal=slam
+
+===== results-reveal-hold  http://127.0.0.1:37377/results/fixture-hero?reveal=hold
+
+===== results-reveal-slam  http://127.0.0.1:37377/results/fixture-hero?reveal=slam
+
+===== results  http://127.0.0.1:37377/results/fixture-hero?reveal=off
+
+===== results-sloppy  http://127.0.0.1:37377/results/fixture-sloppy?reveal=off
+
+===== results-spin  http://127.0.0.1:37377/results/fixture-spin?reveal=off
+
+===== results-clean  http://127.0.0.1:37377/results/fixture-clean?reveal=off
+
+===== results-best  http://127.0.0.1:37377/results/fixture-hero?reveal=off
+
+===== results-drifts  http://127.0.0.1:37377/results/fixture-spin?reveal=off
+
+===== results-laps  http://127.0.0.1:37377/results/fixture-sloppy?reveal=off
+
+===== results-untrusted  http://127.0.0.1:37377/results/fixture-handheld?reveal=off
+
+===== results-untrusted-foot  http://127.0.0.1:37377/results/fixture-handheld?reveal=off
+
+===== results-integrity  http://127.0.0.1:37377/results/fixture-rough?reveal=off
+
+===== results-pipeline  http://127.0.0.1:37377/results/fixture-good?reveal=off&source=pipeline
+
+===== results-reduced  http://127.0.0.1:37377/results/fixture-hero?reveal=hold&motion=reduce
+
+===== results-missing  http://127.0.0.1:37377/results/no-such-session
+
+===== replay  http://127.0.0.1:37377/replay/demo?cam=chase&t=93
+
+===== replay-overview  http://127.0.0.1:37377/replay/demo?cam=overview&t=60&play=0&ui=0
+
+===== replay-chase  http://127.0.0.1:37377/replay/demo?cam=chase&t=95.9&play=0&ui=1
+
+===== replay-cinematic  http://127.0.0.1:37377/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+
+===== replay-ghost  http://127.0.0.1:37377/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+
+===== replay-highlight  http://127.0.0.1:37377/replay/demo?hl=1&play=0&cam=chase&ui=1
+
+===== replay-scrub  http://127.0.0.1:37377/replay/demo?cam=chase&play=0&ui=1
+[replay-scrub] pageerror: NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.
+    at HTMLDivElement.pointerDownCallback (http://127.0.0.1:37377/_expo/static/js/web/entry-ff7b9b99cfb8a0fc0045681b6df251e6.js:1709:864)
+    at eval (eval at evaluate (:311:30), <anonymous>:7:8)
+    at eval (eval at evaluate (:311:30), <anonymous>:12:5)
+    at eval (<anonymous>)
+    at UtilityScript.evaluate (<anonymous>:311:30)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+[replay-scrub] pageerror: NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.
+    at HTMLDivElement.pointerMoveCallback (http://127.0.0.1:37377/_expo/static/js/web/entry-ff7b9b99cfb8a0fc0045681b6df251e6.js:1709:1597)
+    at eval (eval at evaluate (:311:30), <anonymous>:10:10)
+    at async <anonymous>:337:30
+[replay-scrub] pageerror: NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.
+    at HTMLDivElement.pointerMoveCallback (http://127.0.0.1:37377/_expo/static/js/web/entry-ff7b9b99cfb8a0fc0045681b6df251e6.js:1709:1597)
+    at eval (eval at evaluate (:311:30), <anonymous>:10:10)
+    at async <anonymous>:337:30
+[replay-scrub] pageerror: NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.
+    at HTMLDivElement.pointerMoveCallback (http://127.0.0.1:37377/_expo/static/js/web/entry-ff7b9b99cfb8a0fc0045681b6df251e6.js:1709:1597)
+    at eval (eval at evaluate (:311:30), <anonymous>:10:10)
+    at async <anonymous>:337:30
+
+===== replay-untrusted  http://127.0.0.1:37377/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
+
+===== replay-warnings  http://127.0.0.1:37377/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0
+
+===== replay-warnings-open  http://127.0.0.1:37377/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1
+
+===== replay-end  http://127.0.0.1:37377/replay/demo?cam=overview&t=999&play=0&ui=0
+
+===== replay-touge  http://127.0.0.1:37377/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
+
+===== settings  http://127.0.0.1:37377/settings
