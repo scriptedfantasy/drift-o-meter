@@ -71,6 +71,11 @@ export interface HudSnapshot {
   chainPoints: number;
   chainActive: boolean;
   transitions: number;
+  /**
+   * Peak |β| of the drift in progress. Held as a running max HERE rather than read from the
+   * detector: the detector only publishes a peak once the entry has closed, which made the
+   * strip read lower than the numeral directly above it during entry.
+   */
   peakDeg: number;
   /** Seconds the drift in progress has been running (0 when idle). */
   driftDurationS: number;
@@ -80,6 +85,14 @@ export interface HudSnapshot {
   driftCount: number;
   valid: boolean;
   calibrationQuality: number;
+  /** The mount calibrator has resolved which way the car points; before that no mount verdict means anything. */
+  forwardResolved: boolean;
+  /** A usable fix has been seen at least once — "no GPS yet" and "GPS lost" are different states. */
+  gpsEverGood: boolean;
+  /** 0..1: how much of the reading the engine stands behind (see `HudSignals.trust`). */
+  trust: number;
+  /** False when the run is not scoreable at all: the score block says so instead of counting. */
+  scoring: boolean;
   /** Trail points committed so far (bumps the mini-map's memo). */
   trailCount: number;
 }
@@ -124,6 +137,10 @@ const IDLE_SNAPSHOT: HudSnapshot = {
   driftCount: 0,
   valid: false,
   calibrationQuality: 0,
+  forwardResolved: false,
+  gpsEverGood: false,
+  trust: 0,
+  scoring: false,
   trailCount: 0,
 };
 
@@ -205,6 +222,10 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     intensity: 0,
     lastTrailT: -Infinity,
     eventKey: 1,
+    peakDeg: 0,
+    driftId: -1,
+    gpsEverGood: false,
+    trust: 0,
   });
 
   const haptics = useRef({ enabled: false });
@@ -234,10 +255,30 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       const abs = Math.abs(betaDeg);
       const active = ACTIVE_PHASES.has(f.phase);
 
+      // Trust: what the engine is willing to stand behind. A loose mount, impossible physics or
+      // no fix means the scorer is not paying for this slide, so the gauge must not celebrate it.
+      const integrity = params.integrity ?? f.integrity;
+      if (integrity.gps === 'good') h.gpsEverGood = true;
+      const scoreable = integrity.mount !== 'loose' && integrity.physics === 'ok' && integrity.gps !== 'none' && f.state.valid;
+      h.trust = !scoreable ? 0 : integrity.mount === 'suspect' || integrity.gps === 'poor' ? 0.65 : 1;
+
+      // Running peak of the drift in progress (the detector publishes its own only after entry).
+      if (f.live) {
+        if (f.live.id !== h.driftId) {
+          h.driftId = f.live.id;
+          h.peakDeg = 0;
+        }
+        if (abs > h.peakDeg) h.peakDeg = abs;
+      } else {
+        h.driftId = -1;
+        h.peakDeg = 0;
+      }
+
       signals.betaDeg.value = betaDeg;
       signals.absDeg.value = abs;
       if (abs > 3) signals.side.value = betaDeg >= 0 ? 1 : -1;
-      signals.peakDeg.value = f.live ? radToDeg(f.live.peakAngle) * f.live.direction : 0;
+      signals.peakDeg.value = f.live ? h.peakDeg * f.live.direction : 0;
+      signals.trust.value = h.trust;
       signals.speedKmh.value = f.state.speed * 3.6;
       signals.ayG.value = f.state.ay / G;
       signals.active.value = active ? 1 : 0;
@@ -251,8 +292,9 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.carHeading.value = f.state.heading;
       signals.valid.value = f.state.valid ? 1 : 0;
 
-      // Glow intensity: blooms fast, fades slowly (design: entry 220 ms, exit 420 ms).
-      const target = active ? Math.min(1, Math.max(0, (abs - 6) / 44)) : 0;
+      // Glow intensity: blooms fast, fades slowly (design: entry 220 ms, exit 420 ms), and never
+      // blooms at all for a slide the engine is not scoring.
+      const target = active ? Math.min(1, Math.max(0, (abs - 6) / 44)) * h.trust : 0;
       const tau = target > h.intensity ? 0.09 : 0.24;
       h.intensity += (target - h.intensity) * (1 - Math.exp(-dt / tau));
       signals.intensity.value = h.intensity;
@@ -262,15 +304,18 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       const wasActive = ACTIVE_PHASES.has(h.prevPhase);
       if (active && !wasActive) {
         // Entry: the numeral punches to 1.08× and springs back.
-        signals.punch.value = withSequence(withTiming(1, { duration: 70 }), withSpring(0, { damping: 11, stiffness: 150, mass: 0.6 }));
+        if (!reduceMotion.current) {
+          signals.punch.value = withSequence(withTiming(1, { duration: 70 }), withSpring(0, { damping: 11, stiffness: 150, mass: 0.6 }));
+        }
         fireHaptic('entry');
       } else if (!active && wasActive) {
         fireHaptic('exit');
       }
       if (phase === 'transition' && h.prevPhase !== 'transition') {
-        // Transition: 120 ms magenta flash, 100 ms 2 px shake (dropped when reduce-motion is on).
-        signals.flash.value = withSequence(withTiming(1, { duration: 40 }), withTiming(0, { duration: 140 }));
+        // Transition: 120 ms magenta flash, 100 ms 2 px shake. Reduce-motion keeps the state
+        // change (the callout, the multiplier, the chevron) and drops both of these.
         if (!reduceMotion.current) {
+          signals.flash.value = withSequence(withTiming(1, { duration: 40 }), withTiming(0, { duration: 140 }));
           signals.shake.value = withSequence(
             withTiming(1, { duration: 24 }),
             withTiming(-0.8, { duration: 24 }),
@@ -297,7 +342,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         pushTrail(trail, f.state.x, f.state.y, active);
       }
     },
-    [fireHaptic, pushEvents, signals, trail],
+    [fireHaptic, params.integrity, pushEvents, signals, trail],
   );
 
   const onMotion = useCallback(
@@ -364,7 +409,19 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         pipelineRef.current = createHudPipeline({ id: sessionIdRef.current, name });
         resetSignals(signals);
         resetTrail(trail);
-        hot.current = { t0: NaN, tLast: NaN, prevPhase: 'idle', prevChain: 0, intensity: 0, lastTrailT: -Infinity, eventKey: hot.current.eventKey };
+        hot.current = {
+          t0: NaN,
+          tLast: NaN,
+          prevPhase: 'idle',
+          prevChain: 0,
+          intensity: 0,
+          lastTrailT: -Infinity,
+          eventKey: hot.current.eventKey,
+          peakDeg: 0,
+          driftId: -1,
+          gpsEverGood: false,
+          trust: 0,
+        };
 
         if (selection.sim) {
           const player = new SimPlayer(selection.sim.run, {
@@ -440,7 +497,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         chainPoints: f.score.chainPoints,
         chainActive: f.score.chainActive,
         transitions: f.live?.transitions ?? 0,
-        peakDeg: f.live ? radToDeg(f.live.peakAngle) : 0,
+        peakDeg: h.peakDeg,
         driftDurationS: f.live?.durationS ?? 0,
         elapsedS: f.t - t0,
         lapCount: f.lap.count,
@@ -448,6 +505,10 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         driftCount: pipelineRef.current?.drifts.length ?? 0,
         valid: f.state.valid,
         calibrationQuality: f.calibration.quality,
+        forwardResolved: f.calibration.forwardResolved,
+        gpsEverGood: h.gpsEverGood,
+        trust: h.trust,
+        scoring: h.trust > 0,
         trailCount: trail.n,
       });
       setEvents((prev) => (prev.length === 0 ? prev : prev.filter((e) => f.t - e.t <= CALLOUT_HOLD_S)));

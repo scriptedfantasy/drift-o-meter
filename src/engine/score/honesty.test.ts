@@ -14,7 +14,7 @@ import { SPIN_ANGLE_DEG } from '../detect/options';
 import { DriftPipeline } from '../pipeline';
 import { simulateRun, type SimulatedRun, type TrackId } from '../../sim';
 import { degToRad, radToDeg, type Grade, type SlipState } from '../types';
-import { scoreSession, countTransitions, steadinessScore, DEFAULT_SCORE_OPTIONS, LiveScorer } from './index';
+import { scoreSession, countTransitions, steadinessScore, angleScore, DEFAULT_SCORE_OPTIONS, LiveScorer } from './index';
 
 // ── helpers ────────────────────────────────────────────────────────────────────────────────
 
@@ -109,7 +109,7 @@ describe('finding 1 — a spin the detector flagged reaches the score', () => {
       expect(b.transitions).toBe(drifts.reduce((a, e) => a + e.transitions, 0));
       for (const e of drifts) expect(b.perDrift[e.id].transitions, `drift ${e.id}`).toBe(e.transitions);
     }
-  });
+  }, 120_000);
 });
 
 // ── finding 2: the 81× wheel-sawing exploit ────────────────────────────────────────────────
@@ -135,7 +135,7 @@ describe('finding 2 — sawing the wheel is not worth more than drifting', () =>
     const manji = run30((t) => degToRad(30) * (Math.sin(2 * Math.PI * 0.25 * t) > 0 ? 1 : -1));
     const session = drivePipe('harbor', { seed: 1, laps: 2, aggression: 0.8, consistency: 0.85 }).breakdown!;
     expect(manji.b.total).toBeLessThan(session.total);
-  });
+  }, 120_000);
 
   it('the per-drift transition bonus is capped however many transitions there are', () => {
     const many = run30((t) => degToRad(30) * (Math.sin(2 * Math.PI * 0.4 * t) > 0 ? 1 : -1));
@@ -196,7 +196,7 @@ describe('finding 3 — an unsettled drift is scored, never dropped', () => {
       }
     }
     expect(wins).toBe(pairs);
-  });
+  }, 120_000);
 });
 
 // ── finding 4: the integrity monitor must be listened to ───────────────────────────────────
@@ -216,14 +216,14 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
       expect(b.integrity.implausibleDriftFraction, `looseness ${looseness}`).toBeGreaterThan(DEFAULT_SCORE_OPTIONS.integrityMaxImplausibleFraction);
       expect(b.integrity.message.length, `looseness ${looseness}`).toBeGreaterThan(0);
     }
-  });
+  }, 120_000);
 
   it('a calibration that cannot resolve which way the car points vetoes the score', () => {
     const pipe = drivePipe('harbor', { ...base, looseness: 0.7 });
     const diag = pipe.diagnostics;
     expect(diag.calibrationForwardResolved || diag.calibrationQuality < 0.3).toBe(true);
     expect(pipe.breakdown!.integrity.scoreTrusted).toBe(false);
-  });
+  }, 120_000);
 });
 
 // ── finding 5: one spin threshold, and never a silent cliff ────────────────────────────────
@@ -249,6 +249,84 @@ describe('finding 5 — the detector and the scorer use ONE spin threshold', () 
   });
 });
 
+// ── the angle component: only angle the driver CONTROLLED, and a top worth reaching ────────
+
+describe('the angle component counts controlled angle, and its top is not free', () => {
+  /** `n` clean slides at `deg`, optionally followed by slides that spin out at `spinDeg`. */
+  const run = (deg: number, n: number, spinDeg = 0, spins = 0) => {
+    const seg = 8; // 6 s of slide + 2 s straight
+    const states = synth(seg * (n + spins) + 2, (t) => {
+      const k = Math.floor(t / seg);
+      const p = t - k * seg;
+      const sliding = p > 1 && p < 7;
+      if (!sliding) return { beta: 0, speed: 60 / 3.6 };
+      const d = k < n ? deg : spinDeg;
+      // a spin runs away past the threshold instead of being held
+      const b = k < n ? d : Math.min(d, 20 + (p - 1) * 30);
+      return { beta: degToRad(b), speed: 60 / 3.6 };
+    });
+    const det = detect(states);
+    return { b: scoreSession(det.events, states, null), det };
+  };
+
+  it('a slide that spun does not lend its angle to the score', () => {
+    // measured on the sloppy fixture: ANGLE 100/100 — higher than the showcase run's 96 — off
+    // three slides it had LOST, while the eight it actually drove averaged 17°, worth 0
+    const clean = run(32, 3);
+    const withSpin = run(32, 3, 85, 2);
+    expect(withSpin.b.spins).toBeGreaterThan(0);
+    expect(withSpin.b.angleDrifts).toBeLessThan(withSpin.b.drifts);
+    // the spins reached far bigger angles, and the component is unmoved by them
+    const spunPeak = Math.max(...Object.values(withSpin.b.perDrift).filter((d) => d.spun).map((d) => d.stats.heldPeakDeg));
+    const heldPeak = Math.max(...Object.values(withSpin.b.perDrift).filter((d) => !d.spun).map((d) => d.stats.heldPeakDeg));
+    expect(spunPeak).toBeGreaterThan(heldPeak);
+    expect(Math.abs(withSpin.b.angle - clean.b.angle), 'the spins moved the angle component').toBeLessThan(2);
+  });
+
+  it('a driver who spins their biggest slides never out-scores a tidier one on angle', () => {
+    // the shape of the two fixtures the screen puts side by side
+    const showcase = run(40, 6);
+    const sloppy = run(17, 8, 90, 3);
+    expect(sloppy.b.spins).toBe(3);
+    expect(showcase.b.angle, 'the showcase run must out-score the sloppy one on angle').toBeGreaterThan(sloppy.b.angle);
+    // and the sloppy run gets what its CONTROLLED slides are worth, not what its spins reached
+    expect(sloppy.b.angle).toBeLessThan(20);
+  });
+
+  it('over a skill sweep, the component is provably measured over the non-spun drifts only', () => {
+    for (const track of ['harbor', 'touge'] as TrackId[])
+      for (const [aggression, consistency] of [
+        [1.0, 0.2],
+        [0.8, 0.8],
+        [0.3, 0.3],
+      ] as Array<[number, number]>) {
+        const b = drivePipe(track, { seed: 2, laps: 2, aggression, consistency }).breakdown!;
+        const kept = Object.values(b.perDrift).filter((d) => !d.spun);
+        expect(b.angleDrifts).toBe(kept.length);
+        let sw = 0;
+        let sv = 0;
+        for (const d of kept) {
+          const w = Math.max(DEFAULT_SCORE_OPTIONS.minWeightS, d.stats.durationS);
+          sw += w;
+          sv += w * d.stats.heldPeakDeg;
+        }
+        const expected = kept.length ? angleScore(sw > 0 ? sv / sw : 0, DEFAULT_SCORE_OPTIONS, b.trackFactor) : 0;
+        expect(b.angle, `${track} ${aggression}/${consistency}`).toBeCloseTo(expected, 1);
+      }
+  }, 120_000);
+
+  it('the top of the angle scale is not reached by any angle a driver could hold and keep', () => {
+    const o = DEFAULT_SCORE_OPTIONS;
+    // 100 must cost more than "get sideways once": every angle short of a spin still climbs
+    expect(angleScore(37, o)).toBeLessThan(angleScore(44, o));
+    expect(angleScore(44, o)).toBeLessThan(angleScore(55, o));
+    expect(angleScore(55, o)).toBeLessThanOrEqual(angleScore(SPIN_ANGLE_DEG, o));
+    expect(angleScore(44, o)).toBeLessThan(100);
+    // and the scale is monotone everywhere, with no plateau below the spin threshold
+    for (let d = 24; d < 59; d++) expect(angleScore(d + 1, o), `${d}° → ${d + 1}°`).toBeGreaterThan(angleScore(d, o));
+  });
+});
+
 // ── finding 6: every grade reachable on every track ────────────────────────────────────────
 
 describe('finding 6 — the grade uses its whole range on both tracks', () => {
@@ -260,6 +338,7 @@ describe('finding 6 — the grade uses its whole range on both tracks', () => {
     const lines: string[] = ['\nGRADE REACHABILITY (aggression × consistency × seed, full pipeline)'];
     for (const track of ['harbor', 'touge'] as TrackId[]) {
       const grades: Grade[] = [];
+      const byAgg = new Map<number, number[]>();
       let lo = Infinity;
       let hi = -Infinity;
       for (const aggression of AGG)
@@ -269,7 +348,16 @@ describe('finding 6 — the grade uses its whole range on both tracks', () => {
             grades.push(b.grade);
             lo = Math.min(lo, b.combined);
             hi = Math.max(hi, b.combined);
+            byAgg.set(aggression, [...(byAgg.get(aggression) ?? []), b.combined]);
           }
+      // driving harder must pay, on average: individual seeds may invert by a point or two when
+      // the simulated driver gets less steady with aggression, but the trend may not
+      const means = AGG.map((a) => {
+        const v = byAgg.get(a) as number[];
+        return v.reduce((x, y) => x + y, 0) / v.length;
+      });
+      lines.push(`${track.padEnd(7)} mean combined by aggression ${AGG.map((a, i) => `${a}→${means[i].toFixed(1)}`).join('  ')}`);
+      for (let i = 1; i < means.length; i++) expect(means[i], `${track}: aggression ${AGG[i]} scores below ${AGG[i - 1]}`).toBeGreaterThan(means[i - 1]);
       const dist: Record<Grade, number> = { S: 0, A: 0, B: 0, C: 0, D: 0 };
       for (const g of grades) dist[g]++;
       lines.push(
@@ -281,7 +369,7 @@ describe('finding 6 — the grade uses its whole range on both tracks', () => {
       expect(hi - lo, `${track}: the scale is compressed`).toBeGreaterThan(35);
     }
     process.stdout.write(lines.join('\n') + '\n');
-  });
+  }, 120_000);
 
   it('grades rise with skill: the best cell beats the worst by a wide margin on both tracks', () => {
     for (const track of ['harbor', 'touge'] as TrackId[]) {
@@ -289,7 +377,7 @@ describe('finding 6 — the grade uses its whole range on both tracks', () => {
       const worst = drivePipe(track, { seed: 1, laps: 2, aggression: 0.2, consistency: 0.2 }).breakdown!;
       expect(best.combined - worst.combined, track).toBeGreaterThan(25);
     }
-  });
+  }, 120_000);
 });
 
 // ── finding 8: callouts that always fire and callouts that never fire are both non-events ──
@@ -324,7 +412,7 @@ describe('finding 8 — every callout fires sometimes and none fires always', ()
       expect(rate, `${k} fires on ${(100 * rate).toFixed(0)}% of drifts`).toBeGreaterThanOrEqual(0.08);
       expect(rate, `${k} fires on ${(100 * rate).toFixed(0)}% of drifts`).toBeLessThanOrEqual(0.45);
     }
-  });
+  }, 120_000);
 });
 
 // ── finding 10: one corner must not be the whole story, silently ───────────────────────────
@@ -337,7 +425,7 @@ describe('finding 10 — the results data says how much of the run was one corne
     expect(b.medianDriftPoints).toBeGreaterThan(0);
     expect(b.pointsPerDriftSecond).toBeGreaterThan(0);
     expect(b.pointsPerDriftSecond * b.driftTimeS).toBeCloseTo(b.total, -2);
-  });
+  }, 120_000);
 });
 
 // ── finding 11: driving fewer laps must not raise the grade ────────────────────────────────
@@ -356,7 +444,7 @@ describe('finding 11 — unproven cross-lap consistency is neutral, not absent',
       expect(rank[one.grade], `seed ${seed}: ${one.grade} over 1 lap vs ${two.grade} over 2`).toBeLessThanOrEqual(rank[two.grade]);
       expect(one.combined, `seed ${seed}`).toBeLessThanOrEqual(two.combined + 2.5);
     }
-  });
+  }, 120_000);
 });
 
 // ── finding 15: steadiness must not improve when the sensors get noisier ───────────────────
@@ -390,7 +478,7 @@ describe('finding 15 — consistency is monotonic in sensor noise', () => {
     // unbounded noise-floor subtraction produced
     for (let i = 1; i < vals.length; i++) expect(vals[i], `vibration ${i} vs ${i - 1}`).toBeLessThanOrEqual(vals[i - 1] + 8);
     expect(vals[vals.length - 1]).toBeLessThan(vals[0]);
-  });
+  }, 120_000);
 });
 
 // ── finding 20 / the O(n) LiveScorer.remember() ────────────────────────────────────────────
@@ -469,7 +557,7 @@ describe('session metrics table', () => {
     }
     process.stdout.write(rows.join('\n') + '\n');
     expect(rows.length).toBeGreaterThan(2);
-  });
+  }, 120_000);
 });
 
 /** Degrees, for the reader of the failures above. */

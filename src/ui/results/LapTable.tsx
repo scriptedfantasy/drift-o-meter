@@ -32,12 +32,24 @@ export interface LapTableProps {
 // lap 1 ember, lap 2 white: two laps have to be told apart, but not with two new accents
 const LAP_COLORS = [colors.ember, colors.text, colors.cyan, colors.magenta, colors.gold];
 
-function verdict(score: number, skipped: number): { label: string; color: string } {
+/**
+ * The verdict ramp is green → text → ember → red. Cyan belonged to telemetry and gold to the S
+ * grade; spending them here left both meaning several things at once.
+ *
+ * `exact` is the tell-tale of a replayed trajectory rather than a repeatable driver: identical
+ * peaks AND an entry spread of exactly zero. No human puts the car within 0.0 m of the same
+ * point twice, so that is reported as unmeasured, never as perfection.
+ */
+function verdict(score: number, skipped: number, exact: boolean, spun: boolean): { label: string; color: string } {
+  // A corner the car span at is not "locked in", however alike the two laps look: the cross-lap
+  // score is a coefficient of variation, and two 118° spins have a very small one.
+  if (spun) return { label: 'SPUN', color: colors.red };
+  if (exact) return { label: 'UNMEASURED', color: colors.muted };
   // a corner the driver only drifted on some laps is not "close", it is missing
-  if (skipped > 0) return { label: 'SKIPPED', color: colors.gold };
+  if (skipped > 0) return { label: 'SKIPPED', color: colors.muted };
   if (score >= 0.75) return { label: 'LOCKED IN', color: colors.green };
-  if (score >= 0.5) return { label: 'CLOSE', color: colors.cyan };
-  if (score >= 0.25) return { label: 'WANDERING', color: colors.gold };
+  if (score >= 0.5) return { label: 'CLOSE', color: colors.text };
+  if (score >= 0.25) return { label: 'WANDERING', color: colors.ember };
   return { label: 'ALL OVER', color: colors.red };
 }
 
@@ -48,14 +60,21 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
     .filter((r): r is { c: (typeof laps.perCorner)[number]; corner: TrackCorner } => !!r.corner && r.c.laps.some((l) => l !== null))
     .sort((a, b) => a.c.score - b.c.score);
 
-  const peak = rows.reduce((m, r) => Math.max(m, ...r.c.laps.map((l) => (l ? l.peakAngleDeg : 0))), 0);
-  const maxDeg = Math.max(30, Math.ceil((peak * 1.08) / 15) * 15);
+  // The axis follows the 90th percentile, not the maximum: one 118° spin would otherwise push
+  // every ordinary corner into the left third of the plot. Anything above it clips, and the
+  // degrees are printed underneath either way.
+  const peaks = rows
+    .flatMap((r) => r.c.laps.map((l) => (l ? l.peakAngleDeg : NaN)))
+    .filter((v) => Number.isFinite(v))
+    .sort((a, b) => a - b);
+  const p90 = peaks.length ? peaks[Math.min(peaks.length - 1, Math.floor(peaks.length * 0.9))] : 0;
+  const maxDeg = Math.max(30, Math.min(90, Math.ceil((p90 * 1.08) / 15) * 15));
   const plotW = Math.max(90, Math.round(width * 0.36));
 
   return (
     <Animated.View style={[styles.wrap, enter]} testID={testID}>
       <View style={styles.legend}>
-        <AppText variant="micro" color="muted">
+        <AppText variant="micro" color="muted" style={styles.noCaps}>
           Peak |β| per lap · 0–{maxDeg}° · worst corner first
         </AppText>
         <View style={styles.legendKeys}>
@@ -73,8 +92,10 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
       {rows.map(({ c, corner }, i) => {
         const vals = c.laps.map((l) => (l ? l.peakAngleDeg : NaN));
         const seen = vals.filter((x) => Number.isFinite(x));
-        const v = verdict(c.score, vals.length - seen.length);
-        const spread = seen.length >= 2 ? Math.max(...seen) - Math.min(...seen) : 0;
+        const spreadDeg = seen.length >= 2 ? Math.max(...seen) - Math.min(...seen) : 0;
+        const exact = seen.length >= 2 && spreadDeg < 0.05 && c.entrySpreadM < 0.05;
+        const spun = seen.some((v) => v >= DEFAULT_SCORE_OPTIONS.spinAngleDeg);
+        const v = verdict(c.score, vals.length - seen.length, exact, spun);
         return (
           <View key={c.cornerId} style={[styles.row, i === 0 && rows.length > 1 && c.score < 0.6 ? styles.worst : null]}>
             <View style={styles.cornerCol}>
@@ -85,7 +106,15 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
                 {cornerShape(corner)}
               </AppText>
               <AppText variant="micro" color="muted" numeric numberOfLines={1}>
-                {seen.length < vals.length ? `${vals.length - seen.length} lap skipped` : `entry ±${c.entrySpreadM.toFixed(1)} m`}
+                {spun
+                  ? 'past the spin threshold'
+                  : exact
+                    ? 'single trajectory'
+                    : seen.length < vals.length
+                      ? `${vals.length - seen.length} lap skipped`
+                      : c.entrySpreadM < 0.05
+                        ? 'entry spread n/a'
+                        : `entry ±${c.entrySpreadM.toFixed(1)} m`}
               </AppText>
             </View>
 
@@ -94,16 +123,16 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
                 <Line x1={0} y1={13} x2={plotW} y2={13} stroke={colors.line} strokeWidth={1} />
                 {seen.length >= 2 ? (
                   <Rect
-                    x={(Math.min(...seen) / maxDeg) * plotW}
+                    x={Math.min(plotW - 3, (Math.min(...seen) / maxDeg) * plotW)}
                     y={11}
-                    width={Math.max(1, ((Math.max(...seen) - Math.min(...seen)) / maxDeg) * plotW)}
+                    width={Math.max(1, Math.min(plotW, ((Math.max(...seen) - Math.min(...seen)) / maxDeg) * plotW))}
                     height={4}
-                    fill={alpha(v.color, 0.45)}
+                    fill={alpha(v.color === colors.muted ? colors.line : v.color, 0.45)}
                   />
                 ) : null}
                 {vals.map((val, li) =>
                   Number.isFinite(val) ? (
-                    <Circle key={li} cx={(val / maxDeg) * plotW} cy={13} r={5} fill={LAP_COLORS[li % LAP_COLORS.length]} />
+                    <Circle key={li} cx={Math.min(plotW - 3, (val / maxDeg) * plotW)} cy={13} r={5} fill={LAP_COLORS[li % LAP_COLORS.length]} />
                   ) : (
                     <Circle key={li} cx={3} cy={13} r={4.5} stroke={colors.red} strokeWidth={1.5} fill="none" />
                   ),
@@ -121,7 +150,7 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
             <View style={styles.verdictCol}>
               <Tag label={v.label} color={v.color} filled={c.score < 0.5} />
               <AppText variant="micro" color="muted" numeric>
-                Δ {Math.round(spread)}°
+                Δ {Math.round(spreadDeg)}°
               </AppText>
             </View>
           </View>
@@ -160,4 +189,6 @@ const styles = StyleSheet.create({
   plotVals: { flexDirection: 'row', justifyContent: 'space-between' },
   verdictCol: { alignItems: 'flex-end', gap: 3, minWidth: 74 },
   footer: { marginTop: space[1] },
+  // `micro` uppercases, and uppercase β is Β — a Latin-looking B. The app's own symbol must survive.
+  noCaps: { textTransform: 'none' },
 });

@@ -13,7 +13,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useDerivedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useDerivedValue, useReducedMotion, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { AppText, Micro } from '../Text';
 import { formatDuration } from '../format';
@@ -50,6 +50,10 @@ export interface StatusStripProps {
 export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, live = true, testID }: StatusStripProps) {
   const gps = snapshot.integrity.gps;
   const mount = snapshot.integrity.mount;
+  const tier = live ? readIntegrity(snapshot).tier : 'ok';
+  // One row, always: when there is something wrong to say, the source chip gives up its space
+  // rather than wrapping the strip onto a second line and pushing STOP off the screen.
+  const showSource = tier === 'ok' || tier === 'calibrating';
   return (
     <View style={styles.strip} testID={testID}>
       <View style={styles.stripLeft}>
@@ -66,13 +70,15 @@ export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, li
       <View style={styles.stripRight}>
         {live ? (
           <Pill
-            label={gps === 'good' ? 'GPS' : gps === 'poor' ? 'GPS WEAK' : 'NO GPS'}
-            color={gps === 'good' ? colors.cyan : gps === 'poor' ? colors.gold : colors.red}
-            filled={gps !== 'good'}
+            label={gps === 'good' ? 'GPS' : gps === 'poor' ? 'GPS WEAK' : snapshot.gpsEverGood ? 'GPS LOST' : 'NO GPS YET'}
+            color={gps === 'good' ? colors.cyan : gps === 'none' && snapshot.gpsEverGood ? colors.red : colors.text}
+            filled={gps === 'none' && snapshot.gpsEverGood}
           />
         ) : null}
-        {!live || mount === 'rigid' ? null : <Pill label={mount === 'loose' ? 'MOUNT LOOSE' : 'MOUNT SHAKING'} color={mount === 'loose' ? colors.red : colors.gold} filled />}
-        {sourceLabel ? <Pill label={sourceLabel} color={colors.muted} /> : null}
+        {!live || mount === 'rigid' || (!snapshot.forwardResolved && mount !== 'loose') ? null : (
+          <Pill label={mount === 'loose' ? 'MOUNT LOOSE' : 'MOUNT SHAKING'} color={mount === 'loose' ? colors.red : colors.text} filled={mount === 'loose'} />
+        )}
+        {sourceLabel && showSource ? <Pill label={sourceLabel} color={colors.muted} /> : null}
       </View>
     </View>
   );
@@ -81,7 +87,7 @@ export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, li
 function Pill({ label, color, filled = false }: { label: string; color: string; filled?: boolean }) {
   return (
     <View style={[styles.pill, { borderColor: alpha(color, filled ? 0.9 : 0.45), backgroundColor: filled ? alpha(color, 0.2) : 'transparent' }]}>
-      <AppText variant="micro" color={color} style={styles.pillText}>
+      <AppText variant="micro" color={color} style={styles.pillText} numberOfLines={1}>
         {label}
       </AppText>
     </View>
@@ -106,11 +112,13 @@ export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snaps
       </View>
     );
   }
+  // An untrusted reading gets untrusted numbers: same values, no colour claiming they are good.
+  const trusted = snapshot.trust > 0;
   return (
     <View style={styles.stripRow} testID={testID}>
-      <StripCell label="Peak" value={`${Math.round(snapshot.peakDeg)}°`} tone={colors.gold} />
-      <StripCell label="Held" value={`${snapshot.driftDurationS.toFixed(1)}s`} tone={colors.text} />
-      <StripCell label="Flicks" value={`×${snapshot.transitions}`} tone={snapshot.transitions > 0 ? colors.magenta : colors.muted} last />
+      <StripCell label="Peak" value={`${Math.round(snapshot.peakDeg)}°`} tone={trusted ? colors.gold : colors.muted} />
+      <StripCell label="Held" value={`${snapshot.driftDurationS.toFixed(1)}s`} tone={trusted ? colors.text : colors.muted} />
+      <StripCell label="Flicks" value={`×${snapshot.transitions}`} tone={trusted && snapshot.transitions > 0 ? colors.magenta : colors.muted} last />
     </View>
   );
 });
@@ -126,23 +134,79 @@ function StripCell({ label, value, tone, last }: { label: string; value: string;
   );
 }
 
-/** The loud half of integrity: only mounted when something is actually wrong. */
-export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
+/**
+ * What integrity is saying, and how loudly. ONE function decides both, because deriving the
+ * tone from one field and the headline from another is how every run used to open with a red
+ * alarm titled MOUNT SHAKING while the actual condition was "no GPS lock yet".
+ *
+ * Until the calibrator has resolved which way the car points, no mount verdict means anything —
+ * the monitor is describing its own startup, so the HUD says that, calmly, in cyan.
+ */
+export type IntegrityTier = 'ok' | 'calibrating' | 'warn' | 'severe';
+
+export interface IntegrityView {
+  tier: IntegrityTier;
+  heading: string;
+  message: string;
+  /**
+   * What the score block should admit, or null when the numbers can be taken at face value.
+   * Deliberately specific: with no fix the scorer really is not counting, while with a loose
+   * mount it IS counting points off a reading nobody should stand behind. Saying "not scoring"
+   * in both cases would be wrong in one of them.
+   */
+  scoreNote: string | null;
+}
+
+/** How long the calibrator is allowed to be "still working it out" before that is a fault. */
+const CALIBRATION_GRACE_S = 8;
+
+export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
   const { mount, gps, physics, message } = snapshot.integrity;
-  const severe = mount === 'loose' || gps === 'none' || physics === 'implausible';
-  const warn = mount === 'suspect' || gps === 'poor';
-  const pulse = useDerivedValue(() => withRepeat(withTiming(1, { duration: 900 }), -1, true), []);
-  const style = useAnimatedStyle(() => ({ opacity: 0.72 + 0.28 * pulse.value }));
-  if (!severe && !warn) return null;
-  const tone = severe ? colors.red : colors.gold;
-  const heading = mount === 'loose' ? 'LOOSE MOUNT' : mount === 'suspect' ? 'MOUNT SHAKING' : gps === 'none' ? 'GPS LOST' : gps === 'poor' ? 'WEAK GPS' : 'IMPLAUSIBLE READINGS';
+  const settling = !snapshot.forwardResolved && snapshot.elapsedS < CALIBRATION_GRACE_S;
+  if (mount === 'loose') return { tier: 'severe', heading: 'LOOSE MOUNT', message, scoreNote: 'MOUNT LOOSE — THESE POINTS MAY NOT STAND' };
+  if (physics === 'implausible') return { tier: 'severe', heading: 'IMPLAUSIBLE READINGS', message, scoreNote: 'READINGS ARE NOT PHYSICALLY POSSIBLE' };
+  if (gps === 'none' && snapshot.gpsEverGood) return { tier: 'severe', heading: 'GPS LOST', message, scoreNote: 'NO FIX — NOT SCORING' };
+  // The first seconds of every run: no fix yet and the forward axis still unknown. That is the
+  // monitor describing its own startup, not an alarm, and it gets said calmly.
+  if (settling) return { tier: 'calibrating', heading: 'FINDING FORWARD', message, scoreNote: gps === 'none' ? 'WAITING FOR GPS' : null };
+  if (gps === 'none') return { tier: 'warn', heading: 'WAITING FOR GPS', message, scoreNote: 'WAITING FOR GPS' };
+  if (gps === 'poor') return { tier: 'warn', heading: 'WEAK GPS', message, scoreNote: null };
+  if (mount === 'suspect') return { tier: 'warn', heading: 'MOUNT SHAKING', message, scoreNote: null };
+  if (!snapshot.forwardResolved) return { tier: 'warn', heading: 'FINDING FORWARD', message, scoreNote: null };
+  return { tier: 'ok', heading: '', message, scoreNote: null };
+}
+
+/**
+ * The loud half of integrity. Three treatments, deliberately different in FORM and not only in
+ * hue: severe is a filled red slab that pulses, warn is an outlined slab with a plain white
+ * headline, calibrating is the same outline in cyan. Gold appears nowhere here — it is the
+ * colour of an extreme angle and of the multiplier, and the same hue cannot mean "you are a
+ * hero" and "your phone is loose".
+ */
+export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
+  const view = readIntegrity(snapshot);
+  const reduced = useReducedMotion();
+  const severe = view.tier === 'severe';
+  // An element that pulses for ever is exactly what reduce-motion exists to stop.
+  const pulse = useDerivedValue(() => (severe && !reduced ? withRepeat(withTiming(1, { duration: 900 }), -1, true) : 1), [severe, reduced]);
+  const style = useAnimatedStyle(() => ({ opacity: severe ? 0.74 + 0.26 * pulse.value : 1 }));
+  if (view.tier === 'ok') return null;
+  const tone = severe ? colors.red : view.tier === 'calibrating' ? colors.cyan : colors.text;
   return (
-    <Animated.View style={[styles.banner, { borderColor: alpha(tone, 0.85), backgroundColor: alpha(tone, 0.16) }, style]} testID={testID}>
-      <View style={[styles.bannerBar, { backgroundColor: tone }]} />
+    <Animated.View
+      style={[
+        styles.banner,
+        severe
+          ? { borderColor: alpha(colors.red, 0.85), backgroundColor: alpha(colors.red, 0.16) }
+          : { borderColor: colors.line, backgroundColor: 'transparent' },
+        style,
+      ]}
+      testID={testID}>
+      <View style={[styles.bannerBar, { backgroundColor: severe ? colors.red : alpha(tone, 0.7) }]} />
       <View style={styles.bannerText}>
-        <AppText style={[styles.bannerHeading, { color: tone }]}>{heading}</AppText>
-        <AppText variant="small" color={colors.text} numberOfLines={2}>
-          {message}
+        <AppText style={[styles.bannerHeading, { color: tone }]}>{view.heading}</AppText>
+        <AppText variant="small" color={colors.muted} numberOfLines={2}>
+          {view.message}
         </AppText>
       </View>
     </Animated.View>
@@ -160,12 +224,12 @@ const styles = StyleSheet.create({
 
   strip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
   stripLeft: { flexDirection: 'row', alignItems: 'baseline', gap: space[3] },
-  stripRight: { flexDirection: 'row', alignItems: 'center', gap: space[2], flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  stripRight: { flexDirection: 'row', alignItems: 'center', gap: space[2], flexShrink: 1, flexWrap: 'nowrap', justifyContent: 'flex-end' },
   clock: { fontFamily: fontFamilies.display.bold, fontSize: 22, lineHeight: 24, color: colors.text, letterSpacing: 0.4 },
   lap: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] },
   lapValue: { fontFamily: fontFamilies.display.bold, fontSize: 18, lineHeight: 20, color: colors.muted },
   pill: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: space[2], paddingVertical: 2 },
-  pillText: { fontSize: 10, lineHeight: 13 },
+  pillText: { fontSize: 11, lineHeight: 14 },
 
   stripRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: space[3] },
   cell: { flexDirection: 'row', alignItems: 'baseline', gap: space[2], paddingRight: space[3] },

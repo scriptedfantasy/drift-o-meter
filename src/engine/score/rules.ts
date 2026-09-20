@@ -271,12 +271,18 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   maxDtS: 0.1,
   ringKeepS: 120,
 
+  // The top of the scale must not be reachable by anyone who gets sideways once: it used to
+  // pay 100 at 43°, so a 43° driver and a 60° driver were indistinguishable on the component
+  // that carries the most weight. It now keeps climbing to 60° — beyond which 75° is a SPIN,
+  // not a better drift — with the returns flattening above 44°, which is where holding more
+  // angle stops being a bigger drift and starts being a smaller margin.
   angleCurve: [
     [24, 0],
     [29, 30],
     [33, 65],
     [37, 92],
-    [43, 100],
+    [44, 97],
+    [60, 100],
   ],
   speedScoreCurve: [
     [44, 0],

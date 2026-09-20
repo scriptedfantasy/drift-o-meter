@@ -57,14 +57,19 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
 };
 
 /**
- * The scenarios the harness shoots. Grades below are what `scoreSession` actually returns for
- * these inputs (checked in, re-checked by the harness), not what we wish it returned.
+ * The scenarios the harness shoots. The grade each one yields is whatever the scorer says today,
+ * not what the fixture wishes for.
+ *
+ * The showcase scenarios run `source: 'pipeline'` on purpose. Ground truth replays the same lap
+ * plan every lap, so cross-lap spreads come out at exactly 0.0 m and the screen would publish a
+ * simulator artifact as the driver's repeatability. Through the real pipeline the estimator's
+ * noise is in the numbers, which is what a phone would actually produce.
  */
 export const FIXTURES: Record<string, FixtureSpec> = {
   /** S: a hero lap — huge held angles, repeatable corner after corner. */
-  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.3, consistency: 1, blurb: 'Best lap of the night' },
+  hero: { ...BASE, name: 'hero', source: 'pipeline', seed: 3, aggression: 1.3, consistency: 1, blurb: 'Best lap of the night' },
   /** A/B: the default, a good but human run. */
-  good: { ...BASE, name: 'good', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap · grade A' },
+  good: { ...BASE, name: 'good', source: 'pipeline', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap' },
   /** The bad night: no angle, no repeatability, and the rear let go three times. */
   sloppy: { ...BASE, name: 'sloppy', seed: 1, aggression: 0, consistency: 0, spins: 3, blurb: 'Bad night · lost it twice' },
   /** The chain-ending spin: the biggest slide goes past the spin threshold and takes its chain. */

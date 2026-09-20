@@ -29,7 +29,7 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, unscore
   const enter = useEnter(140, run, reduceMotion);
   const inner = width - space[4] * 2 - 2;
   const dir = drift.direction === 1 ? 'RIGHT-HAND' : 'LEFT-HAND';
-  const accent = drift.spun ? colors.red : colors.ember;
+  const accent = drift.spun && !unscored ? colors.red : colors.ember;
 
   return (
     <Animated.View style={enter} testID={testID}>
@@ -83,7 +83,7 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, unscore
           width={inner}
           height={86}
           color={accent}
-          spun={drift.spun}
+          spun={drift.spun && !unscored}
           maxDeg={Math.max(45, Math.ceil((drift.peakDeg * 1.35) / 15) * 15)}
           style={styles.spark}
         />
@@ -91,7 +91,7 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, unscore
           <AppText variant="micro" color="muted">
             {drift.cornerLabel ? drift.cornerLabel.replace(/^the /, '').toUpperCase() : 'ENTRY'}
           </AppText>
-          <AppText variant="micro" color="muted" numeric>
+          <AppText variant="micro" color="muted" numeric style={styles.noCaps}>
             |β| over {drift.durationS.toFixed(1)} s
           </AppText>
         </View>
@@ -100,7 +100,9 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, unscore
           <Stat label="Duration" value={drift.durationS.toFixed(1)} unit="s" size={26} />
           <Stat label="Entry speed" value={String(Math.round(drift.entryKmh))} unit="km/h" color={colors.cyan} size={26} />
           <Stat label="Transitions" value={String(drift.transitions)} color={drift.transitions > 0 ? colors.magenta : colors.muted} size={26} />
-          <Stat label="Exit" value={drift.spun ? 'SPUN' : drift.cleanExit ? 'CLEAN' : 'SNATCHED'} color={drift.spun ? colors.red : drift.cleanExit ? colors.green : colors.gold} size={20} />
+          {unscored ? null : (
+            <Stat label="Exit" value={drift.spun ? 'SPUN' : drift.cleanExit ? 'CLEAN' : 'SNATCHED'} color={drift.spun ? colors.red : drift.cleanExit ? colors.green : colors.ember} size={20} />
+          )}
         </View>
 
         <Button label={unscored ? 'Watch this moment' : 'Replay this drift'} variant="secondary" size="md" onPress={onWatch} style={styles.cta} testID="cta-watch-best" />
@@ -122,4 +124,6 @@ const styles = StyleSheet.create({
   sparkAxis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -space[2] },
   grid: { flexDirection: 'row', justifyContent: 'space-between', gap: space[3], flexWrap: 'wrap' },
   cta: { alignSelf: 'stretch', marginTop: space[1] },
+  // uppercase β is Β — a Latin-looking B; the app's own symbol must survive its own type styles
+  noCaps: { textTransform: 'none' },
 });

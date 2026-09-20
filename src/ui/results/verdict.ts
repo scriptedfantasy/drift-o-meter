@@ -8,6 +8,7 @@
  */
 import { DEFAULT_SCORE_OPTIONS, medianCornerRadiusM, trackFactorFor, type Curve } from '../../engine/score';
 import type { StyleCalloutKind, TrackCorner } from '../../engine/types';
+import { colors } from '../theme';
 import { cornerLabel, cornerTag } from './corners';
 import type { ComponentRow, DriftRow, ResultsBase } from './model';
 import { KIND_NAMES, scoreColor } from './palette';
@@ -98,6 +99,19 @@ function plural(n: number, one: string, many = `${one}s`): string {
 
 function times(n: number): string {
   return n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`;
+}
+
+/**
+ * The integrity monitor writes for a HUD pill: "reason — advice", no full stop, capitals mid-line.
+ * Spliced into a verdict that reads as machine output, so the first dash becomes a sentence break
+ * and the whole thing gets terminated.
+ */
+export function sentencesFromPill(message: string): string {
+  const text = message.trim();
+  if (!text) return '';
+  const i = text.indexOf('—');
+  const out = i > 0 ? `${text.slice(0, i).trim()}. ${text.slice(i + 1).trim()}` : text;
+  return /[.!?]$/.test(out) ? out : `${out}.`;
 }
 
 function capitalize(s: string): string {
@@ -216,7 +230,7 @@ export function verdictFor(model: ResultsBase): string {
   // When the engine refuses to publish the score, its own words ARE the verdict: the screen has
   // nothing to judge but the recording.
   if (!model.trusted) {
-    return model.judged.message || 'Too much of this run could not be believed for its score to mean anything.';
+    return sentencesFromPill(model.judged.message) || 'Too much of this run could not be believed for its score to mean anything.';
   }
 
   // Short of a refusal, a mount that never calibrated still comes first: praising or blaming the
@@ -263,7 +277,8 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
   const stretched = tf.angle !== 1 || tf.speed !== 1 ? ` This track's corners (median radius ${Math.round(tf.medianRadiusM)} m) stretch the scale ×${tf.angle.toFixed(2)}.` : '';
   const angleText = empty
     ? 'No drift, no angle: the component starts at zero and stays there.'
-    : `Duration-weighted held peak ${round(weightedHeldPeak(rows))}°; the best hold was ${round(bestHold?.heldPeakDeg ?? 0)}° on drift #${bestHold?.index ?? 1}${bestHold?.corner ? ` at ${cornerLabel(bestHold.corner)}` : ''}. The scale pays ${curveText(O.angleCurve, '°', tf.angle)}.${stretched}`;
+    : `Duration-weighted held peak ${round(weightedHeldPeak(rows))}°; the best hold was ${round(bestHold?.heldPeakDeg ?? 0)}° on drift #${bestHold?.index ?? 1}${bestHold?.corner ? ` at ${cornerLabel(bestHold.corner)}` : ''}.`;
+  const angleScaleText = `The scale pays ${curveText(O.angleCurve, '°', tf.angle)}.${stretched}`;
 
   // ---- consistency
   const worst = worstCorner(model);
@@ -275,10 +290,11 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
     const vals = worst.perLap.map((v, i) => `lap ${i + 1} ${Number.isFinite(v) ? `${round(v)}°` : 'skipped'}`);
     consText = `${Math.round(O.crossLapWeight * 100)}% cross-lap, ${Math.round((1 - O.crossLapWeight) * 100)}% steadiness. Your least repeatable corner was ${cornerTag(worst.corner)} — ${vals.join(', ')}, entry moving ${round(worst.spreadM, 1)} m. Cross-lap ${round(b.crossLapConsistency, 0)} · steadiness ${round(b.steadiness, 0)}.`;
   } else {
-    const best = O.jitterCurve[0];
-    const zero = O.jitterCurve[O.jitterCurve.length - 1];
-    consText = `One lap, so cross-lap consistency could not be measured and counts as neutral; the rest is steadiness: ±${round(jitter, 2)}° RMS of wobble around the angle you were aiming for (${best[0]}° scores ${best[1]}, ${zero[0]}° scores ${zero[1]}).`;
+    consText = `One lap, so cross-lap consistency could not be measured and counts as neutral; the rest is steadiness: ±${round(jitter, 2)}° RMS of wobble around the angle you were aiming for.`;
   }
+  const jitterBest = O.jitterCurve[0];
+  const jitterZero = O.jitterCurve[O.jitterCurve.length - 1];
+  const consScaleText = `${Math.round(O.crossLapWeight * 100)}% cross-lap, ${Math.round((1 - O.crossLapWeight) * 100)}% steadiness; ±${jitterBest[0]}° of wobble scores ${jitterBest[1]}, ±${jitterZero[0]}° scores ${jitterZero[1]}.`;
 
   // ---- quality
   const frac = timeAtAngleFraction(model);
@@ -291,7 +307,8 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
   const fastest = rows.reduce<DriftRow | null>((m, r) => (!m || r.entryKmh > m.entryKmh ? r : m), null);
   const speedText = empty
     ? 'Speed is measured while sideways, and you never were.'
-    : `Mean ${round(meanDriftKmh(model))} km/h while sideways, fastest entry ${round(fastest?.entryKmh ?? 0)} km/h on drift #${fastest?.index ?? 1}. The scale pays ${curveText(O.speedScoreCurve, ' km/h', tf.speed)}.`;
+    : `Mean ${round(meanDriftKmh(model))} km/h while sideways, fastest entry ${round(fastest?.entryKmh ?? 0)} km/h on drift #${fastest?.index ?? 1}.`;
+  const speedScaleText = `The scale pays ${curveText(O.speedScoreCurve, ' km/h', tf.speed)}.`;
 
   // ---- style
   const kinds = new Set<StyleCalloutKind>();
@@ -302,11 +319,40 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
     ? 'No callouts fired, so there is no style score to give.'
     : `${kinds.size} different callouts fired (6 kinds is full marks), ${round(perDrift, 1)} transitions per slide, ${Math.round(model.calloutPoints).toLocaleString('en-US')} bonus points.${missing.length ? ` Never earned: ${missing.join(', ')}.` : ''}`;
 
+  // On a run the engine would not publish, the rubric is not the point and quoting it under a
+  // "NOT PUBLISHED" heading is noise: the scale sentences are dropped entirely, and so is every
+  // sentence that judges rather than describes — a 0–100 sub-score, a clean-exit count or a spin
+  // tally is a verdict drawn from the very angles the monitor refused to believe.
+  const scaleOf = (text: string) => (model.trusted ? text : undefined);
+  if (!model.trusted) {
+    const worstUn = worst ? `${cornerTag(worst.corner)} came out ${worst.perLap.map((v) => (Number.isFinite(v) ? `${round(v)}°` : 'not at all')).join(' then ')}` : 'the corners came out differently lap to lap';
+    return [
+      { key: 'angle', label: 'Angle', score: NaN, weight: w.angle, color: colors.muted, explain: angleText },
+      {
+        key: 'consistency',
+        label: 'Consistency',
+        score: NaN,
+        weight: w.consistency,
+        color: colors.muted,
+        explain: `${capitalize(worstUn)} — though with the mount unbelieved, that difference may be the phone rather than the driving.`,
+      },
+      {
+        key: 'quality',
+        label: 'Quality',
+        score: NaN,
+        weight: w.quality,
+        color: colors.muted,
+        explain: `${Math.round(frac * 100)}% of the ${mmss(model.stats.driftTimeS)} of recorded sliding was past ${O.qualityAngleDeg}°. Exits and spins are not counted here.`,
+      },
+      { key: 'speed', label: 'Speed', score: NaN, weight: w.speed, color: colors.muted, explain: speedText },
+      { key: 'style', label: 'Style', score: NaN, weight: w.style, color: colors.muted, explain: 'Callouts are awards. A run the engine would not publish does not earn any.' },
+    ];
+  }
   return [
-    { key: 'angle', label: 'Angle', score: b.angle, weight: w.angle, color: scoreColor(b.angle), explain: angleText },
-    { key: 'consistency', label: 'Consistency', score: b.consistency, weight: w.consistency, color: scoreColor(b.consistency), explain: consText },
-    { key: 'quality', label: 'Quality', score: b.quality, weight: w.quality, color: scoreColor(b.quality), explain: qualText },
-    { key: 'speed', label: 'Speed', score: b.speed, weight: w.speed, color: scoreColor(b.speed), explain: speedText },
-    { key: 'style', label: 'Style', score: b.style, weight: w.style, color: scoreColor(b.style), explain: styleText },
+    { key: 'angle', label: 'Angle', score: b.angle, weight: w.angle, color: scoreColor(b.angle), explain: angleText, scale: scaleOf(angleScaleText) },
+    { key: 'consistency', label: 'Consistency', score: b.consistency, weight: w.consistency, color: scoreColor(b.consistency), explain: consText, scale: scaleOf(consScaleText) },
+    { key: 'quality', label: 'Quality', score: b.quality, weight: w.quality, color: scoreColor(b.quality), explain: qualText, scale: scaleOf(`Quality is ${Math.round((O.qualityWeights.steadiness / (O.qualityWeights.steadiness + O.qualityWeights.timeAtAngle)) * 100)}% steadiness and the rest time past ${O.qualityAngleDeg}°, then cut by scrappy exits and spins.`) },
+    { key: 'speed', label: 'Speed', score: b.speed, weight: w.speed, color: scoreColor(b.speed), explain: speedText, scale: scaleOf(speedScaleText) },
+    { key: 'style', label: 'Style', score: b.style, weight: w.style, color: scoreColor(b.style), explain: styleText, scale: scaleOf(`Variety of callout kinds, transitions per slide, the longest chain and total time sideways.`) },
   ];
 }

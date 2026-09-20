@@ -2,7 +2,7 @@
  * scoreSession — replays the chain rules over a whole run and aggregates the
  * 0–100 components + grade. See index.ts for the rule set.
  */
-import type { DriftEvent, SessionScore, SlipState, StyleCalloutKind, TrackCorner, TrackModel } from '../types';
+import type { DriftEvent, SessionIntegrity, SessionScore, SlipState, StyleCalloutKind, TrackCorner, TrackModel } from '../types';
 import { clamp, radToDeg } from '../types';
 import { scoreDrift, type ScoredDrift } from './drift';
 import {
@@ -18,25 +18,6 @@ import {
   type ScoreOptions,
   type TrackFactor,
 } from './rules';
-
-/**
- * How much of the run the integrity monitor was willing to believe, and whether the score may
- * be published at all. The monitor has always known this; nothing used to ask it, so a phone
- * held in the hand scored 40 % MORE than the same drive with the phone bolted down.
- */
-export interface SessionIntegrity {
-  mount: 'rigid' | 'suspect' | 'loose';
-  physics: 'ok' | 'implausible';
-  gps: 'good' | 'poor' | 'none';
-  /** Fraction (0..1) of drifting time the monitor refused to believe. */
-  implausibleDriftFraction: number;
-  /** Drifting seconds that earned nothing because they were not believed. */
-  suppressedS: number;
-  /** False when too much of the drifting time was not believed to publish a total or a grade. */
-  scoreTrusted: boolean;
-  /** Driver-facing reason, '' when the run is trusted. */
-  message: string;
-}
 
 /** Per-sample side channel `scoreSession` needs to reproduce what the live run scored. */
 export interface SessionContext {
@@ -67,6 +48,12 @@ export interface SessionBreakdown extends SessionScore {
   cleanLaps: number;
   /** Total drifting seconds. */
   driftTimeS: number;
+  /**
+   * Drifts the ANGLE component was measured over: the ones that did not end in a spin. Lower
+   * than `drifts` means a screen should say so ("8 of 11 slides — the three you spun do not
+   * count") rather than leaving the number unexplained.
+   */
+  angleDrifts: number;
   /** What the integrity monitor made of the run, and whether the score may be published. */
   integrity: SessionIntegrity;
   /** How the track's own geometry scaled the angle and speed expectations. */
@@ -432,8 +419,14 @@ export function scoreSession(
 
   // ---- components ---------------------------------------------------------------------
   const w = (d: ScoredDrift) => Math.max(o.minWeightS, d.stats.durationS);
-  const peakDeg = wmean(scored.map((d) => ({ w: w(d), v: d.stats.heldPeakDeg })));
-  const angle = n ? angleScore(peakDeg, o, tf) : 0;
+  // ANGLE counts only the angle the driver CONTROLLED. A spin is angle the car took, not angle
+  // the driver held, and crediting it paid for the spin twice over: the sloppy fixture scored
+  // 100/100 on the heaviest component — more than the showcase run's 96 — off three slides it
+  // had lost, while the eight it actually drove averaged 17°, which is worth nothing. A run
+  // whose every drift ended in a spin held no angle it controlled, so it scores 0 here.
+  const controlled = scored.filter((d) => !d.spun);
+  const peakDeg = wmean(controlled.map((d) => ({ w: w(d), v: d.stats.heldPeakDeg })));
+  const angle = controlled.length ? angleScore(peakDeg, o, tf) : 0;
 
   // Steadiness is the DURATION-weighted mean of the per-drift steadiness, over EVERY drift.
   // Nothing is dropped: a drift whose angle never settled has no plateau, and "never settled"
@@ -554,6 +547,7 @@ export function scoreSession(
     qualityParts,
     styleParts,
     drifts: n,
+    angleDrifts: controlled.length,
     spins,
     transitions,
     cleanLaps,

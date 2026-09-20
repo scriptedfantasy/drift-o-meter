@@ -51,13 +51,16 @@ export function GradeBadge({ state, size, style, testID }: GradeBadgeProps) {
     return <View style={[styles.pending, { width: size * 0.8, height: size * 0.8, borderRadius: radii.sm }, style]} testID={testID} />;
   }
   const color = gradeColors[state.grade] ?? colors.muted;
+  // No `numberOfLines`: on web that clips the element, and the letter's glow with it.
   return (
-    <View style={[styles.box, { width: size * 0.92 }, style]} testID={testID}>
+    <View style={[styles.box, { width: size * 1.06 }, style]} testID={testID}>
       <AppText
         variant="hero"
         color={color}
-        numberOfLines={1}
-        style={[styles.letter, { fontSize: size, lineHeight: size * 0.96, textShadowColor: color, textShadowRadius: size * 0.28 }]}>
+        style={[
+          styles.letter,
+          { fontSize: size, lineHeight: size * 1.02, letterSpacing: -size * 0.05, textShadowColor: color, textShadowRadius: size * 0.26 },
+        ]}>
         {state.grade}
       </AppText>
     </View>
@@ -66,7 +69,7 @@ export function GradeBadge({ state, size, style, testID }: GradeBadgeProps) {
 
 const styles = StyleSheet.create({
   box: { alignItems: 'center', justifyContent: 'center' },
-  letter: { letterSpacing: -4, textShadowOffset: { width: 0, height: 0 }, includeFontPadding: false, textAlign: 'center' },
+  letter: { textShadowOffset: { width: 0, height: 0 }, includeFontPadding: false, textAlign: 'center' },
   plate: { borderWidth: 2, borderColor: colors.red, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(colors.red, 0.08) },
   word: { letterSpacing: -0.5, textAlign: 'center' },
   pending: { backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line, marginVertical: space[1] },

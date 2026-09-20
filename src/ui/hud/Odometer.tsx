@@ -7,7 +7,8 @@
  *    five-digit score has at most one column in motion at any instant, never five.
  *  2. Each window is masked by a short vertical fade at the top and bottom, so a glyph leaving
  *    the window dissolves instead of being sliced off. A partial digit then reads as motion,
- *    not as a broken character.
+ *    not as a broken character. Leading zeros are hidden, not dimmed, and the thousands comma
+ *    is part of the layout, so the score reads like the figures printed beside it.
  *  3. The roll itself is a 260 ms linear tween, re-aimed whenever the score changes. While the
  *    points pour in that chains into one continuous roll; the moment the score stops, the last
  *    tween finishes and every column parks on a whole digit. (Exponential smoothing in a frame
@@ -15,7 +16,7 @@
  *    frozen mid-digit.)
  */
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useMemo } from 'react';
+import { Fragment, memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedReaction, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 
@@ -60,9 +61,24 @@ function OdometerImpl({ value, columns = 6, size, color = colors.ember, backgrou
   return (
     <View style={[styles.row, { height: rowH }]} testID={testID}>
       {places.map((place) => (
-        <Column key={place} place={place} display={display} rowH={rowH} colW={colW} size={size} color={color} background={background} />
+        <Fragment key={place}>
+          <Column place={place} display={display} rowH={rowH} colW={colW} size={size} color={color} background={background} />
+          {place === 3 ? <Separator display={display} rowH={rowH} size={size} color={color} /> : null}
+        </Fragment>
       ))}
     </View>
+  );
+}
+
+/** The thousands comma. Present in the layout at all times, invisible below 1 000. */
+function Separator({ display, rowH, size, color }: { display: SharedValue<number>; rowH: number; size: number; color: string }) {
+  const style = useAnimatedStyle(() => ({ opacity: Math.max(0, display.value) >= 1000 ? 1 : 0 }));
+  return (
+    <Animated.View style={[{ height: rowH }, style]}>
+      <AppText numeric color={color} style={[styles.digit, { height: rowH, lineHeight: rowH, fontSize: size, width: Math.round(size * 0.24) }]}>
+        ,
+      </AppText>
+    </Animated.View>
   );
 }
 
@@ -90,25 +106,31 @@ function Column({
     const p = pow === 1 ? q % 10 : (Math.floor(q) % 10) + Math.max(0, (q % 1) - 0.96) / 0.04;
     return { transform: [{ translateY: -p * rowH }] };
   });
-  const fade = useAnimatedStyle(() => ({ opacity: Math.max(0, display.value) >= pow || pow === 1 ? 1 : 0.16 }));
-  const maskH = Math.max(6, Math.round(rowH * 0.2));
+  // Leading zeros are hidden outright rather than dimmed: at 16 % they measured 1.3:1 against
+  // the background, which reads as a smudge next to a digit rather than as a zero.
+  const fade = useAnimatedStyle(() => ({ opacity: Math.max(0, display.value) >= pow || pow === 1 ? 1 : 0 }));
+  const maskH = Math.max(5, Math.round(rowH * 0.16));
   const solid = background;
   const clear = alpha(background, 0);
 
-  // The clipping window is a PLAIN view: Reanimated rewrites the style attribute of the views it
-  // animates, and an inline `overflow: hidden` there does not survive on web.
+  // Two nested views on purpose: the OUTER one is animated (so a hidden leading zero takes its
+  // masks with it instead of leaving a dark block on the background) and the INNER one is plain,
+  // because Reanimated rewrites the style attribute of the views it animates and an inline
+  // `overflow: hidden` there does not survive on web.
   return (
-    <View style={[styles.window, { width: colW, height: rowH }]}>
-      <Animated.View style={[styles.strip, strip, fade]}>
-        {DIGITS.map((d, i) => (
-          <AppText key={i} numeric color={color} style={[styles.digit, { height: rowH, lineHeight: rowH, fontSize: size, width: colW }]}>
-            {d}
-          </AppText>
-        ))}
-      </Animated.View>
-      <LinearGradient colors={[solid, clear]} style={[styles.mask, { top: 0, height: maskH }]} pointerEvents="none" />
-      <LinearGradient colors={[clear, solid]} style={[styles.mask, { bottom: 0, height: maskH }]} pointerEvents="none" />
-    </View>
+    <Animated.View style={[{ width: colW, height: rowH }, fade]}>
+      <View style={[styles.window, { width: colW, height: rowH }]}>
+        <Animated.View style={[styles.strip, strip]}>
+          {DIGITS.map((d, i) => (
+            <AppText key={i} numeric color={color} style={[styles.digit, { height: rowH, lineHeight: rowH, fontSize: size, width: colW }]}>
+              {d}
+            </AppText>
+          ))}
+        </Animated.View>
+        <LinearGradient colors={[solid, clear]} style={[styles.mask, { top: 0, height: maskH }]} pointerEvents="none" />
+        <LinearGradient colors={[clear, solid]} style={[styles.mask, { bottom: 0, height: maskH }]} pointerEvents="none" />
+      </View>
+    </Animated.View>
   );
 }
 

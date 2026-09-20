@@ -30,13 +30,15 @@ export interface MountDialProps {
   threshold: number;
   /** A second, softer mark: above it the results screen stops qualifying the score. */
   sharp?: number;
+  /** Arc colour, taken from the same band the words use so the two never disagree. */
+  tone?: 'ember' | 'green' | 'red' | 'cyan';
   /** The vertical has settled — the horizon locks and brightens. */
   settled?: boolean;
   /** The forward axis is resolved: the dial gains its fore/aft axis. */
   resolved?: boolean;
   /** The phone is moving against the car. Everything goes red. */
   loose?: boolean;
-  /** The calibration clears the bar. */
+  /** The calibration clears the bar: the judge's tick lights up. */
   ready?: boolean;
   /** No readings at all yet. */
   idle?: boolean;
@@ -55,6 +57,7 @@ export default function MountDial({
   quality,
   threshold,
   sharp = 0.75,
+  tone = 'ember',
   settled = false,
   resolved = false,
   loose = false,
@@ -67,7 +70,7 @@ export default function MountDial({
   const arcR = c - stroke * 2;
   const faceR = arcR - stroke * 2.1;
   const pct = clamp01(quality);
-  const arcColor = loose ? colors.red : ready ? colors.green : colors.ember;
+  const arcColor = colors[tone];
   const faceColor = loose ? colors.red : settled ? colors.cyan : colors.muted;
 
   const rect = useMemo(() => ({ x: c - arcR, y: c - arcR, width: 2 * arcR, height: 2 * arcR }), [c, arcR]);
@@ -91,20 +94,10 @@ export default function MountDial({
     return b.detach();
   }, [c, arcR, stroke]);
 
-  /** The bar the engine uses, and the point past which nothing is qualified. */
-  const marks = useMemo(() => {
-    const b = Skia.PathBuilder.Make();
-    for (const [f, len] of [
-      [clamp01(threshold), 1.9],
-      [clamp01(sharp), 1.2],
-    ] as const) {
-      const a = (START_DEG + SWEEP_DEG * f) * DEG;
-      const inner = arcR - stroke * 0.62;
-      const outer = arcR + stroke * (len - 0.62);
-      b.moveTo(c + Math.cos(a) * inner, c + Math.sin(a) * inner).lineTo(c + Math.cos(a) * outer, c + Math.sin(a) * outer);
-    }
-    return b.detach();
-  }, [c, arcR, stroke, threshold, sharp]);
+  /** The bar the engine uses: one hard tick straight through the arc. */
+  const barMark = useMemo(() => mark(c, arcR, stroke, clamp01(threshold), 2.0), [c, arcR, stroke, threshold]);
+  /** The softer one: above it the results screen stops qualifying the score. */
+  const sharpMark = useMemo(() => mark(c, arcR, stroke, clamp01(sharp), 1.25), [c, arcR, stroke, sharp]);
 
   const face = useMemo(() => Skia.PathBuilder.Make().addCircle(c, c, faceR).detach(), [c, faceR]);
 
@@ -126,13 +119,14 @@ export default function MountDial({
     return b.detach();
   }, [c, faceR]);
 
-  /** The gravity arrow: always straight down, because that is where down is. */
+  /** The gravity arrow: always straight down, because that is where down is. Sits clear of the
+   * phone, in the bottom of the face, so it annotates the glyph instead of crossing it. */
   const arrow = useMemo(() => {
     const b = Skia.PathBuilder.Make();
-    const top = c + faceR * 0.42;
-    const tip = c + faceR * 0.86;
+    const top = c + faceR * 0.62;
+    const tip = c + faceR * 0.9;
     b.moveTo(c, top).lineTo(c, tip);
-    b.moveTo(c - faceR * 0.09, tip - faceR * 0.13).lineTo(c, tip).lineTo(c + faceR * 0.09, tip - faceR * 0.13);
+    b.moveTo(c - faceR * 0.07, tip - faceR * 0.1).lineTo(c, tip).lineTo(c + faceR * 0.07, tip - faceR * 0.1);
     return b.detach();
   }, [c, faceR]);
 
@@ -144,8 +138,8 @@ export default function MountDial({
     return b.detach();
   }, [c, faceR]);
 
-  const phoneW = faceR * 0.6;
-  const phoneH = faceR * 1.0;
+  const phoneW = faceR * 0.52;
+  const phoneH = faceR * 0.9;
   const squash = Math.max(0.06, Math.cos(clampDeg(reclineDeg) * DEG));
   const roll = clampDeg(rollDeg) * DEG;
   const body = useMemo(
@@ -165,12 +159,13 @@ export default function MountDial({
       <Path path={arc} color={arcColor} style="stroke" strokeWidth={stroke} strokeCap="round" />
       <Path path={arc} color={rgba('#FFFFFF', 0.3)} style="stroke" strokeWidth={stroke * 0.26} strokeCap="round" />
       <Path path={ticks} color={rgba(colors.text, 0.28)} style="stroke" strokeWidth={1.4} />
-      <Path path={marks} color={ready ? colors.green : colors.text} style="stroke" strokeWidth={2.4} strokeCap="square" />
+      <Path path={sharpMark} color={rgba(colors.text, 0.3)} style="stroke" strokeWidth={2} strokeCap="square" />
+      <Path path={barMark} color={ready ? colors.green : colors.text} style="stroke" strokeWidth={2.6} strokeCap="square" />
 
       {/* the dial face: the world, with the phone hanging in it */}
       <Circle cx={c} cy={c} r={faceR} color={colors.bg1} />
       <Group clip={face}>
-        <Path path={ground} color={rgba(faceColor, settled ? 0.1 : 0.05)} />
+        <Path path={ground} color={rgba(faceColor, settled ? 0.16 : 0.07)} />
         <Path path={horizon} color={rgba(faceColor, settled ? 0.75 : 0.32)} style="stroke" strokeWidth={1.6} />
         {resolved ? <Path path={foreAft} color={rgba(colors.ember, 0.5)} style="stroke" strokeWidth={1.4} /> : null}
       </Group>
@@ -202,6 +197,17 @@ export default function MountDial({
       <Path path={arrow} color={rgba(colors.text, 0.42)} style="stroke" strokeWidth={1.8} strokeCap="round" strokeJoin="round" />
     </Canvas>
   );
+}
+
+/** One radial tick across the arc at `f` (0..1 of the sweep). */
+function mark(c: number, arcR: number, stroke: number, f: number, len: number) {
+  const a = (START_DEG + SWEEP_DEG * f) * DEG;
+  const inner = arcR - stroke * 0.62;
+  const outer = arcR + stroke * (len - 0.62);
+  return Skia.PathBuilder.Make()
+    .moveTo(c + Math.cos(a) * inner, c + Math.sin(a) * inner)
+    .lineTo(c + Math.cos(a) * outer, c + Math.sin(a) * outer)
+    .detach();
 }
 
 function clamp01(v: number): number {

@@ -10,7 +10,8 @@ import { alpha, colors, radii, space } from '../theme';
 import { useEnter } from './entrance';
 import type { IntegrityNote, NoteLevel } from './model';
 
-const LEVEL_COLOR: Record<NoteLevel, string> = { ok: colors.green, warn: colors.gold, bad: colors.red };
+// gold is the S grade's colour and nothing else: a warning is ember, a failure is red
+const LEVEL_COLOR: Record<NoteLevel, string> = { ok: colors.green, warn: colors.ember, bad: colors.red };
 const LEVEL_WORD: Record<NoteLevel, string> = { ok: 'CLEAN', warn: 'CHECK', bad: 'WARNING' };
 
 export function IntegrityPanel({ notes, run, reduceMotion = false, testID }: { notes: IntegrityNote[]; run: boolean; reduceMotion?: boolean; testID?: string }) {

@@ -55,8 +55,10 @@ export interface ComponentRow {
   /** Weight in the combined score. */
   weight: number;
   color: string;
-  /** One specific sentence about this session. */
+  /** One specific sentence about this session — the judgement, not the rubric. */
   explain: string;
+  /** How the scorer arrives at it. Kept behind a disclosure, and absent on an unpublished run. */
+  scale?: string;
 }
 
 export type NoteLevel = 'ok' | 'warn' | 'bad';

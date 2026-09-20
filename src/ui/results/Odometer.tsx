@@ -7,15 +7,15 @@
  * columns caught mid-glyph at five different offsets is not a number, it is confetti. The count
  * is the moment the driver is watching; it has to stay readable the whole way up.
  *
- * The turning columns get a short gradient cap top and bottom, so a half-glyph reads as motion
- * rather than as a character sliced in half.
+ * There is deliberately no gradient cap over the turning columns: painting the page background
+ * across the top and bottom of each digit leaves a hard-edged rectangle wherever the page behind
+ * is not flat (the hero wash), which is worse than the half-glyph it was hiding.
  */
 import { useEffect } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming, type SharedValue } from 'react-native-reanimated';
 
-import { alpha, colors, fontFamilies } from '../theme';
+import { colors, fontFamilies } from '../theme';
 
 export interface OdometerProps {
   /** Final value. */
@@ -125,7 +125,6 @@ function Digit({
     return { transform: [{ translateY: -(digit + f) * digitH }] };
   });
   const dim = useAnimatedStyle(() => ({ opacity: v.value >= scale || place === 0 ? 1 : 0.2 }));
-  const capH = Math.max(4, Math.round(digitH * 0.16));
 
   return (
     <Animated.View style={[styles.window, { height: digitH, width: digitW }, dim]}>
@@ -136,20 +135,6 @@ function Digit({
           </Text>
         ))}
       </Animated.View>
-      {rolls ? (
-        <>
-          <LinearGradient
-            colors={[alpha(colors.bg0, 0.92), alpha(colors.bg0, 0)]}
-            style={[styles.cap, { top: 0, height: capH }]}
-            pointerEvents="none"
-          />
-          <LinearGradient
-            colors={[alpha(colors.bg0, 0), alpha(colors.bg0, 0.92)]}
-            style={[styles.cap, { bottom: 0, height: capH }]}
-            pointerEvents="none"
-          />
-        </>
-      ) : null}
     </Animated.View>
   );
 }
@@ -164,7 +149,6 @@ const numberStyle: TextStyle = {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden' },
   window: { overflow: 'hidden' },
-  cap: { position: 'absolute', left: 0, right: 0 },
   digit: { ...numberStyle },
   comma: { ...numberStyle, textAlign: 'left' },
 });

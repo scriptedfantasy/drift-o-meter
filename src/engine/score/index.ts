@@ -99,7 +99,7 @@ export type { LiveTick, LiveDriftInfo } from './live';
 export { scoreDrift, driftSamples, driftSampleRange } from './drift';
 export type { ScoredDrift, DriftContext, DriftStats } from './drift';
 export { scoreSession, replayChains, crossLapConsistency, cornerPeaksPerLap, cornerStatsPerLap, cornerFitResidualM, medianCornerRadiusM, medianCornerGapM } from './session';
-export type { SessionBreakdown, ChainSummary, LapCornerStats, SessionIntegrity, SessionContext } from './session';
+export type { SessionBreakdown, ChainSummary, LapCornerStats, SessionContext } from './session';
 export {
   DEFAULT_SCORE_OPTIONS,
   resolveOptions,

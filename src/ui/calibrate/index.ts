@@ -13,6 +13,8 @@ export {
   isFlat,
   isSettled,
   lightsOf,
+  mountVerdict,
+  MOUNT_WARMUP_S,
   orientationOf,
   phaseOf,
   qualityBand,

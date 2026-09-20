@@ -21,6 +21,7 @@ import {
   lapAt,
   liveSmoke,
   SEVERITY_EDGES,
+  screenToWorld,
   smokeAt,
   worldToScreen,
   type ActiveEvent,
@@ -41,10 +42,10 @@ import type { SceneResources } from './resources';
 import type { ReplayView } from './source';
 
 export interface SceneFonts {
-  /** Barlow Condensed 800, upright — angles and callouts. */
+  /** Barlow Condensed 800, upright — the hero angle and the callouts. */
   hero: SkFont | null;
-  heroDeg: SkFont | null;
   callout: SkFont | null;
+  /** The slip readout beside the arc, and the big peak labels. */
   mid: SkFont | null;
   peak: SkFont | null;
   grade: SkFont | null;
@@ -52,7 +53,6 @@ export interface SceneFonts {
   value: SkFont | null;
   /** Barlow Condensed 700 — every uppercase label. */
   label: SkFont | null;
-  chip: SkFont | null;
   /** Orbitron 700 — the clock, so a time never reads as a score. */
   clock: SkFont | null;
 }
@@ -624,4 +624,627 @@ function drawCar(canvas: SkCanvas, f: Frame): void {
   if (p.intensity > 0.25) canvas.drawPath(f.geo.car.body, strokePaint(f, col, 0.18 + 0.22 * p.intensity, 0.5 + 0.5 * p.intensity));
   canvas.restore();
   canvas.restore();
+}
+
+// ---------------------------------------------------------------- screen space
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Rejects labels that would collide with one already placed (priority order). */
+class LabelCollider {
+  private boxes: Box[] = [];
+  constructor(private bounds: Box) {}
+  reserve(b: Box): void {
+    this.boxes.push(b);
+  }
+  place(x: number, y: number, w: number, h: number, anchor: Anchor = 'start'): boolean {
+    const x0 = anchor === 'start' ? x : anchor === 'end' ? x - w : x - w / 2;
+    const box = { x0: x0 - 2, y0: y - h, x1: x0 + w + 2, y1: y + 3 };
+    if (box.x0 < this.bounds.x0 || box.x1 > this.bounds.x1 || box.y0 < this.bounds.y0 || box.y1 > this.bounds.y1) return false;
+    for (const b of this.boxes) if (box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0) return false;
+    this.boxes.push(box);
+    return true;
+  }
+}
+
+/** Motion streaks along the travel direction at the frame edges — speed you can see. */
+function drawStreaks(canvas: SkCanvas, f: Frame): void {
+  if (f.overview || f.ui.reduceMotion) return;
+  const k = clamp((f.pose.speed - 11) / 19, 0, 1);
+  if (k <= 0.02) return;
+  const st = f.layout.stage;
+  const paint = strokePaint(f, WHITE, 0.7 + 0.8 * k, 0.05 + 0.13 * k);
+  let h = 987654321;
+  for (let i = 0; i < 14; i++) {
+    h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
+    const side = i % 2 === 0 ? 1 : -1;
+    const edge = ((h >>> 9) % 1000) / 1000;
+    const x = side > 0 ? f.layout.w * (0.02 + 0.2 * edge) : f.layout.w * (0.78 + 0.2 * edge);
+    h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
+    const y = st.y + (((h >>> 9) % 1000) / 1000) * st.h;
+    const len = (22 + 70 * k) * (0.6 + 0.8 * (((h >>> 3) % 100) / 100));
+    canvas.drawLine(x, y, x, y + len, paint);
+  }
+}
+
+/**
+ * Two-line ghost readout placed wherever it fits. The gap is load-bearing, so if no candidate is
+ * free it is drawn at the last one anyway rather than leaving a mute chevron.
+ */
+function drawGhostLabel(canvas: SkCanvas, f: Frame, col: LabelCollider, x: number, y: number, value: string, positive: boolean, r: number, away: { x: number; y: number } | null): void {
+  const font = f.fonts.label;
+  if (!font) return;
+  const w = Math.max(58, measure(f, font, value, 0.4) + 6);
+  const d = away ? Math.hypot(away.x, away.y) : 0;
+  const ux = d > 1e-3 ? away!.x / d : 1;
+  const uy = d > 1e-3 ? away!.y / d : 0;
+  const push = r + 26;
+  const cands: Array<[number, number, Anchor]> = [
+    [ux * push, uy * push + 6, ux < 0 ? 'end' : 'start'],
+    [r + 12, 6, 'start'],
+    [-(r + 12), 6, 'end'],
+    [0, -(r + 16), 'middle'],
+    [0, r + 38, 'middle'],
+    [r + 12, -(r + 16), 'start'],
+    [-(r + 12), r + 38, 'end'],
+  ];
+  let pick = cands[cands.length - 1];
+  for (const c of cands) {
+    if (col.place(x + c[0], y + c[1], w, 28, c[2])) {
+      pick = c;
+      break;
+    }
+  }
+  const [dx, dy, anchor] = pick;
+  drawStr(canvas, f, font, 'BEST LAP', x + dx, y + dy - 14, { color: colors.green, tracking: 1.2, anchor, outline: BG, outlineW: 3.5 });
+  drawStr(canvas, f, font, value, x + dx, y + dy, { color: positive ? colors.green : MUTED, anchor, outline: BG, outlineW: 3.5 });
+}
+
+function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
+  const st = f.layout.stage;
+  const col = new LabelCollider({ x0: f.layout.insets.left + 14, y0: st.y + 10, x1: f.layout.w - f.layout.insets.right - 14, y1: st.y + st.h - 14 });
+  const carS = toS(f, f.pose.x, f.pose.y);
+  col.reserve({ x0: carS.x - 46, y0: carS.y - 52, x1: carS.x + 46, y1: carS.y + 40 });
+
+  // the slip readout, beside the arc
+  const p = f.pose;
+  if (Math.abs(p.beta) > 0.05 && !f.overview) {
+    const mid = p.heading + 0.5 * wrapAngle(p.course - p.heading);
+    const R = 6.4 * carScale(f);
+    const lp = toS(f, p.x + Math.cos(mid) * R, p.y + Math.sin(mid) * R);
+    drawStr(canvas, f, f.fonts.mid, `${Math.round(Math.abs(deg(p.beta)))}°`, lp.x, lp.y + 5, { color: heatColor(p.beta), anchor: 'middle', outline: BG, outlineW: 3.5 });
+  }
+
+  // markers, highest priority first, de-conflicted in screen space
+  const ms = [...visibleMarkers(f)].sort((a, b) => b.priority - a.priority || b.t - a.t);
+  for (const m of ms) {
+    if (!inView(f, m.x, m.y)) continue;
+    const sp = toS(f, m.x, m.y);
+    let label = '';
+    let fill: string = WHITE;
+    let font = f.fonts.label;
+    let size: number = TYPE.label;
+    if (m.kind === 'transition' && !f.overview) {
+      label = m.label;
+      fill = colors.magenta;
+    } else if (m.kind === 'drift-peak') {
+      const sev = severityWeight(m.severity ?? 'none');
+      if (f.overview && sev < 0.45) continue;
+      label = m.label;
+      fill = heatColor(m.peakAngle ?? 0);
+      if (sev >= 0.75) {
+        font = f.fonts.peak;
+        size = 16;
+      }
+    } else if (m.kind === 'drift-end' && !f.overview) {
+      // a points award is a claim: an untrusted recording does not get to make it
+      if (f.noScore) continue;
+      label = m.label;
+      fill = MUTED;
+    } else if (m.kind === 'lap') {
+      label = m.label;
+      fill = MUTED;
+    } else continue;
+    if (!font || !label) continue;
+    const tracking = m.kind === 'transition' ? 1.2 : 0;
+    const w = measure(f, font, label, tracking);
+    for (const [dx, dy, anchor] of [
+      [11, 4, 'start'],
+      [-11, 4, 'end'],
+      [0, -12, 'middle'],
+      [0, 18, 'middle'],
+    ] as Array<[number, number, Anchor]>) {
+      if (col.place(sp.x + dx, sp.y + dy, w, size, anchor)) {
+        drawStr(canvas, f, font, label, sp.x + dx, sp.y + dy, { color: fill, anchor, tracking, outline: BG, outlineW: 3 });
+        break;
+      }
+    }
+  }
+
+  // ghost: a label on screen, or a racing-game edge indicator when it is off screen
+  const g = f.ghost;
+  if (g && !f.overview) {
+    const gp = toS(f, g.x, g.y);
+    const onScreen = gp.x > 8 && gp.x < f.layout.w - 8 && gp.y > st.y && gp.y < st.y + st.h;
+    // Points are the natural gap to show, but an untrusted run has no points to compare: the
+    // TIME gap is still a measurement, so that is what it gets.
+    const value = f.noScore
+      ? `${g.gapS >= 0 ? '+' : '−'}${Math.abs(g.gapS).toFixed(1)} S`
+      : `${g.gapPoints >= 0 ? '+' : '−'}${pts(Math.abs(g.gapPoints))} PTS`;
+    const positive = f.noScore ? g.gapS >= 0 : g.gapPoints >= 0;
+    if (onScreen) {
+      drawGhostLabel(canvas, f, col, gp.x, gp.y, value, positive, 12, { x: gp.x - carS.x, y: gp.y - carS.y });
+    } else {
+      const dx = gp.x - carS.x;
+      const dy = gp.y - carS.y;
+      const inset = 30;
+      let k = Infinity;
+      if (dx > 0) k = Math.min(k, (f.layout.w - inset - carS.x) / dx);
+      if (dx < 0) k = Math.min(k, (inset - carS.x) / dx);
+      if (dy > 0) k = Math.min(k, (st.y + st.h - inset - carS.y) / dy);
+      if (dy < 0) k = Math.min(k, (st.y + inset - carS.y) / dy);
+      if (Number.isFinite(k) && k > 0) {
+        const ex = carS.x + dx * k;
+        const ey = carS.y + dy * k;
+        canvas.save();
+        canvas.translate(ex, ey);
+        canvas.drawCircle(0, 0, 13, fillPaint(f, BG, 0.8));
+        canvas.drawCircle(0, 0, 13, strokePaint(f, colors.green, 1.2, 0.85));
+        canvas.rotate((Math.atan2(dy, dx) * 180) / Math.PI, 0, 0);
+        canvas.save();
+        canvas.translate(7, 0);
+        canvas.scale(6, 6);
+        canvas.drawPath(f.geo.arrowHead, fillPaint(f, colors.green));
+        canvas.restore();
+        canvas.restore();
+        drawGhostLabel(canvas, f, col, ex, ey, value, positive, 18, { x: ex - carS.x, y: ey - carS.y });
+      }
+    }
+  }
+}
+
+function minimapRect(f: Frame): { x: number; y: number; size: number } {
+  const size = f.layout.landscape ? 58 : 66;
+  const x = f.layout.w - f.layout.insets.right - 16 - size;
+  const y = f.layout.landscape ? f.layout.stage.y + f.layout.stage.h - size - 14 : f.layout.stage.y + 14;
+  return { x, y, size };
+}
+
+function drawMinimap(canvas: SkCanvas, f: Frame): void {
+  if (f.overview) return;
+  const r = f.replay;
+  const { x: x0, y: y0, size } = minimapRect(f);
+  const b = r.bounds;
+  const sc = (size - 10) / Math.max(1, Math.max(b.maxX - b.minX, b.maxY - b.minY));
+  const mx = (x: number) => x0 + size / 2 + (x - (b.minX + b.maxX) / 2) * sc;
+  const my = (y: number) => y0 + size / 2 - (y - (b.minY + b.maxY) / 2) * sc;
+  const route: Array<{ x: number; y: number }> = [];
+  if (r.track) for (let i = 0; i < r.track.path.length; i += 2) route.push({ x: mx(r.track.path[i].x), y: my(r.track.path[i].y) });
+  else for (let i = 0; i < r.trail.n; i += 8) route.push({ x: mx(r.trail.x[i]), y: my(r.trail.y[i]) });
+  if (route.length > 1) {
+    const paint = strokePaint(f, '#39465A', 2, 0.92, StrokeCap.Round);
+    canvas.drawPoints(PointMode.Polygon, r.track?.closed ? [...route, route[0]] : route, paint);
+  }
+  for (const sg of f.geo.segments) {
+    const seg = sg.seg;
+    if (seg.startIndex > f.cur) continue;
+    const end = Math.min(seg.endIndex, f.cur);
+    const sp: Array<{ x: number; y: number }> = [];
+    for (let i = seg.startIndex; i <= end; i += 3) sp.push({ x: mx(r.trail.x[i]), y: my(r.trail.y[i]) });
+    if (sp.length > 1) canvas.drawPoints(PointMode.Polygon, sp, strokePaint(f, sg.color, 1.7, 0.95, StrokeCap.Round));
+  }
+  if (f.ghost) canvas.drawCircle(mx(f.ghost.x), my(f.ghost.y), 2, strokePaint(f, colors.green, 1));
+  canvas.drawCircle(mx(f.pose.x), my(f.pose.y), 3, fillPaint(f, WHITE));
+  canvas.drawCircle(mx(f.pose.x), my(f.pose.y), 3, strokePaint(f, BG, 1));
+}
+
+/** Event-driven callout: the slam comes from `activeEvents`, identical in Skia and SVG. */
+function drawCallout(canvas: SkCanvas, f: Frame): void {
+  const e = f.events.find((ev) => ev.label !== '');
+  if (!e || !f.fonts.callout) return;
+  // a points award is a claim; the beat still plays, without the number
+  const label = f.noScore && /^[+−-]?[\d ,. ]+$/.test(e.label) ? '' : e.label;
+  if (!label) return;
+  const color = eventColor(e.kind);
+  const y = Math.round(f.layout.stage.y + f.layout.stage.h * 0.3);
+  const cx = f.layout.w / 2;
+  const scale = f.ui.reduceMotion ? 1 : e.scale;
+  canvas.save();
+  canvas.translate(cx, y);
+  canvas.scale(scale, scale);
+  canvas.translate(-cx, -y);
+  drawGlowStr(canvas, f, f.fonts.callout, label, cx, y, WHITE, color, 0.95 * e.opacity, 'middle', TYPE.callout);
+  canvas.restore();
+  // a leader line anchors overview callouts to the place they happened
+  if (f.overview && e.driftId !== undefined) {
+    const seg = f.replay.segments.find((g) => g.driftId === e.driftId);
+    if (seg) {
+      const sp = toS(f, f.replay.trail.x[seg.peakIndex], f.replay.trail.y[seg.peakIndex]);
+      if (sp.y > y + 18) {
+        canvas.drawLine(cx, y + 10, sp.x, sp.y - 8, dashPaint(f, color, 1, 3, 3, 0.35 * e.opacity));
+        canvas.drawCircle(sp.x, sp.y - 8, 2.5, fillPaint(f, color, 0.6 * e.opacity));
+      }
+    }
+  }
+}
+
+function drawTopHud(canvas: SkCanvas, f: Frame): void {
+  const lay = f.layout;
+  const r = f.replay;
+  const p = f.pose;
+  const solid = lay.topBar - 22;
+  canvas.drawRect({ x: 0, y: 0, width: lay.w, height: solid }, fillPaint(f, '#000000'));
+  shadeRect(canvas, f, f.res.topFade, 0, solid, lay.w, 22);
+
+  // the leftmost 34 pt of the chrome row belong to the close control, which is a real button
+  const tally = lay.chrome.left + 34;
+  canvas.drawCircle(tally + 2, lay.chrome.y - 4, 3.4, fillPaint(f, colors.red));
+  drawStr(canvas, f, f.fonts.label, 'REPLAY', tally + 11, lay.chrome.y, { tracking: 2.6 });
+  drawStr(canvas, f, f.fonts.clock, `${fmtTime(f.t)} / ${fmtTime(r.durationS)}`, lay.w / 2, lay.chrome.y, { color: MUTED, anchor: 'middle' });
+  const modeLabel = f.mode === 'overview' ? 'TRACK CAM' : f.mode === 'chase' ? 'CHASE CAM' : 'CINEMATIC';
+  drawStr(canvas, f, f.fonts.label, modeLabel, lay.chrome.right, lay.chrome.y, { color: MUTED, anchor: 'end', tracking: 2 });
+  if (f.ui.rate !== 1) {
+    drawStr(canvas, f, f.fonts.label, `${f.ui.rate}×`, lay.w / 2 + 62, lay.chrome.y, { color: colors.cyan, tracking: 1 });
+  }
+
+  // in landscape the readouts float over the world, so give them a lower-third scrim
+  if (!lay.hero.inBar) shadeRect(canvas, f, f.res.bottomFade, 0, lay.scrub.y - 118, lay.w, 118, 0.8);
+
+  // tier 1: the angle is the biggest thing on screen (DESIGN.md), coloured by severity
+  const angle = Math.round(Math.abs(deg(p.beta)));
+  const side = Math.abs(p.beta) > 0.05 ? (p.beta > 0 ? 'R' : 'L') : '';
+  const col = heatColor(p.beta);
+  const hot = p.severity !== 'none';
+  const baseline = lay.hero.baseline;
+  const text = `${angle}°`;
+  let heroW = 0;
+  if (hot) heroW = drawGlowStr(canvas, f, f.fonts.hero, text, lay.hero.x, baseline, WHITE, col, 0.4 + 0.6 * p.intensity, 'start', TYPE.hero);
+  else heroW = drawStr(canvas, f, f.fonts.hero, text, lay.hero.x, baseline, { color: MUTED });
+  if (side) drawStr(canvas, f, f.fonts.label, side, lay.hero.x + heroW + 6, baseline - TYPE.hero * 0.58, { color: col });
+  drawStr(canvas, f, f.fonts.label, 'SLIP ANGLE', lay.hero.x, baseline + 14, { color: MUTED, tracking: 2 });
+
+  // tier 2: speed and points, italic (things that move)
+  const rx = lay.readout.x;
+  const rb = lay.readout.baseline;
+  drawStr(canvas, f, f.fonts.value, `${kmh(p.speed)}`, rx, rb - 26, { anchor: 'end' });
+  drawStr(canvas, f, f.fonts.label, 'KM/H', rx, rb - 12, { color: MUTED, anchor: 'end', tracking: 2 });
+  if (f.noScore) {
+    const w = 96;
+    canvas.drawRect({ x: rx - w, y: rb - 4, width: w, height: 19 }, fillPaint(f, colors.red, 0.85));
+    drawStr(canvas, f, f.fonts.label, 'NOT SCORED', rx - w / 2, rb + 10, { color: '#000000', anchor: 'middle', tracking: 1.2 });
+    drawStr(canvas, f, f.fonts.label, 'POINTS WITHHELD', rx, rb + 26, { color: MUTED, anchor: 'end', tracking: 1.4 });
+  } else {
+    const ptsCol = p.phase === 'drifting' ? colors.ember : WHITE;
+    const w = drawStr(canvas, f, f.fonts.value, pts(p.points), rx, rb + 12, { color: ptsCol, anchor: 'end' });
+    drawStr(canvas, f, f.fonts.label, 'POINTS', rx, rb + 26, { color: MUTED, anchor: 'end', tracking: 2 });
+    if (p.multiplier > 1.05) {
+      const cw = 34;
+      const cx = rx - w - cw - 8;
+      canvas.drawRect({ x: cx, y: rb - 12, width: cw, height: 17 }, fillPaint(f, colors.ember));
+      drawStr(canvas, f, f.fonts.label, `×${p.multiplier.toFixed(1)}`, cx + cw / 2, rb + 1, { color: '#000000', anchor: 'middle' });
+    }
+  }
+}
+
+function scrubGeometry(f: Frame): { x0: number; x1: number; yTop: number; yBot: number; xAt: (t: number) => number; yA: (a: number) => number } {
+  const lay = f.layout;
+  const x0 = lay.insets.left + 18;
+  const x1 = lay.w - lay.insets.right - 18;
+  const yTop = lay.scrub.y + 4;
+  const yBot = lay.scrub.y + lay.scrub.h - 8;
+  const dur = Math.max(1e-6, f.replay.durationS);
+  const scale = ribbonScale(f.replay);
+  return {
+    x0,
+    x1,
+    yTop,
+    yBot,
+    xAt: (t: number) => x0 + (clamp(t, 0, dur) / dur) * (x1 - x0),
+    yA: (a: number) => yBot - clamp(a / scale, 0, 1) * (yBot - yTop),
+  };
+}
+
+function drawBottomHud(canvas: SkCanvas, f: Frame): void {
+  const lay = f.layout;
+  const r = f.replay;
+  const s = scrubGeometry(f);
+  shadeRect(canvas, f, f.res.bottomFade, 0, lay.scrub.y - 18, lay.w, 18);
+  canvas.drawRect({ x: 0, y: lay.scrub.y, width: lay.w, height: lay.h - lay.scrub.y }, fillPaint(f, '#000000'));
+
+  canvas.drawLine(s.x0, s.yBot, s.x1, s.yBot, strokePaint(f, '#1C2430', 1, 1, StrokeCap.Butt));
+
+  // the strip is MASKED to elapsed time: a replay must not open by showing its ending
+  const playX = s.xAt(f.t);
+  canvas.save();
+  canvas.clipRect({ x: s.x0, y: s.yTop - 2, width: Math.max(0, playX - s.x0), height: s.yBot - s.yTop + 2 }, ClipOp.Intersect, false);
+  const ribbonPaint = f.res.shaded;
+  ribbonPaint.setStyle(PaintStyle.Fill);
+  ribbonPaint.setShader(f.res.ribbon);
+  ribbonPaint.setColor(f.res.color('#FFFFFF'));
+  ribbonPaint.setAlphaf(0.95);
+  canvas.save();
+  canvas.translate(s.x0, s.yTop);
+  canvas.scale(Math.max(1e-4, s.x1 - s.x0), Math.max(1e-4, s.yBot - s.yTop));
+  canvas.drawPath(f.geo.ribbon, ribbonPaint);
+  canvas.restore();
+  canvas.restore();
+
+  // drift windows as ticks under the baseline (only those already played)
+  for (const seg of r.segments) {
+    if (seg.startT > f.t) continue;
+    const a = s.xAt(seg.startT);
+    const b = s.xAt(Math.min(seg.endT, f.t));
+    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, b - a), height: 2.5 }, fillPaint(f, heatColor(seg.peakAngle), 0.85));
+  }
+  // a stretch with no GPS behind it, marked on the timeline as well as in the world
+  for (const g of f.view.gaps) {
+    const a = s.xAt(g.startT);
+    const b = s.xAt(Math.min(g.endT, f.t));
+    if (b <= a) continue;
+    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, b - a), height: 2.5 }, fillPaint(f, MUTED, 0.75));
+  }
+  for (const lap of r.laps) {
+    if (lap.index === 0 || lap.startT > f.t) continue;
+    canvas.drawLine(s.xAt(lap.startT), s.yTop - 2, s.xAt(lap.startT), s.yBot, dashPaint(f, MUTED, 0.8, 2, 2, 0.6));
+  }
+  for (const m of r.markers) {
+    if (m.kind !== 'transition' || m.t > f.t) continue;
+    const x = s.xAt(m.t);
+    canvas.save();
+    canvas.translate(x, s.yTop);
+    canvas.scale(2.6, 4);
+    canvas.drawPath(f.geo.diamond, fillPaint(f, colors.magenta, 0.85));
+    canvas.restore();
+  }
+  // the highlights the transport jumps between, as gold pips above the band
+  for (let i = 0; i < Math.min(r.highlights.length, 8); i++) {
+    const h = r.highlights[i];
+    canvas.drawCircle(s.xAt(h.t), s.yTop - 7, 1.8, fillPaint(f, colors.gold, 0.8));
+  }
+  // remaining time as a hairline, so the length of the run is still legible
+  canvas.drawLine(playX, s.yBot, s.x1, s.yBot, strokePaint(f, '#2A3340', 1.5, 1, StrokeCap.Butt));
+  const grabbed = f.ui.scrubbing;
+  canvas.drawLine(playX, s.yTop - 6, playX, s.yBot + 6, strokePaint(f, WHITE, grabbed ? 2.5 : 1.5, 1, StrokeCap.Butt));
+  canvas.drawCircle(playX, s.yA(Math.abs(f.pose.beta)), grabbed ? 4 : 2.6, fillPaint(f, heatColor(f.pose.beta)));
+  canvas.drawCircle(playX, s.yA(Math.abs(f.pose.beta)), grabbed ? 4 : 2.6, strokePaint(f, BG, 1));
+  if (grabbed) {
+    // a video scrubber tells you where you are landing
+    const label = fmtTime(f.t);
+    const w = measure(f, f.fonts.clock ?? f.fonts.label!, label) + 16;
+    const bx = clamp(playX - w / 2, s.x0, s.x1 - w);
+    canvas.drawRect({ x: bx, y: s.yTop - 26, width: w, height: 18 }, fillPaint(f, colors.ember));
+    drawStr(canvas, f, f.fonts.clock, label, bx + w / 2, s.yTop - 13, { color: '#000000', anchor: 'middle' });
+  }
+
+  drawInfoLine(canvas, f);
+}
+
+/**
+ * The one line of words on the frame: which lap, which track, and what the run is worth so far.
+ * Portrait stacks it in the bottom bar (as the reference frame does); landscape runs it as a
+ * second row of the top bar, because there the bottom bar belongs to the transport.
+ */
+function drawInfoLine(canvas: SkCanvas, f: Frame): void {
+  const r = f.replay;
+  const lay = f.layout;
+  const ly = lay.info.y;
+  const compact = lay.landscape;
+  const lap = lapAt(r, f.t);
+  const last = r.laps[r.laps.length - 1];
+  const lapStr = r.laps.length === 0 ? 'STAGE' : lap ? `LAP ${lap.index + 1}/${r.laps.length}` : last && f.t > last.endT ? 'FINISH' : `LAP 1/${r.laps.length}`;
+  let x = lay.info.x + drawStr(canvas, f, f.fonts.label, lapStr, lay.info.x, ly, { tracking: 1.6 }) + 14;
+  x += drawStr(canvas, f, f.fonts.label, f.view.title, x, ly, { color: MUTED, tracking: 1.4 }) + 14;
+
+  let best = 0;
+  let done = 0;
+  for (const seg of r.segments) {
+    if (seg.startT > f.t) continue;
+    done++;
+    if (seg.peakT <= f.t && seg.peakAngle > best) best = seg.peakAngle;
+  }
+  const finished = f.t >= r.durationS - 0.05;
+  const driftStr = `${done} DRIFT${done === 1 ? '' : 'S'}`;
+  const bestStr = best > 0 ? `BEST ${Math.round(deg(best))}\u00B0` : '';
+
+  if (compact) {
+    // everything on one row: counts inline on the left, the total on the right
+    x += drawStr(canvas, f, f.fonts.label, driftStr, x, ly, { color: MUTED, tracking: 1.4 }) + 12;
+    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, x, ly, { color: heatColor(best), tracking: 1.4 });
+    if (f.noScore) {
+      const w = drawStr(canvas, f, f.fonts.label, 'NOT SCORED', lay.info.right, ly, { color: colors.red, anchor: 'end', tracking: 2 });
+      drawStr(canvas, f, f.fonts.label, 'RECORDING ONLY', lay.info.right - w - 12, ly, { color: MUTED, anchor: 'end', tracking: 1.4 });
+    } else {
+      const w = drawStr(canvas, f, f.fonts.value, pts(f.pose.points), lay.info.right, ly, { anchor: 'end' });
+      drawStr(canvas, f, f.fonts.label, 'TOTAL', lay.info.right - w - 10, ly, { color: MUTED, anchor: 'end', tracking: 2 });
+    }
+    return;
+  }
+
+  if (f.noScore) {
+    drawStr(canvas, f, f.fonts.label, 'NOT SCORED', lay.info.right, ly, { color: colors.red, anchor: 'end', tracking: 2 });
+    drawStr(canvas, f, f.fonts.label, 'RECORDING ONLY', lay.info.right, ly + 20, { color: MUTED, anchor: 'end', tracking: 1.4 });
+  } else {
+    drawStr(canvas, f, f.fonts.label, 'TOTAL', lay.info.right, ly, { color: MUTED, anchor: 'end', tracking: 2 });
+    drawStr(canvas, f, f.fonts.value, pts(f.pose.points), lay.info.right, ly + 22, { anchor: 'end' });
+  }
+  if (finished && !f.noScore) {
+    const gcol = (gradeColors as Record<string, string>)[r.info.grade] ?? colors.ember;
+    canvas.drawRect({ x: lay.info.x, y: ly + 6, width: 30, height: 22 }, fillPaint(f, gcol));
+    drawStr(canvas, f, f.fonts.grade, r.info.grade, lay.info.x + 15, ly + 23, { color: '#000000', anchor: 'middle' });
+    drawStr(canvas, f, f.fonts.label, 'FINAL GRADE', lay.info.x + 36, ly + 22, { color: MUTED, tracking: 1.6 });
+  } else {
+    // masked to elapsed time, like the points and the total: "BEST 71\u00B0" on the opening frame
+    // is a small forward-looking spoiler
+    const dw = drawStr(canvas, f, f.fonts.label, driftStr, lay.info.x, ly + 22, { color: MUTED, tracking: 1.4 });
+    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, lay.info.x + dw + 14, ly + 22, { color: heatColor(best), tracking: 1.4 });
+  }
+}
+
+/** Break a sentence into lines that fit `maxW`, the long way, because Skia has no text layout. */
+function wrapText(f: Frame, font: SkFont, text: string, maxW: number, maxLines = 3): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = '';
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (measure(f, font, next) <= maxW || !line) line = next;
+    else {
+      lines.push(line);
+      line = word;
+      if (lines.length === maxLines) break;
+    }
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  return lines;
+}
+
+/**
+ * The stack of notices at the top of the stage, in the order they matter: what is wrong with the
+ * data, whether the run may be scored at all, and which moment the transport just jumped to.
+ * They are stacked rather than placed so two of them can never land on top of each other.
+ */
+function drawStageNotices(canvas: SkCanvas, f: Frame): void {
+  const lay = f.layout;
+  const label = f.fonts.label;
+  if (!label) return;
+  const left = lay.insets.left + 18;
+  let y = lay.stage.y + 18;
+
+  // the bad-data plate: what is wrong, in one word, impossible to miss
+  if (f.view.warnings.length > 0) {
+    const msg = f.view.warnings.some((w) => /SIGNAL LOST/i.test(w))
+      ? 'SIGNAL LOST'
+      : f.view.warnings.some((w) => /no usable position|dead reckoning|GPS/i.test(w))
+        ? 'DATA GAPS'
+        : 'DATA WARNING';
+    const w = measure(f, label, msg, 1.4) + 14;
+    canvas.drawRect({ x: left, y: y - 12, width: w, height: 18 }, fillPaint(f, colors.red, 0.85));
+    drawStr(canvas, f, label, msg, left + 7, y + 1, { color: '#000000', tracking: 1.4 });
+    drawStr(canvas, f, label, `${f.view.warnings.length}`, left + w + 8, y + 1, { color: colors.red, tracking: 1 });
+    y += 28;
+  }
+
+  // the refusal: the recording is valid, the judgement is not — and why, in the monitor's words
+  if (f.noScore) {
+    const maxW = Math.min(300, lay.w - lay.insets.left - lay.insets.right - 36);
+    const plate = measure(f, label, 'NOT SCORED', 1.6) + 14;
+    canvas.drawRect({ x: left, y: y - 12, width: plate, height: 18 }, fillPaint(f, colors.red));
+    drawStr(canvas, f, label, 'NOT SCORED', left + 7, y + 1, { color: '#000000', tracking: 1.6 });
+    y += 22;
+    for (const line of wrapText(f, label, f.view.untrustedBody, maxW, 3)) {
+      drawStr(canvas, f, label, line.toUpperCase(), left, y, { color: MUTED, tracking: 0.6, outline: BG, outlineW: 3 });
+      y += 16;
+    }
+    y += 8;
+  }
+
+  // the chip that names the moment the transport just jumped to
+  const h = f.ui.highlight;
+  if (h && h.alpha > 0.02 && f.fonts.peak) {
+    const kicker = h.index > 0 ? `HIGHLIGHT ${h.index}/${h.total}` : 'THIS DRIFT';
+    const wk = measure(f, label, kicker, 1.6);
+    const wl = measure(f, f.fonts.peak, h.label, 0.6);
+    const w = Math.max(wk, wl) + 24;
+    const x = lay.w / 2 - w / 2;
+    const top = Math.max(y - 12, lay.stage.y + 18);
+    canvas.drawRect({ x, y: top, width: w, height: 46 }, fillPaint(f, BG, 0.82 * h.alpha));
+    canvas.drawRect({ x, y: top, width: w, height: 46 }, strokePaint(f, colors.gold, 1, 0.55 * h.alpha, StrokeCap.Butt));
+    drawStr(canvas, f, label, kicker, lay.w / 2, top + 17, { color: colors.gold, anchor: 'middle', tracking: 1.6, alpha: h.alpha });
+    drawStr(canvas, f, f.fonts.peak, h.label, lay.w / 2, top + 37, { color: WHITE, anchor: 'middle', tracking: 0.6, alpha: h.alpha });
+  }
+}
+
+/** Where the positions were dead-reckoned, said on the world itself. */
+function drawGapNotice(canvas: SkCanvas, f: Frame): void {
+  if (!f.fonts.label) return;
+  for (const g of f.view.gaps) {
+    if (g.startT > f.t) continue;
+    const i = Math.min(f.replay.trail.n - 1, Math.round(((g.startT + Math.min(g.endT, f.t)) / 2) * f.replay.trail.hz));
+    const x = f.replay.trail.x[i];
+    const y = f.replay.trail.y[i];
+    if (!inView(f, x, y)) continue;
+    const sp = toS(f, x, y);
+    drawStr(canvas, f, f.fonts.label, `NO FIX ${g.durationS.toFixed(1)}S`, sp.x, sp.y - 10, { color: MUTED, anchor: 'middle', tracking: 1.2, outline: BG, outlineW: 3 });
+  }
+}
+
+// ---------------------------------------------------------------- the frame
+export function drawReplayFrame(canvas: SkCanvas, input: SceneInput): void {
+  const lay = input.layout;
+  const cam = input.cam;
+  const trail = input.replay.trail;
+  const corners = [
+    { x: 0, y: 0 },
+    { x: lay.w, y: 0 },
+    { x: 0, y: lay.h },
+    { x: lay.w, y: lay.h },
+  ].map((c) => screenToWorld(cam, c.x, c.y));
+  const margin = 30;
+  const f: Frame = {
+    ...input,
+    vis: {
+      minX: Math.min(...corners.map((c) => c.x)) - margin,
+      maxX: Math.max(...corners.map((c) => c.x)) + margin,
+      minY: Math.min(...corners.map((c) => c.y)) - margin,
+      maxY: Math.max(...corners.map((c) => c.y)) + margin,
+    },
+    cur: Math.max(0, Math.min(trail.n - 1, Math.floor(input.t * trail.hz))),
+    overview: input.mode === 'overview',
+    noScore: !input.view.trusted,
+  };
+
+  canvas.drawRect({ x: 0, y: 0, width: lay.w, height: lay.h }, fillPaint(f, BG));
+
+  // shake: driven by replay.events, so Skia and SVG shake identically
+  const sh = f.ui.reduceMotion ? 0 : f.shake;
+  const shx = sh * 2.4 * Math.sin(f.t * 97);
+  const shy = sh * 2.4 * Math.cos(f.t * 113);
+  const c = Math.cos(cam.rotation);
+  const s = Math.sin(cam.rotation);
+  const z = cam.zoom;
+  canvas.save();
+  canvas.concat([
+    z * c,
+    -z * s,
+    lay.w / 2 + shx - z * c * cam.cx + z * s * cam.cy,
+    -z * s,
+    -z * c,
+    lay.h / 2 + shy + z * s * cam.cx + z * c * cam.cy,
+    0,
+    0,
+    1,
+  ]);
+  drawGround(canvas, f);
+  drawRoad(canvas, f);
+  drawTrail(canvas, f);
+  drawMarkers(canvas, f);
+  drawSmoke(canvas, f);
+  drawGhost(canvas, f); // under the car: distance-synced, they sit side by side
+  drawCar(canvas, f);
+  canvas.restore();
+
+  drawStreaks(canvas, f);
+  const vr = Math.hypot(lay.w / 2, lay.h / 2) * 0.95;
+  shadeEllipse(canvas, f, f.res.vignette, lay.w / 2, lay.h / 2, vr, vr, 1);
+  if (!f.ui.reduceMotion) {
+    const grain = f.res.shaded;
+    grain.setStyle(PaintStyle.Fill);
+    grain.setShader(f.res.grain);
+    grain.setColor(f.res.color('#FFFFFF'));
+    grain.setAlphaf(0.022);
+    canvas.drawRect({ x: 0, y: 0, width: lay.w, height: lay.h }, grain);
+  }
+  drawGapNotice(canvas, f);
+  drawWorldLabels(canvas, f);
+  drawMinimap(canvas, f);
+  drawCallout(canvas, f);
+  drawTopHud(canvas, f);
+  drawBottomHud(canvas, f);
+  drawStageNotices(canvas, f);
+  // a cut cross-fades from black for 120 ms (film language for a camera change)
+  if (f.cutFade > 0.001) canvas.drawRect({ x: 0, y: 0, width: lay.w, height: lay.h }, fillPaint(f, '#000000', f.cutFade * 0.55));
 }

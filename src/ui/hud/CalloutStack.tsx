@@ -11,7 +11,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 
 import { AppText, Micro } from '../Text';
 import { alpha, colors, fontFamilies, motion, radii, space } from '../theme';
@@ -32,28 +32,32 @@ export interface CalloutStackProps {
   /** Slam in from the right instead of the left. */
   fromRight?: boolean;
   size?: number;
+  /** Drawn in grey: the engine does not stand behind the reading these were awarded for. */
+  muted?: boolean;
   testID?: string;
 }
 
-export function CalloutStack({ events, fromRight = false, size = 26, testID }: CalloutStackProps) {
+export function CalloutStack({ events, fromRight = false, size = 26, muted = false, testID }: CalloutStackProps) {
   return (
     <View style={[styles.stack, fromRight && styles.stackRight]} pointerEvents="none" testID={testID}>
       {events.map((e, i) => (
-        <Callout key={e.key} event={e} depth={i} fromRight={fromRight} size={size} />
+        <Callout key={e.key} event={e} depth={i} fromRight={fromRight} size={size} muted={muted} />
       ))}
     </View>
   );
 }
 
-function Callout({ event, depth, fromRight, size }: { event: HudEvent; depth: number; fromRight: boolean; size: number }) {
-  const tone = TONES[event.tone];
+function Callout({ event, depth, fromRight, size, muted }: { event: HudEvent; depth: number; fromRight: boolean; size: number; muted: boolean }) {
+  const tone = muted ? colors.muted : TONES[event.tone];
   const enter = useSharedValue(0);
   const depthV = useSharedValue(depth);
+  // Reduce-motion keeps the callout — it is information — and drops the slam.
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     enter.value = 0;
-    enter.value = withTiming(1, { duration: motion.duration.base, easing: easings.overshoot });
-  }, [enter]);
+    enter.value = withTiming(1, { duration: reduced ? motion.duration.fast : motion.duration.base, easing: reduced ? easings.out : easings.overshoot });
+  }, [enter, reduced]);
 
   useEffect(() => {
     depthV.value = withTiming(depth, { duration: motion.duration.base, easing: easings.out });
@@ -61,8 +65,8 @@ function Callout({ event, depth, fromRight, size }: { event: HudEvent; depth: nu
 
   const style = useAnimatedStyle(() => {
     const p = enter.value;
-    const scale = 1.8 - 0.8 * p;
-    const slide = (1 - p) * (fromRight ? 64 : -64);
+    const scale = reduced ? 1 : 1.8 - 0.8 * p;
+    const slide = reduced ? 0 : (1 - p) * (fromRight ? 64 : -64);
     return {
       opacity: Math.min(1, p * 3) * (1 - 0.2 * depthV.value),
       transform: [{ translateX: slide }, { scale }],

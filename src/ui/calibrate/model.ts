@@ -33,6 +33,22 @@ export const SETTLED_UP = 0.6;
 /** Degrees of recline past which the phone is lying down rather than standing up. */
 export const FLAT_DEG = 62;
 
+/**
+ * How long the integrity monitor needs before its mount verdict means anything.
+ *
+ * Every mount cue is an exponential RMS over `windowS`, so for the first couple of windows the
+ * averages are still filling and a perfectly bolted phone reads `suspect` — on the simulator's
+ * own rigid mount it does exactly that from 0.2 s to 4.1 s. Shouting "your mount is loose" at a
+ * driver who has done nothing wrong is worse than saying nothing, so until the cues have had
+ * two windows this screen reports the mount as still listening.
+ */
+export const MOUNT_WARMUP_S = 2 * DEFAULT_INTEGRITY_OPTIONS.windowS;
+
+/** The mount verdict, or `unknown` while the monitor's averages are still filling. */
+export function mountVerdict(r: CalibrationReading): MountState | 'unknown' {
+  return r.samples === 0 || r.elapsedS < MOUNT_WARMUP_S ? 'unknown' : r.mount;
+}
+
 export type CalibrationFaultKind = 'permission' | 'unsupported' | 'services' | 'failed';
 
 export interface CalibrationFault {
@@ -143,7 +159,7 @@ export function phaseOf(r: CalibrationReading): CalibrationPhase {
   if (r.fault) return 'failed';
   // A phone that is moving against the car invalidates everything downstream of it, resolved
   // forward axis or not — the monitor will not believe a slide while this is true.
-  if (r.mount === 'loose') return 'blocked';
+  if (mountVerdict(r) === 'loose') return 'blocked';
   if (r.calibrationOk) return 'ready';
   if (!r.has || r.samples === 0) return 'starting';
   return isSettled(r) ? 'seeking' : 'levelling';
@@ -158,6 +174,7 @@ export interface Light {
 
 export function lightsOf(r: CalibrationReading): Light[] {
   const settled = isSettled(r);
+  const mount = mountVerdict(r);
   return [
     {
       key: 'level',
@@ -174,8 +191,8 @@ export function lightsOf(r: CalibrationReading): Light[] {
     {
       key: 'mount',
       label: 'Mount',
-      state: r.mount === 'rigid' ? 'on' : r.mount === 'suspect' ? 'working' : 'bad',
-      detail: r.mount === 'rigid' ? 'Rigid' : r.mount === 'suspect' ? 'Unsteady' : 'Moving',
+      state: mount === 'rigid' ? 'on' : mount === 'loose' ? 'bad' : 'working',
+      detail: mount === 'rigid' ? 'Rigid' : mount === 'loose' ? 'Moving' : mount === 'suspect' ? 'Unsteady' : 'Listening',
     },
   ];
 }
@@ -193,8 +210,9 @@ export function headlineOf(r: CalibrationReading): Headline {
     case 'failed':
       return { kicker: 'Cannot calibrate', title: r.fault?.title ?? 'Sensors unavailable', because: r.fault?.body ?? '', color: 'red' };
     case 'blocked':
-      // the monitor's own sentence, verbatim
-      return { kicker: 'Mount', title: 'Hold on', because: r.message, color: 'red' };
+      // The monitor's own sentence carries this one, in the banner directly underneath — saying
+      // it twice in two voices is how a screen stops being believed.
+      return { kicker: 'Mount', title: 'Hold on', because: '', color: 'red' };
     case 'ready':
       return {
         kicker: 'Calibrated',
@@ -230,7 +248,8 @@ export interface Step {
  * car accelerating. Anything else on this list would be ceremony.
  */
 export function stepsOf(r: CalibrationReading): Step[] {
-  const mountOk = r.mount === 'rigid' && r.samples > 0 && !isFlat(r);
+  const mount = mountVerdict(r);
+  const mountOk = (mount === 'rigid' || mount === 'unknown') && r.samples > 0 && !isFlat(r);
   const evidence = Math.min(1, r.lineEvidenceS / DEFAULT_MOUNT_OPTIONS.lineMinEvidence);
   return [
     {
@@ -259,17 +278,18 @@ export interface Caution {
 
 export function cautionsOf(r: CalibrationReading): Caution[] {
   const out: Caution[] = [];
+  const mount = mountVerdict(r);
+  const steady = mount === 'rigid' || mount === 'unknown';
   if (isFlat(r)) {
     out.push({
       title: 'The phone is lying flat',
-      body:
-        r.mount === 'rigid'
-          ? 'A flat dash pad is fine if it is stuck down. On a seat it will slide at the first corner, and a sliding phone cannot be calibrated.'
-          : 'Flat and already moving — on a seat or a loose pad it slides with every corner. Clip it to something.',
-      tone: r.mount === 'rigid' ? 'gold' : 'red',
+      body: steady
+        ? 'A flat dash pad is fine if it is stuck down. On a seat it will slide at the first corner, and a sliding phone cannot be calibrated.'
+        : 'Flat and already moving — on a seat or a loose pad it slides with every corner. Clip it to something.',
+      tone: steady ? 'gold' : 'red',
     });
   }
-  if (r.mount === 'suspect' && !isFlat(r)) {
+  if (mount === 'suspect' && !isFlat(r)) {
     out.push({ title: 'Mount looks unsteady', body: r.message, tone: 'gold' });
   }
   if (r.knocks > 0) {
@@ -301,8 +321,8 @@ export interface QualityBand {
 export function qualityBand(r: CalibrationReading): QualityBand {
   const value = Number.isFinite(r.quality) ? Math.max(0, Math.min(1, r.quality)) : 0;
   const display = r.samples === 0 ? '--' : `${Math.round(value * 100)}%`;
+  if (mountVerdict(r) === 'loose') return { value, display, label: 'The mount is moving · nothing here can be believed', color: 'red' };
   if (!r.forwardResolved) return { value, display, label: 'Forward axis not resolved · nothing is scored yet', color: 'cyan' };
-  if (r.mount === 'loose') return { value, display, label: 'The mount is moving · nothing here can be believed', color: 'red' };
   if (value >= SHARP_QUALITY) return { value, display, label: 'Sharp · nothing will be qualified for the mount', color: 'green' };
   if (value >= TRUST_QUALITY) return { value, display, label: 'Good enough to score', color: 'ember' };
   return { value, display, label: 'Below the bar the judge believes', color: 'red' };

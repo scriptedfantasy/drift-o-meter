@@ -34,7 +34,7 @@ import {
   DriftList,
   GradeReveal,
   GradeScale,
-  GRADE_WORDS,
+  gradeWord,
   IntegrityPanel,
   LapTable,
   Odometer,
@@ -95,14 +95,25 @@ export default function ResultsScreen() {
   const frozen = reveal === 'hold' || reveal === 'slam' || reveal === 'settle';
 
   const [systemReduce, setSystemReduce] = useState(false);
+  // The reveal must not start before we know whether the driver asked for less motion: the query
+  // is async, and starting first meant a reduce-motion user still got the letterbox and the shake.
+  const forcedMotion = params.motion === 'reduce' || params.motion === 'full';
+  const [motionResolved, setMotionResolved] = useState(forcedMotion);
   useEffect(() => {
     let alive = true;
+    const done = () => alive && setMotionResolved(true);
     AccessibilityInfo.isReduceMotionEnabled()
-      .then((v) => alive && setSystemReduce(v))
-      .catch(() => {});
+      .then((v) => {
+        if (alive) setSystemReduce(v);
+        done();
+      })
+      .catch(done);
+    // never hang the reveal on a query that does not answer
+    const fallback = setTimeout(done, 400);
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => alive && setSystemReduce(v));
     return () => {
       alive = false;
+      clearTimeout(fallback);
       sub?.remove();
     };
   }, []);
@@ -115,7 +126,7 @@ export default function ResultsScreen() {
   const pageRun = revealed || frozen || (model !== null && !model.trusted);
   // ...and a tap dismisses even a frozen one, which is how the harness proves the skip works
 
-  const loading = spec ? fixtureSession === null : stored.loading;
+  const loading = (spec ? fixtureSession === null : stored.loading) || !motionResolved;
   const missing = !loading && !session;
 
   const openReplay = useCallback(
@@ -154,12 +165,13 @@ export default function ResultsScreen() {
       </SafeAreaView>
       {/* No grade reveal for a run the engine will not vouch for: there is no grade to slam in.
           And once it has played it is unmounted, so a finished overlay never keeps eating taps. */}
-      {reveal === 'off' || revealed || !model.trusted ? null : (
+      {reveal === 'off' || revealed || !model.trusted || !motionResolved ? null : (
         <GradeReveal
           grade={model.grade}
           color={model.gradeColor}
           rating={model.rating}
           kicker={`${sessionTrack(model)} · ${formatDuration(model.session.durationS)} · ${model.drifts.length} ${model.drifts.length === 1 ? 'slide' : 'slides'}`}
+          drifts={model.drifts.length}
           mode={reveal}
           reduceMotion={reduceMotion}
           onDone={onRevealDone}
@@ -199,6 +211,9 @@ function ResultsPage({
 }) {
   const [shareNote, setShareNote] = useState<string | null>(null);
   const content = Math.min(width, 620) - gutter * 2;
+  // the page is a centred column; the wash still belongs to the whole screen, or its hard edges
+  // read as a stray card in landscape
+  const washInset = gutter + Math.max(0, (width - Math.min(width, 620)) / 2);
   const letter = Math.min(168, content * 0.44);
   const hasDrifts = model.drifts.length > 0;
   /** The engine refused to publish a score: no grade, no points presented as an achievement. */
@@ -248,7 +263,7 @@ function ResultsPage({
           locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.heroWash}
+          style={[styles.heroWash, { left: -washInset, right: -washInset }]}
           pointerEvents="none"
         />
         <View style={styles.heroTop}>
@@ -299,7 +314,7 @@ function ResultsPage({
             ) : (
               <View style={styles.ratingRow}>
                 <AppText variant="subheading" color={model.gradeColor}>
-                  {GRADE_WORDS[model.grade]}
+                  {gradeWord(model.grade, model.drifts.length)}
                 </AppText>
                 <AppText variant="micro" color="muted" numeric>
                   {ratingText(model.rating)} / 100
@@ -337,13 +352,13 @@ function ResultsPage({
         </View>
         {untrusted ? (
           <AppText variant="micro" color="muted">
-            As recorded, not as judged
+            As recorded, not as judged — no spin count, no points, no grade
           </AppText>
         ) : null}
 
         <View style={styles.tags}>
           {untrusted ? <Tag label="SCORE WITHHELD" color={colors.red} filled /> : null}
-          {model.stats.spins > 0 ? <Tag label={`${model.stats.spins} SPIN${model.stats.spins === 1 ? '' : 'S'}`} color={colors.red} filled /> : null}
+          {!untrusted && model.stats.spins > 0 ? <Tag label={`${model.stats.spins} SPIN${model.stats.spins === 1 ? '' : 'S'}`} color={colors.red} filled /> : null}
           {!untrusted && model.stats.cleanLaps > 0 ? <Tag label={`${model.stats.cleanLaps} CLEAN LAP${model.stats.cleanLaps === 1 ? '' : 'S'}`} color={colors.green} /> : null}
           {model.lapCount > 0 ? <Tag label={`${model.lapCount} LAPS`} color={colors.muted} /> : <Tag label="POINT TO POINT" color={colors.muted} />}
           {model.simulated ? <Tag label={model.session.meta?.engine === 'pipeline' ? 'SIM · FULL PIPELINE' : 'SIM · FIXTURE'} color={colors.muted} /> : null}
@@ -501,7 +516,7 @@ const styles = StyleSheet.create({
   hero: { gap: space[4] },
   // stops short of the very top of the viewport on purpose: the harness checks that the
   // page's corner pixels are still bg0
-  heroWash: { position: 'absolute', left: -gutter, right: -gutter, top: 0, bottom: -space[6] },
+  heroWash: { position: 'absolute', top: 0, bottom: -space[6] },
   gradeLabel: { marginBottom: -space[2] },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   gradeBox: { justifyContent: 'flex-start' },

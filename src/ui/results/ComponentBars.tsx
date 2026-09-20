@@ -2,7 +2,8 @@
  * The five scored components, as bars that fill on entry with the scorer's own number beside
  * them and one specific line of explanation underneath — the review-score breakdown.
  */
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { AppText } from '../Text';
@@ -28,7 +29,8 @@ export function ComponentBars({ rows, run, reduceMotion = false, unmeasured = fa
     <View style={styles.list} testID={testID}>
       {unmeasured ? (
         <AppText variant="small" color="red">
-          Not published. The engine could not believe enough of this run to score it, so these five components have no number — only what the recording contains.
+          Not published. The engine could not believe enough of this run to score it, so these five components have no number — only what the recording contains. Spins are not counted here either:
+          they are read from the same angles the monitor would not believe.
         </AppText>
       ) : null}
       {rows.map((row, i) => (
@@ -43,6 +45,7 @@ function Bar({ row, index, run, reduceMotion, unmeasured }: { row: ComponentRow;
   const fill = useFill(unmeasured ? 0 : row.score / 100, 220 + index * 90, run, reduceMotion);
   const known = Number.isFinite(row.score) && !unmeasured;
   const score = known ? Math.round(row.score) : null;
+  const [open, setOpen] = useState(false);
 
   return (
     <Animated.View style={[styles.row, enter]} testID={`component-${row.key}`}>
@@ -74,6 +77,18 @@ function Bar({ row, index, run, reduceMotion, unmeasured }: { row: ComponentRow;
       <AppText variant="small" color="muted" style={styles.explain}>
         {row.explain}
       </AppText>
+      {row.scale ? (
+        <Pressable onPress={() => setOpen((v) => !v)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`How ${row.label} is scored`} testID={`scale-${row.key}`}>
+          <AppText variant="micro" color="muted">
+            {open ? '− How it is scored' : '+ How it is scored'}
+          </AppText>
+        </Pressable>
+      ) : null}
+      {row.scale && open ? (
+        <AppText variant="small" color="muted" style={styles.scale}>
+          {row.scale}
+        </AppText>
+      ) : null}
     </Animated.View>
   );
 }
@@ -99,4 +114,5 @@ const styles = StyleSheet.create({
   fill: { height: '100%', flexDirection: 'row', justifyContent: 'flex-end' },
   cap: { width: 2, height: '100%', opacity: 0.85 },
   explain: { marginTop: 2 },
+  scale: { fontStyle: 'italic' },
 });

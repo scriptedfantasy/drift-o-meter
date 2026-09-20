@@ -57,19 +57,25 @@ export function replayLayout(w: number, h: number, insets: Insets, controlsRows 
   const left = insets.left + gutter;
   const right = w - insets.right - gutter;
   const scrubH = landscape ? 30 : 34;
-  const topBar = (landscape ? 58 : 104) + insets.top;
-  const bottomBar = (landscape ? 64 : 96) + insets.bottom;
+  const topBar = (landscape ? 72 : 104) + insets.top;
+  const bottomBar = (landscape ? 70 : 96) + insets.bottom;
   const scrub: Rect = { x: insets.left, y: h - bottomBar - scrubH, w: w - insets.left - insets.right, h: scrubH };
   const stage: Rect = { x: 0, y: topBar, w, h: scrub.y - topBar };
   const rowH = 46;
   const rows = landscape ? 1 : controlsRows;
   const controlsH = rows * rowH + (rows - 1) * 8;
-  const controls: Rect = { x: left, y: scrub.y - controlsH - 10, w: right - left, h: controlsH };
+  // Landscape has a wide bottom bar and puts the transport IN it; portrait floats the controls
+  // over the bottom of the stage, so the frame keeps the proportions of the reference.
+  const controls: Rect = landscape
+    ? { x: left, y: scrub.y + scrubH + 12, w: right - left, h: controlsH }
+    : { x: left, y: scrub.y - controlsH - 10, w: right - left, h: controlsH };
   const hero = landscape
-    ? { x: left, baseline: scrub.y - 26, inBar: false }
+    ? { x: left, baseline: scrub.y - 30, inBar: false }
     : { x: left, baseline: insets.top + 86, inBar: true };
-  const readout = landscape ? { x: right, baseline: topBar + 40 } : { x: right, baseline: insets.top + 86 };
-  const info = { x: left, y: h - bottomBar + (landscape ? 22 : 26), right };
+  const readout = landscape ? { x: right, baseline: scrub.y - 30 } : { x: right, baseline: insets.top + 86 };
+  // Landscape runs the lap / track / total line as a second row of the top bar, because the
+  // bottom bar belongs to the transport.
+  const info = landscape ? { x: left, y: insets.top + 52, right } : { x: left, y: h - bottomBar + 26, right };
   const chrome = { y: insets.top + (landscape ? 24 : 30), left, right };
   return { w, h, landscape, insets, gutter, topBar, bottomBar, scrub, stage, controls, hero, readout, info, chrome };
 }

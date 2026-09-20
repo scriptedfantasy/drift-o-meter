@@ -48,6 +48,13 @@ export interface HudSignals {
   carHeading: SharedValue<number>;
   /** 1 while the estimator has a usable fix. */
   valid: SharedValue<number>;
+  /**
+   * How much of what the gauge is showing the engine is willing to stand behind: 1 rigid and
+   * locked, 0.65 shaking or weak GPS, 0 when the run is not scoreable at all (loose mount,
+   * implausible physics, no fix). The gauge dims and stops blooming with it — a HUD that
+   * celebrates 82° on a hand-held phone is lying about a number the scorer already threw away.
+   */
+  trust: SharedValue<number>;
 }
 
 export function useHudSignals(): HudSignals {
@@ -71,6 +78,7 @@ export function useHudSignals(): HudSignals {
   const carY = useSharedValue(0);
   const carHeading = useSharedValue(0);
   const valid = useSharedValue(0);
+  const trust = useSharedValue(0);
 
   return useMemo(
     () => ({
@@ -94,6 +102,7 @@ export function useHudSignals(): HudSignals {
       carY,
       carHeading,
       valid,
+      trust,
     }),
     [
       betaDeg,
@@ -116,6 +125,7 @@ export function useHudSignals(): HudSignals {
       carY,
       carHeading,
       valid,
+      trust,
     ],
   );
 }
@@ -142,4 +152,5 @@ export function resetSignals(s: HudSignals): void {
   s.carY.value = 0;
   s.carHeading.value = 0;
   s.valid.value = 0;
+  s.trust.value = 0;
 }

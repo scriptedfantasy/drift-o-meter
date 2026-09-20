@@ -36,7 +36,7 @@ export function DriftList({ rows, sparkWidth, run, reduceMotion = false, unscore
   return (
     <View style={styles.list} testID={testID}>
       <View style={styles.legend}>
-        <AppText variant="micro" color="muted">
+        <AppText variant="micro" color="muted" style={styles.noCaps}>
           |β| per slide · axis 0–{maxDeg}°{rows.some((r) => r.peakDeg > maxDeg) ? ' (clipped)' : ''}
         </AppText>
         <AppText variant="micro" color="muted">
@@ -79,7 +79,7 @@ function Row({
         accessibilityRole="button"
         accessibilityLabel={`Drift ${row.index}, peak ${Math.round(row.peakDeg)} degrees${unscored ? '' : `, ${row.points} points`}. Open in the replay.`}
         testID={`drift-row-${row.index}`}
-        style={({ pressed }) => [styles.row, { borderLeftColor: alpha(accent, row.lost ? 0.4 : 0.9) }, pressed && styles.pressed]}>
+        style={({ pressed }) => [styles.row, { borderLeftColor: alpha(unscored ? colors.muted : accent, row.lost && !unscored ? 0.4 : 0.9) }, pressed && styles.pressed]}>
         <View style={styles.idCol}>
           <AppText variant="subheading" color={row.lost ? 'muted' : 'text'} numeric style={styles.id}>
             {row.index}
@@ -90,17 +90,27 @@ function Row({
         </View>
 
         <View style={styles.sparkCol}>
-          <Sparkline trace={row.trace} width={sparkWidth} height={42} maxDeg={row.spun ? Math.max(maxDeg, row.peakDeg * 1.06) : maxDeg} color={row.lost ? colors.muted : colors.ember} spun={row.spun} showGuides={false} />
+          <Sparkline
+            trace={row.trace}
+            width={sparkWidth}
+            height={42}
+            maxDeg={row.spun ? Math.max(maxDeg, row.peakDeg * 1.06) : maxDeg}
+            color={row.lost && !unscored ? colors.muted : colors.ember}
+            spun={row.spun && !unscored}
+            showGuides={false}
+          />
+          {/* On an unpublished run a spin is a judgement drawn from angles the monitor refused to
+              believe, so only the shape of the recording is shown. */}
           <View style={styles.tags}>
-            {row.spun ? <Tag label="SPIN" color={colors.red} filled /> : null}
-            {row.lost ? <Tag label="CHAIN LOST" color={colors.muted} /> : null}
-            {row.transitions > 0 ? <Tag label={`TRANSITION ×${row.transitions}`} color={colors.magenta} /> : null}
-            {!row.cleanExit && !row.spun ? <Tag label="SCRAPPY EXIT" color={colors.gold} /> : null}
+            {unscored ? null : row.spun ? <Tag label="SPIN" color={colors.red} filled /> : null}
+            {unscored ? null : row.lost ? <Tag label="CHAIN LOST" color={colors.muted} /> : null}
+            {row.transitions > 0 && !unscored ? <Tag label={`TRANSITION ×${row.transitions}`} color={colors.magenta} /> : null}
+            {!row.cleanExit && !row.spun && !unscored ? <Tag label="SCRAPPY EXIT" color={colors.ember} /> : null}
           </View>
         </View>
 
         <View style={styles.numbers}>
-          <AppText variant="telemetry" color={row.spun ? colors.red : colors.text} numeric style={styles.peak}>
+          <AppText variant="telemetry" color={row.spun && !unscored ? colors.red : colors.text} numeric style={styles.peak}>
             {Math.round(row.peakDeg)}°
           </AppText>
           <AppText variant="micro" color="muted" numeric>
@@ -141,4 +151,6 @@ const styles = StyleSheet.create({
   numbers: { alignItems: 'flex-end', minWidth: 96, gap: 1 },
   peak: { fontSize: 26, lineHeight: 26 },
   struck: { textDecorationLine: 'line-through' },
+  // uppercase β is Β, which reads as a Latin B: this label must not be transformed
+  noCaps: { textTransform: 'none' },
 });

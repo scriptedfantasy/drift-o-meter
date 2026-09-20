@@ -11,12 +11,17 @@ import type { Grade, StyleCalloutKind } from '../../engine/types';
  */
 export function scoreColor(score: number): string {
   if (!Number.isFinite(score)) return colors.muted;
-  if (score >= 90) return colors.gold;
+  // Ember is THE accent, and gold means the S grade — nothing else. A 90-plus component used to
+  // go gold, which put five times more gold than ember on a good run and left gold meaning "S
+  // grade", "strong component", "wandering corner" and "scrappy exit" at once.
   if (score < 45) return colors.red;
   return colors.ember;
 }
 
-/** The word a driver would use for the grade they just got. */
+/**
+ * The word a driver would use for the grade they just got. `gradeWord()` is what screens call:
+ * a lap with no slides in it is not "Rough", it is a lap with no slides.
+ */
 export const GRADE_WORDS: Record<Grade, string> = {
   S: 'Flawless',
   A: 'Seriously quick',
@@ -47,3 +52,8 @@ export const KIND_NAMES: Record<StyleCalloutKind, string> = {
   'perfect-exit': 'PERFECT EXIT',
   'clean-lap': 'CLEAN LAP',
 };
+
+/** The grade's word, except when there was nothing to grade. */
+export function gradeWord(grade: Grade, drifts: number): string {
+  return drifts === 0 ? 'No slides' : GRADE_WORDS[grade];
+}

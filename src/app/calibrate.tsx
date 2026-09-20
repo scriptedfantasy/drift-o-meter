@@ -30,8 +30,10 @@ import {
   cautionsOf,
   EngineStrip,
   headlineOf,
+  isFlat,
   Lights,
   lightsOf,
+  mountVerdict,
   phaseOf,
   qualityBand,
   SHARP_QUALITY,
@@ -56,7 +58,8 @@ export default function CalibrateScreen() {
   const lights = useMemo(() => lightsOf(reading), [reading]);
   const steps = useMemo(() => stepsOf(reading), [reading]);
   const cautions = useMemo(() => cautionsOf(reading), [reading]);
-  const dialSize = landscape ? Math.min(height - 140, 252) : Math.min(width - gutter * 2, 300);
+  const flat = isFlat(reading);
+  const dialSize = landscape ? Math.min(height - 150, 236) : Math.min(width - gutter * 2, 264);
 
   const drive = () => router.replace('/drive');
 
@@ -82,23 +85,31 @@ export default function CalibrateScreen() {
     <View style={styles.dialWrap}>
       <MountDialView
         size={dialSize}
-        rollDeg={reading.rollDeg}
+        // lying flat, the in-plane direction of gravity is noise: hold the glyph level instead
+        // of spinning it, because a flat phone genuinely has no readable roll
+        rollDeg={flat ? 0 : reading.rollDeg}
         reclineDeg={reading.reclineDeg}
         quality={reading.quality}
         threshold={TRUST_QUALITY}
         sharp={SHARP_QUALITY}
+        tone={band.color}
         settled={lights[0].state === 'on'}
         resolved={reading.forwardResolved}
-        loose={reading.mount === 'loose'}
+        loose={mountVerdict(reading) === 'loose'}
         ready={phase === 'ready'}
         idle={reading.samples === 0}
         testID="mount-dial"
       />
-      <View style={styles.readout} pointerEvents="none">
-        <AppText variant="hero" color={band.color} numeric numberOfLines={1} style={[styles.percent, { fontSize: dialSize * 0.3, lineHeight: dialSize * 0.29 }]}>
+      {/* The one honest number, and what it has to clear. Under the dial rather than over the
+          glyph: the glyph is the other half of the answer and must stay readable. */}
+      <View style={styles.readout}>
+        <AppText variant="hero" color={band.color} numeric style={styles.percent} testID="confidence">
           {band.display}
         </AppText>
-        <Micro color={band.color === 'red' ? 'red' : 'muted'}>Confidence</Micro>
+        <Micro color={band.color === 'red' ? 'red' : 'muted'}>Confidence in this mount</Micro>
+        <Micro style={styles.legend} numberOfLines={1}>
+          {Math.round(TRUST_QUALITY * 100)}% the judge&apos;s bar · {Math.round(SHARP_QUALITY * 100)}% no caveats
+        </Micro>
       </View>
     </View>
   );
@@ -109,12 +120,15 @@ export default function CalibrateScreen() {
       <AppText variant="title" color={head.color} numberOfLines={2} style={styles.title} accessibilityRole="header">
         {head.title}
       </AppText>
-      <Small numberOfLines={3} style={styles.because}>
-        {head.because}
-      </Small>
+      {head.because ? (
+        <Small numberOfLines={3} style={styles.because}>
+          {head.because}
+        </Small>
+      ) : null}
       <View style={styles.attitudeRow}>
         <Tag label={attitudeWords(reading)} color={colors.cyan} />
-        <Micro numberOfLines={1}>{band.label}</Micro>
+        {/* the band label would only repeat the banner while the mount is moving */}
+        {phase === 'blocked' ? null : <Micro numberOfLines={2} style={styles.bandLabel}>{band.label}</Micro>}
       </View>
     </View>
   );
@@ -185,14 +199,16 @@ const styles = StyleSheet.create({
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: space[6] },
   heroSide: { flex: 1, minWidth: 0 },
 
-  dialWrap: { alignItems: 'center', justifyContent: 'center' },
-  readout: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  percent: { letterSpacing: -3, includeFontPadding: false },
+  dialWrap: { alignItems: 'center', justifyContent: 'center', gap: space[1] },
+  readout: { alignItems: 'center', gap: 0, marginTop: -space[2] },
+  percent: { fontSize: 64, lineHeight: 62, letterSpacing: -3, includeFontPadding: false },
+  legend: { marginTop: space[2], opacity: 0.75 },
 
   verdict: { gap: space[1], alignSelf: 'stretch' },
   title: { fontSize: 38, lineHeight: 38 },
   because: { maxWidth: 420 },
   attitudeRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], flexWrap: 'wrap', marginTop: space[2] },
+  bandLabel: { flexShrink: 1 },
 
   lights: { marginTop: space[1] },
   steps: {},

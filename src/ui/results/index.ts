@@ -11,7 +11,7 @@ export { buildFixtureSession, fixtureQuery, resolveFixture, FIXTURES, DEFAULT_FI
 export type { FixtureSpec } from './fixture';
 export { cornerLabel, cornerShape, cornerTag, cornerAt } from './corners';
 export { verdictFor, componentRows, worstCorner, bestCorner, weightedHeldPeak, weightedJitter } from './verdict';
-export { GRADE_SCALE, GRADE_WORDS, KIND_NAMES, scoreColor } from './palette';
+export { GRADE_SCALE, GRADE_WORDS, gradeWord, KIND_NAMES, scoreColor } from './palette';
 export { GradeReveal, REVEAL_MODES } from './GradeReveal';
 export type { RevealMode } from './GradeReveal';
 export { GradeScale } from './GradeScale';

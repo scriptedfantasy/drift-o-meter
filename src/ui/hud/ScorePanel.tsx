@@ -12,6 +12,7 @@ import Animated, { useAnimatedReaction, useAnimatedStyle, useSharedValue, withSe
 import { AppText, Micro } from '../Text';
 import { easings } from '../motion';
 import { alpha, colors, fontFamilies, radii, space } from '../theme';
+import { readIntegrity } from './HudChrome';
 import Odometer from './Odometer';
 import type { HudSignals } from './signals';
 import type { HudSnapshot } from './useDriveRun';
@@ -27,14 +28,19 @@ export interface ScorePanelProps {
 
 function ScorePanelImpl({ signals, snapshot, size = 54, align = 'left', testID }: ScorePanelProps) {
   const right = align === 'right';
+  // When the engine does not stand behind the reading, the digits lose their colour and the
+  // line underneath says exactly what is wrong with them — rather than a confident ember number
+  // the results screen may never agree with.
+  const note = readIntegrity(snapshot).scoreNote;
+  const trusted = snapshot.trust > 0;
   return (
     <View style={[styles.wrap, right && styles.wrapRight]} testID={testID}>
       <View style={[styles.head, right && styles.headRight]}>
         <Micro>Score</Micro>
-        <MultiplierChip signals={signals} value={snapshot.multiplier} />
+        {trusted ? <MultiplierChip signals={signals} value={snapshot.multiplier} /> : null}
       </View>
-      <Odometer value={signals.total} size={size} columns={6} testID="hud-odometer" />
-      <ChainBar signals={signals} snapshot={snapshot} right={right} />
+      <Odometer value={signals.total} size={size} columns={6} color={trusted ? colors.ember : colors.muted} testID="hud-odometer" />
+      <ChainBar signals={signals} snapshot={snapshot} right={right} note={note} />
     </View>
   );
 }
@@ -65,10 +71,20 @@ function MultiplierChip({ signals, value }: { signals: HudSignals; value: number
   );
 }
 
-function ChainBar({ signals, snapshot, right }: { signals: HudSignals; snapshot: HudSnapshot; right: boolean }) {
+function ChainBar({ signals, snapshot, right, note }: { signals: HudSignals; snapshot: HudSnapshot; right: boolean; note: string | null }) {
   const fill = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, signals.chainRatio.value)) * 100}%` }));
   const glow = useAnimatedStyle(() => ({ opacity: 0.25 + 0.75 * Math.min(1, signals.chainRatio.value) }));
   const atRisk = snapshot.chainPoints > 0;
+  if (note) {
+    return (
+      <View style={[styles.chainWrap, right && styles.wrapRight]}>
+        <View style={styles.chainTrack} />
+        <View style={[styles.chainHead, right && styles.headRight]}>
+          <Micro color={colors.red}>{note}</Micro>
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={[styles.chainWrap, right && styles.wrapRight]}>
       <View style={styles.chainTrack}>

@@ -57,7 +57,9 @@ export function LastRunCard({ entry, facts, onOpen, onDelete, testID }: RunProps
         pointerEvents="none"
       />
       <View style={styles.cardHead}>
-        <Micro color={untrusted ? 'red' : 'ember'}>{untrusted ? 'Last run · not judged' : 'Last run'}</Micro>
+        <Micro color={untrusted ? 'red' : 'ember'} numberOfLines={1}>
+          {untrusted ? 'Not judged' : formatDate(entry.startedAt)}
+        </Micro>
         <Micro numberOfLines={1}>{formatDuration(entry.durationS)}</Micro>
       </View>
 
@@ -75,7 +77,7 @@ export function LastRunCard({ entry, facts, onOpen, onDelete, testID }: RunProps
       <AppText variant="subheading" numberOfLines={1} style={styles.trackName}>
         {entry.track ?? entry.name}
       </AppText>
-      <Micro numberOfLines={1}>{formatDate(entry.startedAt)}</Micro>
+      {untrusted ? <Micro numberOfLines={1}>{formatDate(entry.startedAt)}</Micro> : null}
 
       {untrusted && facts?.message ? (
         <Small color="red" style={styles.voidNote} numberOfLines={3}>

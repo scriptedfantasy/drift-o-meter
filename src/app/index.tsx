@@ -62,7 +62,9 @@ function queryParams(query: string): Record<string, string> {
 export default function GarageScreen() {
   const router = useRouter();
   const params = useLocalSearchParams() as Record<string, string | string[] | undefined>;
-  const demo = first(params.demo);
+  // expo-router gives the query on web; `currentSearch()` is the belt to that braces, because a
+  // statically exported page can hydrate before the router has parsed the URL.
+  const demo = first(params.demo) ?? new URLSearchParams(currentSearch() ?? '').get('demo') ?? undefined;
   const garage = useGarage(demo);
   const { settings, update } = useSettings();
 
@@ -147,7 +149,7 @@ export default function GarageScreen() {
               <AppText variant="subheading" color="cyan" style={styles.calibrateLabel}>
                 Calibrate the mount
               </AppText>
-              <Micro numberOfLines={1}>Takes one straight and one hard pull</Micro>
+              <Micro numberOfLines={1}>One straight, one hard pull</Micro>
             </Pressable>
             <Tag label={sourceLabel} color={simParams ? colors.cyan : colors.green} filled style={styles.sourceTag} />
           </View>
@@ -174,7 +176,7 @@ export default function GarageScreen() {
             </>
           ) : (
             <>
-              <SectionHead title="Last run" right={formatDuration(garage.last?.durationS ?? 0)} />
+              <SectionHead title="Last run" right={garage.entries.length === 1 ? '1 stored' : `${garage.entries.length} stored`} />
               {garage.last ? (
                 <SwipeToDelete onDelete={() => setPending(garage.last)} enabled={pending === null} testID="last-run-swipe">
                   <LastRunCard

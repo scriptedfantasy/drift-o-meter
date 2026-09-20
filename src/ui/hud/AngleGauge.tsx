@@ -21,8 +21,12 @@ import type { HudSignals } from './signals';
 
 /** Half the angular width of the arc on screen, degrees (0 = straight up). */
 const HALF_SWEEP = 78;
-/** |β| at the ends of the arc. */
-const MAX_BETA = 90;
+/**
+ * |β| at the ends of the arc. A rigid, well-driven run peaks around 50–60°; 90° left the outer
+ * third of the dial as dead travel, so the scale ends where a slide ends and anything past it
+ * (a spin) pins the needle, which is the correct reading of a spin.
+ */
+const MAX_BETA = 70;
 const DEG = Math.PI / 180;
 
 const NUMERAL_FONT = require('@expo-google-fonts/barlow-condensed/800ExtraBold_Italic/BarlowCondensed_800ExtraBold_Italic.ttf');
@@ -48,15 +52,18 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const baselineY = numeralMidY + numeralSize * 0.35;
 
   const font = useFont(NUMERAL_FONT, numeralSize);
-  const degFont = useFont(NUMERAL_FONT, numeralSize * 0.46);
   const labelFont = useFont(LABEL_FONT, Math.max(12, Math.round(numeralSize * 0.26)));
 
   /**
-   * Measured once per font: a digit's advance, the "°" width, the side letter's half width.
-   * `getTextWidth` (not `measureText`, which CanvasKit's RN-Web shim does not implement) gives
-   * the ADVANCE, which is what a layout needs; Barlow Condensed's digits are tabular, so one
-   * measurement covers all ten. The worklets below only ever multiply these three numbers, so
-   * the hero numeral can be laid out on the UI thread without touching the font again.
+   * Measured once per font: a digit's advance, the degree sign's advance, the side letter's half
+   * width. `getTextWidth` (not `measureText`, which CanvasKit's RN-Web shim does not implement)
+   * gives the ADVANCE, which is what a layout needs; Barlow Condensed's digits are tabular, so
+   * one measurement covers all ten. The worklets below only multiply these numbers, so the hero
+   * numeral is laid out on the UI thread without touching the font again.
+   *
+   * The degree sign is part of the numeral STRING rather than a second text node: placing it by
+   * advance left it visibly detached after a narrow glyph like "1". Skia sets it where the
+   * typeface says it goes.
    */
   const metrics = useMemo(() => {
     const width = (f: SkFont | null, text: string, fallback: number) => {
@@ -69,13 +76,13 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
       }
     };
     const advance = width(font, '0', numeralSize * 0.5);
-    const deg = width(degFont, '\u00B0', numeralSize * 0.2);
+    const deg = width(font, '\u00B0', numeralSize * 0.3);
     const letterHalf = width(labelFont, 'R', numeralSize * 0.12) / 2;
     return { advance, deg, letterHalf };
-  }, [degFont, font, labelFont, numeralSize]);
+  }, [font, labelFont, numeralSize]);
 
   /** Distance from the centre to the L/R chevron, wide enough to clear a two-digit numeral. */
-  const chevronOffset = metrics.advance * 1.08 + metrics.deg * 0.8 + numeralSize * 0.1;
+  const chevronOffset = metrics.advance + metrics.deg * 0.5 + numeralSize * 0.14;
 
   const rect = useMemo(() => ({ x: cx - r, y: cy - r, width: 2 * r, height: 2 * r }), [cx, cy, r]);
 
@@ -94,11 +101,16 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
     return b.detach();
   }, [cx, cy, r, stroke]);
 
+  /**
+   * The needle lives in the outer ring ONLY (0.80 r → the arc). The numeral block reaches
+   * 0.75 r, so at small angles a longer needle was drawn straight through the number exactly
+   * when the driver is reading it to decide whether the car has taken a set.
+   */
   const needle = useMemo(() => {
-    const tip = r - stroke * 1.0;
-    const base = r * 0.66;
-    const halfBase = Math.max(4, r * 0.038);
-    const halfTip = Math.max(1.5, r * 0.009);
+    const tip = r - stroke * 0.95;
+    const base = r * 0.8;
+    const halfBase = Math.max(4.5, r * 0.042);
+    const halfTip = Math.max(2, r * 0.012);
     return Skia.PathBuilder.Make()
       .moveTo(cx - halfBase, cy - base)
       .lineTo(cx - halfTip, cy - tip)
@@ -146,16 +158,21 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const needleTransform = useDerivedValue(() => [{ rotate: (clamped.value / MAX_BETA) * HALF_SWEEP * DEG }]);
   const peakTransform = useDerivedValue(() => [{ rotate: (Math.max(-MAX_BETA, Math.min(MAX_BETA, signals.peakDeg.value)) / MAX_BETA) * HALF_SWEEP * DEG }]);
   const peakOpacity = useDerivedValue(() => (Math.abs(signals.peakDeg.value) > 8 ? 0.9 : 0));
-  const hot = useDerivedValue(() => interpolateColor(signals.absDeg.value, [0, 30, 42, 65], [colors.ember, colors.ember, colors.ember, colors.gold]));
-  const glowOpacity = useDerivedValue(() => 0.22 + 0.68 * signals.intensity.value);
-  const bowlOpacity = useDerivedValue(() => 0.12 + 0.5 * signals.intensity.value);
-  const dimmed = useDerivedValue(() => 0.62 + 0.38 * signals.valid.value);
+  // Ember through 34°, shifting to gold from 40° and fully gold by 55° — the design's promise,
+  // on the range a real slide actually uses. An untrusted reading is drawn in muted grey
+  // instead: the engine is not scoring it, so the dial does not celebrate it.
+  const hot = useDerivedValue(() =>
+    signals.trust.value <= 0
+      ? colors.muted
+      : interpolateColor(signals.absDeg.value, [0, 34, 40, 55], [colors.ember, colors.ember, colors.ember, colors.gold]),
+  );
+  const glowOpacity = useDerivedValue(() => (0.22 + 0.68 * signals.intensity.value) * signals.trust.value);
+  const bowlOpacity = useDerivedValue(() => (0.12 + 0.5 * signals.intensity.value) * signals.trust.value);
+  const dimmed = useDerivedValue(() => 0.45 + 0.35 * signals.valid.value + 0.2 * signals.trust.value);
 
-  const numeral = useDerivedValue(() => String(Math.round(Math.min(99, signals.absDeg.value))));
-  const blockLeft = useDerivedValue(() => cx - (numeral.value.length * metrics.advance + metrics.deg * 0.8) / 2);
-  // Tucked back into the italic slant: a digit's ADVANCE is wider than its ink, and "1" is
-  // narrower still, so sitting the sign at the full advance leaves it floating in mid air.
-  const degX = useDerivedValue(() => blockLeft.value + numeral.value.length * metrics.advance - metrics.advance * 0.04);
+  const digits = useDerivedValue(() => String(Math.round(Math.min(99, signals.absDeg.value))));
+  const numeral = useDerivedValue(() => digits.value + '\u00B0');
+  const blockLeft = useDerivedValue(() => cx - (digits.value.length * metrics.advance + metrics.deg) / 2);
   const numeralScale = useDerivedValue(() => [{ scale: 1 + 0.08 * signals.punch.value }]);
   const chevronTransform = useDerivedValue(() => [
     { translateX: cx + signals.side.value * chevronOffset },
@@ -209,7 +226,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
       </Group>
 
       {/* the hero numeral */}
-      {font && degFont ? (
+      {font ? (
         <Group origin={numeralOrigin} transform={numeralScale} opacity={dimmed}>
           <Group opacity={0.5}>
             <SkText x={blockLeft} y={baselineY} text={numeral} font={font} color={hot}>
@@ -217,7 +234,6 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
             </SkText>
           </Group>
           <SkText x={blockLeft} y={baselineY} text={numeral} font={font} color={hot} />
-          <SkText x={degX} y={baselineY - numeralSize * 0.36} text="°" font={degFont} color={hot} opacity={0.92} />
           <Group transform={chevronTransform}>
             <Path path={chevron} color={hot} opacity={0.95} />
           </Group>

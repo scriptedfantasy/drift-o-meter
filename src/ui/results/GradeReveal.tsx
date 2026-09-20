@@ -15,7 +15,7 @@ import type { Grade } from '../../engine/types';
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies, space } from '../theme';
 import GradeBurstView from './skia/GradeBurstView';
-import { GRADE_WORDS } from './palette';
+import { gradeWord } from './palette';
 
 /** `full` plays it; `off` skips it; the rest freeze a frame for the screenshot harness. */
 export type RevealMode = 'full' | 'off' | 'hold' | 'slam' | 'settle';
@@ -29,6 +29,8 @@ export interface GradeRevealProps {
   rating: number;
   /** Small uppercase line under the rating (track · laps · date). */
   kicker: string;
+  /** How many slides the run contained: a lap with none is not graded "Rough". */
+  drifts?: number;
   mode?: RevealMode;
   reduceMotion?: boolean;
   onDone(): void;
@@ -47,7 +49,7 @@ const RM_TOTAL = 1050;
 /** Frames the harness can freeze on. */
 const FROZEN: Partial<Record<RevealMode, number>> = { hold: 640, slam: 1170, settle: 1980 };
 
-export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduceMotion = false, onDone, testID }: GradeRevealProps) {
+export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = 'full', reduceMotion = false, onDone, testID }: GradeRevealProps) {
   const { width, height } = useWindowDimensions();
   const frozenAt = FROZEN[mode];
   const total = reduceMotion ? RM_TOTAL : TOTAL;
@@ -170,7 +172,7 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
           <Animated.View style={[styles.meta, meta]}>
             <View style={[styles.ratingRule, { backgroundColor: alpha(color, 0.5) }]} />
             <AppText variant="heading" color={color} uppercase style={styles.word}>
-              {GRADE_WORDS[grade]}
+              {gradeWord(grade, drifts)}
             </AppText>
             <AppText variant="telemetry" color="text" numeric style={styles.rating}>
               {Number.isFinite(rating) ? rating.toFixed(1) : '--'}
@@ -210,15 +212,18 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
 const styles = StyleSheet.create({
   root: { backgroundColor: colors.bg0, zIndex: 20 },
   stage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  burst: { position: 'absolute', left: '50%', top: '50%' },
+  // an absolutely positioned sibling paints above static ones on web: the shockwave washed
+  // out the bottom half of the grade letter until these two were given an explicit order
+  burst: { position: 'absolute', left: '50%', top: '50%', zIndex: 0 },
   letter: {
+    zIndex: 2,
     fontFamily: fontFamilies.display.extraboldItalic,
     letterSpacing: -6,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 48,
     includeFontPadding: false,
   },
-  meta: { alignItems: 'center', gap: space[1], marginTop: space[2] },
+  meta: { alignItems: 'center', gap: space[1], marginTop: space[2], zIndex: 2 },
   ratingRule: { width: 64, height: 2, marginBottom: space[3] },
   word: { letterSpacing: 2 },
   rating: { marginTop: space[1] },

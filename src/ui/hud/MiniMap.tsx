@@ -27,21 +27,30 @@ export interface MiniMapProps {
   testID?: string;
 }
 
+/** Rebuild at most every REBUILD_EVERY new points, and never draw more than MAX_SEGMENTS. */
+const REBUILD_EVERY = 8;
+const MAX_SEGMENTS = 600;
+
 export default function MiniMap({ width, height, trail, count, signals, testID }: MiniMapProps) {
-  const fit = useMemo(() => fitTrail(trail, width, height, 14, 80), [trail, width, height, count]);
+  // Both paths are rebuilt from scratch, so the cost is bounded twice: by how OFTEN (once per
+  // 8 new points, about 1 Hz, not with every 10 Hz snapshot) and by how MANY (the trail is
+  // strided down to 600 segments). A twenty-minute run costs the same as a one-minute run.
+  const generation = Math.floor(Math.min(count, trail.n) / REBUILD_EVERY);
+  const fit = useMemo(() => fitTrail(trail, width, height, 14, 80), [trail, width, height, generation]);
 
   const paths = useMemo(() => {
     const cold = Skia.PathBuilder.Make();
     const hot = Skia.PathBuilder.Make();
     const n = Math.min(count, trail.n);
-    if (n > 1) {
+    const step = Math.max(1, Math.ceil(n / MAX_SEGMENTS));
+    if (n > step) {
       cold.moveTo(trail.x[0], trail.y[0]);
-      for (let i = 1; i < n; i++) cold.lineTo(trail.x[i], trail.y[i]);
+      for (let i = step; i < n; i += step) cold.lineTo(trail.x[i], trail.y[i]);
       let open = false;
-      for (let i = 1; i < n; i++) {
+      for (let i = step; i < n; i += step) {
         if (trail.drift[i] === 1) {
           if (!open) {
-            hot.moveTo(trail.x[i - 1], trail.y[i - 1]);
+            hot.moveTo(trail.x[i - step], trail.y[i - step]);
             open = true;
           }
           hot.lineTo(trail.x[i], trail.y[i]);
@@ -51,7 +60,7 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
       }
     }
     return { cold: cold.detach(), hot: hot.detach() };
-  }, [count, trail]);
+  }, [generation, trail]);
 
   const worldTransform = useMemo(
     () => [{ translateX: fit.ox }, { translateY: fit.oy }, { scaleX: fit.scale }, { scaleY: -fit.scale }],

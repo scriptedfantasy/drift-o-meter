@@ -52,7 +52,7 @@ export default function DriveScreen() {
       <EdgeBloom signals={signals} />
       <Animated.View style={[styles.fill, shake]}>
         <SafeAreaView style={styles.fill} edges={['top', 'bottom', 'left', 'right']}>
-          <View style={[styles.frame, landscape && styles.frameLandscape, live && styles.frameLive]}>
+          <View style={[styles.frame, landscape && styles.frameLandscape, live && styles.frameLive, live && landscape && styles.frameLiveLandscape]}>
             {landscape ? (
               <View style={styles.landscapeRow}>
                 <View style={styles.leftColumn}>
@@ -65,7 +65,7 @@ export default function DriveScreen() {
 
                 <View style={styles.rightColumn}>
                   <View style={styles.calloutsLandscape} pointerEvents="none">
-                    <CalloutStack events={run.events} fromRight size={22} testID="hud-callouts" />
+                    <CalloutStack events={run.events} fromRight size={22} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
                   </View>
                   {live ? (
                     <>
@@ -78,7 +78,6 @@ export default function DriveScreen() {
                         </View>
                         <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
                       </View>
-                      <StopControl onPress={run.stop} compact />
                     </>
                   ) : null}
                 </View>
@@ -117,13 +116,19 @@ export default function DriveScreen() {
                       <ScoreBanner banner={run.banner} size={28} />
                       <ScorePanel signals={signals} snapshot={run.snapshot} size={58} testID="hud-score" />
                     </View>
-
-                    <StopControl onPress={run.stop} />
                   </>
                 ) : null}
               </>
             )}
           </View>
+          {/* STOP is docked, not stacked: in a warning state the status strip and the banner
+              grow, and a flex column has nowhere to put the excess but under the home
+              indicator — which is exactly when the driver needs to reach it. */}
+          {live ? (
+            <View style={[styles.stopDock, landscape && styles.stopDockLandscape]}>
+              <StopControl onPress={run.stop} compact={landscape} />
+            </View>
+          ) : null}
         </SafeAreaView>
       </Animated.View>
 
@@ -194,13 +199,20 @@ function SavingOverlay() {
   );
 }
 
+/** Height reserved for the docked STOP control. */
+const STOP_DOCK_H = 54;
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   fill: { flex: 1 },
   // Bands, not a stack with a hole in it: whatever height is left over after the gauge, the
   // callout band and the numbers is shared between the gaps, so nothing pools in one place.
   frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
-  frameLive: { justifyContent: 'space-between' },
+  // Room for the docked STOP control, so nothing in the column can ever slide underneath it.
+  frameLive: { justifyContent: 'space-between', paddingBottom: STOP_DOCK_H + space[4] },
+  frameLiveLandscape: { paddingBottom: space[2] },
+  stopDock: { position: 'absolute', left: gutter, right: gutter, bottom: space[3] },
+  stopDockLandscape: { left: undefined, right: gutter, bottom: space[2], width: '46%' },
   frameLandscape: { paddingTop: space[2], paddingBottom: space[2] },
 
   stage: { alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2] },
@@ -212,7 +224,7 @@ const styles = StyleSheet.create({
   landscapeRow: { flex: 1, flexDirection: 'row', gap: space[5] },
   leftColumn: { flex: 1.06, gap: space[2] },
   gaugeWrapLandscape: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: space[2] },
-  rightColumn: { flex: 1, justifyContent: 'flex-end', gap: space[3], paddingBottom: space[1] },
+  rightColumn: { flex: 1, justifyContent: 'flex-end', gap: space[3], paddingBottom: STOP_DOCK_H - space[2] },
   calloutsLandscape: { flex: 1, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[2], paddingRight: space[1] },
   scoreRowLandscape: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
 

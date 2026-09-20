@@ -76,7 +76,7 @@ export const Sparkline = memo(function Sparkline({
           </LinearGradient>
         </Defs>
         {showGuides && top >= EXTREME_DEG ? (
-          <Line x1={0} y1={y(EXTREME_DEG)} x2={width} y2={y(EXTREME_DEG)} stroke={alpha(colors.gold, 0.45)} strokeWidth={1} strokeDasharray="3 4" />
+          <Line x1={0} y1={y(EXTREME_DEG)} x2={width} y2={y(EXTREME_DEG)} stroke={alpha(colors.muted, 0.55)} strokeWidth={1} strokeDasharray="3 4" />
         ) : null}
         {spun ? <Line x1={0} y1={y(SPIN_DEG)} x2={width} y2={y(SPIN_DEG)} stroke={alpha(colors.red, 0.75)} strokeWidth={1} strokeDasharray="2 3" /> : null}
         <Line x1={0} y1={height - pad} x2={width} y2={height - pad} stroke={colors.line} strokeWidth={1} />
