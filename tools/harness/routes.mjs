@@ -11,8 +11,9 @@
  * The `/drive` routes capture MOMENTS, not t=0. `?at=<s>` warps the simulated recording to that
  * instant before anything is drawn and `?hold=1` freezes it there, so every HUD state below is
  * the same frame on every run — see tools/harness/README.md and `src/ui/hud/hudParams.ts`.
- * The times are for `sim=harbor&seed=1&laps=2`, whose drifts run 11.6–17.9, 19.3–48.9 (3
- * transitions, MANJI), 50.6–54.0, 58.6–66.5, 69.7–76.2 and 77.4–123.3 s (6 transitions).
+ * The times below are for `sim=harbor&seed=1&laps=2` and they MOVE when the engine is tuned
+ * (the detector and the scorer decide when a callout fires). To re-derive them, push that run
+ * through the pipeline and print the callout times — see tools/harness/README.md.
  */
 export const defaultRoutes = [
   { name: 'home', path: '/', waitMs: 900 },
@@ -27,8 +28,8 @@ export const defaultRoutes = [
   { name: 'drive', path: '/drive?sim=harbor&rate=1&at=96.3', waitMs: 3200, expectCanvas: true, minEmber: 2000 },
   // HELD 0.25 s after EXTREME ANGLE: 59° right, ×4.5, 20 800 points, three callouts stacked.
   { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 2000 },
-  // HELD 110 ms after TRANSITION ×2, mid-swing through zero: the magenta moment.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.05&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 800 },
+  // HELD 190 ms after TRANSITION ×2, mid-swing through zero: the magenta moment.
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 800 },
   // HELD just after a 10 570-point chain banked and the next drift (LINK ×3) started.
   { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
   // HELD on the same frame as drive-peak with the mount verdict overridden: the warning has to

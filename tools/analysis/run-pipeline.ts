@@ -22,8 +22,22 @@ import { DriftPipeline, type DriftPipelineOptions } from '../../src/engine/pipel
 import { radToDeg, type TruthSample } from '../../src/engine/types';
 
 const track = (process.argv[2] ?? 'harbor') as TrackId;
-const seed = Number(process.argv[3] ?? 1);
-const laps = Number(process.argv[4] ?? 2);
+
+/**
+ * Positional numbers are validated rather than coerced. `Number('artifacts/x.json')` is NaN,
+ * which used to run the whole simulation with seed NaN and then silently overwrite the
+ * default output path — a critic lost a session file to exactly that.
+ */
+function numericArg(value: string | undefined, name: string, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (!/^-?\d+(\.\d+)?$/.test(value)) {
+    throw new Error(`${name} must be a number, got "${value}" — did you mean out=${value}?`);
+  }
+  return Number(value);
+}
+
+const seed = numericArg(process.argv[3], 'seed', 1);
+const laps = numericArg(process.argv[4], 'laps', 2);
 
 const sim: SimulateOptions = { seed, laps, aggression: 0.8, consistency: 0.85 };
 const pipe: DriftPipelineOptions = { gpsLatencyS: 0.45 };

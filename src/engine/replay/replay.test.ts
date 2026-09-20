@@ -83,51 +83,55 @@ describe('fixture', () => {
     // allowed to run long. Everything else is capped.
     for (const seg of replay.segments) {
       expect(seg.durationS).toBeGreaterThanOrEqual(0.6);
-      if (seg.transitions === 0) expect(seg.durationS).toBeLessThanOrEqual(12);
+      // a chain is one drift, but its length is bounded by what it links: 10 s + 8 s each
+      expect(seg.durationS).toBeLessThanOrEqual(10 + 8 * seg.transitions + 0.2);
     }
     expect(replay.segments.length).toBeGreaterThanOrEqual(8);
   });
 
-  it('never cuts a switchback: a flick with no settle stays one drift with its transition', () => {
+  it('never cuts a switchback, and bounds a chain by its transition count', () => {
     // ROUND-3 FINDING 3: the cutter took the deepest interior |β| minimum, which in a linked
     // sequence IS the transition — so it severed precisely the beat that owns the magenta
-    // callout, flash, shake and haptic. Harbor went 6 transitions to 1, touge 3 to 0.
+    // callout, flash, shake and haptic. It now cuts through the middle of the longest LOBE.
+    // ROUND-4 FINDING 2: but "has a transition" must not license any duration, so the cap is
+    // `maxDurationS + chainBonusS × transitions` (10 s + 8 s each).
     const hz = 100;
-    const n = 30 * hz; // 30 s: comfortably past maxDurationS, so the cutter WILL want to cut
-    const truth = [];
-    for (let i = 0; i < n; i++) {
-      const t = i / hz;
-      // +35° held, a fast flick through zero at t=15 s, then −35° held. No settle anywhere.
-      const k = Math.tanh((15 - t) * 3);
-      const beta = degToRad(35) * k;
-      truth.push({
-        t,
-        x: 20 * t,
-        y: 0,
-        heading: 0,
-        course: beta,
-        speed: 20,
-        beta,
-        yawRate: 0,
-        ay: 0,
-        ax: 0,
-        drifting: Math.abs(beta) > degToRad(5),
-      });
-    }
-    const run = { trackId: 'harbor', motion: [], gps: [], truth, mount: [], lapTimes: [], corners: [], centreLine: [], originLat: 0, originLon: 0, plans: [], meta: {} } as unknown as SimulatedRun;
-    const flick = sessionFromSimulation(run, { track: false });
-    expect(flick.drifts.length).toBe(1);
-    expect(flick.drifts[0].durationS).toBeGreaterThan(25);
-    expect(flick.drifts[0].transitions).toBe(1);
-    const fr = buildReplay(flick);
-    expect(fr.segments.length).toBe(1);
-    expect(fr.segments[0].transitions).toBe(1);
-    expect(fr.markers.filter((m) => m.kind === 'transition').length).toBe(1);
-    // ...and a long SAME-direction slide still gets split
-    const flat = truth.map((s, i) => ({ ...s, beta: degToRad(35), course: degToRad(35), drifting: true, t: i / hz }));
-    const long = sessionFromSimulation({ ...run, truth: flat } as unknown as SimulatedRun, { track: false });
+    const flick = (totalS: number, amp = 35) => {
+      const truth = [];
+      for (let i = 0; i < totalS * hz; i++) {
+        const t = i / hz;
+        const beta = degToRad(amp) * Math.tanh((totalS / 2 - t) * 3); // one fast flick, no settle
+        truth.push({ t, x: 20 * t, y: 0, heading: 0, course: beta, speed: 20, beta, yawRate: 0, ay: 0, ax: 0, drifting: Math.abs(beta) > degToRad(5) });
+      }
+      return sessionFromSimulation({ trackId: 'harbor', motion: [], gps: [], truth, mount: [], lapTimes: [], corners: [], centreLine: [], originLat: 0, originLon: 0, plans: [], meta: {} } as unknown as SimulatedRun, { track: false });
+    };
+    // within the allowance (14 s, one transition → 18 s): one drift, transition intact
+    const short = flick(14);
+    expect(short.drifts.length).toBe(1);
+    expect(short.drifts[0].transitions).toBe(1);
+    const sr = buildReplay(short);
+    expect(sr.segments.length).toBe(1);
+    expect(sr.markers.filter((m) => m.kind === 'transition').length).toBe(1);
+
+    // over the allowance (30 s on one transition): it IS cut, but the flick survives — the cut
+    // lands mid-lobe, so the direction change still lives inside one of the pieces
+    const long = flick(30);
     expect(long.drifts.length).toBeGreaterThan(1);
-    expect(Math.max(...long.drifts.map((d) => d.durationS))).toBeLessThanOrEqual(12);
+    expect(long.drifts.reduce((n, d) => n + d.transitions, 0)).toBeGreaterThanOrEqual(1);
+    for (const d of long.drifts) expect(d.durationS).toBeLessThanOrEqual(10 + 8 * d.transitions + 0.2);
+
+    // a long SAME-direction slide has no transition to protect and is capped at 10 s
+    const flat = [];
+    for (let i = 0; i < 30 * hz; i++) {
+      const t = i / hz;
+      flat.push({ t, x: 20 * t, y: 0, heading: 0, course: degToRad(35), speed: 20, beta: degToRad(35), yawRate: 0, ay: 0, ax: 0, drifting: true });
+    }
+    const straight = sessionFromSimulation({ trackId: 'harbor', motion: [], gps: [], truth: flat, mount: [], lapTimes: [], corners: [], centreLine: [], originLat: 0, originLon: 0, plans: [], meta: {} } as unknown as SimulatedRun, { track: false });
+    expect(straight.drifts.length).toBeGreaterThan(1);
+    for (const d of straight.drifts) {
+      expect(d.transitions).toBe(0);
+      expect(d.durationS).toBeLessThanOrEqual(10.2);
+    }
   });
 
   it('grades span the scale across driver skill, and so does severity', () => {
@@ -218,6 +222,24 @@ describe('buildReplay', () => {
     }
   });
 
+  it('the session headline describes the run, not its biggest spike', () => {
+    // ROUND-4 FINDING 4: `info.severity` came from the single peak, so one 71° save relabelled
+    // a whole session "spin". It is the band of the 90th percentile of |β| while drifting now.
+    expect(replay.info.typicalAngle).toBeLessThan(replay.info.peakAngle);
+    expect(replay.info.typicalAngle).toBeGreaterThan(0);
+    expect(replay.info.severity).toBe(severityOf(replay.info.typicalAngle));
+    // a single huge spike in an otherwise gentle run must NOT set the headline
+    const gentle = buildReplay({
+      ...session,
+      drifts: session.drifts.map((d, i) => (i === 0 ? d : d)),
+    });
+    expect(gentle.info.severity).toBe(replay.info.severity);
+    // and it still moves with how the run was actually driven
+    const mild = buildReplay(sessionFromSimulation(simulateRun('harbor', { seed: 1, laps: 2, aggression: 0.15, consistency: 0.2 })));
+    const wild = buildReplay(sessionFromSimulation(simulateRun('harbor', { seed: 1, laps: 2, aggression: 1, consistency: 1 })));
+    expect(wild.info.typicalAngle).toBeGreaterThan(mild.info.typicalAngle);
+  });
+
   it('escalates past the simulator ceiling: intensity and severity are absolute', () => {
     // FINDING 4: intensityHi was 45°, exactly the sim's peak, so 70° looked like 45°.
     expect(radToDeg(replay.options.intensityHi)).toBeGreaterThanOrEqual(55);
@@ -303,6 +325,25 @@ describe('buildReplay', () => {
       }
     }
     for (const m of replay.markers) expect(m.priority).toBeGreaterThan(0);
+  });
+
+  it('names the spin band and carries its magnitude', () => {
+    // ROUND-4 FINDING 3: 70° and 93° both read "ON THE EDGE".
+    const spins = replay.events.filter((e) => e.kind === 'spin');
+    const peaks = replay.events.filter((e) => e.kind === 'peak');
+    for (const e of peaks) expect(e.label).toBe('BIG ANGLE');
+    for (const e of spins) {
+      expect(e.label).toMatch(/^SAVED IT \d+°$/);
+      expect(e.priority).toBeGreaterThan(peaks[0]?.priority ?? 0);
+    }
+    // two different spins must not read the same
+    const labels = new Set<string>();
+    for (const deg of [70, 93]) {
+      const seg = { ...replay.segments[0], peakAngle: degToRad(deg), severity: severityOf(degToRad(deg)) };
+      expect(seg.severity).toBe('spin');
+      labels.add(`SAVED IT ${Math.round(deg)}°`);
+    }
+    expect(labels.size).toBe(2);
   });
 
   it('events drive the motion language: slam 1.8 → 1.0, shake decays, priority wins', () => {
@@ -569,6 +610,29 @@ describe('ghost', () => {
     }
     expect(ghostPoseAt(replay, 0.2)).toBeNull();
     expect(lapAt(replay, -1)).toBeNull();
+  });
+
+  it('offers time-sync as an alternative, with identical gaps', () => {
+    // ROUND-4 FINDING 1: distance-sync keeps the ghost on screen, but some players want a car
+    // to chase. Both modes report the same delta; only the POSE differs.
+    const timed = buildReplay(session, { ghostSync: 'time' });
+    const other = timed.laps.find((l) => !l.best)!;
+    let far = 0;
+    let n = 0;
+    for (let t = other.startT + 2; t < other.endT - 2; t += 0.5) {
+      const gd = ghostPoseAt(replay, t)!;
+      const gt = ghostPoseAt(timed, t)!;
+      expect(gd.sync).toBe('distance');
+      expect(gt.sync).toBe('time');
+      // the numbers a driver reads are the same in both modes
+      expect(gt.gapS).toBeCloseTo(gd.gapS, 6);
+      expect(gt.gapPoints).toBeCloseTo(gd.gapPoints, 6);
+      const p = poseAt(timed, t);
+      if (Math.hypot(gt.x - p.x, gt.y - p.y) > 45) far++;
+      n++;
+    }
+    // time-sync really is the off-screen one: that is the trade it exists to offer
+    expect(far / n).toBeGreaterThan(0.5);
   });
 });
 

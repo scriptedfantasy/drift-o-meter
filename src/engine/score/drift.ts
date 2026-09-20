@@ -41,7 +41,7 @@ export function buildDriftScore(acc: DriftAccumulator, stats: DriftStats, o: Sco
     angle: angleScore(stats.heldPeakDeg, o, tf),
     // the plateau the jitter was measured on caps what it may claim: a drift that never settled
     // is unsteady, not unjudged
-    consistency: steadinessScore(stats.jitterDeg, o, stats.plateauS),
+    consistency: steadinessScore(stats.jitterDeg / (tf.jitter || 1), o, stats.plateauS),
     speed: speedScore(stats.meanSpeedKmh, o, tf),
     style,
     callouts: acc.callouts.slice(),

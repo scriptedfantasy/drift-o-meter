@@ -57,6 +57,7 @@ export type GpsState = 'good' | 'poor' | 'none';
 export type IntegrityFlag =
   | 'loose-mount'
   | 'handheld'
+  | 'uncalibrated'
   | 'yaw-rate-limit'
   | 'lateral-g-limit'
   | 'gps-poor'
@@ -76,6 +77,14 @@ export interface IntegrityState {
   hAcc: number;
   /** True when the current slide (or lack of one) is consistent with lateral g, yaw rate and speed. */
   driftPlausible: boolean;
+  /**
+   * True when the mount calibration is good enough to believe anything derived from it. A
+   * calibration that cannot resolve which way the car points does not know which way the car is
+   * sliding, so nothing downstream is trustworthy however clean the sway cue looks — at
+   * simulator looseness 0.7 the sway signature falls between the loose-mount thresholds while
+   * the calibrator itself reports 8 % confidence and an unresolved forward axis.
+   */
+  calibrationOk: boolean;
   flags: IntegrityFlag[];
   /** Plain-language, driver-facing, never empty. */
   message: string;
@@ -115,6 +124,13 @@ export interface IntegrityMetrics {
 }
 
 export interface IntegrityOptions {
+  /**
+   * Minimum `MountCalibration.quality` (0..1) to believe the mount at all, and whether the
+   * forward axis must be resolved. Either failing vetoes `driftPlausible` — independently of
+   * the sway cues, which are tuned on a signature a mid-looseness mount can slip between.
+   */
+  minCalibrationQuality: number;
+  requireForwardResolved: boolean;
   /** Exponential averaging window for all RMS cues, seconds. */
   windowS: number;
   /** Band in which mount motion is looked for, Hz. */
@@ -173,6 +189,8 @@ export interface IntegrityOptions {
 }
 
 export const DEFAULT_INTEGRITY_OPTIONS: Readonly<IntegrityOptions> = Object.freeze({
+  minCalibrationQuality: 0.3,
+  requireForwardResolved: true,
   windowS: 2,
   bandLowHz: 0.3,
   bandHighHz: 3,
@@ -219,6 +237,7 @@ const PHYS_LONGITUDINAL = 4;
 const FLAG_ORDER: IntegrityFlag[] = [
   'loose-mount',
   'handheld',
+  'uncalibrated',
   'yaw-rate-limit',
   'lateral-g-limit',
   'gps-poor',
@@ -296,6 +315,10 @@ export class IntegrityMonitor {
   private speedOk = false;
   private gpsVeto = false;
   private driftPlausible = false;
+  /** Latest mount calibration, NaN quality until one is pushed (then the veto is inactive). */
+  private calQuality = NaN;
+  private calForward = true;
+  private calOk = true;
 
   // ---- outputs
   private flagMask = -1;
@@ -373,7 +396,23 @@ export class IntegrityMonitor {
     this.speedOk = false;
     this.gpsVeto = false;
     this.driftPlausible = false;
+    this.calQuality = NaN;
+    this.calForward = true;
+    this.calOk = true;
     this.flagMask = -1;
+    this.recompute();
+  }
+
+  /**
+   * The mount calibrator's own confidence. Cheap to call on every sample; only a change is
+   * acted on. Until this is called the veto is inactive, so a caller that has no calibrator
+   * (a unit test, a replay of raw states) behaves exactly as before.
+   */
+  pushCalibration(c: { quality: number; forwardResolved: boolean }): void {
+    const q = Number.isFinite(c.quality) ? c.quality : NaN;
+    if (q === this.calQuality && c.forwardResolved === this.calForward) return;
+    this.calQuality = q;
+    this.calForward = c.forwardResolved;
     this.recompute();
   }
 
@@ -395,6 +434,7 @@ export class IntegrityMonitor {
       gpsAgeS: this.gpsAgeS,
       hAcc: this.hAcc,
       driftPlausible: this.driftPlausible,
+      calibrationOk: this.calOk,
       flags: this.flags.slice(),
       message: this.message,
     };
@@ -648,18 +688,23 @@ export class IntegrityMonitor {
     const o = this.opts;
     const gpsFresh = this.hasFix && this.gpsAgeS <= o.gpsMaxAgeS;
     this.gpsVeto = gpsFresh && this.gpsSpeed >= 0 && this.gpsSpeed < o.minGpsSpeed;
+    // The calibrator's own verdict is an INDEPENDENT veto: the sway cues are tuned on a
+    // signature, and a mount can sit in a gap between their thresholds while the calibration
+    // behind every angle in the run has already fallen apart.
+    this.calOk = !Number.isFinite(this.calQuality) || (this.calQuality >= o.minCalibrationQuality && (this.calForward || !o.requireForwardResolved));
     this.driftPlausible =
-      this.hasState && this.speedOk && !this.gpsVeto && this.mount !== 'loose' && this.physics === 'ok' && !this.slipInconsistent;
+      this.hasState && this.speedOk && !this.gpsVeto && this.mount !== 'loose' && this.physics === 'ok' && !this.slipInconsistent && this.calOk;
 
     let mask = 0;
     if (this.mount === 'loose') mask |= 1 << 0;
     if (this.handheld) mask |= 1 << 1;
-    if (this.physicsReason & PHYS_YAW) mask |= 1 << 2;
-    if (this.physicsReason & (PHYS_LATERAL | PHYS_LONGITUDINAL)) mask |= 1 << 3;
-    if (this.gps === 'poor') mask |= 1 << 4;
-    if (this.gps === 'none') mask |= 1 << 5;
-    if (this.slideClaimed && (!this.speedOk || this.gpsVeto)) mask |= 1 << 6;
-    if (this.slideClaimed && this.slipInconsistent) mask |= 1 << 7;
+    if (!this.calOk) mask |= 1 << 2;
+    if (this.physicsReason & PHYS_YAW) mask |= 1 << 3;
+    if (this.physicsReason & (PHYS_LATERAL | PHYS_LONGITUDINAL)) mask |= 1 << 4;
+    if (this.gps === 'poor') mask |= 1 << 5;
+    if (this.gps === 'none') mask |= 1 << 6;
+    if (this.slideClaimed && (!this.speedOk || this.gpsVeto)) mask |= 1 << 7;
+    if (this.slideClaimed && this.slipInconsistent) mask |= 1 << 8;
     if (mask !== this.flagMask) {
       this.flagMask = mask;
       this.flags = FLAG_ORDER.filter((_, i) => mask & (1 << i));
@@ -673,6 +718,11 @@ export class IntegrityMonitor {
     // root causes first: a hand-held / loose phone explains most implausible readings
     if (this.handheld) return 'Phone looks hand-held — clip it into a rigid mount to score drifts';
     if (this.mount === 'loose') return 'Phone is moving in its mount — tighten it';
+    if (!this.calOk) {
+      return this.calForward
+        ? 'Still working out how the phone sits in the car — drive straight for a few seconds'
+        : "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds";
+    }
     if (this.physics === 'implausible') {
       const r = this.physicsReason;
       const what =

@@ -41,6 +41,16 @@ export const SEVERITY_EDGES = {
   spin: degToRad(65),
 } as const;
 
+/**
+ * The callout for a drift's peak. The spin band gets its own word AND its magnitude, so a 70°
+ * save and a 93° one never read the same. One rule, used by the builder and by any tool that
+ * rewrites a peak.
+ */
+export function peakCallout(severity: DriftSeverity, peakAngle: number): string {
+  if (severity !== 'spin') return 'BIG ANGLE';
+  return `SAVED IT ${Math.round((Math.abs(peakAngle) * 180) / Math.PI)}\u00b0`;
+}
+
 /** |β| → drama band. Absolute, so it means the same in every session. */
 export function severityOf(beta: number): DriftSeverity {
   const a = Math.abs(beta);
@@ -507,16 +517,13 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
     const mag = clamp(seg.peakAngle / SEVERITY_EDGES.spin, 0.2, 1);
     events.push({ kind: 'entry', t: seg.startT, holdS: 0.6, magnitude: 0.45 * mag, priority: 20, label: '', driftId: seg.driftId, lapIndex: seg.lapIndex });
     if (seg.severity === 'extreme' || seg.severity === 'spin') {
-      const peakDeg = Math.round((seg.peakAngle * 180) / Math.PI);
       events.push({
         kind: seg.severity === 'spin' ? 'spin' : 'peak',
         t: seg.peakT,
         holdS: 1.1,
         magnitude: mag,
         priority: seg.severity === 'spin' ? 90 : 60,
-        // the spin band is the one moment a driver most wants named, and it must not read the
-        // same at 70° as at 93°, so it carries its own word AND its magnitude
-        label: seg.severity === 'spin' ? `SAVED IT ${peakDeg}\u00b0` : 'BIG ANGLE',
+        label: peakCallout(seg.severity, seg.peakAngle),
         driftId: seg.driftId,
         lapIndex: seg.lapIndex,
       });

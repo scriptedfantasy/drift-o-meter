@@ -99,6 +99,25 @@ Default drive routes, and what each one is evidence of:
 | `drive-bank` | held just after a 10 000-point chain banked: BANKED ticker, chain bar drained, LINK ×3 |
 | `drive-warn` | the same frame as `drive-peak` with a loose mount: the banner has to be impossible to miss while the run is going well |
 
+The `at` values are tied to when the ENGINE fires callouts, so they move whenever the detector
+or the scorer is retuned. Re-derive them by pushing the same recording through the pipeline and
+printing the events — about 20 lines of node:
+
+```js
+import { simulateRun } from './src/sim';
+import { DriftPipeline } from './src/engine/pipeline';
+const run = simulateRun('harbor', { seed: 1, laps: 2 });
+const pipe = new DriftPipeline({ id: 'probe', name: 'probe' });
+const t0 = run.motion[0].t;               // `at` is measured from the first MOTION sample
+let im = 0, ig = 0;
+while (im < run.motion.length) {
+  while (ig < run.gps.length && run.gps[ig].t <= run.motion[im].t) pipe.pushGps(run.gps[ig++]);
+  const f = pipe.pushMotion(run.motion[im++]);
+  for (const c of f.score.callouts) console.log((f.t - t0).toFixed(2), c.label);
+  if (f.score.banked) console.log((f.t - t0).toFixed(2), 'BANKED');
+}
+```
+
 Frames from the video (the bundled ffmpeg's filter parser is unusable — use `-r`, not `-vf fps=`):
 
 ```

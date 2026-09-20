@@ -368,13 +368,31 @@ export function cornerFitResidualM(track: TrackModel, corner: TrackCorner): numb
   return Math.sqrt(sq / m);
 }
 
+function median(v: number[]): number {
+  if (!v.length) return 0;
+  const a = v.slice().sort((x, y) => x - y);
+  const mid = a.length >> 1;
+  return a.length % 2 ? a[mid] : 0.5 * (a[mid - 1] + a[mid]);
+}
+
 /** Median corner radius of the model (m), 0 when the model has no usable corners. */
 export function medianCornerRadiusM(track: TrackModel | null): number {
   if (!track) return 0;
-  const rs = track.corners.map((c) => c.radiusM).filter((r) => Number.isFinite(r) && r > 0).sort((a, b) => a - b);
-  if (!rs.length) return 0;
-  const mid = rs.length >> 1;
-  return rs.length % 2 ? rs[mid] : 0.5 * (rs[mid - 1] + rs[mid]);
+  return median(track.corners.map((c) => c.radiusM).filter((r) => Number.isFinite(r) && r > 0));
+}
+
+/**
+ * Median straight between consecutive corners (m): how LINKED the road is. A road whose corners
+ * are 19 m apart can be drifted as one continuous slide; one whose corners are 47 m apart cannot,
+ * however well it is driven. 0 when there are fewer than two corners.
+ */
+export function medianCornerGapM(track: TrackModel | null): number {
+  if (!track || track.corners.length < 2) return 0;
+  const cs = track.corners.slice().sort((a, b) => a.startS - b.startS);
+  const gaps: number[] = [];
+  for (let i = 1; i < cs.length; i++) gaps.push(Math.max(0, cs[i].startS - cs[i - 1].endS));
+  if (track.closed && track.lengthM > 0) gaps.push(Math.max(0, track.lengthM - cs[cs.length - 1].endS + cs[0].startS));
+  return median(gaps);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -387,7 +405,7 @@ export function scoreSession(
   ctx?: SessionContext,
 ): SessionBreakdown {
   const o = resolveOptions(opts);
-  const tf = trackFactorFor(medianCornerRadiusM(track), o);
+  const tf = trackFactorFor(medianCornerRadiusM(track), medianCornerGapM(track), o);
   const { scored, chains } = replayChains(drifts, states, o, ctx, tf);
   const perDrift: Record<number, ScoredDrift> = {};
   for (const d of scored) perDrift[d.id] = d;
@@ -423,12 +441,15 @@ export function scoreSession(
   // claim (plateauCapCurve) instead of the average quietly excluding it. Dropping those drifts
   // used to leave a 57 s slide with 4 transitions out of the average and judge the whole run on
   // one 0.62 s window of a 7 s drift, which graded the sloppier driver S and the tidier one C.
-  const steadiness = n ? wmean(scored.map((d) => ({ w: w(d), v: steadinessScore(d.stats.jitterDeg, o, d.stats.plateauS) }))) : 0;
+  const steadiness = n ? wmean(scored.map((d) => ({ w: w(d), v: steadinessScore(d.stats.jitterDeg / (tf.jitter || 1), o, d.stats.plateauS) }))) : 0;
   const jitter = wmean(scored.map((d) => ({ w: w(d), v: d.stats.jitterDeg })));
   const cross = n ? crossLapConsistency(states, track, o) : null;
   // Unproven cross-lap consistency is NEUTRAL, not absent: removing the term meant one lap
-  // (nothing to compare) scored the same driver higher than two laps.
-  const consistency = n ? o.crossLapWeight * (cross === null ? o.crossLapNeutral : cross) + (1 - o.crossLapWeight) * steadiness : 0;
+  // (nothing to compare) scored the same driver higher than two laps. A road that is not a
+  // circuit has nothing to prove, so it keeps steadiness alone unless told otherwise.
+  const lappable = !!track && (track.closed || track.laps.length >= 2);
+  const crossTerm = cross === null ? (lappable || o.crossLapNeutralOnOpenTrack ? o.crossLapNeutral : null) : cross;
+  const consistency = n ? (crossTerm === null ? steadiness : o.crossLapWeight * crossTerm + (1 - o.crossLapWeight) * steadiness) : 0;
 
   const spins = scored.filter((d) => d.spun).length;
   const driftTimeS = scored.reduce((a, d) => a + d.stats.durationS, 0);
@@ -437,7 +458,7 @@ export function scoreSession(
   const qw = o.qualityWeights;
   const qualityParts = {
     steadiness,
-    timeAtAngle: clamp(curve(o.timeAtAngleCurve, timeAtAngleFrac), 0, 100),
+    timeAtAngle: clamp(curve(o.timeAtAngleCurve, timeAtAngleFrac / (tf.timeAtAngle || 1)), 0, 100),
     cleanExitFraction,
     exitFactor: clamp(1 - o.exitPenalty * (1 - cleanExitFraction), 0, 1),
     spinFactor: n ? clamp(1 - (o.spinPenalty * spins) / n, 0, 1) : 0,
@@ -470,7 +491,7 @@ export function scoreSession(
   const sw = o.styleWeights;
   const styleParts = {
     variety: 100 * Math.min(1, kinds.size / o.styleVarietyTarget),
-    transitions: n ? 100 * Math.min(1, transitions / n / o.styleTransitionsPerDrift) : 0,
+    transitions: n ? 100 * Math.min(1, transitions / n / (o.styleTransitionsPerDrift * (tf.transitions || 1))) : 0,
     chain: n ? 100 * Math.min(1, longestChain / o.styleChainTarget) : 0,
     flair: n ? 100 * Math.min(1, rare / n / o.styleRarePerDrift) : 0,
   };

@@ -131,13 +131,16 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
   // to chase rather than a line to compare. The gaps below are identical either way.
   const poseTau = replay.options.ghostSync === 'time' ? Math.min(tau, ref.durationS) : Math.min(refTau, ref.durationS);
   const tg = clamp(ref.startT + poseTau, 0, replay.durationS);
+  // the GAPS are always measured at the same point of the lap (distance-matched), whichever way
+  // the pose is placed, so the numbers a driver reads do not change with the camera option
+  const tGap = clamp(ref.startT + Math.min(refTau, ref.durationS), 0, replay.durationS);
   const fi = trailIndexOf(trail, tg);
   const i0 = Math.floor(fi);
   const i1 = Math.min(i0 + 1, trail.n - 1);
   const f = fi - i0;
   const gx = trailValueAt(trail, trail.x, tg);
   const gy = trailValueAt(trail, trail.y, tg);
-  const ghostPoints = trailValueAt(trail, trail.score, tg) - refP0;
+  const ghostPoints = trailValueAt(trail, trail.score, tGap) - refP0;
   const gapS = refTau - tau;
   return {
     x: gx,

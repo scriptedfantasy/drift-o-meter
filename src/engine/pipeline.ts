@@ -492,6 +492,9 @@ export class DriftPipeline implements DriftPipelineApi {
     if (this.calIntervalS === 0 || t - this.calT >= this.calIntervalS) {
       this.cal = this.calibrator.calibration;
       this.calT = t;
+      // the calibrator's own confidence is an independent integrity cue: an unresolved forward
+      // axis means nothing downstream knows which way the car points
+      this.integrity.pushCalibration(this.cal);
     }
 
     // ---- 2. vehicle motion → slip state

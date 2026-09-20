@@ -77,7 +77,7 @@ function Callout({ event, depth, fromRight, size }: { event: HudEvent; depth: nu
       </AppText>
       {event.points > 0 ? (
         <AppText numeric style={[styles.points, { fontSize: size * 0.66, lineHeight: size * 1.02, color: alpha(tone, 0.85) }]}>
-          +{event.points}
+          +{Math.round(event.points).toLocaleString('en-US')}
         </AppText>
       ) : null}
     </Animated.View>

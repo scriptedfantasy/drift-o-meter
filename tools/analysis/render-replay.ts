@@ -8,6 +8,7 @@
  *   t: replay-relative seconds, or a keyword:
  *      mid | start | end | peak | transition[N] | lap2 | lap2-peak | ghost | straight | slow | spin
  *   --beta=DEG  force a synthetic slide of DEG degrees (to check escalation past the sim's ceiling)
+ *   --ghost-sync=time  place the ghost by elapsed time (a car to chase) instead of by distance
  * Convert with tools/analysis/render_replay.py (SVG → PNG at 1170×2532).
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -22,6 +23,7 @@ import {
   ghostPoseAt,
   lapAt,
   liveSmoke,
+  peakCallout,
   poseAt,
   ReplayCamera,
   screenToWorld,
@@ -505,10 +507,14 @@ function drawGhost(f: Frame): string {
     s += `<polyline points="${pointsAttr(tail)}" fill="none" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.45, 1.4))}" stroke-linecap="round" opacity="0.5" stroke-dasharray="${f2(mOrPx(f, 1.1, 3))} ${f2(mOrPx(f, 1.1, 3))}"/>`;
   }
   const carS = toS(f, f.pose.x, f.pose.y);
-  const tooClose = Math.hypot(gs.x - carS.x, gs.y - carS.y) < 12;
-  if (ghostOnScreen && !tooClose) {
+  // Distance-syncing puts the ghost beside the car, and for part of the lap underneath it (the
+  // body is 4.4 x 1.8 m). Fade it out smoothly below ~2.6 m of separation rather than popping
+  // in and out from under the white car; the badge always carries the number regardless.
+  const sepM = Math.hypot(g.x - f.pose.x, g.y - f.pose.y);
+  const bodyFade = clamp((sepM - 1.2) / 1.4, 0, 1);
+  if (ghostOnScreen && bodyFade > 0.03) {
     const cs = carScale(f) * 0.92;
-    s += `<g transform="translate(${f2(g.x)} ${f2(g.y)}) rotate(${f2(deg(g.heading))}) scale(${f3(cs)})" opacity="0.8">`;
+    s += `<g transform="translate(${f2(g.x)} ${f2(g.y)}) rotate(${f2(deg(g.heading))}) scale(${f3(cs)})" opacity="${f3(0.8 * bodyFade)}">`;
     s += `<path d="${carPath()}" fill="${BG}" fill-opacity="0.45" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.22, 0.9) / cs)}" stroke-linejoin="round" stroke-dasharray="${f2(0.9 / cs)} ${f2(0.45 / cs)}"/>`;
     s += `<polygon points="-0.55,-0.45 0.5,0 -0.55,0.45 -0.25,0" fill="${GREEN}" opacity="0.6"/>`;
     s += '</g>';
@@ -866,9 +872,17 @@ function bottomHud(f: Frame): string {
     s += text(33, ly + 23, r.info.grade, { size: 18, fill: '#000', anchor: 'middle', weight: 800 });
     s += text(54, ly + 22, 'FINAL GRADE', { size: T_LABEL, spacing: 1.6, fill: MUTED, weight: 700 });
   } else {
-    const best = r.info.peakAngle;
-    s += text(18, ly + 22, `${r.info.driftCount} DRIFTS`, { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
-    s += text(96, ly + 22, `BEST ${Math.round(deg(best))}°`, { size: T_LABEL, spacing: 1.4, fill: heatColor(best), weight: 700 });
+    // masked to elapsed time, like the points, the total and the grade: "BEST 71°" on the
+    // opening frame is a small forward-looking spoiler
+    let best = 0;
+    let done = 0;
+    for (const seg of r.segments) {
+      if (seg.startT > f.t) continue;
+      done++;
+      if (seg.peakT <= f.t && seg.peakAngle > best) best = seg.peakAngle;
+    }
+    s += text(18, ly + 22, `${done} DRIFT${done === 1 ? '' : 'S'}`, { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
+    if (best > 0) s += text(96, ly + 22, `BEST ${Math.round(deg(best))}°`, { size: T_LABEL, spacing: 1.4, fill: heatColor(best), weight: 700 });
   }
   return s;
 }
@@ -1066,7 +1080,7 @@ function amplifyBeta(replay: Replay, betaDeg: number): number {
     m.label = `${Math.round(deg(seg.peakAngle))}°`;
   }
   for (const e of replay.events) if (e.driftId === seg.driftId && (e.kind === 'peak' || e.kind === 'spin')) {
-    e.label = seg.severity === 'spin' ? 'ON THE EDGE' : `${Math.round(deg(seg.peakAngle))}° ANGLE`;
+    e.label = peakCallout(seg.severity, seg.peakAngle); // one rule, owned by the engine
     e.kind = seg.severity === 'spin' ? 'spin' : 'peak';
     e.magnitude = 1;
   }
@@ -1101,10 +1115,10 @@ export function renderReplayFrame(
   seed: number,
   timeSpec: string,
   mode: CameraMode,
-  simOpts: { laps?: number; consistency?: number; aggression?: number; betaDeg?: number; cut?: boolean; fixture?: boolean } = {},
+  simOpts: { laps?: number; consistency?: number; aggression?: number; betaDeg?: number; cut?: boolean; fixture?: boolean; ghostSync?: 'distance' | 'time' } = {},
 ): { svg: string; t: number; replay: Replay; source: 'pipeline' | 'fixture' } {
   const { session, source } = loadSession(track, seed, simOpts);
-  const replay = buildReplay(session);
+  const replay = buildReplay(session, simOpts.ghostSync ? { ghostSync: simOpts.ghostSync } : {});
   let t = resolveTime(replay, timeSpec);
   if (simOpts.betaDeg) t = amplifyBeta(replay, simOpts.betaDeg);
   const cam = new ReplayCamera(simOpts.cut ? 'overview' : mode, { w: W, h: H });
@@ -1162,6 +1176,7 @@ function main(): void {
     betaDeg: flags.beta ? Number(flags.beta) : undefined,
     cut: !!flags.cut,
     fixture: !!flags.fixture,
+    ghostSync: flags['ghost-sync'] === 'time' ? 'time' : undefined,
   });
   writeFileSync(out, svg);
   const p = poseAt(replay, t);

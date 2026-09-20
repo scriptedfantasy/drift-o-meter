@@ -128,11 +128,17 @@ export interface ScoreOptions {
   /** Blend of cross-lap corner consistency vs within-drift steadiness. */
   crossLapWeight: number;
   /**
-   * Score for cross-lap consistency that could not be MEASURED (one lap, no corners, no track).
-   * Neutral, not removed: dropping the term let the same driver grade S over one lap and A over
-   * two, i.e. driving less raised the grade.
+   * Score for cross-lap consistency that could not be MEASURED although the track COULD have
+   * shown it — a closed circuit driven for one lap. Neutral, not removed: dropping the term let
+   * the same driver grade S over one lap and A over two, i.e. driving less raised the grade.
    */
   crossLapNeutral: number;
+  /**
+   * Whether a point-to-point road (never a closed circuit, so there is no second lap to be
+   * consistent with) also pays the neutral. False: a road cannot be lapped, and a driver is not
+   * marked down for the shape of the road — only for not proving something they could have.
+   */
+  crossLapNeutralOnOpenTrack: boolean;
   /**
    * A corner only counts towards cross-lap consistency when the reference path actually fits a
    * circular arc through it to within this many metres RMS. A mis-placed apex puts the corner
@@ -173,17 +179,26 @@ export interface ScoreOptions {
   /** Drifts shorter than this (s) get proportionally less weight in duration-weighted means (never zero). */
   minWeightS: number;
   /**
-   * Track normalisation. A tight harbour circuit and an open touge road do not offer the same
-   * angles or the same speeds, so the same driving scored 48.7–77.6 on one and 42.5–95.4 on the
-   * other: two letters on one track, five on the other. The angle and speed expectations are
-   * scaled by the track's own geometry (median corner radius), so a grade means the same thing
-   * on both. `referenceRadiusM` is the radius those curves are written for.
+   * Track normalisation. A tight harbour circuit and an open mountain road do not offer the same
+   * angles, speeds or links, so the same driving scored 48.7–77.6 on one and 42.5–95.4 on the
+   * other: two letters on one track, five on the other. Two measured properties of the TrackModel
+   * scale the expectations:
+   *   - median corner radius — how fast a corner can be taken;
+   *   - median gap between corners — how LINKED the road is. Corners 19 m apart can be joined
+   *     into one long slide; corners 47 m apart force the car straight in between, which caps
+   *     the angle held, the transitions per drift and the fraction of the drift spent at angle.
+   * Everything here is geometry of the road, never a per-track constant.
    */
   trackNormalise: boolean;
-  referenceRadiusM: number;
-  /** Corner radius (m) → factor the angle/speed curves are stretched by. */
+  /** Corner radius (m) → factor the angle / speed curves are stretched by. */
   radiusAngleCurve: Curve;
   radiusSpeedCurve: Curve;
+  /** Median corner-to-corner gap (m) → factor on the angle, transition and time-at-angle expectations. */
+  gapAngleCurve: Curve;
+  gapTransitionCurve: Curve;
+  gapTimeAtAngleCurve: Curve;
+  /** Median corner-to-corner gap (m) → factor on the jitter a steady driver is allowed. */
+  gapJitterCurve: Curve;
   /**
    * A run whose mount was loose / implausible for more than this fraction of its drifting time
    * does not get a published total or grade (`SessionBreakdown.integrity.scoreTrusted`).
@@ -257,10 +272,10 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   ringKeepS: 120,
 
   angleCurve: [
-    [23, 0],
-    [28, 25],
-    [34, 60],
-    [39, 90],
+    [25, 0],
+    [30, 25],
+    [35, 60],
+    [39.5, 90],
     [46, 100],
   ],
   speedScoreCurve: [
@@ -280,48 +295,76 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
     [2.5, 0],
   ],
   plateauCapCurve: [
-    [0, 35],
-    [0.6, 60],
+    [0, 30],
+    [0.75, 75],
     [2, 100],
   ],
-  cvScale: 2.6,
+  cvScale: 3.0,
   initiationSdFullM: 12,
   crossLapAngleWeight: 0.6,
   initiationLookbackM: 40,
   crossLapWeight: 0.4,
   crossLapNeutral: 55,
+  crossLapNeutralOnOpenTrack: false,
   cornerFitMaxResidualM: 4,
   cornerLeadMarginM: 15,
   cornerTrailMarginM: 5,
   qualityAngleDeg: 15,
   timeAtAngleCurve: [
-    [0.5, 0],
-    [0.68, 45],
-    [0.8, 85],
-    [0.88, 100],
+    [0.6, 0],
+    [0.72, 40],
+    [0.82, 85],
+    [0.9, 100],
   ],
   qualityWeights: { steadiness: 0.55, timeAtAngle: 0.45 },
   exitPenalty: 0.4,
   spinPenalty: 1.5,
-  styleVarietyTarget: 6,
+  styleVarietyTarget: 8,
   styleTransitionsPerDrift: 1.3,
-  styleChainTarget: 4,
-  styleRarePerDrift: 0.7,
+  styleChainTarget: 5,
+  styleRarePerDrift: 0.9,
   styleWeights: { variety: 0.25, transitions: 0.3, chain: 0.2, flair: 0.25 },
-  weights: { angle: 0.26, consistency: 0.24, quality: 0.24, speed: 0.13, style: 0.13 },
+  // Re-derived from the measured p10→p90 spread of each component over the full skill grid on
+  // both tracks (angle 67, consistency 55, quality 36, speed 32, style 33 points of spread):
+  // weight ∝ discrimination. Speed and style used to carry 20 % of the weight and 2 % of the
+  // discrimination; quality used to carry 25 % while duplicating steadiness.
+  weights: { angle: 0.3, consistency: 0.25, quality: 0.16, speed: 0.15, style: 0.14 },
   gradeThresholds: { S: 90, A: 75, B: 60, C: 45 },
   minWeightS: 1.0,
   trackNormalise: true,
-  referenceRadiusM: 45,
   radiusAngleCurve: [
-    [20, 0.78],
-    [45, 1.0],
-    [90, 1.12],
+    [20, 0.82],
+    [50, 1.0],
+    [90, 1.1],
   ],
   radiusSpeedCurve: [
-    [20, 0.72],
-    [45, 1.0],
-    [90, 1.25],
+    [20, 0.74],
+    [50, 1.0],
+    [90, 1.22],
+  ],
+  gapAngleCurve: [
+    [15, 1.08],
+    [30, 1.0],
+    [50, 0.93],
+    [90, 0.88],
+  ],
+  gapTransitionCurve: [
+    [15, 1.25],
+    [30, 1.0],
+    [50, 0.8],
+    [90, 0.65],
+  ],
+  gapTimeAtAngleCurve: [
+    [15, 1.06],
+    [30, 1.0],
+    [50, 0.94],
+    [90, 0.88],
+  ],
+  gapJitterCurve: [
+    [15, 0.95],
+    [30, 1.0],
+    [50, 1.2],
+    [90, 1.3],
   ],
   integrityMaxImplausibleFraction: 0.25,
 };
@@ -387,14 +430,35 @@ export function speedFactor(speedKmh: number, o: ScoreOptions): number {
 export interface TrackFactor {
   angle: number;
   speed: number;
+  /** Multiplies the transitions-per-drift target style asks for. */
+  transitions: number;
+  /** Multiplies the fraction-of-drift-time-at-angle the quality term asks for. */
+  timeAtAngle: number;
+  /** Divides the measured jitter: a tight circuit costs corrections a long sweeper does not. */
+  jitter: number;
   medianRadiusM: number;
+  medianGapM: number;
 }
 
-export const NEUTRAL_TRACK: TrackFactor = { angle: 1, speed: 1, medianRadiusM: 0 };
+export const NEUTRAL_TRACK: TrackFactor = { angle: 1, speed: 1, transitions: 1, timeAtAngle: 1, jitter: 1, medianRadiusM: 0, medianGapM: 0 };
 
-export function trackFactorFor(medianRadiusM: number, o: ScoreOptions): TrackFactor {
-  if (!o.trackNormalise || !(medianRadiusM > 0)) return NEUTRAL_TRACK;
-  return { angle: curve(o.radiusAngleCurve, medianRadiusM), speed: curve(o.radiusSpeedCurve, medianRadiusM), medianRadiusM };
+export function trackFactorFor(medianRadiusM: number, medianGapM: number, o: ScoreOptions): TrackFactor;
+export function trackFactorFor(medianRadiusM: number, o: ScoreOptions): TrackFactor;
+export function trackFactorFor(medianRadiusM: number, gapOrOpts: number | ScoreOptions, maybeOpts?: ScoreOptions): TrackFactor {
+  const o = typeof gapOrOpts === 'number' ? (maybeOpts as ScoreOptions) : gapOrOpts;
+  const medianGapM = typeof gapOrOpts === 'number' ? gapOrOpts : 0;
+  if (!o || !o.trackNormalise || !(medianRadiusM > 0)) return NEUTRAL_TRACK;
+  // no gap given (a caller that only knows the radius): the neutral 30 m, i.e. no link opinion
+  const gap = medianGapM > 0 ? medianGapM : 30;
+  return {
+    angle: curve(o.radiusAngleCurve, medianRadiusM) * curve(o.gapAngleCurve, gap),
+    speed: curve(o.radiusSpeedCurve, medianRadiusM),
+    transitions: curve(o.gapTransitionCurve, gap),
+    timeAtAngle: curve(o.gapTimeAtAngleCurve, gap),
+    jitter: curve(o.gapJitterCurve, gap),
+    medianRadiusM,
+    medianGapM: gap,
+  };
 }
 
 /** Peak |β| → 0..100, with the track's own expectation applied. */
