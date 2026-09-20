@@ -1,23 +1,23 @@
 {
-  "startedAt": "2026-09-20T23:19:55.303Z",
+  "startedAt": "2026-09-20T23:21:43.632Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "home",
+      "name": "home-landscape",
       "path": "/",
-      "url": "http://127.0.0.1:44801/",
+      "url": "http://127.0.0.1:42559/",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/home.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/home-landscape.png",
       "video": null,
-      "ms": 2482,
+      "ms": 2484,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -37,8 +37,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -63,22 +63,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 349864,
-        "cyanPixels": 3676,
-        "textPixels": 99584,
-        "nonBgFraction": 0.7405
+        "emberPixels": 620096,
+        "cyanPixels": 3664,
+        "textPixels": 42892,
+        "nonBgFraction": 0.4543
       }
     },
     {
-      "name": "garage",
+      "name": "garage-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:44801/?demo=night",
+      "url": "http://127.0.0.1:42559/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-landscape.png",
       "video": null,
-      "ms": 10201,
+      "ms": 9608,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -98,8 +98,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -124,22 +124,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 387844,
-        "cyanPixels": 3676,
-        "textPixels": 64128,
-        "nonBgFraction": 0.6779
+        "emberPixels": 618552,
+        "cyanPixels": 3664,
+        "textPixels": 38676,
+        "nonBgFraction": 0.4538
       }
     },
     {
-      "name": "garage-bests",
+      "name": "garage-bests-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:44801/?demo=night",
+      "url": "http://127.0.0.1:42559/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-bests.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-bests-landscape.png",
       "video": null,
-      "ms": 10938,
+      "ms": 10461,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -159,8 +159,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -185,22 +185,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 47948,
-        "cyanPixels": 7452,
-        "textPixels": 22996,
-        "nonBgFraction": 0.7459
+        "emberPixels": 22056,
+        "cyanPixels": 0,
+        "textPixels": 6444,
+        "nonBgFraction": 0.705
       }
     },
     {
-      "name": "garage-runs",
+      "name": "garage-runs-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:44801/?demo=night",
+      "url": "http://127.0.0.1:42559/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-runs.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-runs-landscape.png",
       "video": null,
-      "ms": 10359,
+      "ms": 10328,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -220,8 +220,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -246,22 +246,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 28760,
-        "cyanPixels": 42024,
-        "textPixels": 21028,
-        "nonBgFraction": 0.7623
+        "emberPixels": 28696,
+        "cyanPixels": 6472,
+        "textPixels": 14104,
+        "nonBgFraction": 0.5939
       }
     },
     {
-      "name": "garage-bests-harbor",
+      "name": "garage-bests-harbor-landscape",
       "path": "/?demo=harbor",
-      "url": "http://127.0.0.1:44801/?demo=harbor",
+      "url": "http://127.0.0.1:42559/?demo=harbor",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-bests-harbor.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-bests-harbor-landscape.png",
       "video": null,
-      "ms": 9502,
+      "ms": 9712,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -281,8 +281,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -307,22 +307,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 20628,
-        "cyanPixels": 31036,
-        "textPixels": 22560,
-        "nonBgFraction": 0.6679
+        "emberPixels": 12132,
+        "cyanPixels": 7464,
+        "textPixels": 9292,
+        "nonBgFraction": 0.5098
       }
     },
     {
-      "name": "garage-simbay",
+      "name": "garage-simbay-landscape",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:44801/?demo=first",
+      "url": "http://127.0.0.1:42559/?demo=first",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-simbay.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-simbay-landscape.png",
       "video": null,
-      "ms": 8128,
+      "ms": 8301,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -342,8 +342,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -369,21 +369,21 @@
         "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 0,
-        "cyanPixels": 44492,
-        "textPixels": 6784,
-        "nonBgFraction": 0.5922
+        "cyanPixels": 18252,
+        "textPixels": 0,
+        "nonBgFraction": 0.4808
       }
     },
     {
-      "name": "garage-flagged",
+      "name": "garage-flagged-landscape",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:44801/?demo=flagged",
+      "url": "http://127.0.0.1:42559/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-flagged.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-flagged-landscape.png",
       "video": null,
-      "ms": 9602,
+      "ms": 9396,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -403,8 +403,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -429,22 +429,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 390748,
-        "cyanPixels": 3676,
-        "textPixels": 70416,
-        "nonBgFraction": 0.6834
+        "emberPixels": 644640,
+        "cyanPixels": 3664,
+        "textPixels": 47204,
+        "nonBgFraction": 0.5571
       }
     },
     {
-      "name": "garage-delete",
+      "name": "garage-delete-landscape",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:44801/?demo=first",
+      "url": "http://127.0.0.1:42559/?demo=first",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-delete.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/garage-delete-landscape.png",
       "video": null,
-      "ms": 8800,
+      "ms": 8867,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -464,8 +464,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -490,22 +490,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 21084,
+        "emberPixels": 26168,
         "cyanPixels": 0,
-        "textPixels": 5820,
-        "nonBgFraction": 0.4321
+        "textPixels": 5828,
+        "nonBgFraction": 0.6568
       }
     },
     {
-      "name": "calibrate-nothing",
+      "name": "calibrate-nothing-landscape",
       "path": "/calibrate?sim=harbor&hold=1",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&hold=1",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-nothing.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-nothing-landscape.png",
       "video": null,
-      "ms": 3507,
+      "ms": 3449,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -526,8 +526,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -552,22 +552,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 6120,
-        "cyanPixels": 29132,
-        "textPixels": 27336,
-        "nonBgFraction": 0.4212
+        "emberPixels": 4900,
+        "cyanPixels": 29256,
+        "textPixels": 26328,
+        "nonBgFraction": 0.3102
       }
     },
     {
-      "name": "calibrate",
+      "name": "calibrate-landscape",
       "path": "/calibrate?sim=harbor&at=0.5&hold=1",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&at=0.5&hold=1",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&at=0.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-landscape.png",
       "video": null,
-      "ms": 3493,
+      "ms": 3503,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -588,8 +588,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -614,22 +614,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5188,
-        "cyanPixels": 49972,
-        "textPixels": 21508,
-        "nonBgFraction": 0.4325
+        "emberPixels": 5252,
+        "cyanPixels": 47056,
+        "textPixels": 20696,
+        "nonBgFraction": 0.3194
       }
     },
     {
-      "name": "calibrate-level",
+      "name": "calibrate-level-landscape",
       "path": "/calibrate?sim=harbor&at=3&hold=1",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&at=3&hold=1",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&at=3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-level.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-level-landscape.png",
       "video": null,
-      "ms": 3465,
+      "ms": 3574,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -650,8 +650,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -676,22 +676,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 28940,
-        "cyanPixels": 34864,
-        "textPixels": 22616,
-        "nonBgFraction": 0.4376
+        "emberPixels": 29176,
+        "cyanPixels": 30280,
+        "textPixels": 21092,
+        "nonBgFraction": 0.3033
       }
     },
     {
-      "name": "calibrate-ready",
+      "name": "calibrate-ready-landscape",
       "path": "/calibrate?sim=harbor&at=12&hold=1",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&at=12&hold=1",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-ready.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-ready-landscape.png",
       "video": null,
-      "ms": 3768,
+      "ms": 3761,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -712,8 +712,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -738,22 +738,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 266164,
-        "cyanPixels": 15816,
-        "textPixels": 4364,
-        "nonBgFraction": 0.492
+        "emberPixels": 249184,
+        "cyanPixels": 12116,
+        "textPixels": 0,
+        "nonBgFraction": 0.3633
       }
     },
     {
-      "name": "calibrate-loose",
+      "name": "calibrate-loose-landscape",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-loose.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-loose-landscape.png",
       "video": null,
-      "ms": 3872,
+      "ms": 3728,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -774,8 +774,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -800,22 +800,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 36328,
-        "cyanPixels": 16300,
-        "textPixels": 33188,
-        "nonBgFraction": 0.4369
+        "emberPixels": 35672,
+        "cyanPixels": 13972,
+        "textPixels": 33252,
+        "nonBgFraction": 0.3261
       }
     },
     {
-      "name": "calibrate-flat",
+      "name": "calibrate-flat-landscape",
       "path": "/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-flat.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-flat-landscape.png",
       "video": null,
-      "ms": 4065,
+      "ms": 3750,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -836,8 +836,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -850,34 +850,34 @@
             "b": 13
           },
           "bottomLeft": {
-            "r": 9,
-            "g": 10,
+            "r": 7,
+            "g": 9,
             "b": 13
           },
           "bottomRight": {
-            "r": 12,
-            "g": 11,
-            "b": 14
+            "r": 7,
+            "g": 9,
+            "b": 13
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 62708,
-        "cyanPixels": 13804,
-        "textPixels": 22368,
-        "nonBgFraction": 0.5027
+        "emberPixels": 249296,
+        "cyanPixels": 10624,
+        "textPixels": 18160,
+        "nonBgFraction": 0.3504
       }
     },
     {
-      "name": "calibrate-rejected",
+      "name": "calibrate-rejected-landscape",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
-      "url": "http://127.0.0.1:44801/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "url": "http://127.0.0.1:42559/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-rejected.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-rejected-landscape.png",
       "video": null,
-      "ms": 4064,
+      "ms": 3729,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -898,8 +898,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -924,22 +924,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 58756,
-        "cyanPixels": 16300,
-        "textPixels": 35188,
-        "nonBgFraction": 0.4904
+        "emberPixels": 63192,
+        "cyanPixels": 13972,
+        "textPixels": 32984,
+        "nonBgFraction": 0.3744
       }
     },
     {
-      "name": "calibrate-fault-permission",
+      "name": "calibrate-fault-permission-landscape",
       "path": "/calibrate?fault=permission",
-      "url": "http://127.0.0.1:44801/calibrate?fault=permission",
+      "url": "http://127.0.0.1:42559/calibrate?fault=permission",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-permission.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-permission-landscape.png",
       "video": null,
-      "ms": 2330,
+      "ms": 2020,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -960,8 +960,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -986,22 +986,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 238388,
+        "emberPixels": 499728,
         "cyanPixels": 0,
-        "textPixels": 21584,
-        "nonBgFraction": 0.1969
+        "textPixels": 22008,
+        "nonBgFraction": 0.3772
       }
     },
     {
-      "name": "calibrate-fault-unsupported",
+      "name": "calibrate-fault-unsupported-landscape",
       "path": "/calibrate?fault=unsupported",
-      "url": "http://127.0.0.1:44801/calibrate?fault=unsupported",
+      "url": "http://127.0.0.1:42559/calibrate?fault=unsupported",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-unsupported.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-unsupported-landscape.png",
       "video": null,
-      "ms": 2319,
+      "ms": 2063,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1022,8 +1022,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -1050,20 +1050,20 @@
         "cornersNearBg": true,
         "emberPixels": 37880,
         "cyanPixels": 0,
-        "textPixels": 20856,
-        "nonBgFraction": 0.089
+        "textPixels": 21252,
+        "nonBgFraction": 0.1515
       }
     },
     {
-      "name": "calibrate-fault-services",
+      "name": "calibrate-fault-services-landscape",
       "path": "/calibrate?fault=services",
-      "url": "http://127.0.0.1:44801/calibrate?fault=services",
+      "url": "http://127.0.0.1:42559/calibrate?fault=services",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-services.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-services-landscape.png",
       "video": null,
-      "ms": 2311,
+      "ms": 2051,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1084,8 +1084,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -1110,22 +1110,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 230916,
+        "emberPixels": 492004,
         "cyanPixels": 0,
-        "textPixels": 18428,
-        "nonBgFraction": 0.1925
+        "textPixels": 18528,
+        "nonBgFraction": 0.3744
       }
     },
     {
-      "name": "calibrate-fault-failed",
+      "name": "calibrate-fault-failed-landscape",
       "path": "/calibrate?fault=failed",
-      "url": "http://127.0.0.1:44801/calibrate?fault=failed",
+      "url": "http://127.0.0.1:42559/calibrate?fault=failed",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-failed.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/calibrate-fault-failed-landscape.png",
       "video": null,
-      "ms": 2296,
+      "ms": 2129,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1146,8 +1146,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -1172,22 +1172,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 243340,
+        "emberPixels": 504648,
         "cyanPixels": 0,
-        "textPixels": 14560,
-        "nonBgFraction": 0.1954
+        "textPixels": 14604,
+        "nonBgFraction": 0.3768
       }
     },
     {
-      "name": "settings",
+      "name": "settings-landscape",
       "path": "/settings",
-      "url": "http://127.0.0.1:44801/settings",
+      "url": "http://127.0.0.1:42559/settings",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/settings.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/settings-landscape.png",
       "video": null,
-      "ms": 2074,
+      "ms": 1707,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1208,8 +1208,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -1234,13 +1234,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 7304,
-        "cyanPixels": 13492,
-        "textPixels": 67064,
-        "nonBgFraction": 0.7366
+        "emberPixels": 3216,
+        "cyanPixels": 4636,
+        "textPixels": 50932,
+        "nonBgFraction": 0.4599
       }
     }
   ],
-  "finishedAt": "2026-09-20T23:21:42.959Z",
+  "finishedAt": "2026-09-20T23:23:28.327Z",
   "failed": 0
 }

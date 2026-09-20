@@ -1,40 +1,40 @@
 
-===== home  http://127.0.0.1:44801/
+===== home-landscape  http://127.0.0.1:42559/
 
-===== garage  http://127.0.0.1:44801/?demo=night
+===== garage-landscape  http://127.0.0.1:42559/?demo=night
 
-===== garage-bests  http://127.0.0.1:44801/?demo=night
+===== garage-bests-landscape  http://127.0.0.1:42559/?demo=night
 
-===== garage-runs  http://127.0.0.1:44801/?demo=night
+===== garage-runs-landscape  http://127.0.0.1:42559/?demo=night
 
-===== garage-bests-harbor  http://127.0.0.1:44801/?demo=harbor
+===== garage-bests-harbor-landscape  http://127.0.0.1:42559/?demo=harbor
 
-===== garage-simbay  http://127.0.0.1:44801/?demo=first
+===== garage-simbay-landscape  http://127.0.0.1:42559/?demo=first
 
-===== garage-flagged  http://127.0.0.1:44801/?demo=flagged
+===== garage-flagged-landscape  http://127.0.0.1:42559/?demo=flagged
 
-===== garage-delete  http://127.0.0.1:44801/?demo=first
+===== garage-delete-landscape  http://127.0.0.1:42559/?demo=first
 
-===== calibrate-nothing  http://127.0.0.1:44801/calibrate?sim=harbor&hold=1
+===== calibrate-nothing-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&hold=1
 
-===== calibrate  http://127.0.0.1:44801/calibrate?sim=harbor&at=0.5&hold=1
+===== calibrate-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&at=0.5&hold=1
 
-===== calibrate-level  http://127.0.0.1:44801/calibrate?sim=harbor&at=3&hold=1
+===== calibrate-level-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&at=3&hold=1
 
-===== calibrate-ready  http://127.0.0.1:44801/calibrate?sim=harbor&at=12&hold=1
+===== calibrate-ready-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&at=12&hold=1
 
-===== calibrate-loose  http://127.0.0.1:44801/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
+===== calibrate-loose-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
 
-===== calibrate-flat  http://127.0.0.1:44801/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
+===== calibrate-flat-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
 
-===== calibrate-rejected  http://127.0.0.1:44801/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected
+===== calibrate-rejected-landscape  http://127.0.0.1:42559/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected
 
-===== calibrate-fault-permission  http://127.0.0.1:44801/calibrate?fault=permission
+===== calibrate-fault-permission-landscape  http://127.0.0.1:42559/calibrate?fault=permission
 
-===== calibrate-fault-unsupported  http://127.0.0.1:44801/calibrate?fault=unsupported
+===== calibrate-fault-unsupported-landscape  http://127.0.0.1:42559/calibrate?fault=unsupported
 
-===== calibrate-fault-services  http://127.0.0.1:44801/calibrate?fault=services
+===== calibrate-fault-services-landscape  http://127.0.0.1:42559/calibrate?fault=services
 
-===== calibrate-fault-failed  http://127.0.0.1:44801/calibrate?fault=failed
+===== calibrate-fault-failed-landscape  http://127.0.0.1:42559/calibrate?fault=failed
 
-===== settings  http://127.0.0.1:44801/settings
+===== settings-landscape  http://127.0.0.1:42559/settings
