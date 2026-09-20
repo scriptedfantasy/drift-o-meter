@@ -426,7 +426,7 @@ describe('DriftDetector rules', () => {
       return 0;
     };
     const yawOf = (t: number) => (t > 3.8 && t < 4.1 ? 3 : t < 1.42 ? 0.5 : 0.4);
-    const stream = synth(7, (t) => ({ beta: feint(t), yawRate: yawOf(t) }));
+    const stream = synth(8, (t) => ({ beta: feint(t), yawRate: yawOf(t) })); // 8 s: long enough for the merge window to expire in-stream
     const { events, outputs } = runDetector(stream);
     expect(events.length).toBe(1);
     const ev = events[0];
@@ -439,12 +439,13 @@ describe('DriftDetector rules', () => {
     expect(ev.startT).toBeLessThan(1.42); // i.e. before the real slide even begins
     expect(ev.peakAngle).toBeCloseTo(AMP, 1);
     expect(radToDeg(ev.peakAngle)).toBeLessThan(26);
-    // it never counts as an exit or a second event in between
-    expect(outputs.slice(120, 620).every((o) => o.phase !== 'idle')).toBe(true);
+    // the flick itself never opens or closes anything, and the drift then runs unbroken
+    expect(outputs.slice(100, 150).every((o) => o.phase === 'idle' && o.live === null)).toBe(true); // the flick alone arms nothing
+    expect(outputs.slice(180, 620).every((o) => o.phase !== 'idle')).toBe(true);
     expect(outputs.filter((o) => o.completed).length).toBe(1);
 
     // control: the same slide WITHOUT the flick — same event, same transition count, later start
-    const plain = synth(7, (t) => ({ beta: t < 1.42 ? 0 : feint(t), yawRate: yawOf(t) }));
+    const plain = synth(8, (t) => ({ beta: t < 1.42 ? 0 : feint(t), yawRate: yawOf(t) }));
     const bare = runDetector(plain).events;
     expect(bare.length).toBe(1);
     expect(bare[0].transitions).toBe(1);
@@ -470,7 +471,7 @@ describe('DriftDetector rules', () => {
     expect(events.length).toBe(1);
     expect(events[0].transitions).toBe(0); // +6° held 0.16 s: a flick, not a direction change
     expect(events[0].durationS).toBeGreaterThan(4.3);
-    expect(outputs.slice(120, 550).every((o) => o.phase !== 'idle')).toBe(true);
+    expect(outputs.slice(140, 550).every((o) => o.phase !== 'idle')).toBe(true);
     expect(outputs[500].live?.direction).toBe(-1); // back on the side it came from
     // held for 0.5 s instead, the very same swing IS a transition
     const held = (t: number): number => (t >= 3.15 && t < 3.65 ? degToRad(6) : t >= 3.65 && t < 3.8 ? degToRad(6) - ((AMP + degToRad(6)) * (t - 3.65)) / 0.15 : mid(t < 3.15 ? t : t - 0.35));

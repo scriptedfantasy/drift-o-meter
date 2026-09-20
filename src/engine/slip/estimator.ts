@@ -326,6 +326,8 @@ export class SlipEstimator {
   private currentState: SlipState;
   /** Test-only: receives a snapshot of the internal state every motion sample. */
   debugSink?: (d: Record<string, number>) => void;
+  /** Test-only: receives a snapshot of each GPS course update. */
+  debugGps?: (d: Record<string, number>) => void;
 
   constructor(opts: Partial<SlipOptions> = {}) {
     const given = Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)) as Partial<SlipOptions>;
@@ -795,6 +797,11 @@ export class SlipEstimator {
           }
         } else {
           this.courseGateRun = 0;
+        }
+        if (this.debugGps) {
+          const Pb = this.P[0];
+          const S2 = this.innovationVar(this.hRow) + R;
+          this.debugGps({ t: tNow, tFix, nu, R, S: S2, Pbb: Pb, Poo: this.P[N + 1], Pbo: this.P[1], kBeta: (Pb + this.P[1] - dS * this.P[3]) / S2, chiJit, clampedS, dC, dS, vel: this.vel });
         }
         this.ekfUpdate(nu, this.hRow, R);
       }

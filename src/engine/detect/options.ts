@@ -93,7 +93,7 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   transitionMinDwellS: 0.4,
   transitionPhaseHoldS: 0.4,
   mergeGapS: 1.0,
-  feintAngle: degToRad(2.5),
+  feintAngle: degToRad(2.2),
   feintMaxDurationS: 0.6,
   feintMaxAngle: degToRad(9),
   feintReverseGapS: 0.35,

@@ -432,7 +432,6 @@ export class MountCalibrator {
   private prevCz = 0;
   private prevPsi = 0;
   private prevCw = 0;
-  private gpsVdot = 0; // last GPS-derived longitudinal acceleration (not used for the axis)
 
   // ---- slip proxy: integrated gyro yaw vs GPS course
   private psi = 0;
@@ -594,7 +593,6 @@ export class MountCalibrator {
     this.gpsSpeedT = -Infinity;
     this.gpsAccel = 0;
     this.gpsAccelT = -Infinity;
-    this.gpsVdot = 0;
     this.psi = 0;
     this.cw = 0;
     this.betaHat = 0;
@@ -675,12 +673,43 @@ export class MountCalibrator {
     const cxNow = this.lookX;
     const cyNow = this.lookY;
     const czNow = this.lookZ;
+    const psiNow = this.lookP;
+    const cwNow = this.lookW;
+    // ---- slip proxy: β̇ = χ̇ − r, integrated per fix interval with a leak (see the header)
+    if (g.course >= 0 && Number.isFinite(g.course) && speed >= o.betaMinSpeed) {
+      const chi = Math.PI / 2 - (g.course * Math.PI) / 180;
+      if (Number.isFinite(this.prevChi) && tFix > this.prevChiT && tFix - this.prevChiT < 2.5) {
+        let dChi = (chi - this.prevChi) % (2 * Math.PI);
+        if (dChi > Math.PI) dChi -= 2 * Math.PI;
+        else if (dChi <= -Math.PI) dChi += 2 * Math.PI;
+        this.betaHat = clamp(this.betaHat + dChi - (psiNow - this.prevChiPsi), -1.4, 1.4);
+      }
+      this.prevChi = chi;
+      this.prevChiPsi = psiNow;
+      this.prevChiT = tFix;
+    } else {
+      this.prevChi = NaN;
+    }
     if (this.hasPrevFix && t > this.prevFixT && t - this.prevFixT < 3.5) {
       const tA = this.prevFixT - o.gpsLatency;
       const dv = speed - this.prevFixSpeed;
       const ix = cxNow - this.prevCx;
       const iy = cyNow - this.prevCy;
       const iz = czNow - this.prevCz;
+      // ---- road pitch: the longitudinal specific force that never became speed is g·sin(pitch).
+      // Only intervals that were clean (low yaw rate, low slip) count: a_long = v̇·cos β −
+      // v·χ̇·sin β, so a drifting interval reads a pitch that is not there.
+      const dT = tFix - tA;
+      if (o.gradeCompensation && this.lineValid && dT > 0.3 && dT < 2.5 && speed >= o.betaMinSpeed) {
+        const clean = clamp((cwNow - this.prevCw) / dT, 0, 1);
+        if (clean > 0.05) {
+          const iFwd = ix * this.fx + iy * this.fy + iz * this.fz;
+          const dec = Math.exp((-clean * dT) / o.gradeTau);
+          this.gradeNum = this.gradeNum * dec + clean * (iFwd - dv);
+          this.gradeDen = this.gradeDen * dec + clean * G_ACC * dT;
+          this.pitchHat = this.gradeDen > EPS ? clamp(this.gradeNum / this.gradeDen, -o.gradeMaxRad, o.gradeMaxRad) : 0;
+        }
+      }
       const im = Math.sqrt(ix * ix + iy * iy + iz * iz);
       // GPS gate: how much of the integrated horizontal acceleration shows up as a speed change
       let gate = 1;
@@ -719,6 +748,8 @@ export class MountCalibrator {
     this.prevCx = cxNow;
     this.prevCy = cyNow;
     this.prevCz = czNow;
+    this.prevPsi = psiNow;
+    this.prevCw = cwNow;
   }
 
   push(m: MotionSample): VehicleMotionSample {
@@ -1072,6 +1103,8 @@ export class MountCalibrator {
     s[b + 2] = this.cy;
     s[b + 3] = this.cz;
     s[b + 4] = s[b + 5] = s[b + 6] = s[b + 7] = s[b + 8] = s[b + 9] = s[b + 10] = 0;
+    s[b + 11] = this.psi;
+    s[b + 12] = this.cw;
     this.sliceStartT = t;
     this.uncommitted++;
   }
@@ -1173,10 +1206,14 @@ export class MountCalibrator {
     let newerX = this.cx;
     let newerY = this.cy;
     let newerZ = this.cz;
+    let newerP = this.psi;
+    let newerW = this.cw;
     if (t >= newerT) {
       this.lookX = newerX;
       this.lookY = newerY;
       this.lookZ = newerZ;
+      this.lookP = newerP;
+      this.lookW = newerW;
       return true;
     }
     let idx = this.sliceHead;
@@ -1188,12 +1225,16 @@ export class MountCalibrator {
         this.lookX = s[b + 1] + (newerX - s[b + 1]) * f;
         this.lookY = s[b + 2] + (newerY - s[b + 2]) * f;
         this.lookZ = s[b + 3] + (newerZ - s[b + 3]) * f;
+        this.lookP = s[b + 11] + (newerP - s[b + 11]) * f;
+        this.lookW = s[b + 12] + (newerW - s[b + 12]) * f;
         return true;
       }
       newerT = et;
       newerX = s[b + 1];
       newerY = s[b + 2];
       newerZ = s[b + 3];
+      newerP = s[b + 11];
+      newerW = s[b + 12];
       idx = (idx - 1 + NS) % NS;
     }
     // older than the whole ring: accept the oldest entry if it is not absurdly far
@@ -1201,6 +1242,8 @@ export class MountCalibrator {
       this.lookX = newerX;
       this.lookY = newerY;
       this.lookZ = newerZ;
+      this.lookP = newerP;
+      this.lookW = newerW;
       return true;
     }
     return false;
