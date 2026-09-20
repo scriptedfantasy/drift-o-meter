@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T22:12:41.633Z",
+  "startedAt": "2026-09-20T22:14:35.363Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,76 +9,15 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive",
-      "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:46169/drive?sim=harbor&rate=1&at=39.2",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive.png",
-      "video": null,
-      "ms": 8398,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 92,
-        "bodyTextNodes": 30,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 145336,
-        "cyanPixels": 20272,
-        "textPixels": 6948,
-        "nonBgFraction": 0.5964
-      }
-    },
-    {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:46169/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33707/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 5777,
+      "ms": 4911,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -124,13 +63,135 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 73076,
+        "emberPixels": 74672,
         "cyanPixels": 15804,
         "textPixels": 6148,
-        "nonBgFraction": 0.6437
+        "nonBgFraction": 0.6438
+      }
+    },
+    {
+      "name": "drive-bank",
+      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:33707/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-bank.png",
+      "video": null,
+      "ms": 4518,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 99,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 129072,
+        "cyanPixels": 37060,
+        "textPixels": 6372,
+        "nonBgFraction": 0.3108
+      }
+    },
+    {
+      "name": "drive-lost",
+      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:33707/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-lost.png",
+      "video": null,
+      "ms": 4324,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 98,
+        "bodyTextNodes": 31,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 59020,
+        "cyanPixels": 20064,
+        "textPixels": 4864,
+        "nonBgFraction": 0.3369
       }
     }
   ],
-  "finishedAt": "2026-09-20T22:12:55.902Z",
+  "finishedAt": "2026-09-20T22:14:49.188Z",
   "failed": 0
 }
