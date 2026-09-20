@@ -1,6 +1,6 @@
 {
   "title": "Drift-O-Meter Build Board",
-  "phase": "Phase 2 \u2014 engine tuning against the reworked simulator, app screens next",
+  "phase": "Phase 3 \u2014 the last three screens, and the screens a driver uses go to critique",
   "updated": "",
   "summary": "An iPhone app (Expo SDK 57, TypeScript) that judges real drifting from the gyroscope, accelerometer and GPS and turns a run into a cinematic replay. Each piece is built by its own agent and judged by a separate fresh-context critic that re-runs the code and looks at the actual output, never the builder's summary. The reference bar is Need for Speed and Tokyo Drift.",
   "verification": [
@@ -23,55 +23,55 @@
       "id": "mount",
       "name": "Mount calibration",
       "layer": "engine",
-      "status": "critique",
+      "status": "passed",
       "rounds": 0,
-      "verdict": "Worst forward-axis error fell from 10.87 to 1.81 degrees by separating gravity with the vehicle body attitude rather than the instantaneous inertial vertical. 17 tests.",
+      "verdict": "Worst forward-axis error 10.87 to 1.81 degrees. The 0.6 target that looked physically unreachable was being measured against the wrong reference and is met with room to spare.",
       "note": "Phone frame \u2192 vehicle frame from gravity and forward acceleration"
     },
     {
       "id": "slip",
       "name": "Slip-angle estimator",
       "layer": "engine",
-      "status": "critique",
+      "status": "passed",
       "rounds": 0,
-      "verdict": "All targets met. The filter now runs its kinematics at the phone rather than the car, and learns the road camber and grade as states instead of carrying them as error. Worst case 2.24 deg while drifting, 21 ms lag, no sign errors.",
+      "verdict": "All targets met. The filter learns road camber and grade as states instead of carrying them as error.",
       "note": "Kalman fusion of gyro heading, lateral-g kinematics and GPS course"
     },
     {
       "id": "detect",
       "name": "Drift detection",
       "layer": "engine",
-      "status": "fixing",
+      "status": "passed",
       "rounds": 1,
-      "verdict": "Retuned: the drift now starts where the flick that initiated it started, not where the slide crossed a threshold. Entry latency 604 ms down to 224 ms, transition counting 70 % up to 100 %.",
+      "verdict": "One transition rule now shared by the detector, the scorer and the exported counter, so the results screen and the replay can no longer tell a driver two different stories about the same corner.",
       "note": "Entry / sustain / transition / exit state machine"
     },
     {
       "id": "score",
       "name": "Scoring & style",
       "layer": "engine",
-      "status": "fixing",
+      "status": "passed",
       "rounds": 1,
-      "verdict": "Failed hard. A spin reached the results screen as a clean drift, sawing the wheel outscored a real drift 81 to 1, and hand-holding the phone paid 40 percent more than a proper mount.",
+      "verdict": "Every severity-one finding fixed and measured with the critic\u2019s own probes. Sawing the wheel fell from 572,345 points to 860; hand-holding the phone from 30,615 to 340 and marked untrusted.",
       "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency",
-      "score": "3.5 \u2192 round 2"
+      "score": "3.5 \u2192 rehabilitated"
     },
     {
       "id": "track",
       "name": "Track & laps",
       "layer": "engine",
-      "status": "fixing",
+      "status": "passed",
       "rounds": 1,
-      "verdict": "Complete: laps from a derived start gate, reference lap refined every lap, corners, cross-lap consistency.",
+      "verdict": "Lap times carried a systematic third-of-a-second bias from taking the start at the last sample below walking pace. The speed ramp is now extrapolated back to zero.",
       "note": "GPS \u2192 local map, lap gate, corners, lap-to-lap consistency"
     },
     {
       "id": "integrity",
       "name": "Signal integrity",
       "layer": "engine",
-      "status": "fixing",
+      "status": "passed",
       "rounds": 1,
-      "verdict": "Retuned: loose-mount cues renormalised to a scale measured over 384 rigid configurations. A rigid mount scores at most 0.12, a rattling cradle 0.20 to 0.66, a hand 0.80 to 1.00.",
+      "verdict": "Now vetoed independently by the calibration\u2019s own quality and forward-axis flag, which catches the loose mount the sway cues missed.",
       "note": "Loose-mount detection, physics plausibility, GPS quality gating"
     },
     {
@@ -106,34 +106,34 @@
       "id": "hud",
       "name": "Live drive HUD",
       "layer": "app",
-      "status": "queued",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Built and shot: the gauge is the widest thing on screen, the hero numeral is drawn straight from the font at display rate, and the 100 Hz path never calls setState.",
       "note": "Angle, g-meter, speed, score combo, callouts, glow"
     },
     {
       "id": "results",
       "name": "Results & grade",
       "layer": "app",
-      "status": "queued",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "A verdict written from the run\u2019s own data, and a run whose sensors cannot be believed now refuses to publish a score at all.",
       "note": "Grade reveal, breakdown, best drift"
     },
     {
       "id": "replay-ui",
       "name": "Replay screen",
       "layer": "app",
-      "status": "queued",
+      "status": "building",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "The scene model passed at 9.0; the app screen that draws it is being built now.",
       "note": "Track map, trail, scrubber, camera modes"
     },
     {
       "id": "calibrate-ui",
       "name": "Calibration flow",
       "layer": "app",
-      "status": "queued",
+      "status": "building",
       "rounds": 0,
       "verdict": "",
       "note": "Mount guidance with live sensor feedback"
@@ -142,7 +142,7 @@
       "id": "garage",
       "name": "Garage & sessions",
       "layer": "app",
-      "status": "queued",
+      "status": "building",
       "rounds": 0,
       "verdict": "",
       "note": "Home, session list, personal bests"
@@ -299,28 +299,40 @@
     {
       "t": "21:45",
       "text": "Replay passed at 9.0 after three rounds. The critic withdrew one of its own earlier findings as wrongly aimed and disclosed that it had overwritten a data file by accident, which is the behaviour that makes its other verdicts worth acting on."
+    },
+    {
+      "t": "22:30",
+      "text": "Scoring rehabilitated: sawing the wheel fell from 572,345 points to 860, and hand-holding the phone from 30,615 to 340. Every original target held; 284 tests."
+    },
+    {
+      "t": "22:45",
+      "text": "A session can now refuse to publish its own score. The contract is a required field, so a producer that forgets it is a compile error rather than a silent grade."
+    },
+    {
+      "t": "22:50",
+      "text": "Last wave: the replay screen, the calibration flow and the garage are being built, and a critic is judging the two screens a driver actually uses."
     }
   ],
   "shots": [
     {
-      "path": "artifacts/replay-ghost-lap2.png",
-      "caption": "Replay round 3: the ghost is distance-synced, so it is a green car beside you through the same corner instead of an off-screen badge. Median separation 2.7 metres, down from 60 to 100.",
-      "width": 560
+      "path": "artifacts/shots/results-untrusted.png",
+      "caption": "A run the engine will not vouch for. No grade, no grade colour, no reveal: the points are labelled a floor rather than a measurement and the components show dashes. The recording is still watchable; only the judgement is void.",
+      "width": 300
     },
     {
-      "path": "artifacts/shots/results.png",
-      "caption": "The results verdict, written from the run\u2019s own data: which corner, which lap, how many points came from one slide.",
-      "width": 300
+      "path": "artifacts/replay-ghost-lap2.png",
+      "caption": "The replay after three critique rounds, passed at 9.0. The ghost is distance-synced, so it is a car beside you through the same corner.",
+      "width": 560
     },
     {
       "path": "artifacts/shots/drive-peak.png",
-      "caption": "The live display at a 44 degree slide. The score counter is illegible mid-roll and has gone back.",
+      "caption": "The live display at a 48 degree slide, with the peak, hold time and flick count under the gauge.",
       "width": 300
     },
     {
-      "path": "artifacts/slip-touge.png",
-      "caption": "The slip estimator against ground truth, learning road camber as it goes.",
-      "width": 560
+      "path": "artifacts/shots/results-sloppy.png",
+      "caption": "The same screen on a bad run: grey grade, red bars, two spins named, and a verdict that says which corners went wrong.",
+      "width": 300
     }
   ]
 }
