@@ -147,13 +147,33 @@ export function scoreDrift(
   // Earnings, not just base points: a suppressed sample also fails to advance the sustained
   // multiplier and fails to accrue the seconds LONG DRIFT, SMOOTH and HIGH SPEED need, so a
   // re-score fires callouts at a multiplier the live pass never reached. Scaling the whole
-  // drift is the closest a single duration can come. Measured over both tracks at looseness
-  // 0 → 0.2 it lands within 1 % of the live total; on a run the monitor rejected outright it
-  // UNDER-states the points, which is the safe direction for a number nobody may publish.
+  // drift is the closest a single duration can come.
+  //
+  // HOW CLOSE, and to WHAT — the bound on the total is not the bound on a component:
+  //   total        within 1 % on a trusted run; UNDER-states a rejected one (the safe way).
+  //   angle,       EXACT. Both are measured off the recorded trace (held peak, jitter, plateau),
+  //   consistency  which is kept for every sample whether it was believed or not, so the mask
+  //                cannot move them at all.
+  //   quality      within ~1 point. It is the only component that integrates dt, which is the
+  //                thing the mask zeroes: `timeAtAngleS / durationS` is a RATIO, and scaling the
+  //                denominator alone once inflated quality by 13 points on a run whose total was
+  //                within a percent. Both ends are scaled below.
+  //   speed        within ~1 point, and irreducibly so: the mean speed is over a different set
+  //                of samples, and which ones is exactly what a duration cannot say.
+  //   style        up to ~6 points on a run that was suppressed OUTRIGHT, where the live pass
+  //                fired fewer time-based callouts than a re-score does. Those runs publish
+  //                nothing. On a trusted run it does not move.
   if (!plausible && e.suppressedS > 0 && e.durationS > 0) {
     const believed = clamp((e.durationS - e.suppressedS) / e.durationS, 0, 1);
     stats.implausibleS = Math.min(e.suppressedS, stats.durationS);
     stats.durationS = Math.max(0, stats.durationS - stats.implausibleS);
+    // EVERY accumulated duration, not just the total one. `timeAtAngleS` and `durationS` are a
+    // RATIO in the quality term, so scaling the denominator alone inflates it — that single
+    // omission moved quality 13 points on a partially-suppressed run while every other
+    // component was identical, because angle and consistency are measured off the recorded
+    // trace (kept for every sample, believed or not) and only the quality term integrates dt.
+    stats.timeAtAngleS *= believed;
+    stats.sustainedS *= believed;
     acc.base *= believed;
     acc.points *= believed;
     acc.bonus *= believed;

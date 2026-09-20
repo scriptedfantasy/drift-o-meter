@@ -52,9 +52,9 @@ import {
   RunRow,
   SimBay,
   SwipeToDelete,
+  readDetail,
   useGarage,
   type BestRecord,
-  type SessionFacts,
 } from '@/ui/garage';
 import { SectionHead, Tag } from '@/ui/results';
 
@@ -115,24 +115,29 @@ export default function GarageScreen() {
     }
   }, [garage, pending]);
 
+  /**
+   * Opening a run is the only place a body is read for a row, and only for a demo run: a stored
+   * `fixture-<name>` id is rebuilt from the simulator by the results screen, so any seed
+   * override has to travel with it (`Session.meta.fixtureQuery`). A real recording loads by id
+   * and needs nothing. One parse, on a tap, memoised.
+   */
   const openRun = useCallback(
-    (entry: SessionIndexEntry, facts: SessionFacts | undefined) => {
-      router.push({ pathname: '/results/[id]', params: { id: entry.id, ...queryParams(facts?.fixtureQuery ?? '') } });
+    (entry: SessionIndexEntry) => {
+      const go = (query: string) => router.push({ pathname: '/results/[id]', params: { id: entry.id, ...queryParams(query) } });
+      if (!entry.id.startsWith('fixture-')) {
+        go('');
+        return;
+      }
+      void readDetail(entry.id).then((d) => go(d.fixtureQuery));
     },
     [router],
   );
 
-  const openRecord = useCallback(
-    (record: BestRecord) => {
-      if (!record.id) return;
-      router.push({ pathname: '/results/[id]', params: { id: record.id, ...queryParams(record.query) } });
-    },
-    [router],
-  );
+  const openRecord = useCallback((record: BestRecord) => openRun({ id: record.id } as SessionIndexEntry), [openRun]);
 
   const hasRuns = garage.entries.length > 0;
   // The one thing that earns a calibration prompt: the last run said something was wrong.
-  const advice = useMemo(() => mountAdvice(garage.last, garage.last ? garage.facts.get(garage.last.id) : undefined), [garage.facts, garage.last]);
+  const advice = useMemo(() => mountAdvice(garage.last, garage.lastDetail), [garage.last, garage.lastDetail]);
   const openCalibrate = useCallback(
     (why?: string) => {
       const q = [simQuery.slice(1), why ? `why=${why}` : ''].filter(Boolean).join('&');
@@ -200,10 +205,10 @@ export default function GarageScreen() {
                 <SwipeToDelete onDelete={() => setPending(garage.last)} enabled={pending === null} testID="last-run-swipe">
                   <LastRunCard
                     entry={garage.last}
-                    facts={garage.facts.get(garage.last.id)}
+                    detail={garage.lastDetail}
                     // the notice above already carries the monitor's sentence, once
                     showReason={advice === null}
-                    onOpen={() => openRun(garage.last!, garage.facts.get(garage.last!.id))}
+                    onOpen={() => openRun(garage.last!)}
                     onDelete={() => setPending(garage.last)}
                     testID="last-run"
                   />
@@ -222,7 +227,7 @@ export default function GarageScreen() {
                 <View style={styles.list}>
                   {garage.earlier.map((e) => (
                     <SwipeToDelete key={e.id} onDelete={() => setPending(e)} enabled={pending === null}>
-                      <RunRow entry={e} facts={garage.facts.get(e.id)} onOpen={() => openRun(e, garage.facts.get(e.id))} onDelete={() => setPending(e)} testID={`run-${e.id}`} />
+                      <RunRow entry={e} onOpen={() => openRun(e)} onDelete={() => setPending(e)} testID={`run-${e.id}`} />
                     </SwipeToDelete>
                   ))}
                 </View>

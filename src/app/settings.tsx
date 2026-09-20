@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { clearSessions, useSessionIndex, useSettings } from '@/platform';
 import { listTracks } from '@/sim';
 import { AppText, colors, gutter, Micro, Panel, Segmented, type SegmentOption, Small, space, TopBar } from '@/ui';
-import { ConfirmDialog, forgetFacts } from '@/ui/garage';
+import { ConfirmDialog, forgetDetails } from '@/ui/garage';
 
 const TRACK_OPTIONS = listTracks().map((t) => ({ value: t.id, label: t.name }));
 const RATE_OPTIONS: SegmentOption<number>[] = [
@@ -36,7 +36,7 @@ export default function SettingsScreen() {
     setBusy(true);
     try {
       await clearSessions();
-      forgetFacts();
+      forgetDetails();
       await sessions.refresh();
     } finally {
       setBusy(false);

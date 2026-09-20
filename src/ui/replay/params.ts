@@ -25,6 +25,9 @@ export interface ReplayParams {
   /** Jump to the nth-best highlight on open (1-based). */
   highlight: number | null;
   cam: CameraMode | null;
+  /** Switch to this camera when the clock passes `cutAt` — the harness's way to record a cut. */
+  cutTo: CameraMode | null;
+  cutAt: number | null;
   play: boolean | null;
   rate: number | null;
   /** Open with the playhead grabbed at this fraction of the run (0..1) — a drag, frozen. */
@@ -72,6 +75,7 @@ const CAMS: Record<string, CameraMode> = {
 
 export function parseReplayParams(params: Raw): ReplayParams {
   const cam = str(params, 'cam')?.toLowerCase();
+  const cutTo = str(params, 'cutto')?.toLowerCase() ?? str(params, 'cutTo')?.toLowerCase();
   const rate = num(params, 'rate', 0.25, 4);
   const ui = str(params, 'ui')?.toLowerCase();
   const motion = str(params, 'motion')?.toLowerCase();
@@ -85,6 +89,8 @@ export function parseReplayParams(params: Raw): ReplayParams {
       return h === null ? null : Math.round(h);
     })(),
     cam: cam && CAMS[cam] ? CAMS[cam] : null,
+    cutTo: cutTo && CAMS[cutTo] ? CAMS[cutTo] : null,
+    cutAt: num(params, 'cutAt', 0, 1e6) ?? num(params, 'cutat', 0, 1e6),
     play: flag(params, 'play'),
     // The transport offers three speeds; the URL may ask for any of them, and for the slower
     // ones the harness needs to resolve motion that a software rasteriser cannot draw at 60 fps.

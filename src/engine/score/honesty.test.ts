@@ -341,6 +341,20 @@ describe('a stored session re-scores without the per-sample mask', () => {
     // and it reproduces the VERDICT exactly, which is the part a screen must obey
     expect(re.integrity.scoreTrusted).toBe(live.score.trusted);
     expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
+
+    // EVERY COMPONENT, not just the total. A total within a percent once hid quality being 13
+    // points out, because quality is the only component that integrates dt (the thing the mask
+    // zeroes) while angle and consistency are measured off the recorded trace. A screen tells a
+    // driver WHY they scored what they did out of these five numbers.
+    const comps = ['angle', 'consistency', 'quality', 'speed', 'style'] as const;
+    const moved = comps
+      .map((k) => ({ k, live: live.score[k], re: re[k], d: Math.abs(re[k] - live.score[k]) }))
+      .sort((a, b) => b.d - a.d);
+    process.stdout.write(`  components: ${moved.map((m) => `${m.k} ${m.live.toFixed(1)}→${m.re.toFixed(1)}`).join(', ')}\n`);
+    for (const m of moved) expect(m.d, `${m.k} drifted ${m.d.toFixed(1)} points`).toBeLessThan(2);
+    // the two that are measured off the trace cannot move at all
+    expect(re.angle).toBeCloseTo(live.score.angle, 5);
+    expect(re.consistency).toBeCloseTo(live.score.consistency, 5);
   }, 120_000);
 
   it('reproduces the refusal exactly on a run the monitor did not believe', () => {

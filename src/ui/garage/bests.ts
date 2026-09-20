@@ -8,7 +8,6 @@
  */
 import type { Grade } from '../../engine/types';
 import type { SessionIndexEntry } from '../../platform';
-import type { SessionFacts } from './facts';
 
 export type RecordKey = 'grade' | 'points' | 'angle' | 'chain';
 
@@ -55,7 +54,6 @@ function fmtPoints(n: number): string {
 
 interface Candidate {
   entry: SessionIndexEntry;
-  facts: SessionFacts;
 }
 
 function pick(cands: Candidate[], score: (c: Candidate) => number): { c: Candidate; v: number } | null {
@@ -70,32 +68,31 @@ function pick(cands: Candidate[], score: (c: Candidate) => number): { c: Candida
 
 function record(key: RecordKey, label: string, hit: { c: Candidate; v: number } | null, format: (v: number) => string): BestRecord {
   if (!hit) return { key, label, value: '--', id: '', when: 0, query: '', empty: true };
-  return { key, label, value: format(hit.v), id: hit.c.entry.id, when: hit.c.entry.startedAt, query: hit.c.facts.fixtureQuery, empty: false };
+  return { key, label, value: format(hit.v), id: hit.c.entry.id, when: hit.c.entry.startedAt, query: '', empty: false };
 }
 
 /**
  * Group the stored runs by track and find the four records on each. Tracks come back with the
  * most recently driven first, so the board reads like a logbook rather than an alphabet.
- * Entries whose facts have not been read yet are skipped: a record must not be claimed from
- * half the evidence.
+ *
+ * Reads the index and nothing else — `trusted`, `peakAngleDeg` and `longestChainPoints` all
+ * live there now, so a board of twenty runs costs no JSON parsing at all.
  */
-export function personalBests(entries: readonly SessionIndexEntry[], facts: ReadonlyMap<string, SessionFacts>): TrackBests[] {
+export function personalBests(entries: readonly SessionIndexEntry[]): TrackBests[] {
   const byTrack = new Map<string, Candidate[]>();
   for (const entry of entries) {
-    const f = facts.get(entry.id);
-    if (!f) continue;
     const track = entry.track && entry.track.trim() ? entry.track : UNTRACKED;
     const list = byTrack.get(track);
-    if (list) list.push({ entry, facts: f });
-    else byTrack.set(track, [{ entry, facts: f }]);
+    if (list) list.push({ entry });
+    else byTrack.set(track, [{ entry }]);
   }
 
   const out: TrackBests[] = [];
   for (const [track, all] of byTrack) {
-    const scored = all.filter((c) => c.facts.trusted);
+    const scored = all.filter((c) => c.entry.trusted);
     const gradeHit = pick(scored, (c) => GRADE_ORDER[c.entry.grade] + 1);
     const pointsHit = pick(scored, (c) => c.entry.total);
-    const chainHit = pick(scored, (c) => c.facts.longestChainPoints);
+    const chainHit = pick(scored, (c) => c.entry.longestChainPoints);
     const chain = record('chain', 'Longest chain', chainHit, fmtPoints);
     // A chain worth the whole run's points is not the points tile repeating itself — it is a
     // run that never dropped the chain. Say that, or the board looks broken.
@@ -114,7 +111,7 @@ export function personalBests(entries: readonly SessionIndexEntry[], facts: Read
           value: gradeHit ? gradeHit.c.entry.grade : '--',
         },
         record('points', 'Most points', pointsHit, fmtPoints),
-        record('angle', 'Biggest angle', pick(scored, (c) => c.facts.peakAngleDeg), (v) => `${Math.round(v)}°`),
+            record('angle', 'Biggest angle', pick(scored, (c) => c.entry.peakAngleDeg), (v) => `${Math.round(v)}°`),
         chain,
       ],
     });

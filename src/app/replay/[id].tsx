@@ -97,6 +97,21 @@ export default function ReplayScreen() {
     if (params.t !== null) player.seek(params.t, { play: params.play ?? true });
   }, [view, queryKey, params, player]);
 
+  // Harness only: switch the camera when the clock passes `cutAt`, so a cut — which is a beat of
+  // motion, not a state — can be recorded without a synthetic tap on a control.
+  useEffect(() => {
+    if (!view || params.cutTo === null || params.cutAt === null) return;
+    const target = params.cutTo;
+    const at = params.cutAt;
+    const timer = setInterval(() => {
+      if (player.sv.time.value >= at) {
+        player.setMode(target);
+        clearInterval(timer);
+      }
+    }, 80);
+    return () => clearInterval(timer);
+  }, [view, params.cutTo, params.cutAt, player]);
+
   // The controls behave like a video player's: always up while paused, out of the way a few
   // seconds into playback, back on a tap.
   const [touchedAt, setTouchedAt] = useState(0);

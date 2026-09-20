@@ -12,13 +12,17 @@
  *     past a browser's localStorage quota). Everything the garage reads (score, drifts,
  *     integrity, calibration, meta) survives.
  *   • every id is `fixture-<name>`, which is exactly what `/results/fixture-<name>` rebuilds
- *     from the simulator, so tapping a row shows the full run, samples and all.
+ *     from the simulator, so tapping a row shows the full run, samples and all. Seed overrides
+ *     ride in `Session.meta.fixtureQuery`, which the garage reads when a row is opened.
+ *
+ * `saveSession` re-summarises through `summarizeSession`, so every seeded run lands in the
+ * index with `trusted`, `peakAngleDeg` and `longestChainPoints` filled in.
  */
 import type { Session } from '../../engine/types';
 import { clearSessions, listSessions, saveSession } from '../../platform';
 import { buildFixtureSession, FIXTURES, type FixtureSpec } from '../results/fixture';
 import { buildResultsModel } from '../results/model';
-import { forgetFacts } from './facts';
+import { forgetDetails } from './lastRun';
 
 export interface DemoRun {
   /** A key of `FIXTURES` — the id becomes `fixture-<key>`, which the results screen rebuilds. */
@@ -104,7 +108,7 @@ export async function seedDemoRun(run: DemoRun): Promise<void> {
   }
   session.meta = { ...session.meta, source: 'simulation', demo: true };
   await saveSession(trim(session));
-  forgetFacts(session.id);
+  forgetDetails(session.id);
 }
 
 export interface SeedProgress {
@@ -120,7 +124,7 @@ export async function seedDemoSessions(set: string, onProgress?: (p: SeedProgres
   const runs = DEMO_SETS[set];
   if (!runs) return 0;
   await clearSessions();
-  forgetFacts();
+  forgetDetails();
   onProgress?.({ done: 0, total: runs.length });
   // oldest first, so the index is written in the order a driver would have made them
   const ordered = [...runs].reverse();
@@ -138,7 +142,7 @@ export async function seedDemoSessions(set: string, onProgress?: (p: SeedProgres
 /** Empty the garage (`/?demo=none`). */
 export async function clearDemoSessions(): Promise<void> {
   await clearSessions();
-  forgetFacts();
+  forgetDetails();
 }
 
 /**

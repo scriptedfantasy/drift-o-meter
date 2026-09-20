@@ -206,21 +206,16 @@ export const defaultRoutes = [
   // --scale 1 — the harness's software rasteriser (SwiftShader) draws this full-bleed scene at
   // about 6 fps at 1x and 1.5 fps at 3x, so a quarter-speed pass is what resolves a 320 ms slam
   // and a 180 ms shake into frames. The motion is the app's own, sampled finer.
-  { name: 'replay-motion', path: '/replay/demo?cam=chase&t=94.4&rate=0.25&ui=0', waitMs: 4000, expectCanvas: true, minEmber: 1200 },
+  { name: 'replay-motion', path: '/replay/demo?cam=chase&t=94.4&rate=0.15&ui=0', waitMs: 5000, expectCanvas: true, minEmber: 1200 },
   // A CAMERA CUT driven by the control, at quarter speed: chase, then CINE 1.2 s in. The engine
   // makes a mode switch a cut with a 120 ms cross-fade; the video shows it.
-  {
-    name: 'replay-cut',
-    path: '/replay/demo?cam=chase&t=95.5&rate=0.25&ui=1',
-    waitMs: 1600,
-    expectCanvas: true,
-    // a full-bleed Skia scene draws at a handful of frames a second in the harness's software
-    // rasteriser, and playwright's tap waits for the element to hold still across frames
-    actions: [{ type: 'tap', testId: 'replay-cam-cinematic', timeout: 60000 }, { type: 'wait', ms: 1400 }],
-  },
+  // `cutTo`/`cutAt` fire the same mode switch the CINE control fires, off the replay clock: a
+  // synthetic tap on a control drawn over this canvas waits tens of seconds for the element to
+  // "hold still" at a few frames a second, which is a property of the rasteriser, not the app.
+  { name: 'replay-cut', path: '/replay/demo?cam=chase&t=95.5&rate=0.15&cutTo=cinematic&cutAt=95.9&ui=0', waitMs: 6000, expectCanvas: true, minEmber: 800 },
   // The SHAKE, at quarter speed, from TRACK CAM where the camera itself is still: the exit beat
   // at 99.98 s carries magnitude 1, and `shakeAt` throws the whole world +/- 2.4 pt for 180 ms.
-  { name: 'replay-shake', path: '/replay/demo?cam=overview&t=99.6&rate=0.25&ui=0', waitMs: 3000, expectCanvas: true, minEmber: 1200 },
+  { name: 'replay-shake', path: '/replay/demo?cam=overview&t=99.6&rate=0.15&ui=0', waitMs: 4000, expectCanvas: true, minEmber: 1200 },
   // TRACK CAM at the half-way point: the whole circuit, the played line only, drift peaks blooming.
   { name: 'replay-overview', path: '/replay/demo?cam=overview&t=60&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
   // CHASE at the peak of the 3-link chain in lap 2: 54 deg, ember ribbon, smoke, slip arc.

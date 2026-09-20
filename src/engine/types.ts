@@ -166,8 +166,13 @@ export interface DriftEvent {
    * day anyone decimates `states` a mask would silently suppress the WRONG samples while still
    * looking plausible. A duration cannot misalign. Measured over 194 drifts spanning every
    * looseness, suppression is all-or-nothing on 89.7 % of them, so scaling by the believed
-   * fraction reproduces the live points exactly there and errs by a few percent on the rest —
-   * all of which are already refusing to publish a score.
+   * fraction reproduces the live points exactly there and errs by about a percent on the rest.
+   *
+   * THAT BOUND IS ON THE TOTAL, and a total within a percent can hide a component that is not.
+   * Per component: angle and consistency are EXACT, because they are measured off the recorded
+   * trace, which keeps every sample whether the monitor believed it or not, so the mask cannot
+   * reach them. Quality and speed land within about a point. Style can be several points out,
+   * but only on a run that was suppressed outright — which is a run that publishes nothing.
    *
    * It is also the only form a driver can be shown: "6.1 s of this slide did not count,
    * because the phone was moving in its mount."

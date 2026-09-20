@@ -476,7 +476,7 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
       if (seg.peakT > f.t || !inView(f, tr.x[seg.peakIndex], tr.y[seg.peakIndex])) continue;
       const w = severityWeight(seg.severity);
       if (w < 0.45) continue;
-      canvas.drawCircle(tr.x[seg.peakIndex], tr.y[seg.peakIndex], mOrPx(f, 7, 9), fillPaint(f, heatColor(seg.peakAngle), 0.1 + 0.12 * w));
+      canvas.drawCircle(tr.x[seg.peakIndex], tr.y[seg.peakIndex], mOrPx(f, 7, 9), fillPaint(f, heat(f, seg.peakAngle), 0.1 + 0.12 * w));
     }
   }
 }
@@ -565,7 +565,7 @@ function drawMarkers(canvas: SkCanvas, f: Frame): void {
         break;
       }
       case 'drift-peak': {
-        const col = heatColor(m.peakAngle ?? 0);
+        const col = heat(f, m.peakAngle ?? 0);
         canvas.drawCircle(m.x, m.y, mOrPx(f, 2, 2.6), strokePaint(f, col, pw, 0.5));
         canvas.drawCircle(m.x, m.y, mOrPx(f, 0.7, 1.2), fillPaint(f, col));
         break;
@@ -802,7 +802,7 @@ function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
     const mid = p.heading + 0.5 * wrapAngle(p.course - p.heading);
     const R = 6.4 * carScale(f);
     const lp = toS(f, p.x + Math.cos(mid) * R, p.y + Math.sin(mid) * R);
-    drawStr(canvas, f, f.fonts.mid, `${Math.round(Math.abs(deg(p.beta)))}°`, lp.x, lp.y + 5, { color: heatColor(p.beta), anchor: 'middle', outline: BG, outlineW: 3.5 });
+    drawStr(canvas, f, f.fonts.mid, `${Math.round(Math.abs(deg(p.beta)))}°`, lp.x, lp.y + 5, { color: heat(f, p.beta), anchor: 'middle', outline: BG, outlineW: 3.5 });
   }
 
   // markers, highest priority first, de-conflicted in screen space
@@ -1157,7 +1157,7 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   if (compact) {
     // everything on one row: counts inline on the left, the total on the right
     x += drawStr(canvas, f, f.fonts.label, driftStr, x, ly, { color: MUTED, tracking: 1.4 }) + 12;
-    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, x, ly, { color: heatColor(best), tracking: 1.4 });
+    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, x, ly, { color: heat(f, best), tracking: 1.4 });
     if (f.noScore) {
       const w = drawStr(canvas, f, f.fonts.label, 'NOT SCORED', lay.info.right, ly, { color: colors.red, anchor: 'end', tracking: 2 });
       drawStr(canvas, f, f.fonts.label, 'RECORDING ONLY', lay.info.right - w - 12, ly, { color: MUTED, anchor: 'end', tracking: 1.4 });
@@ -1185,7 +1185,7 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
     // masked to elapsed time, like the points and the total: "BEST 71\u00B0" on the opening frame
     // is a small forward-looking spoiler
     const dw = drawStr(canvas, f, f.fonts.label, driftStr, lay.info.x, ly + 22, { color: MUTED, tracking: 1.4 });
-    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, lay.info.x + dw + 14, ly + 22, { color: heatColor(best), tracking: 1.4 });
+    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, lay.info.x + dw + 14, ly + 22, { color: heat(f, best), tracking: 1.4 });
   }
 }
 

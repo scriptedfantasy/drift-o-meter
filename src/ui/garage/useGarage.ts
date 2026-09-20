@@ -1,21 +1,24 @@
 /**
- * The garage's data: the session index, the facts the index does not carry, the personal bests
- * derived from both, and the demo seeding the harness (and a demo on a laptop) asks for with
- * `?demo=`.
+ * The garage's data: the session index, the personal bests derived from it, and the demo
+ * seeding `?demo=` asks for.
  *
- * Rows appear as soon as the index is read and fill in, newest first, as each run's verdict
- * comes off disk — see `facts.ts` for why a row may not show a grade before then.
+ * The list reads NO session bodies. Grade, points, best angle, chain, track, date, duration and
+ * the NOT SCORED verdict all come from `SessionIndexEntry`, so every row is drawn the moment
+ * the index is read. Exactly one body is fetched, off the render path and after the list is up:
+ * the newest run's, for the integrity monitor's own sentence behind the mount notice
+ * (see `lastRun.ts`).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { deleteSession, useSessionIndex, type SessionIndexEntry } from '../../platform';
 import { personalBests, type TrackBests } from './bests';
 import { clearDemoSessions, demoSetPresent, resolveDemoRequest, seedDemoSessions, type SeedProgress } from './demo';
-import { forgetFacts, readFactsInOrder, type SessionFacts } from './facts';
+import { forgetDetails, readDetail, type LastRunDetail } from './lastRun';
 
 export interface Garage {
   entries: SessionIndexEntry[];
-  facts: ReadonlyMap<string, SessionFacts>;
+  /** The newest run's body, once read. Null until then, and for an empty garage. */
+  lastDetail: LastRunDetail | null;
   bests: TrackBests[];
   /** True while the index (or a demo seed) is still being read. */
   loading: boolean;
@@ -32,7 +35,7 @@ export interface Garage {
 export function useGarage(demoParam: string | undefined): Garage {
   const index = useSessionIndex();
   const { refresh } = index;
-  const [facts, setFacts] = useState<ReadonlyMap<string, SessionFacts>>(() => new Map());
+  const [lastDetail, setLastDetail] = useState<LastRunDetail | null>(null);
   const [seeding, setSeeding] = useState<SeedProgress | null>(null);
   const [seedSettled, setSeedSettled] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +59,7 @@ export function useGarage(demoParam: string | undefined): Garage {
           });
         }
         if (!alive) return;
-        setFacts(new Map());
+        setLastDetail(null);
         await refresh();
       } catch (err) {
         if (alive) setError(err instanceof Error ? err.message : String(err));
@@ -72,46 +75,42 @@ export function useGarage(demoParam: string | undefined): Garage {
     };
   }, [demoParam, refresh]);
 
-  // ---- the facts the index does not carry, newest first -----------------------------------
+  // ---- one body, for the words the index cannot hold ---------------------------------------
   const entries = index.entries;
+  const lastId = entries[0]?.id ?? null;
   useEffect(() => {
-    if (entries.length === 0) return;
+    if (!lastId) {
+      setLastDetail(null);
+      return;
+    }
     let cancelled = false;
-    void readFactsInOrder(
-      entries,
-      (f) => {
-        if (!cancelled) setFacts((prev) => new Map(prev).set(f.id, f));
-      },
-      () => cancelled,
-    );
+    void readDetail(lastId).then((d) => {
+      if (!cancelled) setLastDetail(d);
+    });
     return () => {
       cancelled = true;
     };
-  }, [entries]);
+  }, [lastId]);
 
-  const bests = useMemo(() => personalBests(entries, facts), [entries, facts]);
+  const bests = useMemo(() => personalBests(entries), [entries]);
 
   const remove = useCallback(
     async (id: string) => {
       try {
         await deleteSession(id);
-        forgetFacts(id);
-        setFacts((prev) => {
-          const next = new Map(prev);
-          next.delete(id);
-          return next;
-        });
+        forgetDetails(id);
+        if (id === lastId) setLastDetail(null);
         await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       }
     },
-    [refresh],
+    [lastId, refresh],
   );
 
   return {
     entries,
-    facts,
+    lastDetail,
     bests,
     loading: index.loading || !seedSettled || seeding !== null,
     seeding,

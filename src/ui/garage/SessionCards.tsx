@@ -14,19 +14,20 @@ import type { SessionIndexEntry } from '../../platform';
 import { formatDate, formatDuration, formatScore } from '../format';
 import { AppText, Micro, Small } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
-import type { SessionFacts } from './facts';
 import { GradeBadge, gradeStateColor, gradeStateOf } from './GradeBadge';
+import type { LastRunDetail } from './lastRun';
 
 export interface RunProps {
+  /** Everything a row shows now lives in the index — no session body is read to draw one. */
   entry: SessionIndexEntry;
-  /** Undefined until the run's verdict has been read off disk. */
-  facts: SessionFacts | undefined;
   onOpen(): void;
   onDelete(): void;
   testID?: string;
 }
 
 export interface LastRunCardProps extends RunProps {
+  /** The newest run's body, once it has been read. The rest of the card does not wait for it. */
+  detail?: LastRunDetail | null;
   /**
    * False when the garage is already showing the monitor's sentence above this card. The same
    * sentence twice in one viewport costs a third of the screen in the app's most urgent state.
@@ -37,20 +38,20 @@ export interface LastRunCardProps extends RunProps {
 /**
  * The biggest angle a run can claim — and `--` when it cannot claim one.
  *
- * Two things are deliberately NOT shown. A run the engine threw out has no angle to report at
- * all: `rawPeakAngleDeg` on a hand-held recording came out at 85°, bigger than any angle any
- * trusted run on the board holds, and printing it under the word "best" in muted grey is still
- * printing it. And a slide that ended in a spin is not an angle anyone held, so a run whose
- * only big numbers are spins reports nothing rather than its spin.
+ * `SessionIndexEntry.peakAngleDeg` already excludes spun drifts, for the same reason the scorer
+ * does: the angle a car reaches while spinning is not one the driver held. On top of that, a run
+ * the engine threw out reports no angle at all — the raw peak of a hand-held recording came out
+ * at 85°, bigger than any angle any trusted run on the board holds, and printing that under the
+ * word "best" in muted grey is still printing it.
  */
-function angleText(facts: SessionFacts | undefined, untrusted: boolean): string {
-  if (!facts || untrusted) return '--';
-  return facts.peakAngleDeg > 0 ? `${Math.round(facts.peakAngleDeg)}°` : '--';
+function angleText(entry: SessionIndexEntry, untrusted: boolean): string {
+  if (untrusted || !(entry.peakAngleDeg > 0)) return '--';
+  return `${Math.round(entry.peakAngleDeg)}°`;
 }
 
 /** The run a driver most likely came back to look at. Twice the size of everything below it. */
-export function LastRunCard({ entry, facts, onOpen, onDelete, showReason = true, testID }: LastRunCardProps) {
-  const state = gradeStateOf(entry.grade, facts?.trusted);
+export function LastRunCard({ entry, detail, onOpen, onDelete, showReason = true, testID }: LastRunCardProps) {
+  const state = gradeStateOf(entry.grade, entry.trusted);
   const accent = gradeStateColor(state);
   const untrusted = state.kind === 'void';
   const pending = state.kind === 'pending';
@@ -95,22 +96,22 @@ export function LastRunCard({ entry, facts, onOpen, onDelete, showReason = true,
       </AppText>
       {untrusted ? <Micro numberOfLines={1}>{formatDate(entry.startedAt)}</Micro> : null}
 
-      {untrusted && showReason && facts?.message ? (
+      {untrusted && showReason && detail?.message ? (
         <Small color="red" style={styles.voidNote} numberOfLines={3}>
-          {facts.message}
+          {detail.message}
         </Small>
       ) : null}
 
       <View style={styles.cardStats}>
         <CardStat
           label={untrusted ? 'Angle' : 'Best angle'}
-          value={angleText(facts, untrusted)}
-          color={untrusted || !facts?.peakAngleDeg ? colors.muted : colors.ember}
+          value={angleText(entry, untrusted)}
+          color={untrusted || !entry.peakAngleDeg ? colors.muted : colors.ember}
         />
         <CardStat label={entry.drifts === 1 ? 'Slide' : 'Slides'} value={String(entry.drifts)} color={colors.text} />
         <CardStat
           label={untrusted ? 'Mount' : 'Best chain'}
-          value={untrusted ? (facts?.mount ?? 'loose').toUpperCase() : facts ? formatScore(facts.longestChainPoints) : '--'}
+          value={untrusted ? (detail?.mount ?? 'loose').toUpperCase() : formatScore(entry.longestChainPoints)}
           color={untrusted ? colors.red : colors.magenta}
         />
       </View>
@@ -134,8 +135,8 @@ function CardStat({ label, value, color }: { label: string; value: string; color
 }
 
 /** Everything older: one line each, same six facts, a tenth of the ink. */
-export function RunRow({ entry, facts, onOpen, onDelete, testID }: RunProps) {
-  const state = gradeStateOf(entry.grade, facts?.trusted);
+export function RunRow({ entry, onOpen, onDelete, testID }: RunProps) {
+  const state = gradeStateOf(entry.grade, entry.trusted);
   const accent = gradeStateColor(state);
   const untrusted = state.kind === 'void';
   const pending = state.kind === 'pending';
@@ -163,7 +164,7 @@ export function RunRow({ entry, facts, onOpen, onDelete, testID }: RunProps) {
           {pending ? '--' : formatScore(entry.total)}
         </AppText>
         <Micro color={untrusted ? 'red' : 'muted'} numberOfLines={1}>
-          {untrusted ? 'logged only' : `${angleText(facts, false)} best`}
+          {untrusted ? 'logged only' : `${angleText(entry, false)} best`}
         </Micro>
       </View>
     </Pressable>

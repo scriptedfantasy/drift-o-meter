@@ -322,13 +322,13 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     const pts: Pt[] = parts.flat();
     if (count < 2 || parts.length === 0) continue;
     // The ribbon's width and colour follow |β| sample by sample, which as separate strokes is a
-    // hundred draw calls a segment. Bands of 8° of SLIP ANGLE collapse each one into a single
+    // hundred draw calls a segment. Bands of 4° of SLIP ANGLE collapse each one into a single
     // path while keeping the escalation: a band spans 8° of the ramp, and it is coloured and
     // widthed from its OWN MEAN, so neither the colour nor the stroke can be pulled by one spike
     // somewhere else in the slide.
     const chunks: TrailChunk[] = [];
-    const BAND_DEG = 8;
-    const BANDS = 14;
+    const BAND_DEG = 4;
+    const BANDS = 30;
     for (const hot of [false, true]) {
       const bands: Array<{ parts: Pt[][]; part: Pt[]; inten: number; mag: number; n: number; from: number; to: number }> = [];
       for (let k = 0; k < BANDS; k++) bands.push({ parts: [], part: [], inten: 0, mag: 0, n: 0, from: -1, to: -1 });

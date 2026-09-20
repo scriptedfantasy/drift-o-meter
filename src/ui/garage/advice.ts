@@ -11,7 +11,7 @@
  * for the condition, that sentence is used verbatim.
  */
 import type { SessionIndexEntry } from '../../platform';
-import type { SessionFacts } from './facts';
+import type { LastRunDetail } from './lastRun';
 
 export type MountConcern = 'rejected' | 'loose' | 'unresolved' | 'suspect';
 
@@ -30,21 +30,24 @@ export interface MountAdvice {
  */
 const UNCALIBRATED = 0.4;
 
-export function mountAdvice(entry: SessionIndexEntry | null, facts: SessionFacts | undefined): MountAdvice | null {
-  if (!entry || !facts) return null;
+export function mountAdvice(entry: SessionIndexEntry | null, detail: LastRunDetail | null): MountAdvice | null {
+  if (!entry) return null;
 
-  if (!facts.trusted) {
+  // The index alone settles this one, so the notice appears without waiting for a body read.
+  if (!entry.trusted) {
     return {
       concern: 'rejected',
       level: 'bad',
       title: 'Your last run was thrown out',
       // the monitor's own words for the condition, never new copy for the same thing
-      body: `${facts.message || 'Too much of the run could not be believed'}. Nothing from that drive was scored.`,
+      body: `${detail?.message || 'Too much of the run could not be believed'}. Nothing from that drive was scored.`,
       action: 'Check the mount',
     };
   }
 
-  if (facts.mount === 'loose') {
+  if (!detail) return null;
+
+  if (detail.mount === 'loose') {
     return {
       concern: 'loose',
       level: 'bad',
@@ -54,17 +57,17 @@ export function mountAdvice(entry: SessionIndexEntry | null, facts: SessionFacts
     };
   }
 
-  if (facts.calibrationQuality < UNCALIBRATED) {
+  if (detail.calibrationQuality < UNCALIBRATED) {
     return {
       concern: 'unresolved',
       level: 'warn',
       title: 'Last run never worked out which way the car points',
-      body: `Calibration settled at ${Math.round(facts.calibrationQuality * 100)}%. Without that, a slide and a lane change look alike — one hard pull in a straight line fixes it.`,
+      body: `Calibration settled at ${Math.round(detail.calibrationQuality * 100)}%. Without that, a slide and a lane change look alike — one hard pull in a straight line fixes it.`,
       action: 'Check the mount',
     };
   }
 
-  if (facts.mount === 'suspect') {
+  if (detail.mount === 'suspect') {
     return {
       concern: 'suspect',
       level: 'warn',

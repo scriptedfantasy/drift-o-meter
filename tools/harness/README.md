@@ -110,11 +110,20 @@ The seeds are chosen so no two runs share a minute: the fixture builder dates a 
 | `garage-flagged` | the one state where the garage mentions calibration: the last run was thrown out |
 | `garage-delete` | the confirmation a delete asks for (`Alert` is a no-op on web, so it is the app's own) |
 
-**A run with no grade.** A row may not print a grade letter until it knows whether the engine
-vouched for the run, and `SessionIndexEntry` does not carry that (`trusted`), nor the best angle
-or the longest chain. Those three are read out of the session body, newest first, and a row is a
-skeleton until its own read lands — see `src/ui/garage/facts.ts`. If `summarizeSession` ever
-grows those fields the whole read disappears.
+**The list reads no session bodies.** `SessionIndexEntry` carries `trusted`, `peakAngleDeg` and
+`longestChainPoints`, so grade, points, best angle and the NOT SCORED state are all drawn from
+the index the moment it is read. Exactly one body is fetched, off the render path: the newest
+run's, for the integrity monitor's own sentence behind the mount notice (`lastRun.ts`), plus one
+more when a demo row is actually opened, to carry its seed override to the results screen. A
+`trusted` field missing from an entry written before it existed reads as FALSE, so an old row
+shows the NOT SCORED plate rather than awarding a grade it cannot vouch for — which is why a
+demo set is re-seeded rather than reused.
+
+**The stored score is the published score.** A `pipeline` demo fixture keeps the score the
+pipeline gave it; only a `sim` fixture (which never ran the pipeline and carries
+`sessionFromSimulation`'s placeholder) is re-scored before storing. The seeding used to
+overwrite every score with the results screen's re-score, which meant the repository's
+screenshots depicted a garage/verdict agreement that real runs did not get.
 
 ## Calibrate: freezing a moment of the calibration (`/calibrate?...`)
 

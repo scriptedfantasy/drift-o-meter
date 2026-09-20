@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T23:01:53.744Z",
+  "startedAt": "2026-09-20T23:09:23.173Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,31 +9,30 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "results-integrity",
-      "path": "/results/fixture-rough?reveal=off",
-      "url": "http://127.0.0.1:34441/results/fixture-rough?reveal=off",
+      "name": "drive",
+      "path": "/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:36197/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/results-integrity.png",
-      "video": null,
-      "ms": 5300,
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive.png",
+      "video": "../../../../../../home/user/drift-o-meter/artifacts/video/drive.webm",
+      "ms": 8836,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 143,
-        "bodyTextNodes": 200,
+        "displayTextNodes": 70,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 0,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -64,13 +63,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 243960,
-        "cyanPixels": 0,
-        "textPixels": 10700,
-        "nonBgFraction": 0.5307
+        "emberPixels": 145016,
+        "cyanPixels": 16628,
+        "textPixels": 6884,
+        "nonBgFraction": 0.5924
       }
     }
   ],
-  "finishedAt": "2026-09-20T23:01:59.112Z",
+  "finishedAt": "2026-09-20T23:09:32.077Z",
   "failed": 0
 }
