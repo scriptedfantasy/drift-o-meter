@@ -1,14 +1,34 @@
 
-===== calibrate-nothing-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&hold=1
+===== results-reveal  http://127.0.0.1:36617/results/fixture-hero
 
-===== calibrate-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&at=0.5&hold=1
+===== results-skip  http://127.0.0.1:36617/results/fixture-hero?reveal=slam
 
-===== calibrate-level-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&at=3&hold=1
+===== results-reveal-hold  http://127.0.0.1:36617/results/fixture-hero?reveal=hold
 
-===== calibrate-ready-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&at=12&hold=1
+===== results-reveal-slam  http://127.0.0.1:36617/results/fixture-hero?reveal=slam
 
-===== calibrate-loose-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
+===== results  http://127.0.0.1:36617/results/fixture-hero?reveal=off
 
-===== calibrate-flat-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
+===== results-sloppy  http://127.0.0.1:36617/results/fixture-sloppy?reveal=off
 
-===== calibrate-rejected-landscape  http://127.0.0.1:43145/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected
+===== results-spin  http://127.0.0.1:36617/results/fixture-spin?reveal=off
+
+===== results-clean  http://127.0.0.1:36617/results/fixture-clean?reveal=off
+
+===== results-best  http://127.0.0.1:36617/results/fixture-hero?reveal=off
+
+===== results-drifts  http://127.0.0.1:36617/results/fixture-spin?reveal=off
+
+===== results-laps  http://127.0.0.1:36617/results/fixture-sloppy?reveal=off
+
+===== results-untrusted  http://127.0.0.1:36617/results/fixture-handheld?reveal=off
+
+===== results-untrusted-foot  http://127.0.0.1:36617/results/fixture-handheld?reveal=off
+
+===== results-integrity  http://127.0.0.1:36617/results/fixture-rough?reveal=off
+
+===== results-pipeline  http://127.0.0.1:36617/results/fixture-good?reveal=off&source=pipeline
+
+===== results-reduced  http://127.0.0.1:36617/results/fixture-hero?reveal=hold&motion=reduce
+
+===== results-missing  http://127.0.0.1:36617/results/no-such-session
