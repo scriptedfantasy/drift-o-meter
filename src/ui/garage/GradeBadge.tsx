@@ -1,0 +1,73 @@
+/**
+ * The grade slot of a session row — and the one state that is not a grade.
+ *
+ * When the engine refuses to vouch for a run (`SessionIntegrity.scoreTrusted === false`) the
+ * list may not show a letter, so it shows the same red NOT SCORED plate the results screen
+ * shows, at row scale. Until the run's verdict has been read off disk the slot is a skeleton:
+ * the alternative is guessing, and guessing here means printing an achievement that the engine
+ * has already refused.
+ */
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+
+import type { Grade } from '../../engine/types';
+import { AppText } from '../Text';
+import { alpha, colors, gradeColors, radii, space } from '../theme';
+
+export type GradeState = { kind: 'grade'; grade: Grade } | { kind: 'void' } | { kind: 'pending' };
+
+export function gradeStateOf(grade: Grade, trusted: boolean | undefined): GradeState {
+  if (trusted === undefined) return { kind: 'pending' };
+  return trusted ? { kind: 'grade', grade } : { kind: 'void' };
+}
+
+export function gradeStateColor(state: GradeState): string {
+  if (state.kind === 'grade') return gradeColors[state.grade] ?? colors.muted;
+  return state.kind === 'void' ? colors.red : colors.line;
+}
+
+export interface GradeBadgeProps {
+  state: GradeState;
+  /** Cap height of the letter in dp. The plate and the skeleton scale with it. */
+  size: number;
+  style?: StyleProp<ViewStyle>;
+  testID?: string;
+}
+
+export function GradeBadge({ state, size, style, testID }: GradeBadgeProps) {
+  if (state.kind === 'void') {
+    const word = Math.max(11, size * 0.26);
+    return (
+      <View style={[styles.plate, { borderRadius: radii.sm, paddingHorizontal: word * 0.45, paddingVertical: word * 0.22, width: size * 0.92 }, style]} testID={testID ?? 'not-scored'}>
+        <AppText variant="display" color="red" style={[styles.word, { fontSize: word, lineHeight: word * 0.98 }]}>
+          NOT
+        </AppText>
+        <AppText variant="display" color="red" style={[styles.word, { fontSize: word, lineHeight: word * 0.98 }]}>
+          SCORED
+        </AppText>
+      </View>
+    );
+  }
+  if (state.kind === 'pending') {
+    return <View style={[styles.pending, { width: size * 0.8, height: size * 0.8, borderRadius: radii.sm }, style]} testID={testID} />;
+  }
+  const color = gradeColors[state.grade] ?? colors.muted;
+  return (
+    <View style={[styles.box, { width: size * 0.92 }, style]} testID={testID}>
+      <AppText
+        variant="hero"
+        color={color}
+        numberOfLines={1}
+        style={[styles.letter, { fontSize: size, lineHeight: size * 0.96, textShadowColor: color, textShadowRadius: size * 0.28 }]}>
+        {state.grade}
+      </AppText>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: { alignItems: 'center', justifyContent: 'center' },
+  letter: { letterSpacing: -4, textShadowOffset: { width: 0, height: 0 }, includeFontPadding: false, textAlign: 'center' },
+  plate: { borderWidth: 2, borderColor: colors.red, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(colors.red, 0.08) },
+  word: { letterSpacing: -0.5, textAlign: 'center' },
+  pending: { backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line, marginVertical: space[1] },
+});

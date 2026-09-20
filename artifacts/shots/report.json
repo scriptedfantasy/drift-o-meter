@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T20:27:18.324Z",
+  "startedAt": "2026-09-20T20:32:15.623Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -11,13 +11,13 @@
     {
       "name": "home",
       "path": "/",
-      "url": "http://127.0.0.1:37387/",
+      "url": "http://127.0.0.1:36367/",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/home.png",
       "video": null,
-      "ms": 1810,
+      "ms": 1855,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -73,7 +73,7 @@
     {
       "name": "calibrate",
       "path": "/calibrate",
-      "url": "http://127.0.0.1:37387/calibrate",
+      "url": "http://127.0.0.1:36367/calibrate",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -81,7 +81,7 @@
       ],
       "screenshot": "artifacts/shots/calibrate.png",
       "video": null,
-      "ms": 1668,
+      "ms": 1646,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -137,13 +137,13 @@
     {
       "name": "drive-idle",
       "path": "/drive?sim=harbor&rate=1",
-      "url": "http://127.0.0.1:37387/drive?sim=harbor&rate=1",
+      "url": "http://127.0.0.1:36367/drive?sim=harbor&rate=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-idle.png",
       "video": null,
-      "ms": 3231,
+      "ms": 3182,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -198,13 +198,13 @@
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=96.3",
-      "url": "http://127.0.0.1:37387/drive?sim=harbor&rate=1&at=96.3",
+      "url": "http://127.0.0.1:36367/drive?sim=harbor&rate=1&at=96.3",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 6638,
+      "ms": 6800,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -251,22 +251,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 142792,
-        "cyanPixels": 15984,
-        "textPixels": 7756,
-        "nonBgFraction": 0.6404
+        "emberPixels": 144840,
+        "cyanPixels": 15992,
+        "textPixels": 7752,
+        "nonBgFraction": 0.6409
       }
     },
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:37387/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:36367/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 4797,
+      "ms": 4962,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -322,13 +322,13 @@
     {
       "name": "drive-transition",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:37387/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:36367/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 4372,
+      "ms": 4911,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -384,13 +384,13 @@
     {
       "name": "drive-bank",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:37387/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:36367/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank.png",
       "video": null,
-      "ms": 4662,
+      "ms": 4651,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -446,13 +446,13 @@
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose",
-      "url": "http://127.0.0.1:37387/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose",
+      "url": "http://127.0.0.1:36367/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 4919,
+      "ms": 4964,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -508,13 +508,13 @@
     {
       "name": "results-reveal",
       "path": "/results/fixture-hero",
-      "url": "http://127.0.0.1:37387/results/fixture-hero",
+      "url": "http://127.0.0.1:36367/results/fixture-hero",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-reveal.png",
       "video": null,
-      "ms": 4666,
+      "ms": 4611,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -561,22 +561,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 28232,
+        "emberPixels": 29236,
         "cyanPixels": 1072,
         "textPixels": 62400,
-        "nonBgFraction": 0.3812
+        "nonBgFraction": 0.3806
       }
     },
     {
       "name": "results-skip",
       "path": "/results/fixture-hero?reveal=slam",
-      "url": "http://127.0.0.1:37387/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:36367/results/fixture-hero?reveal=slam",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-skip.png",
       "video": null,
-      "ms": 3986,
+      "ms": 4111,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -632,7 +632,7 @@
     {
       "name": "results-reveal-hold",
       "path": "/results/fixture-hero?reveal=hold",
-      "url": "http://127.0.0.1:37387/results/fixture-hero?reveal=hold",
+      "url": "http://127.0.0.1:36367/results/fixture-hero?reveal=hold",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -640,7 +640,7 @@
       ],
       "screenshot": "artifacts/shots/results-reveal-hold.png",
       "video": null,
-      "ms": 2611,
+      "ms": 2589,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -696,7 +696,7 @@
     {
       "name": "results-reveal-slam",
       "path": "/results/fixture-hero?reveal=slam",
-      "url": "http://127.0.0.1:37387/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:36367/results/fixture-hero?reveal=slam",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -704,7 +704,7 @@
       ],
       "screenshot": "artifacts/shots/results-reveal-slam.png",
       "video": null,
-      "ms": 3850,
+      "ms": 3883,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -760,13 +760,13 @@
     {
       "name": "results",
       "path": "/results/fixture-hero?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-hero?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results.png",
       "video": null,
-      "ms": 3184,
+      "ms": 3157,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -822,13 +822,13 @@
     {
       "name": "results-sloppy",
       "path": "/results/fixture-sloppy?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-sloppy?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-sloppy.png",
       "video": null,
-      "ms": 3163,
+      "ms": 3228,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -884,13 +884,13 @@
     {
       "name": "results-spin",
       "path": "/results/fixture-spin?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-spin?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-spin.png",
       "video": null,
-      "ms": 3113,
+      "ms": 3173,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -946,13 +946,13 @@
     {
       "name": "results-clean",
       "path": "/results/fixture-clean?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-clean?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-clean?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-clean.png",
       "video": null,
-      "ms": 3061,
+      "ms": 3091,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1008,13 +1008,13 @@
     {
       "name": "results-best",
       "path": "/results/fixture-hero?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-hero?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-best.png",
       "video": null,
-      "ms": 4012,
+      "ms": 4130,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1070,13 +1070,13 @@
     {
       "name": "results-drifts",
       "path": "/results/fixture-spin?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-spin?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-drifts.png",
       "video": null,
-      "ms": 3947,
+      "ms": 4093,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1132,13 +1132,13 @@
     {
       "name": "results-laps",
       "path": "/results/fixture-sloppy?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-sloppy?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-laps.png",
       "video": null,
-      "ms": 3977,
+      "ms": 4018,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1194,13 +1194,13 @@
     {
       "name": "results-untrusted",
       "path": "/results/fixture-handheld?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-handheld?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-untrusted.png",
       "video": null,
-      "ms": 4856,
+      "ms": 4996,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1256,13 +1256,13 @@
     {
       "name": "results-untrusted-foot",
       "path": "/results/fixture-handheld?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-handheld?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-untrusted-foot.png",
       "video": null,
-      "ms": 5826,
+      "ms": 5859,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1318,13 +1318,13 @@
     {
       "name": "results-integrity",
       "path": "/results/fixture-rough?reveal=off",
-      "url": "http://127.0.0.1:37387/results/fixture-rough?reveal=off",
+      "url": "http://127.0.0.1:36367/results/fixture-rough?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-integrity.png",
       "video": null,
-      "ms": 4235,
+      "ms": 4222,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1380,13 +1380,13 @@
     {
       "name": "results-pipeline",
       "path": "/results/fixture-good?reveal=off&source=pipeline",
-      "url": "http://127.0.0.1:37387/results/fixture-good?reveal=off&source=pipeline",
+      "url": "http://127.0.0.1:36367/results/fixture-good?reveal=off&source=pipeline",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-pipeline.png",
       "video": null,
-      "ms": 5019,
+      "ms": 5042,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1433,7 +1433,7 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 140484,
+        "emberPixels": 140480,
         "cyanPixels": 1072,
         "textPixels": 62524,
         "nonBgFraction": 0.3803
@@ -1442,13 +1442,13 @@
     {
       "name": "results-reduced",
       "path": "/results/fixture-hero?reveal=hold&motion=reduce",
-      "url": "http://127.0.0.1:37387/results/fixture-hero?reveal=hold&motion=reduce",
+      "url": "http://127.0.0.1:36367/results/fixture-hero?reveal=hold&motion=reduce",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-reduced.png",
       "video": null,
-      "ms": 2991,
+      "ms": 3031,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1504,13 +1504,13 @@
     {
       "name": "results-missing",
       "path": "/results/no-such-session",
-      "url": "http://127.0.0.1:37387/results/no-such-session",
+      "url": "http://127.0.0.1:36367/results/no-such-session",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-missing.png",
       "video": null,
-      "ms": 1973,
+      "ms": 1917,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1564,13 +1564,13 @@
     {
       "name": "replay",
       "path": "/replay/demo",
-      "url": "http://127.0.0.1:37387/replay/demo",
+      "url": "http://127.0.0.1:36367/replay/demo",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/replay.png",
       "video": null,
-      "ms": 1728,
+      "ms": 1714,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1624,13 +1624,13 @@
     {
       "name": "settings",
       "path": "/settings",
-      "url": "http://127.0.0.1:37387/settings",
+      "url": "http://127.0.0.1:36367/settings",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/settings.png",
       "video": null,
-      "ms": 1792,
+      "ms": 1871,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1684,6 +1684,6 @@
       }
     }
   ],
-  "finishedAt": "2026-09-20T20:28:58.489Z",
+  "finishedAt": "2026-09-20T20:33:57.407Z",
   "failed": 0
 }

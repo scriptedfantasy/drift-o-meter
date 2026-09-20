@@ -1,0 +1,309 @@
+/**
+ * What the calibration screen says, derived from what the engine reports. Pure: no React, no
+ * sensors, so the wording can be reasoned about (and read) on its own.
+ *
+ * Two things here are deliberately NOT invented:
+ *
+ *  • the bar. "Calibrated" means the bar the ENGINE uses to trust a run — `calibrationOk` in
+ *    `IntegrityMonitor`, i.e. `quality >= DEFAULT_INTEGRITY_OPTIONS.minCalibrationQuality` and a
+ *    resolved forward axis. Below it the monitor refuses to believe any slide, whatever the
+ *    screen claims; above it every angle counts. A prettier, higher number would be a screen
+ *    inventing its own standard. (`docs/DESIGN.md` says 0.8; the calibrator's ceiling on a
+ *    typical mount is ~0.74 because road vibration caps the accelerometer fit, so 0.8 would be
+ *    a bar the engine can seldom clear — see the note in tools/harness/README.md.)
+ *  • the words for a loose mount. They are `IntegrityMonitor`'s own message, verbatim, so this
+ *    screen and the HUD never describe the same condition differently.
+ */
+import { DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
+import { DEFAULT_MOUNT_OPTIONS } from '../../engine/mount';
+import type { Vec3 } from '../../engine/types';
+import { G } from '../../engine/types';
+
+/** The bar the engine itself uses before it will believe a slide. */
+export const TRUST_QUALITY = DEFAULT_INTEGRITY_OPTIONS.minCalibrationQuality;
+/**
+ * The point above which the results screen stops qualifying a score for its mount
+ * (`integrityNotes`: below 0.75 it says "a few degrees of every angle belong to the mount").
+ */
+export const SHARP_QUALITY = 0.75;
+
+/** Up-axis quality at which the vertical has stopped moving around. */
+export const SETTLED_UP = 0.6;
+
+/** Degrees of recline past which the phone is lying down rather than standing up. */
+export const FLAT_DEG = 62;
+
+export type CalibrationFaultKind = 'permission' | 'unsupported' | 'services' | 'failed';
+
+export interface CalibrationFault {
+  kind: CalibrationFaultKind;
+  title: string;
+  body: string;
+  /** True when trying again might work. */
+  retryable: boolean;
+}
+
+export interface CalibrationReading {
+  status: 'starting' | 'listening' | 'held' | 'ended' | 'error';
+  fault: CalibrationFault | null;
+  sourceLabel: string | null;
+  sourceKind: 'device' | 'simulated' | null;
+  /** Seconds of motion fed to the calibrator. */
+  elapsedS: number;
+  samples: number;
+  /** Gravity as sensed in the phone frame; `has` is false until the first sample. */
+  has: boolean;
+  gravity: Vec3;
+  gMag: number;
+  /** In-plane rotation of the phone, degrees: 0 upright, ±90 on its side, 180 upside down. */
+  rollDeg: number;
+  /** Tilt out of the screen plane, degrees: 0 standing up, +90 face-up flat, −90 face-down. */
+  reclineDeg: number;
+  quality: number;
+  upQuality: number;
+  forwardResolved: boolean;
+  /** The engine's own verdict on whether this calibration may be believed. */
+  calibrationOk: boolean;
+  mount: MountState;
+  looseScore: number;
+  /** IntegrityMonitor's own sentence. Never rewritten here. */
+  message: string;
+  gps: GpsState;
+  speedKmh: number;
+  /** Seconds of straight-line acceleration evidence the forward axis is built from. */
+  lineEvidenceS: number;
+  /** How well that evidence lines up on one axis, 0..1. */
+  lineAnisotropy: number;
+  /** Which end of that axis is forward: |score| past `signAcceptScore` settles it. */
+  signScore: number;
+  /** Times the phone was knocked out of position since the screen opened. */
+  knocks: number;
+}
+
+export const IDLE_READING: CalibrationReading = {
+  status: 'starting',
+  fault: null,
+  sourceLabel: null,
+  sourceKind: null,
+  elapsedS: 0,
+  samples: 0,
+  has: false,
+  gravity: { x: 0, y: 0, z: 0 },
+  gMag: 0,
+  rollDeg: 0,
+  reclineDeg: 0,
+  quality: 0,
+  upQuality: 0,
+  forwardResolved: false,
+  calibrationOk: false,
+  mount: 'rigid',
+  looseScore: 0,
+  message: '',
+  gps: 'none',
+  speedKmh: 0,
+  lineEvidenceS: 0,
+  lineAnisotropy: 0,
+  signScore: 0,
+  knocks: 0,
+};
+
+/**
+ * How the phone is sitting, straight out of the gravity vector. Gravity points DOWN in the
+ * phone frame, so its in-plane direction is the roll and its out-of-plane part is the recline.
+ */
+export function orientationOf(g: Vec3): { rollDeg: number; reclineDeg: number; mag: number; has: boolean } {
+  const mag = Math.hypot(g.x, g.y, g.z);
+  if (!Number.isFinite(mag) || mag < 1) return { rollDeg: 0, reclineDeg: 0, mag: Number.isFinite(mag) ? mag : 0, has: false };
+  const rollDeg = (Math.atan2(g.x, -g.y) * 180) / Math.PI;
+  const reclineDeg = (Math.asin(Math.max(-1, Math.min(1, -g.z / mag))) * 180) / Math.PI;
+  return { rollDeg, reclineDeg, mag, has: true };
+}
+
+/** Plain words for the attitude, e.g. `UPRIGHT · 15° BACK` or `LYING FLAT, SCREEN UP`. */
+export function attitudeWords(r: CalibrationReading): string {
+  if (!r.has) return 'Waiting for the first reading';
+  if (isFlat(r)) return r.reclineDeg > 0 ? 'Lying flat, screen up' : 'Lying flat, screen down';
+  const roll = Math.abs(r.rollDeg);
+  const side = roll < 25 ? 'Upright' : roll > 155 ? 'Upside down' : r.rollDeg > 0 ? 'On its left edge' : 'On its right edge';
+  const lean = Math.abs(r.reclineDeg) < 6 ? 'vertical' : `${Math.round(Math.abs(r.reclineDeg))}° ${r.reclineDeg > 0 ? 'back' : 'forward'}`;
+  return `${side} · ${lean}`;
+}
+
+export function isFlat(r: CalibrationReading): boolean {
+  return r.has && Math.abs(r.reclineDeg) >= FLAT_DEG;
+}
+
+export function isSettled(r: CalibrationReading): boolean {
+  return r.upQuality >= SETTLED_UP;
+}
+
+export type CalibrationPhase = 'failed' | 'blocked' | 'ready' | 'seeking' | 'levelling' | 'starting';
+
+export function phaseOf(r: CalibrationReading): CalibrationPhase {
+  if (r.fault) return 'failed';
+  // A phone that is moving against the car invalidates everything downstream of it, resolved
+  // forward axis or not — the monitor will not believe a slide while this is true.
+  if (r.mount === 'loose') return 'blocked';
+  if (r.calibrationOk) return 'ready';
+  if (!r.has || r.samples === 0) return 'starting';
+  return isSettled(r) ? 'seeking' : 'levelling';
+}
+
+export interface Light {
+  key: 'level' | 'forward' | 'mount';
+  label: string;
+  state: 'on' | 'working' | 'bad';
+  detail: string;
+}
+
+export function lightsOf(r: CalibrationReading): Light[] {
+  const settled = isSettled(r);
+  return [
+    {
+      key: 'level',
+      label: 'Vertical',
+      state: settled ? 'on' : r.has ? 'working' : 'bad',
+      detail: settled ? 'Settled' : r.has ? 'Settling' : 'No reading',
+    },
+    {
+      key: 'forward',
+      label: 'Forward',
+      state: r.forwardResolved ? 'on' : 'working',
+      detail: r.forwardResolved ? 'Resolved' : r.lineEvidenceS > 0.05 ? `${Math.round((r.lineEvidenceS / DEFAULT_MOUNT_OPTIONS.lineMinEvidence) * 100)}% of the evidence` : 'Needs one hard pull',
+    },
+    {
+      key: 'mount',
+      label: 'Mount',
+      state: r.mount === 'rigid' ? 'on' : r.mount === 'suspect' ? 'working' : 'bad',
+      detail: r.mount === 'rigid' ? 'Rigid' : r.mount === 'suspect' ? 'Unsteady' : 'Moving',
+    },
+  ];
+}
+
+export interface Headline {
+  kicker: string;
+  title: string;
+  /** One clause, the reason — never a paragraph. */
+  because: string;
+  color: 'ember' | 'cyan' | 'green' | 'red' | 'gold';
+}
+
+export function headlineOf(r: CalibrationReading): Headline {
+  switch (phaseOf(r)) {
+    case 'failed':
+      return { kicker: 'Cannot calibrate', title: r.fault?.title ?? 'Sensors unavailable', because: r.fault?.body ?? '', color: 'red' };
+    case 'blocked':
+      // the monitor's own sentence, verbatim
+      return { kicker: 'Mount', title: 'Hold on', because: r.message, color: 'red' };
+    case 'ready':
+      return {
+        kicker: 'Calibrated',
+        title: 'Ready to measure',
+        because:
+          r.quality >= SHARP_QUALITY
+            ? 'the judge will take every angle this mount reports at face value'
+            : 'good enough to score — a couple of degrees of each angle still belong to the mount',
+        color: r.quality >= SHARP_QUALITY ? 'green' : 'ember',
+      };
+    case 'seeking':
+      return { kicker: 'Almost', title: 'Finding forward', because: 'one hard pull in a straight line is what tells it which way the car points', color: 'ember' };
+    case 'levelling':
+      return { kicker: 'Working', title: 'Finding level', because: 'gravity is telling it which way is up', color: 'cyan' };
+    default:
+      return { kicker: 'Waking up', title: 'Listening', because: 'the first readings are on their way', color: 'cyan' };
+  }
+}
+
+export interface Step {
+  n: string;
+  title: string;
+  /** Why, in one clause. */
+  because: string;
+  state: 'done' | 'active' | 'todo';
+  /** 0..1 when the engine can say how far along this step is. */
+  progress: number;
+}
+
+/**
+ * The two things a driver has to do. Deliberately two: the calibrator needs no gesture and no
+ * standing still — it takes the vertical from gravity by itself and the forward axis from the
+ * car accelerating. Anything else on this list would be ceremony.
+ */
+export function stepsOf(r: CalibrationReading): Step[] {
+  const mountOk = r.mount === 'rigid' && r.samples > 0 && !isFlat(r);
+  const evidence = Math.min(1, r.lineEvidenceS / DEFAULT_MOUNT_OPTIONS.lineMinEvidence);
+  return [
+    {
+      n: '01',
+      title: 'Clip it to something rigid',
+      because: 'a phone that shifts in its cradle reads as slip the car never made',
+      state: mountOk ? 'done' : 'active',
+      progress: mountOk ? 1 : 0,
+    },
+    {
+      n: '02',
+      title: 'Drive off and accelerate hard, once, in a straight line',
+      because: 'that one burst is what separates forwards from sideways',
+      state: r.forwardResolved ? 'done' : mountOk ? 'active' : 'todo',
+      progress: r.forwardResolved ? 1 : evidence,
+    },
+  ];
+}
+
+/** A caution that is true but not fatal — the phone is flat, or it has been knocked. */
+export interface Caution {
+  title: string;
+  body: string;
+  tone: 'gold' | 'red';
+}
+
+export function cautionsOf(r: CalibrationReading): Caution[] {
+  const out: Caution[] = [];
+  if (isFlat(r)) {
+    out.push({
+      title: 'The phone is lying flat',
+      body:
+        r.mount === 'rigid'
+          ? 'A flat dash pad is fine if it is stuck down. On a seat it will slide at the first corner, and a sliding phone cannot be calibrated.'
+          : 'Flat and already moving — on a seat or a loose pad it slides with every corner. Clip it to something.',
+      tone: r.mount === 'rigid' ? 'gold' : 'red',
+    });
+  }
+  if (r.mount === 'suspect' && !isFlat(r)) {
+    out.push({ title: 'Mount looks unsteady', body: r.message, tone: 'gold' });
+  }
+  if (r.knocks > 0) {
+    out.push({
+      title: r.knocks === 1 ? 'The phone was knocked' : `The phone was knocked ${r.knocks} times`,
+      body: 'It started again from the new position. Nothing is lost, but the mount is not holding.',
+      tone: 'gold',
+    });
+  }
+  if (r.has && Math.abs(r.gMag - G) > 1.2) {
+    out.push({
+      title: 'Gravity reads wrong',
+      body: `The phone is sensing ${r.gMag.toFixed(1)} m/s² where it should sense ${G.toFixed(1)}. Something is shaking it hard enough to matter.`,
+      tone: 'red',
+    });
+  }
+  return out;
+}
+
+/** The one honest number: where the calibration sits against the bar the engine uses. */
+export interface QualityBand {
+  value: number;
+  /** Percentage text, or `--` before there is anything to report. */
+  display: string;
+  label: string;
+  color: 'ember' | 'green' | 'red' | 'cyan';
+}
+
+export function qualityBand(r: CalibrationReading): QualityBand {
+  const value = Number.isFinite(r.quality) ? Math.max(0, Math.min(1, r.quality)) : 0;
+  const display = r.samples === 0 ? '--' : `${Math.round(value * 100)}%`;
+  if (!r.forwardResolved) return { value, display, label: 'Forward axis not resolved · nothing is scored yet', color: 'cyan' };
+  if (r.mount === 'loose') return { value, display, label: 'The mount is moving · nothing here can be believed', color: 'red' };
+  if (value >= SHARP_QUALITY) return { value, display, label: 'Sharp · nothing will be qualified for the mount', color: 'green' };
+  if (value >= TRUST_QUALITY) return { value, display, label: 'Good enough to score', color: 'ember' };
+  return { value, display, label: 'Below the bar the judge believes', color: 'red' };
+}

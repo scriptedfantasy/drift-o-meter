@@ -50,9 +50,9 @@
       "id": "score",
       "name": "Scoring & style",
       "layer": "engine",
-      "status": "passed",
-      "rounds": 1,
-      "verdict": "Every severity-one finding fixed and measured with the critic\u2019s own probes. Sawing the wheel fell from 572,345 points to 860; hand-holding the phone from 30,615 to 340 and marked untrusted.",
+      "status": "fixing",
+      "rounds": 2,
+      "verdict": "Back for a second round: the angle scale saturates at 44 degrees, so a run with three spins scores a perfect 100 on the heaviest component while the verdict above it condemns the same driving.",
       "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency",
       "score": "3.5 \u2192 rehabilitated"
     },
@@ -106,19 +106,21 @@
       "id": "hud",
       "name": "Live drive HUD",
       "layer": "app",
-      "status": "critique",
-      "rounds": 0,
-      "verdict": "Built and shot: the gauge is the widest thing on screen, the hero numeral is drawn straight from the font at display rate, and the 100 Hz path never calls setState.",
-      "note": "Angle, g-meter, speed, score combo, callouts, glow"
+      "status": "fixing",
+      "rounds": 1,
+      "verdict": "Failed. Every number matches the engine frame for frame, but a red alarm with the wrong headline fires in the first four seconds of every run, and the gauge celebrates angles the engine is refusing to score.",
+      "note": "Angle, g-meter, speed, score combo, callouts, glow",
+      "score": "7.5 \u2192 round 2"
     },
     {
       "id": "results",
       "name": "Results & grade",
       "layer": "app",
-      "status": "critique",
-      "rounds": 0,
-      "verdict": "A verdict written from the run\u2019s own data, and a run whose sensors cannot be believed now refuses to publish a score at all.",
-      "note": "Grade reveal, breakdown, best drift"
+      "status": "fixing",
+      "rounds": 1,
+      "verdict": "Failed. Called the most honest verdict screen the critic had reviewed, and failed on the judgement itself: the showcase run\u2019s top grade is bought with lap data that has zero variance by construction.",
+      "note": "Grade reveal, breakdown, best drift",
+      "score": "7.0 \u2192 round 2"
     },
     {
       "id": "replay-ui",
@@ -149,6 +151,24 @@
     }
   ],
   "verdicts": [
+    {
+      "piece": "The two screens a driver uses",
+      "round": 1,
+      "t": "23:20",
+      "pass": false,
+      "score": "HUD 7.5 \u00b7 Results 7.0",
+      "summary": "A critic re-shot both screens itself, added 39 moments of its own including the ones a builder would avoid, pulled video frames, and replayed the recordings through the engine to check every number. It found no fabrication anywhere and withdrew its own opening suspicion as false. Both screens fail on narrow, specific things.",
+      "findings": [
+        "Every run opens with a red alarm headed MOUNT SHAKING when the real condition is that GPS has not locked yet. A driver who sees a red alarm each time they press go stops reading the one element that must never be ignored.",
+        "The gauge celebrates in gold at 82 degrees on a run the engine is scoring at zero, because the drama never learned about the integrity verdict.",
+        "The needle is drawn through the hero number below 25 degrees, which is exactly when a driver is deciding whether the car has taken a set.",
+        "In the warning states the STOP control lands under the home indicator, in precisely the state where the driver needs to stop.",
+        "On the results page the sloppiest run scores a perfect 100 on the heaviest component while the verdict directly above condemns it. That one is a scoring fault, not a presentation one.",
+        "The showcase run repeats every corner to zero point zero metres, because the fixture replays the same lap plan. The page was publishing a simulator artifact as the driver\u2019s achievement.",
+        "The grade thresholds, the only thing telling a driver what a grade costs, render at 1.4 to 1 contrast where everything else on the page is above 6 to 1.",
+        "Verified good: the angle numeral is 12.5 millimetres at 6.3 to 1 contrast, every number matches the pipeline frame for frame, and the refusal state was called the most honest verdict screen the critic had reviewed."
+      ]
+    },
     {
       "piece": "Replay scene",
       "round": 3,
@@ -311,6 +331,10 @@
     {
       "t": "22:50",
       "text": "Last wave: the replay screen, the calibration flow and the garage are being built, and a critic is judging the two screens a driver actually uses."
+    },
+    {
+      "t": "23:25",
+      "text": "Both driver-facing screens failed their first critique at 7.5 and 7.0, with no fabrication found. One finding turned out to be a scoring fault rather than a presentation one and was routed accordingly."
     }
   ],
   "shots": [
