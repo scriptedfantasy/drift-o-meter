@@ -25,6 +25,8 @@ export interface BestRecord {
   query: string;
   /** True when nothing has been earned yet (the tile is a dash, not a boast). */
   empty: boolean;
+  /** Why this number is what it is, when it would otherwise look like a repeat. */
+  note?: string;
 }
 
 export interface TrackBests {
@@ -36,6 +38,11 @@ export interface TrackBests {
   /** Newest run on this track, ms since epoch. */
   lastAt: number;
   records: BestRecord[];
+  /**
+   * Set when the board is not yet a board. With one scored run every record is that run, so it
+   * says so — a record panel that silently repeats the row underneath it is not a record panel.
+   */
+  framing: string | null;
 }
 
 const GRADE_ORDER: Record<Grade, number> = { D: 0, C: 1, B: 2, A: 3, S: 4 };
@@ -87,19 +94,28 @@ export function personalBests(entries: readonly SessionIndexEntry[], facts: Read
   for (const [track, all] of byTrack) {
     const scored = all.filter((c) => c.facts.trusted);
     const gradeHit = pick(scored, (c) => GRADE_ORDER[c.entry.grade] + 1);
+    const pointsHit = pick(scored, (c) => c.entry.total);
+    const chainHit = pick(scored, (c) => c.facts.longestChainPoints);
+    const chain = record('chain', 'Longest chain', chainHit, fmtPoints);
+    // A chain worth the whole run's points is not the points tile repeating itself — it is a
+    // run that never dropped the chain. Say that, or the board looks broken.
+    if (chainHit && pointsHit && chainHit.c.entry.id === pointsHit.c.entry.id && Math.round(chainHit.v) === Math.round(pointsHit.v)) {
+      chain.note = 'the whole run, unbroken';
+    }
     out.push({
       track,
       runs: all.length,
       scored: scored.length,
       lastAt: all.reduce((m, c) => Math.max(m, c.entry.startedAt), 0),
+      framing: scored.length === 1 ? 'One scored run, so it holds all four — this is the bar to beat' : null,
       records: [
         {
           ...record('grade', 'Best grade', gradeHit, () => ''),
           value: gradeHit ? gradeHit.c.entry.grade : '--',
         },
-        record('points', 'Most points', pick(scored, (c) => c.entry.total), fmtPoints),
+        record('points', 'Most points', pointsHit, fmtPoints),
         record('angle', 'Biggest angle', pick(scored, (c) => c.facts.peakAngleDeg), (v) => `${Math.round(v)}°`),
-        record('chain', 'Longest chain', pick(scored, (c) => c.facts.longestChainPoints), fmtPoints),
+        chain,
       ],
     });
   }

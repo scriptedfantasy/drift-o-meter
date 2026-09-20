@@ -201,6 +201,8 @@ export default function GarageScreen() {
                   <LastRunCard
                     entry={garage.last}
                     facts={garage.facts.get(garage.last.id)}
+                    // the notice above already carries the monitor's sentence, once
+                    showReason={advice === null}
                     onOpen={() => openRun(garage.last!, garage.facts.get(garage.last!.id))}
                     onDelete={() => setPending(garage.last)}
                     testID="last-run"

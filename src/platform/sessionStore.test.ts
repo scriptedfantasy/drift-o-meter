@@ -85,7 +85,27 @@ describe('session store (memory backend)', () => {
     expect(id).toMatch(/^\d{8}-\d{6}-[a-z0-9]{4}$/);
     expect(isValidSessionId('a/b')).toBe(false);
     const s = summarizeSession(fakeSession('z', 7, 42, 'B'));
-    expect(s).toEqual({ id: 'z', name: 'Run z', startedAt: 7, durationS: 120, total: 42, grade: 'B', drifts: 0, track: 'Harbor' });
+    expect(s).toEqual({
+      id: 'z', name: 'Run z', startedAt: 7, durationS: 120, total: 42, grade: 'B', drifts: 0, track: 'Harbor',
+      trusted: true, peakAngleDeg: 0, longestChainPoints: 0,
+    });
+  });
+
+  it('a row can refuse a grade without loading the body', () => {
+    // The index carries the trust verdict precisely so a list never prints a grade the
+    // engine refused to publish. A session missing the flag counts as untrusted, because a
+    // row that cannot tell must not award one.
+    const trusted = summarizeSession(fakeSession('t', 1, 100, 'A'));
+    expect(trusted.trusted).toBe(true);
+    const refused = fakeSession('u', 1, 100, 'A');
+    refused.score.trusted = false;
+    expect(summarizeSession(refused).trusted).toBe(false);
+    const withheld = fakeSession('v', 1, 100, 'A');
+    withheld.integrity.scoreTrusted = false;
+    expect(summarizeSession(withheld).trusted).toBe(false);
+    const legacy = fakeSession('w', 1, 100, 'A');
+    delete (legacy.score as { trusted?: boolean }).trusted;
+    expect(summarizeSession(legacy).trusted).toBe(false);
   });
 });
 

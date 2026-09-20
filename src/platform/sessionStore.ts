@@ -16,6 +16,20 @@ export interface SessionIndexEntry {
   drifts: number;
   /** Track name from `Session.meta.track`, when present. */
   track: string | null;
+  /**
+   * Whether the engine was willing to publish this run's score. A list row MUST check it
+   * before printing a grade, the same way the results screen does.
+   *
+   * These last three exist so a list can be drawn from the index alone. Without them the
+   * garage had to load and parse every session body to print a grade letter: 5.75 MB of
+   * JSON per run where it needed 87 KB, about 31 ms of parsing each, so twenty stored runs
+   * meant 115 MB parsed on the UI thread every time the screen opened.
+   */
+  trusted: boolean;
+  /** Largest slip angle held during the run, degrees. 0 when nothing was held. */
+  peakAngleDeg: number;
+  /** Points in the run's longest banked chain. */
+  longestChainPoints: number;
 }
 
 /** Raw storage the store is built on. `readIndex`/`readBody` return null when missing. */
@@ -56,6 +70,22 @@ export function newSessionId(startedAt: number = Date.now()): string {
   return `${stamp}-${rand}`;
 }
 
+/**
+ * The biggest angle the driver actually HELD, in degrees, taken from the drifts the scorer
+ * counted. A spun drift is excluded for the same reason it lends nothing to the angle
+ * component: the angle a car reaches while spinning is not an angle the driver held.
+ */
+function peakHeldAngleDeg(s: Session): number {
+  if (!Array.isArray(s.drifts)) return 0;
+  let peak = 0;
+  for (const d of s.drifts) {
+    if (d.spin) continue;
+    const deg = Math.abs(d.peakAngle) * (180 / Math.PI);
+    if (Number.isFinite(deg) && deg > peak) peak = deg;
+  }
+  return Math.round(peak * 10) / 10;
+}
+
 export function summarizeSession(s: Session): SessionIndexEntry {
   const track = s.meta && typeof s.meta.track === 'string' ? s.meta.track : null;
   return {
@@ -67,6 +97,10 @@ export function summarizeSession(s: Session): SessionIndexEntry {
     grade: GRADES.includes(s.score?.grade) ? s.score.grade : 'D',
     drifts: Array.isArray(s.drifts) ? s.drifts.length : 0,
     track,
+    // Default to untrusted rather than trusted: a row that cannot tell must not award a grade.
+    trusted: s.score?.trusted === true && s.integrity?.scoreTrusted !== false,
+    peakAngleDeg: peakHeldAngleDeg(s),
+    longestChainPoints: Number.isFinite(s.score?.longestChainPoints) ? s.score.longestChainPoints : 0,
   };
 }
 

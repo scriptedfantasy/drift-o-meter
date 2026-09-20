@@ -72,24 +72,36 @@ function trim(session: Session): Session {
 }
 
 /**
- * Build one demo run and write it to storage with the score the real scorer gives it.
- * `buildResultsModel` runs `scoreSession`, which is the same code the results screen runs, so
- * the row and the screen it opens can never disagree.
+ * Build one demo run and store it.
+ *
+ * WHICH SCORE GETS STORED matters, and the rule is: whatever a real run would have stored.
+ *
+ *  • A `pipeline` fixture has been through the real `DriftPipeline`, so `Session.score` is the
+ *    pipeline's own number — the authoritative one, produced with the per-sample plausibility
+ *    mask that a later re-score cannot reconstruct. It is written through untouched. If the
+ *    results screen's re-score disagrees with it, the garage must SHOW that disagreement: this
+ *    used to overwrite it with the re-score, which meant every screenshot in the repo depicted
+ *    an agreement a real run does not get.
+ *  • A `sim` fixture never ran the pipeline. `sessionFromSimulation` leaves a placeholder score
+ *    behind, which is a fiction, so the real scorer's number replaces it — that is the only
+ *    honest number available for those.
  */
 export async function seedDemoRun(run: DemoRun): Promise<void> {
   const base = FIXTURES[run.fixture];
   if (!base) return;
   const spec: FixtureSpec = { ...base, seed: run.seed };
   const session = buildFixtureSession(spec);
-  const model = buildResultsModel(session);
-  session.score = {
-    ...session.score,
-    total: model.total,
-    grade: model.grade,
-    trusted: model.trusted,
-    longestChainPoints: model.stats.longestChainPoints,
-  };
-  session.integrity = model.judged;
+  if (spec.source !== 'pipeline') {
+    const model = buildResultsModel(session);
+    session.score = {
+      ...session.score,
+      total: model.total,
+      grade: model.grade,
+      trusted: model.trusted,
+      longestChainPoints: model.stats.longestChainPoints,
+    };
+    session.integrity = model.judged;
+  }
   session.meta = { ...session.meta, source: 'simulation', demo: true };
   await saveSession(trim(session));
   forgetFacts(session.id);

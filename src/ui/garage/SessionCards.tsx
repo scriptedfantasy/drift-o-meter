@@ -26,14 +26,30 @@ export interface RunProps {
   testID?: string;
 }
 
-function angleText(facts: SessionFacts | undefined): string {
-  if (!facts) return '--';
-  const deg = facts.peakAngleDeg > 0 ? facts.peakAngleDeg : facts.rawPeakAngleDeg;
-  return deg > 0 ? `${Math.round(deg)}°` : '--';
+export interface LastRunCardProps extends RunProps {
+  /**
+   * False when the garage is already showing the monitor's sentence above this card. The same
+   * sentence twice in one viewport costs a third of the screen in the app's most urgent state.
+   */
+  showReason?: boolean;
+}
+
+/**
+ * The biggest angle a run can claim — and `--` when it cannot claim one.
+ *
+ * Two things are deliberately NOT shown. A run the engine threw out has no angle to report at
+ * all: `rawPeakAngleDeg` on a hand-held recording came out at 85°, bigger than any angle any
+ * trusted run on the board holds, and printing it under the word "best" in muted grey is still
+ * printing it. And a slide that ended in a spin is not an angle anyone held, so a run whose
+ * only big numbers are spins reports nothing rather than its spin.
+ */
+function angleText(facts: SessionFacts | undefined, untrusted: boolean): string {
+  if (!facts || untrusted) return '--';
+  return facts.peakAngleDeg > 0 ? `${Math.round(facts.peakAngleDeg)}°` : '--';
 }
 
 /** The run a driver most likely came back to look at. Twice the size of everything below it. */
-export function LastRunCard({ entry, facts, onOpen, onDelete, testID }: RunProps) {
+export function LastRunCard({ entry, facts, onOpen, onDelete, showReason = true, testID }: LastRunCardProps) {
   const state = gradeStateOf(entry.grade, facts?.trusted);
   const accent = gradeStateColor(state);
   const untrusted = state.kind === 'void';
@@ -79,14 +95,18 @@ export function LastRunCard({ entry, facts, onOpen, onDelete, testID }: RunProps
       </AppText>
       {untrusted ? <Micro numberOfLines={1}>{formatDate(entry.startedAt)}</Micro> : null}
 
-      {untrusted && facts?.message ? (
+      {untrusted && showReason && facts?.message ? (
         <Small color="red" style={styles.voidNote} numberOfLines={3}>
           {facts.message}
         </Small>
       ) : null}
 
       <View style={styles.cardStats}>
-        <CardStat label="Best angle" value={angleText(facts)} color={untrusted || !facts?.peakAngleDeg ? colors.muted : colors.ember} />
+        <CardStat
+          label={untrusted ? 'Angle' : 'Best angle'}
+          value={angleText(facts, untrusted)}
+          color={untrusted || !facts?.peakAngleDeg ? colors.muted : colors.ember}
+        />
         <CardStat label={entry.drifts === 1 ? 'Slide' : 'Slides'} value={String(entry.drifts)} color={colors.text} />
         <CardStat
           label={untrusted ? 'Mount' : 'Best chain'}
@@ -143,7 +163,7 @@ export function RunRow({ entry, facts, onOpen, onDelete, testID }: RunProps) {
           {pending ? '--' : formatScore(entry.total)}
         </AppText>
         <Micro color={untrusted ? 'red' : 'muted'} numberOfLines={1}>
-          {untrusted ? 'logged only' : `${angleText(facts)} best`}
+          {untrusted ? 'logged only' : `${angleText(facts, false)} best`}
         </Micro>
       </View>
     </Pressable>

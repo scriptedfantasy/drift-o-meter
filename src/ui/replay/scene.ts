@@ -441,7 +441,7 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
     const focus = f.ui.focusDriftId !== null && f.ui.focusDriftId === seg.driftId;
     // the halo's heat is the peak SO FAR, never the peak this slide will reach
     const col = heatColor(sg.peakTo[Math.max(0, Math.min(seg.endIndex, cur) - seg.startIndex)]);
-    canvas.drawPath(path, glowStroke(f, col, haloW * (0.7 + 0.6 * w), (0.07 + 0.11 * w) * boost, haloW * 0.45));
+    canvas.drawPath(path, glowStroke(f, col, haloW * (0.55 + 0.5 * w), (0.09 + 0.13 * w) * boost, haloW * 0.28));
     canvas.drawPath(path, strokePaint(f, col, glowW * (0.8 + 0.5 * w), (0.18 + 0.22 * w) * boost));
     if (focus) canvas.drawPath(path, strokePaint(f, WHITE, haloW * 1.1, 0.16));
     if (!done) path.dispose();

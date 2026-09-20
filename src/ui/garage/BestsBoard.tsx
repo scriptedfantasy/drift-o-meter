@@ -50,6 +50,10 @@ function TrackPanel({ bests, onOpen }: { bests: TrackBests; onOpen(record: BestR
         <Micro color="red" style={styles.none}>
           Nothing here counts yet — the engine would not vouch for {bests.runs === 1 ? 'that run' : 'any of these runs'}
         </Micro>
+      ) : bests.framing ? (
+        <Micro style={styles.framing} numberOfLines={2}>
+          {bests.framing}
+        </Micro>
       ) : null}
       <View style={styles.grid}>
         {bests.records.map((r) => (
@@ -87,6 +91,11 @@ function RecordTile({ record, accent, onOpen }: { record: BestRecord; accent: st
       <AppText variant="telemetry" color={dim ? colors.muted : accent} numeric numberOfLines={1} style={styles.value}>
         {record.value}
       </AppText>
+      {record.note ? (
+        <Micro numberOfLines={1} style={styles.note}>
+          {record.note}
+        </Micro>
+      ) : null}
     </Pressable>
   );
 }
@@ -105,6 +114,8 @@ const styles = StyleSheet.create({
   head: { gap: 1 },
   track: { letterSpacing: 0.8 },
   none: { maxWidth: 320 },
+  framing: { maxWidth: 330, textTransform: 'none', letterSpacing: 0.2, opacity: 0.85 },
+  note: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   tile: {
     flexGrow: 1,
