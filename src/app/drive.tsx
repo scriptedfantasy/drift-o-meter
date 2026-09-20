@@ -237,7 +237,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
 
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: gutter, backgroundColor: 'rgba(7, 9, 13, 0.5)' },
-  overlayLandscape: { justifyContent: 'center' },
+  // Landscape keeps the gauge visible on the left and puts the arm block in the right half,
+  // where the telemetry and the score live once the run is going.
+  overlayLandscape: { justifyContent: 'center', paddingLeft: '52%' },
   armCard: { maxWidth: 460, alignSelf: 'stretch', alignItems: 'flex-start', gap: space[2] },
   armRule: { alignSelf: 'stretch', height: 1, backgroundColor: colors.line, marginBottom: space[2] },
   armTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 40, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },

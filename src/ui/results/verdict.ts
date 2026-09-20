@@ -6,13 +6,23 @@
  * reached, criticism cites the corner, the drift or the number it came from, and a session
  * that was sloppy is told so — a review pull quote, not a participation ribbon.
  */
-import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
+import { DEFAULT_SCORE_OPTIONS, medianCornerRadiusM, trackFactorFor, type Curve } from '../../engine/score';
 import type { StyleCalloutKind, TrackCorner } from '../../engine/types';
 import { cornerLabel, cornerTag } from './corners';
 import type { ComponentRow, DriftRow, ResultsBase } from './model';
 import { KIND_NAMES, scoreColor } from './palette';
 
 const O = DEFAULT_SCORE_OPTIONS;
+
+/**
+ * The scales are quoted from `DEFAULT_SCORE_OPTIONS`, never typed out by hand: when the scorer
+ * is retuned the explanation retunes with it, instead of quietly lying about the curve.
+ */
+function curveText(c: Curve, unit: string, scale = 1, digits = 0): string {
+  if (!c.length) return '';
+  const knots = c.length <= 3 ? c : [c[0], c[Math.round((c.length - 1) / 2)], c[c.length - 1]];
+  return knots.map(([x, y]) => `${Math.round(y)} at ${(x * scale).toFixed(digits)}${unit}`).join(', ');
+}
 
 function wmean(items: Array<{ w: number; v: number }>): number {
   let sw = 0;
@@ -125,7 +135,7 @@ function praiseFor(model: ResultsBase): string | null {
     return `${b.transitions} linked ${plural(b.transitions, 'transition')} and most of the callout book`;
   }
   if (b.quality >= 85) {
-    return `Committed slides — ${Math.round(timeAtAngleFraction(model) * 100)}% of the sideways time was past 15°`;
+    return `Committed slides — ${Math.round(timeAtAngleFraction(model) * 100)}% of the sideways time was past ${O.qualityAngleDeg}°`;
   }
   if (b.angle >= 70) {
     return `Real angle on the board (${round(held)}° held)`;
@@ -173,7 +183,7 @@ function flawsFor(model: ResultsBase): string[] {
       const scrappy = Math.round((1 - b.qualityParts.cleanExitFraction) * b.drifts);
       out.push(`${scrappy} of ${b.drifts} exits were snatched back rather than driven out`);
     } else {
-      out.push(`only ${Math.round(frac * 100)}% of the sideways time was past 15°`);
+      out.push(`only ${Math.round(frac * 100)}% of the sideways time was past ${O.qualityAngleDeg}°`);
     }
   }
   if (b.angle < 50) {
@@ -203,8 +213,18 @@ export function verdictFor(model: ResultsBase): string {
   const praise = praiseFor(model);
   const sloppy = b.grade === 'D' || b.spins >= 2 || (b.consistency < 45 && b.quality < 50);
 
+  // When the data itself is not trustworthy, say that first: praising or blaming the driving on
+  // top of a mount that was never calibrated would be a verdict on the cradle, not the driver.
+  const cal = model.session.calibration;
+  const calPct = Math.round((cal?.quality ?? 0) * 100);
+  if (!b.integrity.scoreTrusted || !cal || cal.quality < 0.4) {
+    const rest = flaws[0] ?? `${b.drifts} ${plural(b.drifts, 'slide')} were logged for ${model.total.toLocaleString('en-US')} points`;
+    return `Judge the data before the driving — the mount calibration never got past ${calPct}%, and on that footing ${rest}.`;
+  }
+
   if (sloppy) {
-    if (flaws.length >= 2) return `${capitalize(flaws[0])}, and ${flaws[1]}.`;
+    // the first clause often already carries an "and"; a second one turns the sentence to mush
+    if (flaws.length >= 2) return `${capitalize(flaws[0])}${flaws[0].includes(' and ') ? '; ' : ', and '}${flaws[1]}.`;
     if (flaws.length === 1) return `${capitalize(flaws[0])}.`;
     return `${b.drifts} slides, ${model.total.toLocaleString('en-US')} points, and nothing in them the scorer could reward.`;
   }
@@ -233,9 +253,11 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
 
   // ---- angle
   const bestHold = rows.reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
+  const tf = trackFactorFor(medianCornerRadiusM(model.session.track), O);
+  const stretched = tf.angle !== 1 || tf.speed !== 1 ? ` This track's corners (median radius ${Math.round(tf.medianRadiusM)} m) stretch the scale ×${tf.angle.toFixed(2)}.` : '';
   const angleText = empty
     ? 'No drift, no angle: the component starts at zero and stays there.'
-    : `Duration-weighted held peak ${round(weightedHeldPeak(rows))}°; the best hold was ${round(bestHold?.heldPeakDeg ?? 0)}° on drift #${bestHold?.index ?? 1}${bestHold?.corner ? ` at ${cornerLabel(bestHold.corner)}` : ''}. The scale pays 20 at 15°, 60 at 30°, 100 at 45°.`;
+    : `Duration-weighted held peak ${round(weightedHeldPeak(rows))}°; the best hold was ${round(bestHold?.heldPeakDeg ?? 0)}° on drift #${bestHold?.index ?? 1}${bestHold?.corner ? ` at ${cornerLabel(bestHold.corner)}` : ''}. The scale pays ${curveText(O.angleCurve, '°', tf.angle)}.${stretched}`;
 
   // ---- consistency
   const worst = worstCorner(model);
@@ -245,9 +267,11 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
     consText = 'Nothing to compare: consistency needs at least one held slide.';
   } else if (b.crossLapConsistency !== null && worst) {
     const vals = worst.perLap.map((v, i) => `lap ${i + 1} ${Number.isFinite(v) ? `${round(v)}°` : 'skipped'}`);
-    consText = `Half cross-lap, half steadiness. Your least repeatable corner was ${cornerTag(worst.corner)} — ${vals.join(', ')}, entry moving ${round(worst.spreadM, 1)} m. Cross-lap ${round(b.crossLapConsistency, 0)} · steadiness ${round(b.steadiness, 0)}.`;
+    consText = `${Math.round(O.crossLapWeight * 100)}% cross-lap, ${Math.round((1 - O.crossLapWeight) * 100)}% steadiness. Your least repeatable corner was ${cornerTag(worst.corner)} — ${vals.join(', ')}, entry moving ${round(worst.spreadM, 1)} m. Cross-lap ${round(b.crossLapConsistency, 0)} · steadiness ${round(b.steadiness, 0)}.`;
   } else {
-    consText = `One lap, so this is steadiness alone: ±${round(jitter, 2)}° RMS of wobble around the angle you were aiming for (0.4° is full marks, 3° is zero).`;
+    const best = O.jitterCurve[0];
+    const zero = O.jitterCurve[O.jitterCurve.length - 1];
+    consText = `One lap, so cross-lap consistency could not be measured and counts as neutral; the rest is steadiness: ±${round(jitter, 2)}° RMS of wobble around the angle you were aiming for (${best[0]}° scores ${best[1]}, ${zero[0]}° scores ${zero[1]}).`;
   }
 
   // ---- quality
@@ -255,13 +279,13 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
   const cleanExits = Math.round(b.qualityParts.cleanExitFraction * b.drifts);
   const qualText = empty
     ? 'Quality judges slides. There were none.'
-    : `${Math.round(frac * 100)}% of your ${mmss(model.stats.driftTimeS)} sideways was past 15°, ${cleanExits} of ${b.drifts} exits driven out clean${b.spins ? `, and ${b.spins} ${plural(b.spins, 'spin')} cut the whole component by ${Math.round((1 - b.qualityParts.spinFactor) * 100)}%` : ''}.`;
+    : `${Math.round(frac * 100)}% of your ${mmss(model.stats.driftTimeS)} sideways was past ${O.qualityAngleDeg}°, ${cleanExits} of ${b.drifts} exits driven out clean${b.spins ? `, and ${b.spins} ${plural(b.spins, 'spin')} cut the whole component by ${Math.round((1 - b.qualityParts.spinFactor) * 100)}%` : ''}.`;
 
   // ---- speed
   const fastest = rows.reduce<DriftRow | null>((m, r) => (!m || r.entryKmh > m.entryKmh ? r : m), null);
   const speedText = empty
     ? 'Speed is measured while sideways, and you never were.'
-    : `Mean ${round(meanDriftKmh(model))} km/h while sideways, fastest entry ${round(fastest?.entryKmh ?? 0)} km/h on drift #${fastest?.index ?? 1}. The scale runs 16 km/h → 0, 80 → 80, 100 → full.`;
+    : `Mean ${round(meanDriftKmh(model))} km/h while sideways, fastest entry ${round(fastest?.entryKmh ?? 0)} km/h on drift #${fastest?.index ?? 1}. The scale pays ${curveText(O.speedScoreCurve, ' km/h', tf.speed)}.`;
 
   // ---- style
   const kinds = new Set<StyleCalloutKind>();
@@ -270,7 +294,7 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
   const perDrift = b.drifts > 0 ? b.transitions / b.drifts : 0;
   const styleText = empty
     ? 'No callouts fired, so there is no style score to give.'
-    : `${kinds.size} different callouts fired (6 kinds is full marks), ${round(perDrift, 1)} transitions per slide, ${model.calloutPoints.toLocaleString('en-US')} bonus points.${missing.length ? ` Never earned: ${missing.join(', ')}.` : ''}`;
+    : `${kinds.size} different callouts fired (6 kinds is full marks), ${round(perDrift, 1)} transitions per slide, ${Math.round(model.calloutPoints).toLocaleString('en-US')} bonus points.${missing.length ? ` Never earned: ${missing.join(', ')}.` : ''}`;
 
   return [
     { key: 'angle', label: 'Angle', score: b.angle, weight: w.angle, color: scoreColor(b.angle), explain: angleText },

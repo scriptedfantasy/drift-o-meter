@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T19:33:39.839Z",
+  "startedAt": "2026-09-20T19:40:21.708Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,76 +9,15 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive-idle",
-      "path": "/drive?sim=harbor&rate=1",
-      "url": "http://127.0.0.1:39713/drive?sim=harbor&rate=1",
+      "name": "drive",
+      "path": "/drive?sim=harbor&rate=1&at=96.3",
+      "url": "http://127.0.0.1:36315/drive?sim=harbor&rate=1&at=96.3",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-idle.png",
-      "video": null,
-      "ms": 3624,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 10,
-        "bodyTextNodes": 9,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 214684,
-        "cyanPixels": 0,
-        "textPixels": 33192,
-        "nonBgFraction": 0.1921
-      }
-    },
-    {
-      "name": "drive-peak",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:39713/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak.png",
-      "video": null,
-      "ms": 5790,
+      "screenshot": "artifacts/shots/drive.png",
+      "video": "artifacts/video/drive.webm",
+      "ms": 7262,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -89,7 +28,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 87,
+        "displayTextNodes": 81,
         "bodyTextNodes": 19,
         "otherTextNodes": 0
       },
@@ -125,13 +64,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 147592,
-        "cyanPixels": 15788,
-        "textPixels": 7588,
-        "nonBgFraction": 0.6406
+        "emberPixels": 140904,
+        "cyanPixels": 20332,
+        "textPixels": 7608,
+        "nonBgFraction": 0.5974
       }
     }
   ],
-  "finishedAt": "2026-09-20T19:33:49.348Z",
+  "finishedAt": "2026-09-20T19:40:29.046Z",
   "failed": 0
 }

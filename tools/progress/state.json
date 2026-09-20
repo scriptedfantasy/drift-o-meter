@@ -78,11 +78,11 @@
       "id": "replay",
       "name": "Replay scene",
       "layer": "engine",
-      "status": "critique",
+      "status": "passed",
       "rounds": 3,
-      "verdict": "Round 3: camera opens straight again, all five grades reachable, the cutter no longer severs transitions, and the ghost is a car beside you rather than a badge at the edge.",
+      "verdict": "Passed. Every blocker independently re-measured as fixed. Four polish items left, none blocking.",
       "note": "Session \u2192 timeline, glow trail, camera, ghost",
-      "score": "4.5 \u2192 8.0 \u2192 ?"
+      "score": "4.5 \u2192 8.0 \u2192 9.0"
     },
     {
       "id": "pipeline",
@@ -149,6 +149,22 @@
     }
   ],
   "verdicts": [
+    {
+      "piece": "Replay scene",
+      "round": 3,
+      "t": "21:40",
+      "pass": true,
+      "score": "9.0 / 10 \u2014 PASS",
+      "summary": "The first piece to clear the bar, after three rounds of being sent back. The critic re-ran its own probes, regenerated every frame from current code and measured before judging. It also withdrew one of its own round-two findings as mis-aimed and disclosed a file it had overwritten by accident.",
+      "findings": [
+        "Camera opening error 0.0000 degrees, against 91.5 degrees of wrong rotation and a quarter-turn whip two rounds ago.",
+        "All five grades reachable across the skill range, and the gold top-grade badge renders where it was previously unreachable.",
+        "Transitions restored from one per run to six, with magenta measurable in twelve of sixteen frames instead of one of six.",
+        "The ghost sits a median 2.7 metres away and is on screen for every in-lap sample, where it used to be absent 88 percent of the time.",
+        "Still a top-down map with no perspective. The critic judged that the ceiling on the score rather than a defect, and said the frames would sit beside a stylised racing game without apology.",
+        "Remaining, none blocking: the ghost hides under the car at close range, one long drift can ride a single transition, a 70 and a 93 degree slide share a callout, and the opening frame still shows the run\u2019s best angle."
+      ]
+    },
     {
       "piece": "Replay scene",
       "round": 2,
@@ -279,6 +295,10 @@
     {
       "t": "21:15",
       "text": "Caught a cross-module conflict from the orchestrator seat: calibration and the slip estimator had each begun removing the phone\u2019s lever arm, so the pipeline compensated twice. The contract now names one owner."
+    },
+    {
+      "t": "21:45",
+      "text": "Replay passed at 9.0 after three rounds. The critic withdrew one of its own earlier findings as wrongly aimed and disclosed that it had overwritten a data file by accident, which is the behaviour that makes its other verdicts worth acting on."
     }
   ],
   "shots": [

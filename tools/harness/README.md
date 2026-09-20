@@ -61,6 +61,51 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
 
 `testID` props in the app map to `data-testid` on web, which is what `testId` targets.
 
+## Drive HUD: seeking and freezing a moment (`/drive?...`)
+
+The HUD is only interesting while the car is sideways, so the harness does not photograph it at
+t = 0. `src/ui/hud/hudParams.ts` adds four query parameters on top of the `sim` / `rate` / `seed`
+/ `laps` ones that pick the recording:
+
+| param | effect |
+| --- | --- |
+| `at=<seconds>` | WARP: feed the pipeline every sample up to that instant of the recording at once, silently (no callouts animate, no haptics), then carry on from there. ~11 000 samples take about 0.3 s. Implies `run=1`. |
+| `hold=1` | FREEZE at `at`: no further samples. The frame is then deterministic — the same URL gives the same pixels, verified by shooting one URL three times 2.5 s apart. |
+| `run=1` | Arm and start the run on mount instead of showing the READY screen. |
+| `integrity=loose\|suspect\|gps-poor\|gps-none\|physics\|ok` | Presentation-only override of `frame.integrity`, so the warning states can be photographed from a clean recording. It changes nothing upstream of the view; the wording is the IntegrityMonitor's own. |
+
+`at` counts seconds of MOTION data (the same clock the HUD's own timer shows), so `at=100.85`
+lands on the frame whose HUD clock reads 1:41. Playback speed still comes from `rate`.
+
+Two details make a frozen frame reproducible, and both are worth knowing before changing them:
+
+* the callout stack expires by RECORDING time, not wall time, so freezing the run freezes the
+  stack — `drive-peak` keeps the three callouts that fired in the 3.2 s before `at`;
+* the score odometer settles on whole digits when the score stops changing (a chained linear
+  tween, not an exponential smoother, which on web never finishes).
+
+A live route (no `hold`) is NOT frame-exact: the screenshot lands wherever playback has reached,
+about 4.5 s after `at` with `waitMs: 3200`. `drive` is deliberately live — it is the route to
+record video of — and is warped to 96.3 s so that window covers the MANJI flick at 100.0 s.
+
+Default drive routes, and what each one is evidence of:
+
+| route | moment |
+| --- | --- |
+| `drive-idle` | armed, before the run: gauge at rest, GO, nothing claimed |
+| `drive` | LIVE mid-drift with callouts on screen (video: `npm run shoot -- --video --only drive`) |
+| `drive-peak` | held at 48° right, ×4.5, three callouts stacked (EXTREME ANGLE / MANJI / TRANSITION ×3) |
+| `drive-transition` | held 110 ms after TRANSITION ×2, mid-swing through zero, chevron flipped to L |
+| `drive-bank` | held just after a 10 000-point chain banked: BANKED ticker, chain bar drained, LINK ×3 |
+| `drive-warn` | the same frame as `drive-peak` with a loose mount: the banner has to be impossible to miss while the run is going well |
+
+Frames from the video (the bundled ffmpeg's filter parser is unusable — use `-r`, not `-vf fps=`):
+
+```
+npm run shoot -- --video --only drive
+/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux -i artifacts/video/drive.webm -r 6 /tmp/f%03d.png
+```
+
 ## Results screen: deterministic fixtures (`/results/...`)
 
 The results screen renders a stored `Session`. For screenshots (and for development before the
@@ -77,18 +122,17 @@ same URL → same session → same pixels. The numbers on screen always come fro
 
 | `?fixture=` | what it is | what the scorer returned on 20 Sep |
 | --- | --- | --- |
-| `hero`   | harbor, seed 3, aggression 1.3, consistency 1 (the best the driver model reaches) | **A** 83.8, 14 slides, 2 clean laps |
-| `good`   | harbor, seed 7, aggression 0.9, consistency 0.8 | **A** 78.9, 15 slides |
-| `sloppy` | harbor, seed 1, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **C** 45.1, 2 spins, ~3 000 points thrown away |
-| `spin`   | harbor, seed 4, one slide forced past the spin threshold | **B** 73.0, 1 spin, a chain lost |
+| `hero`   | harbor, seed 3, aggression 1.3, consistency 1 (the best the driver model reaches) | **A** 85.2, 14 slides, 2 clean laps |
+| `good`   | harbor, seed 7, aggression 0.9, consistency 0.8 | **A** 76.1, 15 slides |
+| `sloppy` | harbor, seed 1, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **D** 33.0, 2 spins, ~2 900 points thrown away |
+| `spin`   | harbor, seed 4, one slide forced past the spin threshold | **B** 74.1, 1 spin, a chain lost |
 | `clean`  | harbor, driven on grip (slip angle under 5°) | **D** 0/100, no drifts at all |
-| `rough`  | harbor through the REAL pipeline with a rattling cradle and GPS dropouts | **B** 60.3, calibration 8 %, phantom spins |
+| `rough`  | harbor through the REAL pipeline with a rattling cradle and GPS dropouts | **B** 60.7, calibration 8 %, phantom spins |
 | `touge`  | the point-to-point mountain road, one lap | **A** 79.5, no laps → no lap table |
 
-The grades above are what the scorer says, not what the fixture asks for: they move when the
-scorer is retuned, and that is the point of shooting them. As of this writing no simulated
-driving reaches S (the ceiling across every seed and skill setting is ≈ 84) and nothing with
-drifts in it reaches D (the floor is ≈ 45); the only D on the board is the no-drift `clean` run.
+The grades above are what the scorer says, not what the fixture asks for: they move whenever the
+scorer is retuned, and that is the point of shooting them. As of this writing S is not reachable
+from simulated driving at all — the ceiling across every seed, track and skill setting is ≈ 85.
 
 Overrides (all optional, all clamped): `track=harbor|touge`, `seed=<int>`, `laps=1..6`,
 `agg=0..2` (above 1 is a hero lap the driver model cannot normally produce), `cons=0..1`,
@@ -156,5 +200,12 @@ bundled ffmpeg (its filter parser is unusable in this build, so use `-r`, not `-
   counts leaf text nodes per family, so a fallback font on any screen is caught.
 - **Videos** need playwright's ffmpeg build (`ffmpeg-1011`, present). Each route records into its own
   browser context; the file is moved to `artifacts/video/<name>.webm` after the context closes.
+- **A HUD that is still warping.** `?at=` runs its warp synchronously when the run starts, which is
+  after the source is selected (`selectSensorSource` generates the simulated run first). Give a
+  held drive route at least `waitMs: 2400`, or the screenshot lands mid-warp on an earlier frame.
+- **Skia fonts are fetched separately.** The gauge's hero numeral is drawn by Skia from the Barlow
+  Condensed .ttf, which `useFont` loads over the network. For the first ~0.5 s after the canvas
+  mounts the numeral is absent (the arc and needle are not). Every screenshot waits long enough;
+  the first second of a video does not.
 - **Running as root** works because playwright launches Chromium with `--no-sandbox` semantics by
   default (`chromiumSandbox: false`).

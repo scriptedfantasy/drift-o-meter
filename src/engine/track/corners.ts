@@ -11,6 +11,12 @@ export interface CornerOptions {
   exitFactor: number;
   /** Runs shorter than this are not corners, metres. */
   minLengthM: number;
+  /**
+   * ...and neither are runs that turn the car less than this many degrees in total (length ÷
+   * radius). Length alone calls a 12 m kink at a 94 m radius — 7° of heading — a corner, which
+   * is how a 10-corner mountain road came back with 16 corners on it.
+   */
+  minTurnDeg: number;
   /** Same-direction runs separated by less than this are merged, metres. */
   mergeGapM: number;
   /** Curvature smoothing window (each of the two box stages spans ±windowM/2), metres; use an even number of metres at 1 m spacing. */
@@ -21,7 +27,8 @@ export const DEFAULT_CORNER_OPTIONS: CornerOptions = {
   kappaMin: 1 / 70,
   exitFactor: 0.6,
   minLengthM: 12,
-  mergeGapM: 20,
+  mergeGapM: 6,
+  minTurnDeg: 12,
   windowM: 6,
 };
 
@@ -138,6 +145,9 @@ export function findCornersOnPath(
   for (const r of merged) {
     const len = r.count * h;
     if (len <= o.minLengthM) continue;
+    // total heading change through the run: what actually makes a piece of road a corner
+    const turnDeg = (r.kSum * h * 180) / Math.PI;
+    if (turnDeg < o.minTurnDeg) continue;
     // mean |κ| uses only the samples actually above the exit threshold (dips excluded)
     const startS = modS(at(r.start) * h, lengthM);
     const apexIdx = at(r.apex % n);

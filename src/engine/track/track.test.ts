@@ -269,9 +269,14 @@ function printTable(): void {
     fmt(r.wallMs, 0),
   ]);
   const widths = head.map((h, i) => Math.max(h.length, ...lines.map((l) => l[i].length)));
-  console.log('\nTRACK MODEL METRICS  (smooth = gating rows per the brief; rough = OU offset, looser gates)');
-  console.log(head.map((h, i) => h.padEnd(widths[i])).join('  '));
-  for (const l of lines) console.log(l.map((c, i) => c.padEnd(widths[i])).join('  '));
+  // process.stdout.write, never the console: vitest 5 swallows a test file's console output by
+  // default, which is how a metrics table nobody could see stayed wrong for a whole round.
+  const text = [
+    '\nTRACK MODEL METRICS  (smooth = gating rows per the brief; rough = OU offset, looser gates)',
+    head.map((h, i) => h.padEnd(widths[i])).join('  '),
+    ...lines.map((l) => l.map((c, i) => c.padEnd(widths[i])).join('  ')),
+  ].join('\n');
+  process.stdout.write(text + '\n');
 }
 
 /** Everything a closed-circuit run must satisfy; `strict` = the brief's corner criteria, else the rough-noise gates. */
@@ -324,7 +329,7 @@ function checkHarbor(seed: number, mode: NoiseMode): void {
 
   // corners
   const { matched, maxApexErrM, uncovered, apexErrs } = matchCorners(run, model!);
-  console.log(`harbor s${seed} ${mode}: found ${fmtCorners(model!)} | apex err (m) vs truth: ${apexErrs}`);
+  process.stdout.write(`harbor s${seed} ${mode}: found ${fmtCorners(model!)} | apex err (m) vs truth: ${apexErrs}\n`);
   const countErr = Math.abs(model!.corners.length - run.corners.length);
   if (mode === 'smooth') {
     expect(countErr).toBeLessThanOrEqual(1);
@@ -488,7 +493,7 @@ describe('track model — mountain pass (point-to-point)', () => {
     const lenErrPct = (100 * (model!.lengthM - driven)) / driven;
     expect(Math.abs(lenErrPct)).toBeLessThan(3);
     const { matched, maxApexErrM, uncovered, apexErrs } = matchCorners(run, model!);
-    console.log(`touge: found ${fmtCorners(model!)} | apex err (m) vs truth: ${apexErrs}`);
+    process.stdout.write(`touge: found ${fmtCorners(model!)} | apex err (m) vs truth: ${apexErrs}\n`);
     expect(matched).toBeGreaterThanOrEqual(6);
     expect(maxApexErrM).toBeLessThan(15);
     expect(uncovered).toBe(0);

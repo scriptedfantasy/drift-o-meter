@@ -10,6 +10,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
+import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
 import type { LapConsistency } from '../../engine/track';
 import type { TrackCorner } from '../../engine/types';
 import { AppText } from '../Text';
@@ -126,8 +127,8 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
       })}
 
       <AppText variant="small" color="muted" style={styles.footer}>
-        Overall repeatability {Math.round(laps.overall * 100)} / 100 across {laps.lapsCompared} laps. Half of your consistency score is this table; the other half is how steadily you held each
-        angle.
+        Overall repeatability {Math.round(laps.overall * 100)} / 100 across {laps.lapsCompared} laps. {Math.round(DEFAULT_SCORE_OPTIONS.crossLapWeight * 100)}% of your consistency score is this
+        table; the rest is how steadily you held each angle.
       </AppText>
     </Animated.View>
   );
