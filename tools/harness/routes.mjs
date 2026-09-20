@@ -41,11 +41,13 @@ export const defaultRoutes = [
   // the reveal playing end to end — shoot this one with --video and pull frames out with ffmpeg
   { name: 'results-reveal', path: '/results/fixture-hero', waitMs: 3400 },
   // the reveal is skippable: tap anywhere during it and the page is there, already settled
+  // frozen at the slam, then tapped: proves a tap ends the reveal and hands over an interactive,
+  // settled page (tapping a frozen frame keeps the shot deterministic — no 2-second window to hit)
   {
     name: 'results-skip',
-    path: '/results/fixture-hero',
-    waitMs: 1200,
-    actions: [{ type: 'tap', testId: 'reveal-skip' }, { type: 'wait', ms: 900 }],
+    path: '/results/fixture-hero?reveal=slam',
+    waitMs: 1600,
+    actions: [{ type: 'tap', testId: 'reveal-skip' }, { type: 'wait', ms: 1200 }],
   },
   { name: 'results-reveal-hold', path: '/results/fixture-hero?reveal=hold', waitMs: 1600 },
   { name: 'results-reveal-slam', path: '/results/fixture-hero?reveal=slam', waitMs: 2200, expectCanvas: true, minEmber: 300 },

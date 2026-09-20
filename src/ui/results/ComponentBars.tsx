@@ -36,7 +36,7 @@ function Bar({ row, index, run, reduceMotion }: { row: ComponentRow; index: numb
   return (
     <Animated.View style={[styles.row, enter]} testID={`component-${row.key}`}>
       <View style={styles.headRow}>
-        <AppText variant="subheading" color={row.color} style={styles.label} numberOfLines={1}>
+        <AppText variant="subheading" color="text" style={styles.label} numberOfLines={1}>
           {row.label}
         </AppText>
         <AppText variant="micro" color="muted" numeric style={styles.weight}>

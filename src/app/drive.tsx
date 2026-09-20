@@ -45,7 +45,7 @@ export default function DriveScreen() {
   const gaugeW = landscape ? Math.min(stageW * 0.52, height * 1.3) : width;
   const gauge = { w: gaugeW, h: Math.min(gaugeW * 0.56, height * (landscape ? 0.62 : 0.32)) };
 
-  const map = landscape ? { w: 168, h: 116 } : { w: 136, h: 136 };
+  const map = landscape ? { w: 168, h: 116 } : { w: 150, h: 150 };
 
   return (
     <View style={styles.root} testID="screen-drive">
@@ -56,10 +56,10 @@ export default function DriveScreen() {
             {landscape ? (
               <View style={styles.landscapeRow}>
                 <View style={styles.leftColumn}>
-                  <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} testID="hud-status" />
+                  <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} live={live} testID="hud-status" />
                   <View style={styles.gaugeWrapLandscape}>
                     <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
-                    <DriftStrip snapshot={run.snapshot} testID="hud-drift" />
+                    {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
                   </View>
                 </View>
 
@@ -67,22 +67,26 @@ export default function DriveScreen() {
                   <View style={styles.calloutsLandscape} pointerEvents="none">
                     <CalloutStack events={run.events} fromRight size={22} testID="hud-callouts" />
                   </View>
-                  <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" />
-                  <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={56} testID="hud-telemetry" />
-                  <View style={styles.scoreRowLandscape}>
-                    <View style={styles.scoreCell}>
-                      <ScoreBanner banner={run.banner} size={24} />
-                      <ScorePanel signals={signals} snapshot={run.snapshot} size={46} testID="hud-score" />
-                    </View>
-                    <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
-                  </View>
-                  {live ? <StopControl onPress={run.stop} compact /> : null}
+                  {live ? (
+                    <>
+                      <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" />
+                      <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={56} testID="hud-telemetry" />
+                      <View style={styles.scoreRowLandscape}>
+                        <View style={styles.scoreCell}>
+                          <ScoreBanner banner={run.banner} size={24} />
+                          <ScorePanel signals={signals} snapshot={run.snapshot} size={46} testID="hud-score" />
+                        </View>
+                        <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
+                      </View>
+                      <StopControl onPress={run.stop} compact />
+                    </>
+                  ) : null}
                 </View>
               </View>
             ) : (
               <>
-                <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} testID="hud-status" />
-                <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" />
+                <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} live={live} testID="hud-status" />
+                {live ? <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" /> : null}
 
                 {/* The gauge sits high: a phone in a dash mount is read from below, so the
                     clearest sightline is the top of the screen. */}
@@ -93,30 +97,37 @@ export default function DriveScreen() {
                 {/* Middle band: what the slide is doing (strip), what it just earned (callouts)
                     and where it is happening (map). Nothing here is decoration. */}
                 <View style={styles.stage}>
-                  <DriftStrip snapshot={run.snapshot} testID="hud-drift" />
-                  <View style={styles.stageRow}>
-                    <View style={styles.stageCallouts}>
-                      <CalloutStack events={run.events} size={23} testID="hud-callouts" />
+                  {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
+                  <CalloutStack events={run.events} size={26} testID="hud-callouts" />
+                </View>
+
+                {/* Nothing below the gauge claims a number until the run is actually armed. */}
+                {live ? (
+                  <>
+                    <View style={styles.stageRow}>
+                      <View style={styles.stageCallouts}>
+                        <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={68} vertical testID="hud-telemetry" />
+                      </View>
+                      <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
                     </View>
-                    <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
-                  </View>
-                </View>
 
-                <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={68} testID="hud-telemetry" />
+                    <View style={styles.scoreBlock}>
+                      <ScoreBanner banner={run.banner} size={28} />
+                      <ScorePanel signals={signals} snapshot={run.snapshot} size={58} testID="hud-score" />
+                    </View>
 
-                <View style={styles.scoreCell}>
-                  <ScoreBanner banner={run.banner} size={28} />
-                  <ScorePanel signals={signals} snapshot={run.snapshot} size={58} testID="hud-score" />
-                </View>
-
-                {live ? <StopControl onPress={run.stop} /> : null}
+                    <StopControl onPress={run.stop} />
+                  </>
+                ) : null}
               </>
             )}
           </View>
         </SafeAreaView>
       </Animated.View>
 
-      {!live && run.status !== 'error' ? <ArmOverlay status={run.status} label={run.sourceLabel} onStart={run.start} landscape={landscape} /> : null}
+      {!live && run.status !== 'error' ? (
+        <ArmOverlay status={run.status} label={run.sourceLabel} onStart={run.start} landscape={landscape} topOffset={landscape ? 0 : gauge.h} />
+      ) : null}
       {run.status === 'error' && run.error ? (
         <ErrorOverlay title={run.error.title} body={run.error.body} retryable={run.error.retryable} onRetry={run.dismissError} onBack={() => router.replace('/')} />
       ) : null}
@@ -141,11 +152,12 @@ function StopControl({ onPress, compact = false }: { onPress: () => void; compac
   );
 }
 
-function ArmOverlay({ status, label, onStart, landscape }: { status: string; label: string | null; onStart: () => void; landscape: boolean }) {
+function ArmOverlay({ status, label, onStart, landscape, topOffset }: { status: string; label: string | null; onStart: () => void; landscape: boolean; topOffset: number }) {
   const starting = status === 'starting';
   return (
-    <View style={[styles.overlay, landscape && styles.overlayLandscape]} pointerEvents="box-none">
+    <View style={[styles.overlay, landscape && styles.overlayLandscape, { paddingTop: topOffset }]} pointerEvents="box-none">
       <View style={styles.armCard} pointerEvents="auto">
+        <View style={styles.armRule} />
         <Micro color={colors.ember}>{label ?? (Platform.OS === 'web' ? 'SIMULATED SOURCE' : 'DEVICE SENSORS')}</Micro>
         <AppText style={styles.armTitle}>{starting ? 'ARMING' : 'READY TO DRIVE'}</AppText>
         <Body color="muted" style={styles.armBody}>
@@ -187,8 +199,9 @@ const styles = StyleSheet.create({
   frameLandscape: { paddingTop: space[1], paddingBottom: space[2] },
 
   stage: { flex: 1, alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2], paddingTop: space[1] },
-  stageRow: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
-  stageCallouts: { flex: 1, alignItems: 'flex-start' },
+  stageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
+  stageCallouts: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-end' },
+  scoreBlock: { alignSelf: 'stretch', gap: space[1] },
   bleed: { marginHorizontal: -gutter },
 
   landscapeRow: { flex: 1, flexDirection: 'row', gap: space[5] },
@@ -218,21 +231,10 @@ const styles = StyleSheet.create({
   stopLabel: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 26, lineHeight: 28, color: colors.red, letterSpacing: 1, flex: 1 },
   pressed: { opacity: 0.7 },
 
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: gutter, backgroundColor: 'rgba(7, 9, 13, 0.72)' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: gutter, backgroundColor: 'rgba(7, 9, 13, 0.5)' },
   overlayLandscape: { justifyContent: 'center' },
-  armCard: {
-    maxWidth: 420,
-    alignSelf: 'center',
-    alignItems: 'flex-start',
-    gap: space[2],
-    backgroundColor: colors.bg1,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.ember,
-    borderRadius: radii.lg,
-    padding: space[5],
-  },
+  armCard: { maxWidth: 460, alignSelf: 'stretch', alignItems: 'flex-start', gap: space[2] },
+  armRule: { alignSelf: 'stretch', height: 1, backgroundColor: colors.line, marginBottom: space[2] },
   armTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 40, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },
   armBody: { maxWidth: 340 },
   armButton: { alignSelf: 'stretch', marginTop: space[2] },

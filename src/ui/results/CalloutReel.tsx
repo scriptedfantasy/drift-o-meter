@@ -8,18 +8,10 @@ import { alpha, colors, radii, space } from '../theme';
 import { useEnter } from './entrance';
 import type { CalloutTally } from './model';
 
-const COLORS: Record<string, string> = {
-  transition: colors.magenta,
-  manji: colors.magenta,
-  link: colors.magenta,
-  'extreme-angle': colors.gold,
-  'long-drift': colors.ember,
-  'high-speed': colors.cyan,
-  smooth: colors.green,
-  'perfect-exit': colors.green,
-  'clean-lap': colors.gold,
-  initiation: colors.muted,
-};
+/** Callouts belong to magenta in the design language; initiation is bookkeeping, so it greys out. */
+function calloutColor(kind: string): string {
+  return kind === 'initiation' ? colors.muted : colors.magenta;
+}
 
 export function CalloutReel({
   callouts,
@@ -50,7 +42,7 @@ export function CalloutReel({
     <Animated.View style={[styles.wrap, enter]} testID={testID}>
       <View style={styles.reel}>
         {callouts.map((c) => {
-          const color = COLORS[c.kind] ?? colors.ember;
+          const color = calloutColor(c.kind);
           return (
             <View key={c.kind} style={[styles.chip, { borderColor: alpha(color, 0.6), backgroundColor: alpha(color, 0.1) }]}>
               <AppText variant="subheading" color={color} style={styles.label} numberOfLines={1}>

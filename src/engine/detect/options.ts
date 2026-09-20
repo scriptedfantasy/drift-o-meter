@@ -1,5 +1,125 @@
 import { degToRad } from '../types';
 
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// SHARED DRIFT RULES — one definition, used by every module that needs it.
+//
+// The detector is the authority on what a spin and a direction change ARE; the scorer and
+// anything else that has to agree with the HUD imports these instead of re-deriving them.
+// Before this existed there were three transition definitions (detector: 5° + 0.4 s dwell +
+// yaw gate; scorer: a bare 8° sign change; `countTransitions`: a bare 8° sign change) and two
+// spin thresholds (detector 75°, scorer 85°), which left a 75–85° dead band in which the
+// detector ended the drift and the scorer reported a clean exit.
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
+/** |β| (degrees) at or above which the car is spinning, not drifting. ONE number, everywhere. */
+export const SPIN_ANGLE_DEG = 75;
+
+/** The one rule for "the car changed direction". Angles in radians, times in seconds. */
+export interface TransitionRule {
+  /** |β| that must be exceeded on both sides of the sign change. */
+  angleRad: number;
+  /** Both the side being left and the side being entered must be held this long. */
+  minDwellS: number;
+  /** Maximum duration of the swing through zero. */
+  maxSwingS: number;
+  /** |yawRate| that must be reached somewhere in the swing (rad/s). */
+  yawRate: number;
+  /** How long a UI may call the phase 'transition' after one is counted. */
+  phaseHoldS: number;
+}
+
+export const TRANSITION_RULE: TransitionRule = {
+  angleRad: degToRad(5),
+  minDwellS: 0.4,
+  maxSwingS: 1.5,
+  yawRate: 0.15,
+  phaseHoldS: 0.4,
+};
+
+/**
+ * The transition rule as a small state machine, fed one sample at a time.
+ *
+ * Both sides of a swing must be held for `minDwellS`: the side being left has to have been
+ * held, and the new side is only PROVISIONAL until it has been. An excursion that falls back
+ * to the side it came from inside that window is a feint (or a twitch through zero), so it is
+ * cancelled instead of counted — which is what stops a driver sawing the wheel from banking a
+ * transition (and a multiplier bump) twice a second.
+ */
+export class TransitionCounter {
+  /** Side the car is currently sliding on. */
+  side: 1 | -1;
+  /** Committed direction changes so far. */
+  transitions = 0;
+  /** A UI may show phase 'transition' until this time. */
+  phaseUntil = -Infinity;
+  private sinceT: number;
+  private lastT: number;
+  private peakYaw: number;
+  private pending: { from: 1 | -1; fromSinceT: number; at: number } | null = null;
+
+  constructor(
+    private readonly rule: TransitionRule,
+    t: number,
+    side: 1 | -1,
+    yaw = 0,
+  ) {
+    this.side = side;
+    this.sinceT = t;
+    this.lastT = t;
+    this.peakYaw = Math.abs(yaw);
+  }
+
+  /** Re-seed after an initiation (the samples before it are never a direction change). */
+  restart(t: number, sinceT: number, side: 1 | -1, yaw: number): void {
+    this.side = side;
+    this.sinceT = sinceT;
+    this.lastT = t;
+    this.peakYaw = Math.abs(yaw);
+    this.pending = null;
+  }
+
+  /**
+   * Feed one sample: `absBeta` and `yaw` in radians / rad·s⁻¹, `sign` the sign of β.
+   * Returns true on the sample where a transition is COMMITTED (dwell satisfied).
+   */
+  push(t: number, absBeta: number, sign: 1 | -1, yaw: number): boolean {
+    const r = this.rule;
+    const ya = Math.abs(yaw);
+    if (absBeta > r.angleRad) {
+      if (sign !== this.side) {
+        const swing = t - this.lastT;
+        const peak = Math.max(this.peakYaw, ya);
+        const p = this.pending;
+        if (p && sign === p.from) {
+          // back to where it came from before the dwell elapsed: a feint, not a transition
+          this.pending = null;
+          this.sinceT = p.fromSinceT;
+        } else if (swing < r.maxSwingS && peak >= r.yawRate && this.lastT - this.sinceT >= r.minDwellS) {
+          this.pending = { from: this.side, fromSinceT: this.sinceT, at: t };
+          this.phaseUntil = t + r.phaseHoldS;
+          this.sinceT = t;
+        } else {
+          // a slow wander or a swing with no yaw behind it: the side moves, nothing is counted
+          this.pending = null;
+          this.sinceT = t;
+        }
+        this.side = sign;
+      }
+      this.lastT = t;
+      this.peakYaw = ya;
+    } else if (ya > this.peakYaw) {
+      this.peakYaw = ya;
+    }
+    const p = this.pending;
+    if (p && this.lastT - p.at >= r.minDwellS) {
+      this.transitions++;
+      this.pending = null;
+      return true;
+    }
+    return false;
+  }
+}
+
 /**
  * Tunables of the drift state machine. Angles in radians, times in seconds,
  * speeds in m/s, accelerations in m/s², yaw rates in rad/s.
@@ -87,11 +207,11 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   exitSpeed: 3,
   onsetMaxLookbackS: 0.5,
   onsetHysteresis: degToRad(1),
-  transitionAngle: degToRad(5),
-  transitionMaxSwingS: 1.5,
-  transitionYawRate: 0.15,
-  transitionMinDwellS: 0.4,
-  transitionPhaseHoldS: 0.4,
+  transitionAngle: TRANSITION_RULE.angleRad,
+  transitionMaxSwingS: TRANSITION_RULE.maxSwingS,
+  transitionYawRate: TRANSITION_RULE.yawRate,
+  transitionMinDwellS: TRANSITION_RULE.minDwellS,
+  transitionPhaseHoldS: TRANSITION_RULE.phaseHoldS,
   mergeGapS: 1.0,
   feintAngle: degToRad(2.2),
   feintMaxDurationS: 0.6,
@@ -99,7 +219,7 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   feintReverseGapS: 0.35,
   feintLookbackS: 1.0,
   minDurationS: 0.7,
-  spinAngle: degToRad(75),
+  spinAngle: degToRad(SPIN_ANGLE_DEG),
   spinMinAngle: degToRad(30),
   invalidHoldS: 1.0,
   statsEdgeS: 0.3,

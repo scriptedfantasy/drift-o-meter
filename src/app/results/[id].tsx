@@ -112,6 +112,7 @@ export default function ResultsScreen() {
   const onRevealDone = useCallback(() => setRevealed(true), []);
   // a frozen reveal covers the page, but the page underneath is in its settled state
   const pageRun = revealed || frozen;
+  // ...and a tap dismisses even a frozen one, which is how the harness proves the skip works
 
   const loading = spec ? fixtureSession === null : stored.loading;
   const missing = !loading && !session;
@@ -151,7 +152,7 @@ export default function ResultsScreen() {
         <ResultsPage model={model} width={width} run={pageRun} reduceMotion={reduceMotion} onReplay={openReplay} onGarage={() => router.replace('/')} onDrive={() => router.replace('/drive')} />
       </SafeAreaView>
       {/* unmounted once it has played: a finished overlay must not keep eating taps */}
-      {reveal === 'off' || (revealed && !frozen) ? null : (
+      {reveal === 'off' || revealed ? null : (
         <GradeReveal
           grade={model.grade}
           color={model.gradeColor}
@@ -281,16 +282,16 @@ function ResultsPage({
 
         <View style={styles.statStrip}>
           <Stat label="Slides" value={String(model.drifts.length)} size={26} />
-          <Stat label="Peak angle" value={`${Math.round(model.stats.peakDeg)}°`} color={colors.ember} size={26} />
-          <Stat label="Sideways" value={formatDuration(model.stats.driftTimeS)} color={colors.cyan} size={26} />
-          <Stat label="Best chain" value={formatScore(model.stats.longestChainPoints)} color={colors.magenta} size={26} />
+          <Stat label="Peak angle" value={`${Math.round(model.stats.peakDeg)}°`} color={model.stats.peakDeg > 0 ? colors.ember : colors.muted} size={26} />
+          <Stat label="Sideways" value={formatDuration(model.stats.driftTimeS)} size={26} />
+          <Stat label="Best chain" value={formatScore(model.stats.longestChainPoints)} color={model.stats.longestChainPoints > 0 ? colors.magenta : colors.muted} size={26} />
         </View>
 
         <View style={styles.tags}>
           {model.stats.spins > 0 ? <Tag label={`${model.stats.spins} SPIN${model.stats.spins === 1 ? '' : 'S'}`} color={colors.red} filled /> : null}
           {model.stats.cleanLaps > 0 ? <Tag label={`${model.stats.cleanLaps} CLEAN LAP${model.stats.cleanLaps === 1 ? '' : 'S'}`} color={colors.green} /> : null}
           {model.lapCount > 0 ? <Tag label={`${model.lapCount} LAPS`} color={colors.muted} /> : <Tag label="POINT TO POINT" color={colors.muted} />}
-          {model.simulated ? <Tag label={model.session.meta?.engine === 'pipeline' ? 'SIM · FULL PIPELINE' : 'SIM · FIXTURE'} color={colors.cyan} /> : null}
+          {model.simulated ? <Tag label={model.session.meta?.engine === 'pipeline' ? 'SIM · FULL PIPELINE' : 'SIM · FIXTURE'} color={colors.muted} /> : null}
         </View>
       </View>
 
@@ -301,7 +302,7 @@ function ResultsPage({
       {/* ---- best drift ------------------------------------------------------------ */}
       {model.best ? (
         <>
-          <SectionHead title="Best drift" right={`#${model.best.index} of ${model.drifts.length}`} accent={colors.ember} />
+          <SectionHead title="Best drift" right={`#${model.best.index} of ${model.drifts.length}`} />
           <BestDriftCard drift={model.best} width={content} run={run} reduceMotion={reduceMotion} onWatch={() => onReplay(model.best ?? undefined)} testID="best-drift" />
         </>
       ) : null}
@@ -309,7 +310,7 @@ function ResultsPage({
       {/* ---- callouts -------------------------------------------------------------- */}
       {hasDrifts ? (
         <>
-          <SectionHead title="Callouts earned" right={`+${formatScore(model.calloutPoints)}`} accent={colors.magenta} />
+          <SectionHead title="Callouts earned" right={`+${formatScore(model.calloutPoints)}`} />
           <CalloutReel callouts={model.callouts} points={model.calloutPoints} lostPoints={model.lostPoints} run={run} reduceMotion={reduceMotion} testID="callout-reel" />
         </>
       ) : null}
@@ -317,7 +318,7 @@ function ResultsPage({
       {/* ---- every slide ----------------------------------------------------------- */}
       {hasDrifts ? (
         <>
-          <SectionHead title="Every slide" right={`${model.drifts.length} · tap to replay`} accent={colors.cyan} />
+          <SectionHead title="Every slide" right={`${model.drifts.length} · tap to replay`} />
           <DriftList rows={model.drifts} sparkWidth={Math.max(80, content - 190)} run={run} reduceMotion={reduceMotion} onSeek={onReplay} testID="drift-list" />
         </>
       ) : (
@@ -337,7 +338,7 @@ function ResultsPage({
       {/* ---- lap consistency ------------------------------------------------------- */}
       {model.laps ? (
         <>
-          <SectionHead title="Lap consistency" right={`${model.laps.lapsCompared} laps`} accent={colors.green} />
+          <SectionHead title="Lap consistency" right={`${model.laps.lapsCompared} laps`} />
           <LapTable laps={model.laps} corners={model.corners} width={content} run={run} reduceMotion={reduceMotion} testID="lap-table" />
         </>
       ) : null}

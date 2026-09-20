@@ -149,7 +149,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const hot = useDerivedValue(() => interpolateColor(signals.absDeg.value, [0, 30, 42, 65], [colors.ember, colors.ember, colors.ember, colors.gold]));
   const glowOpacity = useDerivedValue(() => 0.22 + 0.68 * signals.intensity.value);
   const bowlOpacity = useDerivedValue(() => 0.12 + 0.5 * signals.intensity.value);
-  const dimmed = useDerivedValue(() => 0.35 + 0.65 * signals.valid.value);
+  const dimmed = useDerivedValue(() => 0.62 + 0.38 * signals.valid.value);
 
   const numeral = useDerivedValue(() => String(Math.round(Math.min(99, signals.absDeg.value))));
   const blockLeft = useDerivedValue(() => cx - (numeral.value.length * metrics.advance + metrics.deg * 1.12) / 2);

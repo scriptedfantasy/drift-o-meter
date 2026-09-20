@@ -28,7 +28,8 @@ export interface LapTableProps {
   testID?: string;
 }
 
-const LAP_COLORS = [colors.ember, colors.cyan, colors.magenta, colors.gold, colors.green];
+// lap 1 ember, lap 2 white: two laps have to be told apart, but not with two new accents
+const LAP_COLORS = [colors.ember, colors.text, colors.cyan, colors.magenta, colors.gold];
 
 function verdict(score: number): { label: string; color: string } {
   if (score >= 0.75) return { label: 'LOCKED IN', color: colors.green };

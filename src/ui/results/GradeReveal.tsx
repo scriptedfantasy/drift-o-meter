@@ -71,8 +71,9 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frozenAt, total]);
 
+  // A tap ends the reveal — including a frozen one, so a screenshot run can prove the skip works
+  // without having to catch a 2-second window.
   const skip = () => {
-    if (frozenAt !== undefined) return;
     cancelAnimation(t);
     t.value = total;
     onDone();

@@ -1,5 +1,5 @@
 import type { DriftEvent, DriftPhase, SlipState } from '../types';
-import { type DetectOptions, resolveOptions } from './options';
+import { type DetectOptions, type TransitionRule, TransitionCounter, resolveOptions } from './options';
 
 /**
  * Drift detector — a real-time state machine over the 100 Hz SlipState stream.
@@ -96,15 +96,8 @@ class Drift {
   startIdx: number;
   entrySpeed: number;
   initialDirection: 1 | -1;
-  side: 1 | -1;
-  /** When the current side began, and the last time |β| exceeded transitionAngle on it. */
-  sideSinceT: number;
-  sideLastT: number;
-  swingPeakYaw = 0;
-  transitions = 0;
-  /** A swing that has happened but is not yet held long enough to be called a transition. */
-  pendingSwing: { from: 1 | -1; fromSinceT: number; at: number } | null = null;
-  transitionPhaseUntil = -Infinity;
+  /** Direction changes, counted by the ONE shared rule (see options.ts). */
+  readonly tc: TransitionCounter;
   peak = 0;
   peakT: number;
   speedSum = 0;
@@ -130,15 +123,26 @@ class Drift {
   constructor(
     public id: number,
     r: Rec,
+    rule: TransitionRule,
   ) {
     this.startT = r.t;
     this.startIdx = r.idx;
     this.entrySpeed = r.speed;
     this.initialDirection = r.sign;
-    this.side = r.sign;
-    this.sideSinceT = r.t;
-    this.sideLastT = r.t;
+    this.tc = new TransitionCounter(rule, r.t, r.sign, r.yaw);
     this.peakT = r.t;
+  }
+
+  get side(): 1 | -1 {
+    return this.tc.side;
+  }
+
+  get transitions(): number {
+    return this.tc.transitions;
+  }
+
+  get transitionPhaseUntil(): number {
+    return this.tc.phaseUntil;
   }
 
   add(r: Rec): void {
@@ -222,9 +226,20 @@ export class DriftDetector {
   readonly opts: DetectOptions;
   /** Finalised events, in order. */
   readonly events: DriftEvent[] = [];
-  /** event id → spun out. (DriftEvent has no `spin` field yet; see report.) */
-  readonly spins = new Map<number, boolean>();
+  /**
+   * Compatibility view of `DriftEvent.spin`, derived from `events` — NOT a side map.
+   * The spin verdict lives on the event itself; nothing in the engine reads this.
+   * @deprecated read `DriftEvent.spin`.
+   */
+  get spins(): ReadonlyMap<number, boolean> {
+    const m = new Map<number, boolean>();
+    for (const e of this.events) m.set(e.id, e.spin);
+    return m;
+  }
 
+  /** Next drift id. Monotonic: an id is never handed to a second drift, not even after a twitch is dropped. */
+  private nextId = 1;
+  private readonly tRule: TransitionRule;
   private sampleIndex = -1;
   private lastT: number | null = null;
   private lastValidT: number | null = null;
@@ -262,11 +277,19 @@ export class DriftDetector {
 
   constructor(opts?: Partial<DetectOptions>) {
     this.opts = resolveOptions(opts);
+    const o = this.opts;
+    this.tRule = {
+      angleRad: o.transitionAngle,
+      minDwellS: o.transitionMinDwellS,
+      maxSwingS: o.transitionMaxSwingS,
+      yawRate: o.transitionYawRate,
+      phaseHoldS: o.transitionPhaseHoldS,
+    };
   }
 
   reset(): void {
     this.events.length = 0;
-    this.spins.clear();
+    this.nextId = 1;
     this.sampleIndex = -1;
     this.lastT = null;
     this.lastValidT = null;
@@ -615,18 +638,14 @@ export class DriftDetector {
     const firstRec = this.hist[first] ?? r;
     if (startIdx < 0) startIdx = firstRec.idx;
 
-    const d = new Drift(this.events.length + 1, firstRec);
+    const d = new Drift(this.nextId++, firstRec, this.tRule);
     d.startT = startT;
     d.startIdx = startIdx;
     for (let i = first; i < this.hist.length; i++) d.add(this.hist[i]);
     // the samples before the confirmation (feint included) are part of the initiation, never a
     // direction change: the side starts at the side the entry was confirmed on
-    d.side = c.sign;
     d.initialDirection = c.sign;
-    d.sideSinceT = startT;
-    d.sideLastT = r.t;
-    d.pendingSwing = null;
-    d.swingPeakYaw = Math.abs(r.yaw);
+    d.tc.restart(r.t, startT, c.sign, r.yaw);
     this.drift = d;
     this.cand = null;
     this.entryTimer = 0;
@@ -661,38 +680,7 @@ export class DriftDetector {
    * flicks the wrong way first stays one drift with the transition count of the real swings.
    */
   private trackSide(d: Drift, r: Rec): void {
-    const o = this.opts;
-    if (r.b > o.transitionAngle) {
-      if (r.sign !== d.side) {
-        const swing = r.t - d.sideLastT;
-        const yaw = Math.max(d.swingPeakYaw, Math.abs(r.yaw));
-        const p = d.pendingSwing;
-        if (p && r.sign === p.from) {
-          // back to where it came from before the dwell elapsed: a feint, not a transition
-          d.pendingSwing = null;
-          d.sideSinceT = p.fromSinceT;
-        } else if (swing < o.transitionMaxSwingS && yaw >= o.transitionYawRate && d.sideLastT - d.sideSinceT >= o.transitionMinDwellS) {
-          d.pendingSwing = { from: d.side, fromSinceT: d.sideSinceT, at: r.t };
-          d.transitionPhaseUntil = r.t + o.transitionPhaseHoldS;
-          d.sideSinceT = r.t;
-        } else {
-          // a slow wander or a swing with no yaw behind it: the side moves, nothing is counted
-          d.pendingSwing = null;
-          d.sideSinceT = r.t;
-        }
-        d.side = r.sign;
-      }
-      d.sideLastT = r.t;
-      d.swingPeakYaw = Math.abs(r.yaw);
-    } else if (Math.abs(r.yaw) > d.swingPeakYaw) {
-      d.swingPeakYaw = Math.abs(r.yaw);
-    }
-    // commit a provisional swing once the new side has been held long enough to be real
-    const p = d.pendingSwing;
-    if (p && d.sideLastT - p.at >= o.transitionMinDwellS) {
-      d.transitions++;
-      d.pendingSwing = null;
-    }
+    d.tc.push(r.t, r.b, r.sign, r.yaw);
   }
 
   /** End the open drift at (endT, endIdx). Immediate closes finalise now; others wait in the merge window. */
@@ -751,9 +739,8 @@ export class DriftDetector {
     let ms = meanStd(d.tArr, d.bArr, s.nArr, lo, hi);
     if (!Number.isFinite(ms.mean)) ms = meanStd(d.tArr, d.bArr, s.nArr, d.startT, d.endT);
     if (!Number.isFinite(ms.mean)) ms = { mean: s.peak, std: 0 };
-    const id = this.events.length + 1;
     const ev: DriftEvent = {
-      id,
+      id: d.id,
       startT: d.startT,
       endT: d.endT,
       durationS,
@@ -774,7 +761,6 @@ export class DriftDetector {
       sampleEnd: d.endIdx,
     };
     this.events.push(ev);
-    this.spins.set(id, d.spin);
     if (d.endT > this.lastEventEndT) this.lastEventEndT = d.endT;
     return ev;
   }
@@ -818,7 +804,7 @@ export class DriftDetector {
         const f = this.feintBefore(c.sign, startT);
         if (f) startT = Math.max(f.startT, c.startT - this.opts.feintLookbackS, this.floorT, this.lastEventEndT);
         const p = this.pending;
-        const id = p ? (startT - p.endT < this.opts.mergeGapS ? p.id : this.events.length + 2) : this.events.length + 1;
+        const id = p && startT - p.endT < this.opts.mergeGapS ? p.id : this.nextId;
         live = live ?? {
           id,
           startT,

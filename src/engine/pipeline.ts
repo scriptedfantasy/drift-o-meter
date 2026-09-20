@@ -400,7 +400,8 @@ export class DriftPipeline implements DriftPipelineApi {
 
   private _frame: LiveFrame | null = null;
   private built: TrackModel | null = null;
-  private breakdown: SessionBreakdown | null = null;
+  /** Full session breakdown, populated by `finish()`. Public so probes and tools can read it. */
+  breakdown: SessionBreakdown | null = null;
 
   // ---- time
   private lastT = NaN;

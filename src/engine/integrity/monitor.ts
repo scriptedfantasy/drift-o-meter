@@ -675,11 +675,14 @@ export class IntegrityMonitor {
       return this.hasFix ? `GPS signal lost ${this.gpsAgeS.toFixed(0)} s ago — waiting for it to come back` : 'Waiting for a GPS fix — drift angles need it';
     }
     if (this.gps === 'poor') return `GPS accuracy is poor (±${Math.round(this.hAcc)} m) — drift angles may be off`;
+    // A shifting cradle outranks the speed gate and the slip-consistency gate: both of those are
+    // symptoms a moving phone produces, and telling a driver to go FASTER because the mount is
+    // rattling sends them at the problem with more speed.
+    if (this.mount === 'suspect') return 'Phone may be shifting in its mount — check it is tight';
     if (this.slideClaimed && (!this.speedOk || this.gpsVeto)) {
       return `Too slow to count as a drift — get above ${Math.round(o.minDriftSpeed * 3.6)} km/h`;
     }
     if (this.slideClaimed && this.slipInconsistent) return "Slide doesn't match the g-forces — not counting it";
-    if (this.mount === 'suspect') return 'Phone may be shifting in its mount — check it is tight';
     if (!this.hasState) return 'Sensors look good — waiting for the first estimate';
     return 'Sensors look good — phone is solid and GPS is locked';
   }

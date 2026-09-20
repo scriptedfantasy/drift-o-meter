@@ -78,11 +78,11 @@
       "id": "replay",
       "name": "Replay scene",
       "layer": "engine",
-      "status": "critique",
+      "status": "fixing",
       "rounds": 2,
-      "verdict": "Round 2 delivered against every finding. Background emptiness fell from 74 percent to 5, the car doubled in size, and extremes now escalate from ember through gold to red. Back with the critic.",
+      "verdict": "Round 2 verified fixed on every original finding. Held back at 8.0 against an 8.5 bar by three small regressions the rebuild introduced.",
       "note": "Session \u2192 timeline, glow trail, camera, ghost",
-      "score": "4.5 \u2192 round 2"
+      "score": "4.5 \u2192 8.0"
     },
     {
       "id": "pipeline",
@@ -149,6 +149,21 @@
     }
   ],
   "verdicts": [
+    {
+      "piece": "Replay scene",
+      "round": 2,
+      "t": "20:30",
+      "pass": false,
+      "score": "8.0 / 10 (bar is 8.5)",
+      "summary": "The same critic re-ran its own probes, regenerated all twenty frames from current code, and confirmed every severity-one and -two finding as genuinely fixed. It fails the bar on three regressions the rebuild introduced, each one local, and it named the exact line for the first.",
+      "findings": [
+        "The camera now opens every replay rotated about ninety degrees wrong and whips a quarter turn in the first second. A field initialised to zero instead of not-a-number made the heading-seeding branch dead code.",
+        "Splitting long drifts collapsed every grade to C on both tracks, so the grade colours that were just wired up can never show anything but neutral.",
+        "The splitter cuts long drifts at the deepest interior angle minimum, which in a linked sequence is exactly the transition. It was severing the one moment the design gives its own colour, callout, flash and haptic.",
+        "The lap counter now reads LAP 2 of 2 on the opening frame. Previously it read a visible null, which was also wrong but honestly so.",
+        "Verified as genuinely fixed: background emptiness 74.3 to 5.1 percent, car 0.151 to 0.511 percent of the window, ghost never the watched lap, zero non-finite camera frames after a bad sample, nothing below 12 point type, cyan down from five jobs to two."
+      ]
+    },
     {
       "piece": "The judgement layer (detector, scoring, track, integrity)",
       "round": 1,
@@ -252,6 +267,10 @@
     {
       "t": "20:05",
       "text": "Replay round 2 landed and was measured with the critic\u2019s own probes: the ghost is no longer the car, one bad sensor sample no longer kills the camera, and background emptiness fell from 74 percent to 5. Sent back to the same critic to re-judge."
+    },
+    {
+      "t": "20:35",
+      "text": "Replay round 2 re-judged at 8.0, up from 4.5. Every original finding confirmed fixed with the critic\u2019s own instruments; three regressions from the rebuild block the pass and went back for round 3."
     }
   ],
   "shots": [

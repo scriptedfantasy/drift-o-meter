@@ -10,7 +10,7 @@ import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
 import type { StyleCalloutKind, TrackCorner } from '../../engine/types';
 import { cornerLabel, cornerTag } from './corners';
 import type { ComponentRow, DriftRow, ResultsBase } from './model';
-import { COMPONENT_COLORS, KIND_NAMES } from './palette';
+import { KIND_NAMES, scoreColor } from './palette';
 
 const O = DEFAULT_SCORE_OPTIONS;
 
@@ -273,10 +273,10 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
     : `${kinds.size} different callouts fired (6 kinds is full marks), ${round(perDrift, 1)} transitions per slide, ${model.calloutPoints.toLocaleString('en-US')} bonus points.${missing.length ? ` Never earned: ${missing.join(', ')}.` : ''}`;
 
   return [
-    { key: 'angle', label: 'Angle', score: b.angle, weight: w.angle, color: COMPONENT_COLORS.angle, explain: angleText },
-    { key: 'consistency', label: 'Consistency', score: b.consistency, weight: w.consistency, color: COMPONENT_COLORS.consistency, explain: consText },
-    { key: 'quality', label: 'Quality', score: b.quality, weight: w.quality, color: COMPONENT_COLORS.quality, explain: qualText },
-    { key: 'speed', label: 'Speed', score: b.speed, weight: w.speed, color: COMPONENT_COLORS.speed, explain: speedText },
-    { key: 'style', label: 'Style', score: b.style, weight: w.style, color: COMPONENT_COLORS.style, explain: styleText },
+    { key: 'angle', label: 'Angle', score: b.angle, weight: w.angle, color: scoreColor(b.angle), explain: angleText },
+    { key: 'consistency', label: 'Consistency', score: b.consistency, weight: w.consistency, color: scoreColor(b.consistency), explain: consText },
+    { key: 'quality', label: 'Quality', score: b.quality, weight: w.quality, color: scoreColor(b.quality), explain: qualText },
+    { key: 'speed', label: 'Speed', score: b.speed, weight: w.speed, color: scoreColor(b.speed), explain: speedText },
+    { key: 'style', label: 'Style', score: b.style, weight: w.style, color: scoreColor(b.style), explain: styleText },
   ];
 }

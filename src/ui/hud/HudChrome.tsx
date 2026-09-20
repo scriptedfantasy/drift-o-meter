@@ -42,10 +42,12 @@ export const EdgeBloom = memo(function EdgeBloom({ signals }: { signals: HudSign
 export interface StatusStripProps {
   snapshot: HudSnapshot;
   sourceLabel: string | null;
+  /** Health verdicts are only meaningful once samples are flowing. */
+  live?: boolean;
   testID?: string;
 }
 
-export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, testID }: StatusStripProps) {
+export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, live = true, testID }: StatusStripProps) {
   const gps = snapshot.integrity.gps;
   const mount = snapshot.integrity.mount;
   return (
@@ -62,12 +64,14 @@ export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, te
         </View>
       </View>
       <View style={styles.stripRight}>
-        <Pill
-          label={gps === 'good' ? 'GPS' : gps === 'poor' ? 'GPS WEAK' : 'NO GPS'}
-          color={gps === 'good' ? colors.cyan : gps === 'poor' ? colors.gold : colors.red}
-          filled={gps !== 'good'}
-        />
-        {mount === 'rigid' ? null : <Pill label={mount === 'loose' ? 'MOUNT LOOSE' : 'MOUNT SHAKING'} color={mount === 'loose' ? colors.red : colors.gold} filled />}
+        {live ? (
+          <Pill
+            label={gps === 'good' ? 'GPS' : gps === 'poor' ? 'GPS WEAK' : 'NO GPS'}
+            color={gps === 'good' ? colors.cyan : gps === 'poor' ? colors.gold : colors.red}
+            filled={gps !== 'good'}
+          />
+        ) : null}
+        {!live || mount === 'rigid' ? null : <Pill label={mount === 'loose' ? 'MOUNT LOOSE' : 'MOUNT SHAKING'} color={mount === 'loose' ? colors.red : colors.gold} filled />}
         {sourceLabel ? <Pill label={sourceLabel} color={colors.muted} /> : null}
       </View>
     </View>

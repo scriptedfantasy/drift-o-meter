@@ -138,9 +138,16 @@ export interface MountOptions {
   gravityJumpDeg: number;
   /** ...held for this long, seconds. */
   gravityJumpHoldS: number;
-  /** After a knock the body-up filter runs at this time constant for this long, seconds. */
+  /**
+   * After a knock the body-up filter restarts at `knockFastTau` and its memory grows back to
+   * `gravityTau` at `upAgeGain` seconds of memory per weighted second of evidence, with the
+   * load weighting switched off for the first `knockFastS` seconds.
+   */
   knockFastTau: number;
   knockFastS: number;
+  upAgeGain: number;
+  /** Seconds after a knock during which no forward evidence is accepted (the plane is moving). */
+  forwardBlockS: number;
   /** Low-pass on the acceleration before event detection, seconds. */
   accelTau: number;
   /** Sustained-event threshold, m/s². */
@@ -229,7 +236,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   parkedRate: 0.02,
   parkedAccel: 0.25,
   knockRefTau: 1.0,
-  fitTau: 4,
+  fitTau: 1,
   fitQualityRad: 0.06,
   upSepTau: 3,
   reseedGravityDeg: 40,
@@ -243,7 +250,9 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gravityJumpDeg: 35,
   gravityJumpHoldS: 1,
   knockFastTau: 1.5,
-  knockFastS: 8,
+  knockFastS: 10,
+  upAgeGain: 8,
+  forwardBlockS: 4,
   accelTau: 0.1,
   eventThreshold: 1.2,
   eventMinDuration: 0.4,
@@ -276,7 +285,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gradeMinEvidence: 60,
   gradeDvGate: 1,
   leverCompensation: true,
-  leverTau: 0.02,
+  leverTau: 0.015,
   leverHpTau: 0.3,
   leverRegressTau: 40,
   leverRidge: 0.5,
@@ -404,6 +413,7 @@ export class MountCalibrator {
   private jumpSince = -1;
   private stationaryUntil = -1;
   private fastUpUntil = -1;
+  private fwdBlockUntil = -1;
   private knocks = 0;
 
   // ---- acceleration (phone frame, low-passed) and yaw rate
@@ -630,6 +640,7 @@ export class MountCalibrator {
     this.jumpSince = -1;
     this.stationaryUntil = -1;
     this.fastUpUntil = -1;
+    this.fwdBlockUntil = -1;
     this.knocks = 0;
     this.innovations = 0;
     this.staleResets = 0;
@@ -1024,23 +1035,36 @@ export class MountCalibrator {
         this.my += (iy - this.my) * km;
         this.mz += (iz - this.mz) * km;
 
-        // ---- stage 2: body up = slow low-pass of the inertial up
-        const tau = t < this.stationaryUntil ? 0.3 : t < this.fastUpUntil ? o.knockFastTau : o.gravityTau;
-        // under load the car's body rolls and pitches: slow the filter down rather than chase it
+        // ---- stage 2: body up = slow weighted average of the inertial up.
+        // Under load the car's body rolls and pitches, so a sample's weight is 1/(1+(|a|/a0)²):
+        // the filter believes quiet moments, where the inertial up was just anchored to the
+        // accelerometer, far more than loaded ones. The memory GROWS with the weighted evidence
+        // so far (a running mean that settles into a `gravityTau` exponential one) — with a
+        // fixed 30 s memory and this weighting the effective time constant under a lap of real
+        // driving is minutes, and a phone that has just been re-seated would never catch up.
         const amx = fx + G_ACC * ix;
         const amy = fy + G_ACC * iy;
         const amz = fz + G_ACC * iz;
         const aw = Math.sqrt(amx * amx + amy * amy + amz * amz) / o.gravitySlowdownAccel;
-        const ks = dt / (tau + dt) / (1 + aw * aw);
+        const converging = t < this.stationaryUntil || t < this.fastUpUntil;
+        const wdt = dt / (1 + aw * aw);
+        const tau = t < this.stationaryUntil ? 0.3 : Math.min(o.gravityTau, o.knockFastTau + this.upAge * o.upAgeGain);
+        // while re-converging the sample rate, not the weighted rate, drives the filter: the
+        // memory is short then and the weighting would stall it for minutes on a busy lap
+        const kdt = converging ? dt : wdt;
+        const ks = kdt / (tau + kdt);
         this.gsx += (ix - this.gsx) * ks;
         this.gsy += (iy - this.gsy) * ks;
         this.gsz += (iz - this.gsz) * ks;
         this.updateUpFromSlow();
-        this.upAge += dt;
+        this.upAge += wdt;
         // steadiness (inertial vs body up) + knock detection (inertial vs its 1 s reference)
         const dev = this.angleBetween(this.gsx, this.gsy, this.gsz, ix, iy, iz);
         this.devEma += (dev - this.devEma) * (dt / (1 + dt));
-        if (dev > (o.gravityJumpDeg * Math.PI) / 180 || reseeded) {
+        if (t < this.fastUpUntil) {
+          // already converging from the last knock — do not re-arm it every sample
+          this.jumpSince = -1;
+        } else if (dev > (o.gravityJumpDeg * Math.PI) / 180 || reseeded) {
           if (this.jumpSince < 0) this.jumpSince = t;
           if (t - this.jumpSince >= o.gravityJumpHoldS || reseeded) this.knock(dev);
         } else {
@@ -1138,8 +1162,10 @@ export class MountCalibrator {
         this.openSlice(t);
       }
 
-      // sustained horizontal acceleration events → parked second moments (yaw- and slip-gated)
-      if (hMag > o.eventThreshold) {
+      // sustained horizontal acceleration events → parked second moments (yaw- and slip-gated).
+      // Nothing is learned about FORWARD while the up axis is still re-converging after a
+      // knock: the horizontal plane those events are measured in is still moving.
+      if (hMag > o.eventThreshold && t >= this.fwdBlockUntil) {
         if (!this.inEvent) {
           this.inEvent = true;
           this.evStart = t;
@@ -1428,11 +1454,11 @@ export class MountCalibrator {
   private knock(dev: number): void {
     this.knocks++;
     this.fastUpUntil = this.lastT + this.opts.knockFastS;
+    this.fwdBlockUntil = this.lastT + this.opts.forwardBlockS;
     this.kx = this.ix;
     this.ky = this.iy;
     this.kz = this.iz;
     this.devEma = dev;
-    this.fitEma = Math.max(this.fitEma, dev);
     this.upAge = 0;
     this.jumpSince = -1;
     this.resetForward();
