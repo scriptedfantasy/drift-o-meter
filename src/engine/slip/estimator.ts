@@ -196,7 +196,7 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   posDriftPerS: 0.15,
   posDriftPerV2: 0.004,
   accelSigma: 0.18,
-  speedAccelSigma: 0.12,
+  speedAccelSigma: 0.2,
   accelScaleSigma: 0.02,
   accelBiasWalk: 0.05,
   accelBiasSigma0: 0.15,
@@ -208,7 +208,7 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   gyroBiasWalk: 0.0002,
   gyroBiasSigma0: 0.03,
   priorSigmaDeg: 0.5,
-  priorSigmaDegPerAy: 0.6,
+  priorSigmaDegPerAy: 0.4,
   priorHz: 15,
   priorBetaDotMax: 0.05,
   priorBetaDotAccel: 0.5,
@@ -226,7 +226,7 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   gpsFilterS: 0.3,
   leverArmX: 0.9,
   bodyRollPerAy: 0.004,
-  bodyPitchPerAx: 0.003,
+  bodyPitchPerAx: 0.004,
   historySamples: 512,
 };
 
@@ -317,7 +317,6 @@ export class SlipEstimator {
   private lastAx = 0;
   private lastAy = 0;
   private lastRawYaw = 0;
-  private lastBetaDot = 0;
   private courseLocked = false;
   private lastCourseT = -Infinity;
   private lastGpsT = -Infinity;
@@ -338,10 +337,6 @@ export class SlipEstimator {
   private latFixes: Array<{ t: number; chi: number; v: number; c: Float64Array; vi: Float64Array; tk: Float64Array }> = [];
   private latencyUpdates = 0;
   private currentState: SlipState;
-  /** Test-only: receives a snapshot of the internal state every motion sample. */
-  debugSink?: (d: Record<string, number>) => void;
-  /** Test-only: receives a snapshot of each GPS course update. */
-  debugGps?: (d: Record<string, number>) => void;
 
   constructor(opts: Partial<SlipOptions> = {}) {
     const given = Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)) as Partial<SlipOptions>;
@@ -431,7 +426,6 @@ export class SlipEstimator {
     this.lastAx = 0;
     this.lastAy = 0;
     this.lastRawYaw = 0;
-    this.lastBetaDot = 0;
     this.courseLocked = false;
     this.lastCourseT = -Infinity;
     this.lastGpsT = -Infinity;
@@ -588,7 +582,6 @@ export class SlipEstimator {
     P[IS * N + IS] += o.ayScaleWalk ** 2 * qt + o.ayScaleWalkPerRad ** 2 * Math.abs(chiDot) * qt;
     this.cInt += chiDot * dt;
     this.sInt += dSdt * dt;
-    this.lastBetaDot = betaDot;
     if (o.gpsFilterS > 0 && dt > 0) {
       const kf = Math.min(1, dt / o.gpsFilterS);
       this.cLp += (this.cInt - this.cLp) * kf;
@@ -678,14 +671,6 @@ export class SlipEstimator {
     this.lastAx = axC;
     this.lastAy = ayC;
     this.lastRawYaw = r;
-    if (this.debugSink) {
-      this.debugSink({
-        t: m.t, beta: this.beta, psiOff: this.psiOff, bias: this.bias, s: this.ayScale, aBias: this.aBias,
-        P00: P[0], P11: P[N + 1], P22: P[2 * N + 2], P33: P[3 * N + 3], Pv0: this.Pv[0],
-        prior: calmReady || straightReady ? 1 : 0, ay: ayC, ax: axC, r, vel: this.vel, betaDotF: this.betaDotFiltered,
-        chiDot: chiDot, moving: moving ? 1 : 0,
-      });
-    }
     this.compose(m.t);
     return this.currentState;
   }
@@ -812,11 +797,6 @@ export class SlipEstimator {
           }
         } else {
           this.courseGateRun = 0;
-        }
-        if (this.debugGps) {
-          const Pb = this.P[0];
-          const S2 = this.innovationVar(this.hRow) + R;
-          this.debugGps({ t: tNow, tFix, nu, R, S: S2, Pbb: Pb, Poo: this.P[N + 1], Pbo: this.P[1], kBeta: (Pb + this.P[1] - dS * this.P[3]) / S2, chiJit, clampedS, dC, dS, vel: this.vel });
         }
         this.ekfUpdate(nu, this.hRow, R);
       }
@@ -1011,6 +991,9 @@ export class SlipEstimator {
     const courseFresh = t - this.lastCourseT < o.courseTimeoutS;
     const speedKnown = this.Pv[0] < o.speedKnownSigma * o.speedKnownSigma;
     const valid = this.courseLocked && courseFresh && speedKnown && this.vel > o.minSpeed && sigma < o.validSigmaMax;
+    // ay/ax are the calibrated specific force AT THE PHONE (scale- and bias-corrected). The CG's
+    // lateral accel differs by ṙ·d_x, which would cost a differentiated gyro to recover — noisier
+    // than the term is worth for a displayed g-force.
     const st: SlipState = {
       t,
       beta: betaCg,

@@ -51,9 +51,9 @@ const WHITE = colors.text;
 const MUTED = colors.muted;
 const HOT = '#FFE9D6';
 /** Ground plane: night asphalt with a blue bias — deliberately NOT the letterbox black. */
-const GROUND = '#0A0E15';
-const ASPHALT_HI = '#232C38';
-const ASPHALT_LO = '#141A23';
+const GROUND = '#0E141D';
+const ASPHALT_HI = '#2B3644';
+const ASPHALT_LO = '#1B232E';
 const FONT = 'Barlow Condensed, Impact, sans-serif';
 const MONO = 'Orbitron, Barlow Condensed, sans-serif';
 
@@ -62,7 +62,7 @@ const H = 844;
 /** Letterbox bars: the world is FULL-BLEED behind them (they are bars, not panels). */
 const TOP_BAR = 104;
 const BOTTOM_BAR = 96;
-const SCRUB_H = 28;
+const SCRUB_H = 34;
 const FPS = 60;
 
 /** Three type tiers, nothing in between (a 9-size scale reads as a chart, not a HUD). */
@@ -82,11 +82,16 @@ const fmtTime = (s: number) => {
   return `${String(m).padStart(2, '0')}:${r < 10 ? '0' : ''}${r.toFixed(1)}`;
 };
 
-/** Points with the thousands gap pulled in: "13 672" not "13   672". */
-function ptsMarkup(p: number): string {
-  const parts = formatPoints(p).split(' ');
-  if (parts.length === 1) return esc(parts[0]);
-  return parts.map((s, i) => (i === 0 ? esc(s) : `<tspan dx="-2.2"> </tspan>${esc(s)}`)).join('');
+/**
+ * Score text. No thousands separator below six digits: a space is 74 % of a digit width and
+ * parses as two numbers at arm's length, and Barlow has no thin-space glyph (cairosvg then
+ * substitutes a full-width advance). "7273", "24820" — one number, one glance.
+ */
+function pts(p: number): string {
+  const v = Math.round(Number.isFinite(p) ? p : 0);
+  const a = Math.abs(v);
+  const body = a < 100000 ? String(a) : a.toLocaleString('en-US');
+  return (v < 0 ? '-' : '') + body;
 }
 
 function mix(a: string, b: string, f: number): string {
@@ -128,7 +133,6 @@ interface TextOpts {
   stroke?: string;
   strokeW?: number;
   italic?: boolean;
-  markup?: boolean;
 }
 
 function text(x: number, y: number, s: string, o: TextOpts): string {
@@ -144,7 +148,7 @@ function text(x: number, y: number, s: string, o: TextOpts): string {
   if (o.spacing) attrs.push(`letter-spacing="${o.spacing}"`);
   if (o.opacity !== undefined) attrs.push(`opacity="${f3(o.opacity)}"`);
   if (o.italic) attrs.push('font-style="italic"');
-  const body = o.markup ? s : esc(s);
+  const body = esc(s);
   const el = `<text ${attrs.join(' ')}>${body}</text>`;
   if (!o.stroke) return el;
   // cairosvg ignores paint-order, so the outline is a separate stroke-only copy underneath
@@ -153,8 +157,8 @@ function text(x: number, y: number, s: string, o: TextOpts): string {
 }
 
 /** Big glowing number: translucent thick-stroked copies under the fill. */
-function glowText(x: number, y: number, s: string, size: number, fill: string, glow: string, glowOpacity: number, anchor: 'start' | 'middle' | 'end' = 'middle', weight = 800, italic = false, markup = false): string {
-  const base = { size, anchor, weight, italic, markup };
+function glowText(x: number, y: number, s: string, size: number, fill: string, glow: string, glowOpacity: number, anchor: 'start' | 'middle' | 'end' = 'middle', weight = 800, italic = false): string {
+  const base = { size, anchor, weight, italic };
   return (
     text(x, y, s, { ...base, fill: glow, stroke: glow, strokeW: size * 0.2, opacity: glowOpacity * 0.45 }) +
     text(x, y, s, { ...base, fill: glow, stroke: glow, strokeW: size * 0.08, opacity: glowOpacity }) +
@@ -206,9 +210,15 @@ function drawGround(f: Frame): string {
   // a ground plane with its own value, so the world is never the same black as the letterbox
   const { minX, maxX, minY, maxY } = f.vis;
   let s = `<rect x="${f2(minX)}" y="${f2(minY)}" width="${f2(maxX - minX)}" height="${f2(maxY - minY)}" fill="${GROUND}"/>`;
+  // sodium-light pool centred on the action: the ground is lit, not void
+  const b = f.replay.bounds;
+  const cx = f.mode === 'overview' ? 0.5 * (b.minX + b.maxX) : f.pose.x;
+  const cy = f.mode === 'overview' ? 0.5 * (b.minY + b.maxY) : f.pose.y;
+  const rr = f.mode === 'overview' ? 0.62 * Math.max(b.maxX - b.minX, b.maxY - b.minY) : 0.55 * (maxX - minX);
+  s += `<circle cx="${f2(cx)}" cy="${f2(cy)}" r="${f2(rr)}" fill="url(#pool)"/>`;
   const spacing = f.cam.zoom > 3 ? 20 : 50;
   const w = 1 / f.cam.zoom;
-  s += `<g stroke="#131B25" stroke-width="${f3(w)}" opacity="0.8">`;
+  s += `<g stroke="#18202B" stroke-width="${f3(w)}" opacity="0.85">`;
   for (let x = Math.floor(minX / spacing) * spacing; x <= maxX; x += spacing) s += `<line x1="${f2(x)}" y1="${f2(minY)}" x2="${f2(x)}" y2="${f2(maxY)}"/>`;
   for (let y = Math.floor(minY / spacing) * spacing; y <= maxY; y += spacing) s += `<line x1="${f2(minX)}" y1="${f2(y)}" x2="${f2(maxX)}" y2="${f2(y)}"/>`;
   return s + '</g>';
@@ -232,8 +242,8 @@ function drawRoad(f: Frame): string {
   const verge = roadW + 7;
   let s = '<g fill="none" stroke-linejoin="round" stroke-linecap="round">';
   // gravel run-off / verge, then the asphalt itself: the off-road area now has material
-  s += `<${tag} points="${attr}" stroke="#0E141B" stroke-width="${f2(verge + 6)}"/>`;
-  s += `<${tag} points="${attr}" stroke="#151C25" stroke-width="${f2(verge)}"/>`;
+  s += `<${tag} points="${attr}" stroke="#0C1118" stroke-width="${f2(verge + 6)}"/>`;
+  s += `<${tag} points="${attr}" stroke="#11171F" stroke-width="${f2(verge)}"/>`;
   s += `<${tag} points="${attr}" stroke="${ASPHALT_HI}" stroke-width="${f2(roadW + 1.4)}"/>`;
   s += `<${tag} points="${attr}" stroke="${ASPHALT_LO}" stroke-width="${f2(roadW)}"/>`;
   // edge lines
@@ -244,6 +254,15 @@ function drawRoad(f: Frame): string {
   s += `<${tag} points="${attr}" stroke="#222B36" stroke-width="${f3(mOrPx(f, 0.18, 0.6))}" stroke-dasharray="2.5 3.5"/>`;
   s += '</g>';
   // kerbs + apex chips at the corners (red/white, the classic circuit cue)
+  if (f.mode === 'overview' && r.track?.corners?.length) {
+    let ci = 0;
+    for (const c of r.track.corners) {
+      ci++;
+      if (!inView(f, c.x, c.y)) continue;
+      const rr2 = mOrPx(f, 6, 9);
+      s += `<circle cx="${f2(c.x)}" cy="${f2(c.y)}" r="${f3(rr2)}" fill="none" stroke="${MUTED}" stroke-width="${f3(mOrPx(f, 0.6, 0.8))}" opacity="0.3"/>`;
+    }
+  }
   if (r.track?.corners?.length) {
     const path = r.track.path;
     const n = path.length;
@@ -268,8 +287,8 @@ function drawRoad(f: Frame): string {
       if (seg.length < 3) continue;
       const inside = offsetPolyline(seg, c.direction * (roadW / 2 + 0.55), false);
       const kw = mOrPx(f, 1.1, 2.4);
-      s += `<polyline points="${pointsAttr(inside)}" fill="none" stroke="#C8D2DE" stroke-width="${f3(kw)}" opacity="0.5"/>`;
-      s += `<polyline points="${pointsAttr(inside)}" fill="none" stroke="${RED}" stroke-width="${f3(kw)}" stroke-dasharray="${f2(mOrPx(f, 2, 4))} ${f2(mOrPx(f, 2, 4))}" opacity="0.5"/>`;
+      s += `<polyline points="${pointsAttr(inside)}" fill="none" stroke="#8E9AA8" stroke-width="${f3(kw)}" opacity="0.35"/>`;
+      s += `<polyline points="${pointsAttr(inside)}" fill="none" stroke="${RED}" stroke-width="${f3(kw)}" stroke-dasharray="${f2(mOrPx(f, 2, 4))} ${f2(mOrPx(f, 2, 4))}" opacity="0.3"/>`;
       // apex chip
       if (f.cam.zoom > 2) {
         const ax = c.x - Math.sin(0) * 0;
@@ -302,7 +321,7 @@ function drawTrail(f: Frame): string {
   {
     let run: Array<[number, number]> = [];
     const flush = () => {
-      if (run.length > 1) s += `<polyline points="${pointsAttr(run)}" stroke="${EMBER}" stroke-width="${f3(mOrPx(f, 0.5, 1.2))}" opacity="0.26"/>`;
+      if (run.length > 1) s += `<polyline points="${pointsAttr(run)}" stroke="${EMBER}" stroke-width="${f3(mOrPx(f, 0.35, 1))}" opacity="0.18"/>`;
       run = [];
     };
     for (let i = 0; i <= cur; i++) {
@@ -317,8 +336,8 @@ function drawTrail(f: Frame): string {
   }
   // drift ribbons: halo + glow per segment (one polyline each — overlapping translucent chunks
   // make a lattice), then opaque core/hot layers chunked so width AND colour follow |β|
-  const haloW = mOrPx(f, 6.5, 7);
-  const glowW = mOrPx(f, 3.0, 3.4);
+  const haloW = mOrPx(f, 4.6, 6);
+  const glowW = mOrPx(f, 2.2, 3);
   for (const seg of r.segments) {
     if (seg.startIndex > cur) continue;
     const end = Math.min(seg.endIndex, cur);
@@ -334,12 +353,13 @@ function drawTrail(f: Frame): string {
     const attr = pointsAttr(pts);
     const col = heatColor(peak);
     const w = severityWeight(seg.severity);
-    s += `<polyline points="${attr}" stroke="${col}" stroke-width="${f3(haloW * (0.7 + 0.6 * w))}" opacity="${f3(0.07 + 0.11 * w)}"/>`;
-    s += `<polyline points="${attr}" stroke="${col}" stroke-width="${f3(glowW * (0.8 + 0.5 * w))}" opacity="${f3(0.18 + 0.22 * w)}"/>`;
+    const boost = overview ? 1.6 : 1;
+    s += `<polyline points="${attr}" stroke="${col}" stroke-width="${f3(haloW * (0.7 + 0.6 * w))}" opacity="${f3((0.07 + 0.11 * w) * boost)}"/>`;
+    s += `<polyline points="${attr}" stroke="${col}" stroke-width="${f3(glowW * (0.8 + 0.5 * w))}" opacity="${f3((0.18 + 0.22 * w) * boost)}"/>`;
   }
   const chunked = [
-    { hot: false, width: (i: number) => mOrPx(f, 0.45 + 1.6 * i, 1.3), opacity: 1 },
-    { hot: true, width: (i: number) => mOrPx(f, 0.06 + 0.55 * i, 0.45), opacity: 0.92 },
+    { hot: false, width: (i: number) => mOrPx(f, 0.3 + 0.75 * i, 1.2), opacity: 1 },
+    { hot: true, width: (i: number) => mOrPx(f, 0.05 + 0.3 * i, 0.4), opacity: 0.92 },
   ];
   for (const layer of chunked) {
     s += `<g opacity="${layer.opacity}">`;
@@ -390,11 +410,11 @@ function drawSmoke(f: Frame): string {
     const st = smokeAt(p, f.t);
     if (!st || !inView(f, st.x, st.y)) continue;
     // a squashed, rotated puff reads as smoke; a circle reads as a dot
-    const rx = st.radius * (1 + 0.35 * (st.seed - 0.5));
-    const ry = st.radius * (0.72 + 0.3 * st.seed);
+    const rx = st.radius * 1.5 * (1 + 0.35 * (st.seed - 0.5));
+    const ry = st.radius * 1.5 * (0.72 + 0.3 * st.seed);
     const rot = (st.rotation * 180) / Math.PI;
     s += `<g transform="translate(${f2(st.x)} ${f2(st.y)}) rotate(${f2(rot)})">`;
-    s += `<ellipse rx="${f2(rx)}" ry="${f2(ry)}" fill="url(#smoke)" opacity="${f3(st.opacity)}"/>`;
+    s += `<ellipse rx="${f2(rx)}" ry="${f2(ry)}" fill="url(#smoke)" opacity="${f3(Math.min(1, st.opacity * 1.55))}"/>`;
     if (st.heat > 0.05) s += `<ellipse rx="${f2(rx * 0.5)}" ry="${f2(ry * 0.5)}" fill="url(#smokeHot)" opacity="${f3(st.opacity * st.heat)}"/>`;
     s += '</g>';
   }
@@ -467,7 +487,9 @@ function drawGhost(f: Frame): string {
   let s = '<g>';
   const lap = lapAt(f.replay, f.t);
   const tail: Array<[number, number]> = [];
-  for (let k = 0; k <= 26; k++) {
+  const gs = toS(f, g.x, g.y);
+  const ghostOnScreen = gs.x > 0 && gs.x < W && gs.y > TOP_BAR && gs.y < H - BOTTOM_BAR;
+  for (let k = 0; ghostOnScreen && k <= 18; k++) {
     const tk = f.t - k * 0.1;
     if (tk < 0 || lapAt(f.replay, tk) !== lap) break;
     const gp = ghostPoseAt(f.replay, tk);
@@ -477,7 +499,8 @@ function drawGhost(f: Frame): string {
   if (tail.length > 1) {
     s += `<polyline points="${pointsAttr(tail)}" fill="none" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.5, 1.1))}" stroke-linecap="round" opacity="0.4" stroke-dasharray="1.1 1.1"/>`;
   }
-  if (inView(f, g.x, g.y)) {
+  const tooClose = Math.hypot(gs.x - toS(f, f.pose.x, f.pose.y).x, gs.y - toS(f, f.pose.x, f.pose.y).y) < 26;
+  if (ghostOnScreen && !tooClose) {
     const cs = carScale(f) * 0.9;
     s += `<g transform="translate(${f2(g.x)} ${f2(g.y)}) rotate(${f2(deg(g.heading))}) scale(${f3(cs)})" opacity="0.85">`;
     s += `<path d="${carPath()}" fill="${GREEN}" fill-opacity="0.1" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.25, 0.9) / cs)}" stroke-linejoin="round"/>`;
@@ -495,7 +518,7 @@ function drawCar(f: Frame): string {
   // under-glow while sliding, coloured by severity
   if (p.intensity > 0.02 || p.phase === 'drifting') {
     const gi = 0.22 + 0.65 * p.intensity;
-    s += `<g transform="rotate(${f2(deg(p.heading))}) scale(${f3(cs)})"><ellipse rx="4.2" ry="2.8" fill="${col}" opacity="${f3(gi * 0.5)}"/><ellipse rx="2.8" ry="1.9" fill="${col}" opacity="${f3(gi * 0.5)}"/></g>`;
+    s += `<g transform="rotate(${f2(deg(p.heading))}) scale(${f3(cs)})"><ellipse rx="3.1" ry="1.9" fill="${col}" opacity="${f3(gi * 0.3)}"/><ellipse rx="2.3" ry="1.35" fill="${col}" opacity="${f3(gi * 0.3)}"/></g>`;
   }
   // velocity vector: only when there is actually slip to explain, opacity by |β|
   const slip = Math.abs(p.beta);
@@ -572,6 +595,27 @@ class LabelCollider {
   }
 }
 
+/** Motion streaks along the travel direction at the frame edges — speed you can see. */
+function speedStreaks(f: Frame): string {
+  if (f.mode === 'overview') return '';
+  const k = clamp((f.pose.speed - 11) / 19, 0, 1);
+  if (k <= 0.02) return '';
+  const n = 14;
+  let s = `<g stroke="${WHITE}" stroke-linecap="round" opacity="${f3(0.05 + 0.13 * k)}">`;
+  let h = 987654321;
+  for (let i = 0; i < n; i++) {
+    h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
+    const side = i % 2 === 0 ? 1 : -1;
+    const edge = ((h >>> 9) % 1000) / 1000;
+    const x = side > 0 ? W * (0.02 + 0.2 * edge) : W * (0.78 + 0.2 * edge);
+    h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
+    const y = TOP_BAR + ((h >>> 9) % 1000) / 1000 * (H - TOP_BAR - BOTTOM_BAR);
+    const len = (22 + 70 * k) * (0.6 + 0.8 * (((h >>> 3) % 100) / 100));
+    s += `<line x1="${f2(x)}" y1="${f2(y)}" x2="${f2(x)}" y2="${f2(y + len)}" stroke-width="${f3(0.7 + 0.8 * k)}"/>`;
+  }
+  return s + '</g>';
+}
+
 function worldLabels(f: Frame): string {
   const overview = f.mode === 'overview';
   let s = '<g>';
@@ -629,10 +673,20 @@ function worldLabels(f: Frame): string {
     const g = f.ghost;
     const gp = toS(f, g.x, g.y);
     const onScreen = gp.x > 8 && gp.x < W - 8 && gp.y > TOP_BAR && gp.y < H - BOTTOM_BAR - SCRUB_H;
-    const gapPts = `${g.gapPoints >= 0 ? '+' : '−'}${formatPoints(Math.abs(g.gapPoints))} PTS`;
+    const gapPts = `${g.gapPoints >= 0 ? '+' : '−'}${pts(Math.abs(g.gapPoints))} PTS`;
     if (onScreen) {
-      s += text(gp.x + 12, gp.y + 16, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, opacity: 0.9, stroke: BG, strokeW: 3 });
-      s += text(gp.x + 12, gp.y + 30, gapPts, { size: T_LABEL, fill: g.gapPoints >= 0 ? GREEN : MUTED, weight: 800, stroke: BG, strokeW: 3 });
+      const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
+      for (const [dx, dy, anchor] of [
+        [14, 6, 'start'],
+        [-14, 6, 'end'],
+        [0, -16, 'middle'],
+        [0, 34, 'middle'],
+      ] as Array<[number, number, 'start' | 'end' | 'middle']>) {
+        if (!col.place(gp.x + dx, gp.y + dy, gw, 28, anchor)) continue;
+        s += text(gp.x + dx, gp.y + dy - 14, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3 });
+        s += text(gp.x + dx, gp.y + dy, gapPts, { size: T_LABEL, fill: g.gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3 });
+        break;
+      }
     } else {
       const dx = gp.x - carS.x;
       const dy = gp.y - carS.y;
@@ -652,8 +706,11 @@ function worldLabels(f: Frame): string {
         s += '</g>';
         const anchor: 'start' | 'end' = ex < W / 2 ? 'start' : 'end';
         const lx = ex + (ex < W / 2 ? 20 : -20);
-        s += text(lx, ey - 2, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3 });
-        s += text(lx, ey + 13, gapPts, { size: T_LABEL, fill: g.gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3 });
+        const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
+        if (col.place(lx, ey + 13, gw, 28, anchor)) {
+          s += text(lx, ey - 2, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3 });
+          s += text(lx, ey + 13, gapPts, { size: T_LABEL, fill: g.gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3 });
+        }
       }
     }
   }
@@ -664,11 +721,11 @@ function worldLabels(f: Frame): string {
 function callout(f: Frame): string {
   const e = f.events.find((ev) => ev.label !== '');
   if (!e) return '';
-  const color = e.kind === 'transition' ? MAGENTA : e.kind === 'spin' ? RED : e.kind === 'peak' ? GOLD : e.kind === 'exit' ? EMBER : WHITE;
-  const size = 42;
-  const y = TOP_BAR + 128;
+  const color = e.kind === 'transition' ? MAGENTA : e.kind === 'spin' ? RED : e.kind === 'peak' ? GOLD : e.kind === 'exit' ? EMBER : CYAN;
+  const size = 34;
+  const y = Math.round(H * 0.33);
   let s = `<g opacity="${f3(e.opacity)}" transform="translate(${W / 2} ${y}) scale(${f3(e.scale)}) translate(${-W / 2} ${-y})">`;
-  s += glowText(W / 2, y, e.label, size, WHITE, color, 0.95, 'middle', 800, false, false);
+  s += glowText(W / 2, y, e.label, size, WHITE, color, 0.95, 'middle', 800);
   // a leader line anchors overview callouts to the place they happened
   if (f.mode === 'overview' && e.driftId !== undefined) {
     const seg = f.replay.segments.find((g) => g.driftId === e.driftId);
@@ -705,14 +762,16 @@ function topHud(f: Frame): string {
   if (side) s += text(20 + `${angle}°`.length * T_HERO * 0.42 + 6, baseline - T_HERO * 0.58, side, { size: T_LABEL, fill: col, weight: 800 });
   s += text(20, baseline + 14, 'SLIP ANGLE', { size: T_LABEL, spacing: 2, fill: MUTED, weight: 700 });
   // tier 2: speed and points, italic (things that move)
-  s += text(W - 18, baseline - 24, `${kmh(p.speed)}`, { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
-  s += text(W - 18, baseline - 10, 'KM/H', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
+  s += text(W - 18, baseline - 26, `${kmh(p.speed)}`, { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
+  s += text(W - 18, baseline - 12, 'KM/H', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
   const ptsCol = p.phase === 'drifting' ? EMBER : WHITE;
-  s += text(W - 18, baseline + 14, ptsMarkup(p.points), { size: T_VALUE, fill: ptsCol, anchor: 'end', weight: 800, italic: true, markup: true });
+  s += text(W - 18, baseline + 12, pts(p.points), { size: T_VALUE, fill: ptsCol, anchor: 'end', weight: 800, italic: true });
+  s += text(W - 18, baseline + 26, 'POINTS', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
   if (p.multiplier > 1.05) {
-    const mtxt = `×${p.multiplier.toFixed(1)}`;
-    s += `<rect x="${f2(W - 18 - 150)}" y="${f2(baseline - 6)}" width="34" height="18" rx="3" fill="${EMBER}" opacity="0.9"/>`;
-    s += text(W - 18 - 133, baseline + 8, mtxt, { size: T_LABEL, fill: '#000', weight: 800 });
+    const cw = 34;
+    const cx = W - 18 - pts(p.points).length * T_VALUE * 0.46 - cw - 8;
+    s += `<rect x="${f2(cx)}" y="${f2(baseline - 12)}" width="${cw}" height="17" rx="3" fill="${EMBER}"/>`;
+    s += text(cx + cw / 2, baseline + 1, `×${p.multiplier.toFixed(1)}`, { size: 12, fill: '#000', anchor: 'middle', weight: 800 });
   }
   return s;
 }
@@ -770,7 +829,7 @@ function bottomHud(f: Frame): string {
   s += text(96, ly, r.info.name.toUpperCase(), { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
   // live totals only: TOTAL is the running score, the grade lands on the final frame
   s += text(W - 18, ly, 'TOTAL', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
-  s += text(W - 18, ly + 22, ptsMarkup(f.pose.points), { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true, markup: true });
+  s += text(W - 18, ly + 22, pts(f.pose.points), { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
   const finished = f.t >= r.durationS - 0.05;
   if (finished) {
     const gcol = (gradeColors as Record<string, string>)[r.info.grade] ?? EMBER;
@@ -842,10 +901,11 @@ function renderFrame(f: Frame): string {
   svg += '<defs>';
   svg += `<radialGradient id="smoke" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#C9D0DA" stop-opacity="0.8"/><stop offset="0.5" stop-color="#AEB6C2" stop-opacity="0.38"/><stop offset="1" stop-color="#8F98A6" stop-opacity="0"/></radialGradient>`;
   svg += `<radialGradient id="smokeHot" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFF6EE" stop-opacity="0.95"/><stop offset="1" stop-color="#FFD9BE" stop-opacity="0"/></radialGradient>`;
-  svg += `<radialGradient id="vignette" gradientUnits="userSpaceOnUse" cx="${W / 2}" cy="${H / 2}" r="${Math.hypot(W / 2, H / 2) * 0.95}"><stop offset="0.3" stop-color="#000" stop-opacity="0"/><stop offset="0.72" stop-color="#000" stop-opacity="0.3"/><stop offset="1" stop-color="#000" stop-opacity="0.8"/></radialGradient>`;
+  svg += `<radialGradient id="vignette" gradientUnits="userSpaceOnUse" cx="${W / 2}" cy="${H / 2}" r="${Math.hypot(W / 2, H / 2) * 0.95}"><stop offset="0.45" stop-color="#000" stop-opacity="0"/><stop offset="0.8" stop-color="#000" stop-opacity="0.16"/><stop offset="1" stop-color="#000" stop-opacity="0.5"/></radialGradient>`;
   svg += `<linearGradient id="lbTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>`;
   svg += `<linearGradient id="lbBot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="1"/></linearGradient>`;
   svg += `<linearGradient id="ribbon" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${EMBER}" stop-opacity="0.25"/><stop offset="0.55" stop-color="${EMBER}" stop-opacity="0.8"/><stop offset="0.8" stop-color="${GOLD}" stop-opacity="0.9"/><stop offset="1" stop-color="${RED}" stop-opacity="0.95"/></linearGradient>`;
+  svg += `<radialGradient id="pool" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2C3A4C" stop-opacity="0.5"/><stop offset="0.55" stop-color="#1B2532" stop-opacity="0.28"/><stop offset="1" stop-color="#0D131B" stop-opacity="0"/></radialGradient>`;
   svg += grainPattern();
   svg += '</defs>';
   svg += `<rect width="${W}" height="${H}" fill="${BG}"/>`;
@@ -858,6 +918,7 @@ function renderFrame(f: Frame): string {
   svg += drawCar(f);
   svg += drawGhost(f);
   svg += '</g>';
+  svg += speedStreaks(f);
   svg += `<rect width="${W}" height="${H}" fill="url(#vignette)"/>`;
   svg += `<rect width="${W}" height="${H}" fill="url(#grain)" opacity="0.022"/>`;
   svg += worldLabels(f);
@@ -865,6 +926,12 @@ function renderFrame(f: Frame): string {
   svg += callout(f);
   svg += topHud(f);
   svg += bottomHud(f);
+  if (f.replay.warnings.length) {
+    const msg = f.replay.warnings.some((w) => /SIGNAL LOST/.test(w)) ? 'SIGNAL LOST' : 'DATA GAPS';
+    const wy = TOP_BAR + 18;
+    svg += `<rect x="18" y="${f2(wy - 12)}" width="${f2(14 + msg.length * 7.2)}" height="18" rx="3" fill="${RED}" opacity="0.85"/>`;
+    svg += text(25, wy + 1, msg, { size: T_LABEL, fill: '#000', weight: 800, spacing: 1.4 });
+  }
   // a cut cross-fades from black for 120 ms (film language for a camera change)
   if (cam.cutFade > 0.001) svg += `<rect width="${W}" height="${H}" fill="#000" opacity="${f3(cam.cutFade * 0.55)}"/>`;
   svg += '</svg>';
@@ -993,7 +1060,7 @@ export function renderReplayFrame(
   const cam = new ReplayCamera(simOpts.cut ? 'overview' : mode, { w: W, h: H });
   const dt = 1 / FPS;
   let state = cam.update(replay, 0, dt);
-  const cutAt = simOpts.cut ? Math.max(0, t - 0.04) : Infinity;
+  const cutAt = simOpts.cut ? Math.max(0, t - 0.07) : Infinity;
   let switched = false;
   for (let tt = dt; tt <= t + 1e-9; tt += dt) {
     if (!switched && tt >= cutAt) {

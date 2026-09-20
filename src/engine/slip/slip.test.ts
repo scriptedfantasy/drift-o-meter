@@ -40,8 +40,9 @@ function runCase(c: Case): SlipMetrics {
 
 describe('SlipEstimator vs simulator ground truth', () => {
   const results: SlipMetrics[] = CASES.map(runCase);
-  // eslint-disable-next-line no-console
-  console.log('\n' + formatMetricsTable(results) + '\n');
+  // process.stdout.write, not console.log: vitest hides console output of passing tests, and
+  // this table is the whole point — a reviewer has to be able to read every number.
+  process.stdout.write('\n' + formatMetricsTable(results) + '\n\n');
 
   for (const m of results) {
     it(`${m.name}: every output finite and valid for most of the run`, () => {
@@ -230,6 +231,77 @@ describe('SlipEstimator behaviour', () => {
     const b = runEstimator(run);
     expect(a[4000].beta).toBe(b[4000].beta);
     expect(a[4000].x).toBe(b[4000].x);
+  });
+
+  it('compensates the phone lever arm, and degrades gracefully when the assumed value is wrong', () => {
+    // The simulator puts the phone 0.9 m ahead of the CG: the IMU sees a_y + ṙ·d_x and the GPS
+    // reports the PHONE's course, which in a 110 °/s transition is ~6° away from the CG's.
+    const long = simulateRun('harbor', { seed: 1, laps: 2 });
+    const cases: Array<{ name: string; lever: number; sim?: SimulateOptions }> = [
+      { name: 'assumed 0.9 = true 0.9', lever: 0.9 },
+      { name: 'lever ignored (0.0)', lever: 0 },
+      { name: 'assumed 0.9, true 0.0', lever: 0.9, sim: { leverArm: { x: 0, y: 0, z: 0 } } },
+      { name: 'assumed 0.9, true 1.6', lever: 0.9, sim: { leverArm: { x: 1.6, y: 0, z: 0.4 } } },
+    ];
+    const rows: SlipMetrics[] = [];
+    for (const c of cases) {
+      const r = c.sim ? simulateRun('harbor', { seed: 1, laps: 2, ...c.sim }) : long;
+      const opts = { leverArmX: c.lever };
+      const est = new SlipEstimator(opts);
+      rows.push(evaluate(c.name, r, runEstimator(r, opts, est), { originOffset: originOffset(r, est) }));
+    }
+    process.stdout.write('\nlever arm:\n' + formatMetricsTable(rows) + '\n\n');
+    const [matched, ignored, noLever, farLever] = rows;
+    // modelling it is worth having: ignoring the lever arm costs accuracy and shows up as lag
+    expect(matched.driftRmsDeg).toBeLessThan(ignored.driftRmsDeg - 0.3);
+    expect(Math.abs(matched.lagMs)).toBeLessThan(25);
+    expect(Math.abs(ignored.lagMs)).toBeGreaterThan(40);
+    // …and getting it wrong by ±0.7 m is a graceful (r·Δd_x/v) degradation, not a failure
+    for (const m of [ignored, noLever, farLever]) {
+      expect(m.straightRmsDeg).toBeLessThan(1.3);
+      expect(m.driftRmsDeg).toBeLessThan(2.8);
+      expect(m.signErrors).toBe(0);
+      expect(m.allFinite).toBe(true);
+    }
+  });
+
+  it('learns the lateral scale (body roll / road camber) and the longitudinal bias (road grade)', () => {
+    // Harbor is flat: the only lateral scale error is the body roll the estimator already models,
+    // so the state stays near zero and no grade shows up in the longitudinal bias.
+    const flat = new SlipEstimator();
+    runEstimator(simulateRun('harbor', { seed: 1, laps: 2 }), {}, flat);
+    // The touge is off-camber (the road banks AWAY from the turn) and descends ~7 %: the scale
+    // state has to find ~+10 % of missing lateral accel and the bias state ~G·0.07 of gravity.
+    const touge = new SlipEstimator();
+    runEstimator(simulateRun('touge', { seed: 1 }), {}, touge);
+    process.stdout.write(
+      `\nharbor: ayScale ${(100 * flat.ayScaleError.value).toFixed(1)} % ± ${(100 * flat.ayScaleError.sigma).toFixed(1)}, axBias ${flat.axBias.toFixed(2)} m/s²\n` +
+        `touge : ayScale ${(100 * touge.ayScaleError.value).toFixed(1)} % ± ${(100 * touge.ayScaleError.sigma).toFixed(1)}, axBias ${touge.axBias.toFixed(2)} m/s²\n\n`,
+    );
+    expect(Math.abs(flat.ayScaleError.value)).toBeLessThan(0.04);
+    expect(Math.abs(flat.axBias)).toBeLessThan(0.25);
+    expect(touge.ayScaleError.value).toBeGreaterThan(0.05);
+    expect(touge.axBias).toBeGreaterThan(0.4);
+    expect(touge.axBias).toBeLessThan(1.2);
+  });
+
+  it('does not let β run away while rolling to a stop (a_y/v noise explodes at walking pace)', () => {
+    // β̇ is measured as a_y/v − r, so its noise floor grows as 1/v: the calm gate has to widen
+    // with speed or the zero-slip prior switches itself off exactly where it is needed.
+    const states = runEstimator(run);
+    let worst = 0;
+    let worstT = 0;
+    for (let i = 0; i < states.length; i++) {
+      const tr = run.truth[i];
+      if (states[i].t < 8 || !(tr.speed > 2 && tr.speed < 7) || Math.abs(tr.beta) > degToRad(1)) continue;
+      const e = Math.abs(radToDeg(states[i].beta - tr.beta));
+      if (e > worst) {
+        worst = e;
+        worstT = states[i].t;
+      }
+    }
+    process.stdout.write(`\nworst |β error| at 2–7 m/s with the car straight: ${worst.toFixed(2)}° at t=${worstT.toFixed(1)} s\n\n`);
+    expect(worst).toBeLessThan(3);
   });
 });
 
