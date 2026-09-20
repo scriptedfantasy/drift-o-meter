@@ -1,34 +1,8 @@
 
-===== results-reveal  http://127.0.0.1:46039/results/fixture-hero
+===== drive-open  http://127.0.0.1:36559/drive?sim=harbor&rate=1&at=0.3&hold=1
 
-===== results-skip  http://127.0.0.1:46039/results/fixture-hero?reveal=slam
+===== drive-peak  http://127.0.0.1:36559/drive?sim=harbor&rate=1&at=100.85&hold=1
 
-===== results-reveal-hold  http://127.0.0.1:46039/results/fixture-hero?reveal=hold
+===== drive-loose  http://127.0.0.1:36559/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1
 
-===== results-reveal-slam  http://127.0.0.1:46039/results/fixture-hero?reveal=slam
-
-===== results  http://127.0.0.1:46039/results/fixture-hero?reveal=off
-
-===== results-sloppy  http://127.0.0.1:46039/results/fixture-sloppy?reveal=off
-
-===== results-spin  http://127.0.0.1:46039/results/fixture-spin?reveal=off
-
-===== results-clean  http://127.0.0.1:46039/results/fixture-clean?reveal=off
-
-===== results-best  http://127.0.0.1:46039/results/fixture-hero?reveal=off
-
-===== results-drifts  http://127.0.0.1:46039/results/fixture-spin?reveal=off
-
-===== results-laps  http://127.0.0.1:46039/results/fixture-sloppy?reveal=off
-
-===== results-untrusted  http://127.0.0.1:46039/results/fixture-handheld?reveal=off
-
-===== results-untrusted-foot  http://127.0.0.1:46039/results/fixture-handheld?reveal=off
-
-===== results-integrity  http://127.0.0.1:46039/results/fixture-rough?reveal=off
-
-===== results-pipeline  http://127.0.0.1:46039/results/fixture-good?reveal=off&source=pipeline
-
-===== results-reduced  http://127.0.0.1:46039/results/fixture-hero?reveal=hold&motion=reduce
-
-===== results-missing  http://127.0.0.1:46039/results/no-such-session
+===== drive-gps  http://127.0.0.1:36559/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1
