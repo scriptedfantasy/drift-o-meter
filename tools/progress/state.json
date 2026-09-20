@@ -1,8 +1,8 @@
 {
   "title": "Drift-O-Meter Build Board",
-  "phase": "Phase 3 \u2014 the last three screens, and the screens a driver uses go to critique",
+  "phase": "Phase 4 \u2014 every screen exists; the last critiques are running",
   "updated": "",
-  "summary": "An iPhone app (Expo SDK 57, TypeScript) that judges real drifting from the gyroscope, accelerometer and GPS and turns a run into a cinematic replay. Each piece is built by its own agent and judged by a separate fresh-context critic that re-runs the code and looks at the actual output, never the builder's summary. The reference bar is Need for Speed and Tokyo Drift.",
+  "summary": "An iPhone app that judges real drifting from the gyroscope, accelerometer and GPS, and turns a run into a cinematic replay. The whole app is four steps: calibrate only if necessary, press one button, drive, see the verdict. Each piece was built by its own agent and judged by a separate fresh-context critic that re-ran the code and looked at the real output, never the builder's summary.",
   "verification": [
     "This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.",
     "The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder's summary.",
@@ -50,9 +50,9 @@
       "id": "score",
       "name": "Scoring & style",
       "layer": "engine",
-      "status": "fixing",
+      "status": "passed",
       "rounds": 2,
-      "verdict": "Back for a second round: the angle scale saturates at 44 degrees, so a run with three spins scores a perfect 100 on the heaviest component while the verdict above it condemns the same driving.",
+      "verdict": "A spin no longer pays for the angle it produced. The sloppiest run fell from a perfect 100 on the heaviest component to 0.",
       "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency",
       "score": "3.5 \u2192 rehabilitated"
     },
@@ -106,9 +106,9 @@
       "id": "hud",
       "name": "Live drive HUD",
       "layer": "app",
-      "status": "fixing",
+      "status": "critique",
       "rounds": 1,
-      "verdict": "Failed. Every number matches the engine frame for frame, but a red alarm with the wrong headline fires in the first four seconds of every run, and the gauge celebrates angles the engine is refusing to score.",
+      "verdict": "Round 2: the opening alarm now names the real condition, the needle is clear of the hero number, and the colour ramp reaches gold at angles a real run produces.",
       "note": "Angle, g-meter, speed, score combo, callouts, glow",
       "score": "7.5 \u2192 round 2"
     },
@@ -116,9 +116,9 @@
       "id": "results",
       "name": "Results & grade",
       "layer": "app",
-      "status": "fixing",
+      "status": "critique",
       "rounds": 1,
-      "verdict": "Failed. Called the most honest verdict screen the critic had reviewed, and failed on the judgement itself: the showcase run\u2019s top grade is bought with lap data that has zero variance by construction.",
+      "verdict": "Round 2: the showcase no longer publishes a simulator artifact, gold is the top grade again and nothing else, and an untrusted run no longer asserts what it just disowned.",
       "note": "Grade reveal, breakdown, best drift",
       "score": "7.0 \u2192 round 2"
     },
@@ -126,27 +126,27 @@
       "id": "replay-ui",
       "name": "Replay screen",
       "layer": "app",
-      "status": "building",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "The scene model passed at 9.0; the app screen that draws it is being built now.",
+      "verdict": "The replay runs in the app: a Skia stage drawing the finished scene, a real scrubber, camera cuts, highlight stepping, and a run that may not be scored still plays while refusing a grade.",
       "note": "Track map, trail, scrubber, camera modes"
     },
     {
       "id": "calibrate-ui",
       "name": "Calibration flow",
       "layer": "app",
-      "status": "building",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Listens on open with no button and no gesture, because that is what the engine actually needs. The dial rolls and foreshortens with the real gravity vector.",
       "note": "Mount guidance with live sensor feedback"
     },
     {
       "id": "garage",
       "name": "Garage & sessions",
       "layer": "app",
-      "status": "building",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Leads with DRIVE and goes straight to recording. Calibration appears only when the last run left evidence of a problem.",
       "note": "Home, session list, personal bests"
     }
   ],
@@ -335,27 +335,35 @@
     {
       "t": "23:25",
       "text": "Both driver-facing screens failed their first critique at 7.5 and 7.0, with no fabrication found. One finding turned out to be a scoring fault rather than a presentation one and was routed accordingly."
+    },
+    {
+      "t": "00:30",
+      "text": "The user asked for the whole app to be four steps. Counting the real path found three taps to start recording where there should be one; the arming gate is gone and calibration is no longer a prerequisite."
+    },
+    {
+      "t": "00:45",
+      "text": "Every screen now exists. The replay screen measured the motion the analysis renderer could never show: the callout slam genuinely overshoots and the shake is a decaying oscillation settling over 180 milliseconds."
     }
   ],
   "shots": [
     {
-      "path": "artifacts/shots/results-untrusted.png",
-      "caption": "A run the engine will not vouch for. No grade, no grade colour, no reveal: the points are labelled a floor rather than a measurement and the components show dashes. The recording is still watchable; only the judgement is void.",
+      "path": "artifacts/shots/replay-untrusted.png",
+      "caption": "A run the engine will not vouch for, replayed. The recording plays in full; the score is withheld and the ghost gap switches from points to seconds.",
       "width": 300
-    },
-    {
-      "path": "artifacts/replay-ghost-lap2.png",
-      "caption": "The replay after three critique rounds, passed at 9.0. The ghost is distance-synced, so it is a car beside you through the same corner.",
-      "width": 560
     },
     {
       "path": "artifacts/shots/drive-peak.png",
-      "caption": "The live display at a 48 degree slide, with the peak, hold time and flick count under the gauge.",
+      "caption": "The live display at a 48 degree slide, after the legibility round: needle clear of the number, gold reached, score readable while climbing.",
       "width": 300
     },
     {
-      "path": "artifacts/shots/results-sloppy.png",
-      "caption": "The same screen on a bad run: grey grade, red bars, two spins named, and a verdict that says which corners went wrong.",
+      "path": "artifacts/shots/garage.png",
+      "caption": "The garage. One button, and calibration demoted to a quiet line because the engine does not need a ceremony.",
+      "width": 300
+    },
+    {
+      "path": "artifacts/shots/calibrate.png",
+      "caption": "Calibration explains the physics in the driver\u2019s language: the forward axis needs one hard pull.",
       "width": 300
     }
   ]
