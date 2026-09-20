@@ -33,26 +33,6 @@ function longPress(testId, ms = 700) {
   })()`;
 }
 
-/**
- * A real drag on the replay scrubber, as a page script: pointer down on the touch target, three
- * moves, and NO release, so the screenshot catches the grabbed state. react-native-gesture-handler
- * on web is driven by pointer events, so this is the same path a thumb takes.
- */
-function dragScrubber(testId, to = 0.4) {
-  return `(async () => {
-    const el = document.querySelector('[data-testid="${testId}"]');
-    if (!el) throw new Error('no element ${testId}');
-    const r = el.getBoundingClientRect();
-    const y = r.y + r.height / 2;
-    const at = (f) => ({ bubbles: true, cancelable: true, clientX: r.x + 18 + (r.width - 36) * f, clientY: y, pointerId: 7, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1 });
-    el.dispatchEvent(new PointerEvent('pointerdown', at(0.02)));
-    for (const f of [0.1, 0.22, ${to}]) {
-      await new Promise((r) => requestAnimationFrame(r));
-      el.dispatchEvent(new PointerEvent('pointermove', at(f)));
-    }
-  })()`;
-}
-
 export const defaultRoutes = [
   // ---- garage: the home screen ----------------------------------------------------------
   // `?demo=<set>` writes REAL sessions into storage before the list is drawn: each one is built
@@ -182,15 +162,12 @@ export const defaultRoutes = [
   { name: 'replay-ghost', path: '/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 800 },
   // A highlight jump: the transport lands on the best moment of the run and names it.
   { name: 'replay-highlight', path: '/replay/demo?hl=1&play=0&cam=chase&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 1200 },
-  // The scrubber MID-DRAG: a real pointer sequence on the touch target, released nowhere, so the
-  // shot is the grabbed state — playhead fat, time bubble up, frame following the finger.
-  {
-    name: 'replay-scrub',
-    path: '/replay/demo?cam=chase&play=0&ui=1',
-    waitMs: 2400,
-    expectCanvas: true,
-    actions: [{ type: 'eval', js: dragScrubber('replay-scrubber', 0.36) }, { type: 'wait', ms: 700 }],
-  },
+  // The scrubber MID-DRAG. `scrub=<0..1>` opens with the playhead GRABBED at that fraction: the
+  // same shared values a real drag writes (scrubbing = 1, the clock following the finger), so the
+  // frame is the held state — fat playhead, time bubble, camera cut to the new moment. A
+  // synthetic pointer sequence cannot be used here: react-native-gesture-handler calls
+  // setPointerCapture, which throws for a pointer id the browser never issued.
+  { name: 'replay-scrub', path: '/replay/demo?cam=chase&scrub=0.36&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 800 },
   // A hand-held recording: it still replays, and it must not present points or a grade.
   { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true, minEmber: 800 },
   // Bad data: `gaps=6` blanks six seconds of recorded position (a tunnel), so buildReplay's own
