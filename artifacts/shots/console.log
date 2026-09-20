@@ -1,4 +1,8 @@
 
-===== results-reveal  http://127.0.0.1:35117/results/fixture-hero
+===== drive-idle  http://127.0.0.1:36985/drive?sim=harbor&rate=1
 
-===== results-reveal-slam  http://127.0.0.1:35117/results/fixture-hero?reveal=slam
+===== drive-peak  http://127.0.0.1:36985/drive?sim=harbor&rate=1&at=100.85&hold=1
+
+===== drive-transition  http://127.0.0.1:36985/drive?sim=harbor&rate=1&at=85.05&hold=1
+
+===== drive-bank  http://127.0.0.1:36985/drive?sim=harbor&rate=1&at=50.75&hold=1
