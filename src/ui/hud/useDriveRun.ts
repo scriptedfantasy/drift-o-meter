@@ -1,0 +1,472 @@
+/**
+ * The drive controller: sensors → pipeline → HUD, and the run's lifecycle.
+ *
+ * ── Frame budget ──────────────────────────────────────────────────────────────────────────
+ * `onMotion` runs ~100 times a second. It pushes the sample into the engine and then does only
+ * arithmetic and shared-value writes (≈20 per sample) — no `setState`, no allocation beyond the
+ * frame the pipeline already returns. React re-renders come from three places only:
+ *   • a 10 Hz snapshot ticker, for values that are words rather than motion (phase, integrity,
+ *     lap, rounded speed, drift count);
+ *   • discrete events (callouts, BANKED / CHAIN LOST banners) — a few per minute, pushed the
+ *     instant they fire so nothing feels late;
+ *   • the run's own status changes.
+ * Everything continuous (angle, needle, glow, odometer, g-ball, edge bloom, mini-map head) is a
+ * shared value read by the UI thread; the Skia canvases and animated styles never re-render.
+ */
+import * as Haptics from 'expo-haptics';
+import { useKeepAwake } from 'expo-keep-awake';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+
+import type { LiveFrame } from '../../engine/pipeline';
+import { G, radToDeg, type DriftPhase, type GpsSample, type MotionSample } from '../../engine/types';
+import {
+  currentSearch,
+  describeSensorError,
+  loadSettings,
+  newSessionId,
+  saveSession,
+  selectSensorSource,
+  SensorSourceError,
+  subscribeSettings,
+  type SensorSource,
+  type SourceSelection,
+} from '../../platform';
+import { parseHudParams, type HudParams } from './hudParams';
+import { createHudPipeline, idleFrame, type DriftPipelineApi } from './hudPipeline';
+import { SimPlayer } from './simPlayer';
+import { resetSignals, type HudSignals } from './signals';
+import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
+
+export type RunStatus = 'ready' | 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'error';
+
+export type EventTone = 'ember' | 'magenta' | 'gold' | 'green' | 'cyan' | 'red';
+
+/** One entry of the callout stack. */
+export interface HudEvent {
+  key: number;
+  label: string;
+  points: number;
+  tone: EventTone;
+  /** Recording time it fired at — the stack expires by frame time, so a frozen frame keeps it. */
+  t: number;
+}
+
+export interface HudBanner {
+  key: number;
+  kind: 'banked' | 'lost';
+  points: number;
+  t: number;
+}
+
+/** Everything the HUD renders as words rather than motion. Refreshed at ~10 Hz. */
+export interface HudSnapshot {
+  phase: DriftPhase;
+  integrity: LiveFrame['integrity'];
+  speedKmh: number;
+  totalPoints: number;
+  multiplier: number;
+  chainPoints: number;
+  chainActive: boolean;
+  transitions: number;
+  peakDeg: number;
+  elapsedS: number;
+  lapCount: number;
+  lapProgress: number;
+  driftCount: number;
+  valid: boolean;
+  calibrationQuality: number;
+  /** Trail points committed so far (bumps the mini-map's memo). */
+  trailCount: number;
+}
+
+export interface RunError {
+  title: string;
+  body: string;
+  /** True when trying again might work (permissions, storage). */
+  retryable: boolean;
+}
+
+export interface DriveRun {
+  status: RunStatus;
+  error: RunError | null;
+  /** `SIM · HARBOR · 2×` or `DEVICE · LIVE SENSORS`. */
+  sourceLabel: string | null;
+  sourceKind: 'device' | 'simulated' | null;
+  snapshot: HudSnapshot;
+  events: HudEvent[];
+  banner: HudBanner | null;
+  trail: Trail;
+  params: HudParams;
+  start(): void;
+  stop(): void;
+  dismissError(): void;
+}
+
+const IDLE_SNAPSHOT: HudSnapshot = {
+  phase: 'idle',
+  integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS' },
+  speedKmh: 0,
+  totalPoints: 0,
+  multiplier: 1,
+  chainPoints: 0,
+  chainActive: false,
+  transitions: 0,
+  peakDeg: 0,
+  elapsedS: 0,
+  lapCount: 0,
+  lapProgress: NaN,
+  driftCount: 0,
+  valid: false,
+  calibrationQuality: 0,
+  trailCount: 0,
+};
+
+/** How long a callout stays on the stack, in RECORDING seconds (so a frozen frame keeps it). */
+export const CALLOUT_HOLD_S = 3.2;
+export const BANNER_HOLD_S = 2.4;
+const MAX_CALLOUTS = 3;
+/** Minimum recording-time spacing between mini-map trail points. */
+const TRAIL_INTERVAL_S = 0.12;
+/** Chain-bar scale: points at which the bar is ~63 % full. */
+const CHAIN_SCALE = 2500;
+
+const ACTIVE_PHASES: ReadonlySet<DriftPhase> = new Set<DriftPhase>(['entry', 'drifting', 'transition']);
+
+function toneFor(kind: string): EventTone {
+  switch (kind) {
+    case 'transition':
+    case 'manji':
+      return 'magenta';
+    case 'extreme-angle':
+      return 'gold';
+    case 'smooth':
+    case 'perfect-exit':
+    case 'clean-lap':
+      return 'green';
+    case 'high-speed':
+      return 'cyan';
+    default:
+      return 'ember';
+  }
+}
+
+function errorFor(err: unknown): RunError {
+  const code = err instanceof SensorSourceError ? err.code : null;
+  switch (code) {
+    case 'permission-denied':
+      return { title: 'Motion access denied', body: 'Drift-O-Meter needs Motion & Fitness and Location to judge a run. Turn them on in Settings → Drift-O-Meter, then try again.', retryable: true };
+    case 'unsupported':
+      return { title: 'No sensors here', body: 'This device has no usable gyroscope or GPS. Switch to the simulated source in Settings to see how a run is scored.', retryable: false };
+    case 'services-disabled':
+      return { title: 'Location is off', body: 'Turn Location Services on — without GPS there is no direction of travel, and without that there is no slip angle.', retryable: true };
+    case 'unavailable':
+      return { title: 'Sensors unavailable', body: describeSensorError(err), retryable: true };
+    default:
+      return { title: 'Could not start the run', body: describeSensorError(err), retryable: true };
+  }
+}
+
+export function useDriveRun(signals: HudSignals): DriveRun {
+  useKeepAwake();
+  const router = useRouter();
+
+  const [params] = useState<HudParams>(() => parseHudParams(currentSearch()));
+
+  const [status, setStatus] = useState<RunStatus>(params.autoRun ? 'starting' : 'ready');
+  const [error, setError] = useState<RunError | null>(null);
+  const [sourceLabel, setSourceLabel] = useState<string | null>(null);
+  const [sourceKind, setSourceKind] = useState<'device' | 'simulated' | null>(null);
+  const [snapshot, setSnapshot] = useState<HudSnapshot>(IDLE_SNAPSHOT);
+  const [events, setEvents] = useState<HudEvent[]>([]);
+  const [banner, setBanner] = useState<HudBanner | null>(null);
+
+  const pipelineRef = useRef<DriftPipelineApi | null>(null);
+  const playerRef = useRef<SimPlayer | null>(null);
+  const sourceRef = useRef<SensorSource | null>(null);
+  const selectionRef = useRef<SourceSelection | null>(null);
+  const frameRef = useRef<LiveFrame>(idleFrame());
+  const [trail] = useState<Trail>(createTrail);
+  const startedRef = useRef(false);
+  const stoppingRef = useRef(false);
+  const sessionIdRef = useRef<string>('');
+
+  // Hot-path scratch state (never triggers a render).
+  const hot = useRef({
+    t0: NaN,
+    tLast: NaN,
+    prevPhase: 'idle' as DriftPhase,
+    prevChain: 0,
+    intensity: 0,
+    lastTrailT: -Infinity,
+    eventKey: 1,
+  });
+
+  const haptics = useRef({ enabled: false });
+
+  const pushEvents = useCallback((next: HudEvent[], t: number) => {
+    setEvents((prev) => [...next.slice().reverse(), ...prev].filter((e) => t - e.t <= CALLOUT_HOLD_S).slice(0, MAX_CALLOUTS));
+  }, []);
+
+  const fireHaptic = useCallback((kind: 'entry' | 'transition' | 'exit') => {
+    if (!haptics.current.enabled || Platform.OS === 'web') return;
+    const style = kind === 'entry' ? Haptics.ImpactFeedbackStyle.Heavy : kind === 'transition' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light;
+    Haptics.impactAsync(style).catch(() => {});
+  }, []);
+
+  /** The 100 Hz path: engine push, shared-value writes, edge detection. No setState unless an event fired. */
+  const applyFrame = useCallback(
+    (f: LiveFrame) => {
+      const h = hot.current;
+      if (!Number.isFinite(h.t0)) h.t0 = f.t;
+      const dt = Number.isFinite(h.tLast) ? Math.min(0.1, Math.max(0, f.t - h.tLast)) : 0.01;
+      h.tLast = f.t;
+
+      const betaDeg = radToDeg(f.state.beta);
+      const abs = Math.abs(betaDeg);
+      const active = ACTIVE_PHASES.has(f.phase);
+
+      signals.betaDeg.value = betaDeg;
+      signals.absDeg.value = abs;
+      if (abs > 3) signals.side.value = betaDeg >= 0 ? 1 : -1;
+      signals.peakDeg.value = f.live ? radToDeg(f.live.peakAngle) * f.live.direction : 0;
+      signals.speedKmh.value = f.state.speed * 3.6;
+      signals.ayG.value = f.state.ay / G;
+      signals.active.value = active ? 1 : 0;
+      signals.total.value = f.score.total;
+      signals.chainPoints.value = f.score.chainPoints;
+      signals.multiplier.value = f.score.multiplier;
+      signals.chainRatio.value = 1 - Math.exp(-f.score.chainPoints / CHAIN_SCALE);
+      signals.elapsedS.value = f.t - h.t0;
+      signals.carX.value = f.state.x;
+      signals.carY.value = f.state.y;
+      signals.carHeading.value = f.state.heading;
+      signals.valid.value = f.state.valid ? 1 : 0;
+
+      // Glow intensity: blooms fast, fades slowly (design: entry 220 ms, exit 420 ms).
+      const target = active ? Math.min(1, Math.max(0, (abs - 6) / 44)) : 0;
+      const tau = target > h.intensity ? 0.09 : 0.24;
+      h.intensity += (target - h.intensity) * (1 - Math.exp(-dt / tau));
+      signals.intensity.value = h.intensity;
+
+      // ── edges ──────────────────────────────────────────────────────────────────────
+      const phase = f.phase;
+      const wasActive = ACTIVE_PHASES.has(h.prevPhase);
+      if (active && !wasActive) {
+        signals.punch.value = 1;
+        fireHaptic('entry');
+      } else if (!active && wasActive) {
+        fireHaptic('exit');
+      }
+      if (phase === 'transition' && h.prevPhase !== 'transition') {
+        signals.flash.value = 1;
+        signals.shake.value = 1;
+        fireHaptic('transition');
+      }
+      h.prevPhase = phase;
+
+      // ── discrete events: rare, so they go straight to React ────────────────────────
+      if (f.score.callouts.length > 0) {
+        const next = f.score.callouts.map((c) => ({ key: h.eventKey++, label: c.label, points: c.points, tone: toneFor(c.kind), t: f.t }));
+        pushEvents(next, f.t);
+      }
+      if (f.score.banked) setBanner({ key: h.eventKey++, kind: 'banked', points: Math.round(h.prevChain), t: f.t });
+      else if (f.score.lost) setBanner({ key: h.eventKey++, kind: 'lost', points: Math.round(h.prevChain), t: f.t });
+      h.prevChain = f.score.chainPoints;
+
+      // ── mini-map trail ─────────────────────────────────────────────────────────────
+      if (f.state.valid && f.t - h.lastTrailT >= TRAIL_INTERVAL_S) {
+        h.lastTrailT = f.t;
+        pushTrail(trail, f.state.x, f.state.y, active);
+      }
+    },
+    [fireHaptic, pushEvents, signals, trail],
+  );
+
+  const onMotion = useCallback(
+    (m: MotionSample) => {
+      const pipe = pipelineRef.current;
+      if (!pipe) return;
+      const f = pipe.pushMotion(m);
+      frameRef.current = f;
+      applyFrame(f);
+    },
+    [applyFrame],
+  );
+
+  const onGps = useCallback((g: GpsSample) => {
+    pipelineRef.current?.pushGps(g);
+  }, []);
+
+  const finishAndSave = useCallback(async () => {
+    if (stoppingRef.current) return;
+    stoppingRef.current = true;
+    playerRef.current?.stop();
+    sourceRef.current?.stop();
+    const pipe = pipelineRef.current;
+    if (!pipe) {
+      router.back();
+      return;
+    }
+    setStatus('saving');
+    try {
+      const sel = selectionRef.current;
+      const meta: Record<string, string | number | boolean> = { source: sel?.kind ?? 'device' };
+      if (sel?.sim) {
+        meta.track = sel.sim.params.track;
+        meta.seed = sel.sim.params.seed;
+        meta.rate = sel.sim.params.rate;
+      }
+      const session = pipe.finish(meta);
+      const entry = await saveSession(session);
+      router.replace({ pathname: '/results/[id]', params: { id: entry.id } });
+    } catch (err) {
+      stoppingRef.current = false;
+      setStatus('error');
+      setError({
+        title: 'Could not save the run',
+        body: err instanceof Error ? err.message : String(err),
+        retryable: true,
+      });
+    }
+  }, [router]);
+
+  const start = useCallback(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    setError(null);
+    setStatus('starting');
+    (async () => {
+      try {
+        const selection = await selectSensorSource({ loop: false, onEnd: () => void finishAndSave() });
+        selectionRef.current = selection;
+        setSourceLabel(selection.label);
+        setSourceKind(selection.kind);
+        sessionIdRef.current = newSessionId();
+        const name = selection.sim ? `${title(selection.sim.params.track)} run` : 'Night run';
+        pipelineRef.current = createHudPipeline({ id: sessionIdRef.current, name });
+        resetSignals(signals);
+        resetTrail(trail);
+        hot.current = { t0: NaN, tLast: NaN, prevPhase: 'idle', prevChain: 0, intensity: 0, lastTrailT: -Infinity, eventKey: hot.current.eventKey };
+
+        if (selection.sim) {
+          const player = new SimPlayer(selection.sim.run, {
+            rate: selection.sim.params.rate,
+            onMotion,
+            onGps,
+            onEnd: () => void finishAndSave(),
+          });
+          playerRef.current = player;
+          if (Number.isFinite(params.at)) player.warpTo(params.at);
+          if (params.hold) {
+            setStatus('held');
+          } else {
+            player.start();
+            setStatus('running');
+          }
+        } else {
+          await selection.source.start({ onMotion, onGps });
+          sourceRef.current = selection.source;
+          setStatus('running');
+        }
+      } catch (err) {
+        startedRef.current = false;
+        console.warn('[hud] run failed to start', err);
+        setError(errorFor(err));
+        setStatus('error');
+      }
+    })();
+  }, [finishAndSave, onGps, onMotion, params.at, params.hold, signals, trail]);
+
+  const stop = useCallback(() => {
+    void finishAndSave();
+  }, [finishAndSave]);
+
+  const dismissError = useCallback(() => {
+    setError(null);
+    setStatus('ready');
+  }, []);
+
+  // Haptics follow the setting; read once and on change, never inside the hot path.
+  useEffect(() => {
+    let alive = true;
+    void loadSettings().then((s) => {
+      if (alive) haptics.current.enabled = s.haptics;
+    });
+    const unsubscribe = subscribeSettings((s) => {
+      haptics.current.enabled = s.haptics;
+    });
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // Auto-start (`?run=1` / `?at=`) — the harness needs a running HUD without a tap.
+  useEffect(() => {
+    if (params.autoRun) start();
+  }, [params.autoRun, start]);
+
+  // The ~10 Hz snapshot: words, not motion.
+  useEffect(() => {
+    if (status !== 'running' && status !== 'held') return;
+    const publish = () => {
+      const f = frameRef.current;
+      const h = hot.current;
+      const t0 = Number.isFinite(h.t0) ? h.t0 : f.t;
+      setSnapshot({
+        phase: f.phase,
+        integrity: params.integrity ?? f.integrity,
+        speedKmh: f.state.speed * 3.6,
+        totalPoints: f.score.total,
+        multiplier: f.score.multiplier,
+        chainPoints: f.score.chainPoints,
+        chainActive: f.score.chainActive,
+        transitions: f.live?.transitions ?? 0,
+        peakDeg: f.live ? radToDeg(f.live.peakAngle) : 0,
+        elapsedS: f.t - t0,
+        lapCount: f.lap.count,
+        lapProgress: f.lap.progress,
+        driftCount: pipelineRef.current?.drifts.length ?? 0,
+        valid: f.state.valid,
+        calibrationQuality: f.calibration.quality,
+        trailCount: trail.n,
+      });
+      setEvents((prev) => (prev.length === 0 ? prev : prev.filter((e) => f.t - e.t <= CALLOUT_HOLD_S)));
+      setBanner((prev) => (prev && f.t - prev.t > BANNER_HOLD_S ? null : prev));
+    };
+    publish();
+    if (status === 'held') return; // frozen: one publish is the whole story
+    const id = setInterval(publish, 100);
+    return () => clearInterval(id);
+  }, [params.integrity, status, trail]);
+
+  // Tear down with the screen.
+  useEffect(
+    () => () => {
+      playerRef.current?.stop();
+      sourceRef.current?.stop();
+    },
+    [],
+  );
+
+  return {
+    status,
+    error,
+    sourceLabel,
+    sourceKind,
+    snapshot,
+    events,
+    banner,
+    trail,
+    params,
+    start,
+    stop,
+    dismissError,
+  };
+}
+
+function title(s: string): string {
+  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
+}

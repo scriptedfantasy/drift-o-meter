@@ -85,7 +85,12 @@ export interface TruthEvent {
   endT: number;
   /** Peak |β|, radians. */
   peak: number;
-  /** Sign changes of β inside the interval with |β| above `transitionAngle` on both sides. */
+  /**
+   * Sign changes of β inside the interval with |β| above `transitionAngle` on both sides and
+   * the new side HELD for `minDwellS`. A brief flick the other way that falls straight back —
+   * the Scandinavian feint the scripted driver uses to initiate — is part of the initiation,
+   * so a judge counts it as no transition at all.
+   */
   transitions: number;
 }
 
@@ -93,9 +98,11 @@ export interface TruthOptions {
   mergeGapS: number;
   minDurationS: number;
   transitionAngle: number;
+  /** How long the new side must be held for a sign change to be a real direction change. */
+  minDwellS: number;
 }
 
-export const DEFAULT_TRUTH: TruthOptions = { mergeGapS: 1.0, minDurationS: 0.7, transitionAngle: degToRad(5) };
+export const DEFAULT_TRUTH: TruthOptions = { mergeGapS: 1.0, minDurationS: 0.7, transitionAngle: degToRad(5), minDwellS: 0.4 };
 
 /** Contiguous `drifting` intervals, merged across short gaps, twitches dropped. */
 export function truthEvents(truth: TruthSample[], opts: Partial<TruthOptions> = {}): TruthEvent[] {
@@ -126,14 +133,43 @@ export function truthEvents(truth: TruthSample[], opts: Partial<TruthOptions> = 
     let peak = 0;
     let transitions = 0;
     let lastSign = 0;
+    // when the current side began and when it was last seen above transitionAngle, plus a swing
+    // that has happened but is not yet held long enough to count (see TruthEvent.transitions)
+    let sideSinceT = truth[m.ia].t;
+    let sideLastT = truth[m.ia].t;
+    let pendingFrom = 0;
+    let pendingSinceT = 0;
+    let pendingAtT = 0;
     for (let i = m.ia; i <= m.ib; i++) {
       const b = truth[i].beta;
       const a = Math.abs(b);
+      const t = truth[i].t;
       if (a > peak) peak = a;
       if (a > o.transitionAngle) {
         const s = Math.sign(b);
-        if (lastSign !== 0 && s !== lastSign) transitions++;
+        if (lastSign === 0) sideSinceT = t;
+        else if (s !== lastSign) {
+          if (pendingFrom !== 0 && s === pendingFrom) {
+            // flicked out and straight back again: a feint, so the side never really changed
+            pendingFrom = 0;
+            sideSinceT = pendingSinceT;
+          } else if (sideLastT - sideSinceT >= o.minDwellS) {
+            pendingFrom = lastSign;
+            pendingSinceT = sideSinceT;
+            pendingAtT = t;
+            sideSinceT = t;
+          } else {
+            // the side being left was never held: it was the flick of an initiation
+            pendingFrom = 0;
+            sideSinceT = t;
+          }
+        }
         lastSign = s;
+        sideLastT = t;
+      }
+      if (pendingFrom !== 0 && sideLastT - pendingAtT >= o.minDwellS) {
+        transitions++;
+        pendingFrom = 0;
       }
     }
     out.push({ startT, endT, peak, transitions });

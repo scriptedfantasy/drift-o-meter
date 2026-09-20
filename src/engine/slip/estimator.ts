@@ -8,28 +8,55 @@
  *  v   ground speed                  v̇ = a_x cos β + a_y sin β          (accel ∥ velocity)
  * (both accel identities follow from a = d(v_b)/dt + ω × v_b with v_b = v·(cos β, sin β)).
  *
- * The gyro measures r_m = r + b (b = slowly wandering bias). Integrating r_m gives a raw
- * heading ψ_g; the true heading is ψ = ψ_g + ψ_off with ψ̇_off = −b. GPS course observes
- * χ = ψ_g + ψ_off + β, i.e. only the SUM ψ_off + β. Note θ = ψ_off + β evolves as
- * θ̇ = χ̇ − r_m, which is fully known from the accelerometer, speed and raw gyro — so the
- * course-vs-gyro relation is tracked very tightly; what is NOT observable from GPS is
- * how θ splits into "gyro offset/bias" and "actual slip". The split comes from a weak
- * prior: in steady straight driving (low |a_y|, low |r|, low |β̇| for a while) β ≈ 0.
- * With standstill detected, r_m directly measures b.
+ * ── The phone is not the centre of gravity ─────────────────────────────────────────────
+ * The IMU, and the GPS antenna, sit at the phone: a point d = (d_x, 0) ahead of the CG.
+ * Every measurement therefore describes the PHONE's motion — a_y(phone) = a_y + ṙ·d_x,
+ * v(phone) = v + r × d, and the reported course is the direction the PHONE travels, which
+ * during a fast yaw differs from the CG's by atan(r·d_x / v) (several degrees in a hairpin).
+ * Because the phone is rigidly attached to the body, its own (a, v, r) satisfy exactly the
+ * same kinematic identities as the CG's, so the whole filter simply runs AT THE PHONE and
+ * `compose()` maps the result back to the CG: v_cg = v_phone − r × d, which also un-does
+ * the course offset. Nothing in the propagation has to know d_x; only the output map, the
+ * zero-slip prior (a gripping car has β(CG) ≈ 0, hence β(phone) ≈ atan(r·d_x/v), NOT 0)
+ * and the reported position do. A wrong d_x therefore degrades gracefully: the error it
+ * leaves behind is (d_x,assumed − d_x,true)·r/v.
  *
  * ── Filters ────────────────────────────────────────────────────────────────────────────
- *  1. Heading/slip EKF, state x = [β, ψ_off, b], P 3×3.
- *     Prediction (v > minSpeed): β̇ = χ̇ − r_m + b, ψ̇_off = −b, ḃ = 0 (+ random walk).
- *     Measurements: GPS course (H=[1 1 0], latency-compensated through a history ring
- *     buffer), straight-driving prior β=0 (H=[1 0 0]), standstill gyro bias (H=[0 0 1]).
- *  2. Speed KF, state [v, a_bias]: v̇ = a_long − a_bias; GPS speed measurement (latency-
- *     compensated). Innovation-consistency boost so a speed the accelerometer cannot
- *     explain (GPS returning after a dropout) is caught within one or two fixes.
+ *  1. Heading/slip EKF, state x = [β, ψ_off, b, s], P 4×4, all at the phone.
+ *     The gyro measures r_m = r + b (b = slowly wandering bias). Integrating r_m gives a raw
+ *     heading ψ_g; the true heading is ψ = ψ_g + ψ_off with ψ̇_off = −b. GPS course observes
+ *     χ = ψ_g + ψ_off + β, i.e. only the SUM ψ_off + β. Note θ = ψ_off + β evolves as
+ *     θ̇ = χ̇ − r_m, which is fully known from the accelerometer, speed and raw gyro — so the
+ *     course-vs-gyro relation is tracked very tightly; what is NOT observable from GPS is
+ *     how θ splits into "gyro offset/bias" and "actual slip". The split comes from a weak
+ *     prior: in steady straight driving (low |a_y|, low |r|, low |β̇| for a while) the tyres
+ *     are not sliding. With standstill detected, r_m directly measures b.
+ *     s is a lateral specific-force SCALE error: the accelerometer sits in the car body,
+ *     which rolls into the corner (≈3°/g) and may sit on a banked road, so the measured
+ *     lateral specific force is (1 − G·k_roll)·a_y — several percent low, and the roll
+ *     gradient is a property of the car nobody told us. Left uncorrected that is a few
+ *     percent of EVERY degree of course change, i.e. ~1° of β per 90° corner: the largest
+ *     single error in the whole filter. It is observable because its regressor (Δχ) and the
+ *     gyro bias's (Δt) differ sharply inside a corner.
+ *     Prediction (v > minSpeed): β̇ = χ̇ − r_m + b, ψ̇_off = −b, ḃ = ṡ = 0 (+ random walks).
+ *     Measurements: GPS course (H=[1, 1, 0, −Δ∂χ/∂s], latency-compensated through a history
+ *     ring buffer), zero-slip prior (H=[1 0 0 0]), standstill gyro bias (H=[0 0 1 0]).
+ *  2. Speed KF, state [v, b_x]: v̇ = (a_x − b_x) cos β + a_y(1+s) sin β; GPS speed measurement
+ *     (latency-compensated). b_x is the longitudinal specific-force bias — accelerometer bias
+ *     plus, dominantly, the road GRADE, which tilts gravity into the car's x axis (a 6 %
+ *     descent = 0.59 m/s²). It is fed back into χ̇, where it matters whenever β ≠ 0: on a
+ *     touge descent an uncorrected grade is ~1.5°/s of course-rate error at 40° of slip.
+ *     Innovation-consistency boost so a speed the accelerometer cannot explain (GPS
+ *     returning after a dropout) is caught within one or two fixes.
  *  3. Position: ENU dead reckoning along the estimated course at the fused speed; GPS
  *     position (latency-compensated) yields a Kalman-weighted correction that is applied
  *     smoothly (exponential blend, ~0.5 s) so a 100 Hz trail never teleports.
- *  4. Optional online GPS-latency adaptation: a bank of candidate latencies is scored by
- *     course/speed innovation consistency whenever the course or speed is changing.
+ *  4. Online GPS-latency adaptation: a bank of candidate latencies is scored by course/speed
+ *     innovation consistency whenever the course or speed is changing. The receiver also
+ *     LOW-PASSES course and speed (τ ≈ 0.3 s) before reporting them, which is a lag on top
+ *     of the delivery latency and is modelled explicitly: the history keeps low-passed
+ *     copies of the dead-reckoning integrals and the delayed measurement is compared
+ *     against those, so only the residual timing jitter has to be paid for in extra noise.
  */
 import {
   G,
@@ -86,14 +113,22 @@ export interface SlipOptions {
   /** Longitudinal accel bias random walk (m/s²/√s) and initial 1σ (m/s²). */
   accelBiasWalk: number;
   accelBiasSigma0: number;
+  /**
+   * Lateral specific-force scale error s (a_y,true ≈ (1+s)·a_y,measured): initial 1σ, random
+   * walk (per √s — banking changes corner by corner) and the clamp on |s|. 0.06 covers a
+   * roll gradient anywhere in 2–6 °/g.
+   */
+  ayScaleSigma0: number;
+  ayScaleWalk: number;
+  ayScaleMax: number;
   /** Gyro white noise (rad/s), bias random walk (rad/s/√s) and initial bias 1σ (rad/s). */
   gyroSigma: number;
   gyroBiasWalk: number;
   gyroBiasSigma0: number;
   /**
-   * "Not sliding" prior: β ≈ 0 ± (priorSigmaDeg + priorSigmaDegPerAy · |a_y|) applied at priorHz
-   * once the car has been either
-   *   - calm for priorHoldS: |β̇| < priorBetaDotMax (rad/s) and |β̂| < priorBetaMaxDeg, or
+   * "Not sliding" prior: the CG's slip is ≈ 0 ± (priorSigmaDeg + priorSigmaDegPerAy · |a_y|),
+   * i.e. the PHONE's β ≈ atan(r·d_x / v), applied at priorHz once the car has been either
+   *   - calm for priorHoldS: |β̇| < priorBetaDotMax (rad/s) and |β̂ − β_grip| < priorBetaMaxDeg, or
    *   - straight for straightHoldS: |a_y| < straightAyMax, |r| < straightYawMax, |β̇| small.
    * The calm branch covers straights and grip cornering (weakly: real cars run a degree or two
    * of slip at 0.5 g) and pins the heading-offset / slip split. The straight branch ignores β̂
@@ -153,6 +188,9 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   accelScaleSigma: 0.02,
   accelBiasWalk: 0.05,
   accelBiasSigma0: 0.15,
+  ayScaleSigma0: 0.06,
+  ayScaleWalk: 0.02,
+  ayScaleMax: 0.25,
   gyroSigma: 0.003,
   gyroBiasWalk: 0.0002,
   gyroBiasSigma0: 0.03,
@@ -211,6 +249,13 @@ function finite(...xs: number[]): boolean {
   return true;
 }
 
+/** Heading/slip EKF state indices: x = [β, ψ_off, b, s]. */
+const N = 4;
+const IB = 0;
+const IO = 1;
+const IG = 2;
+const IS = 3;
+
 export class SlipEstimator {
   readonly opts: SlipOptions;
 
@@ -218,8 +263,14 @@ export class SlipEstimator {
   private beta = 0;
   private psiOff = 0;
   private bias = 0;
-  private P = new Float64Array(9);
+  private ayScale = 0;
+  private P = new Float64Array(N * N);
   private psiG = 0; // raw ∫ r_m dt, wrapped
+  // scratch space for the EKF (no per-sample allocation)
+  private readonly Phi = new Float64Array(N * N);
+  private readonly tmp = new Float64Array(N * N);
+  private readonly hRow = new Float64Array(N);
+  private readonly ph = new Float64Array(N);
 
   // ── speed KF ───────────────────────────────────────────────────────
   private vel = 0;
@@ -231,8 +282,10 @@ export class SlipEstimator {
   private vInt = 0;
   private xInt = 0;
   private yInt = 0;
+  private sInt = 0;
   private cLp = 0;
   private vLp = 0;
+  private sLp = 0;
   private hist: History;
 
   // ── position ───────────────────────────────────────────────────────
@@ -271,6 +324,8 @@ export class SlipEstimator {
   private latFixes: Array<{ t: number; chi: number; v: number; c: Float64Array; vi: Float64Array; tk: Float64Array }> = [];
   private latencyUpdates = 0;
   private currentState: SlipState;
+  /** Test-only: receives a snapshot of the internal state every motion sample. */
+  debugSink?: (d: Record<string, number>) => void;
 
   constructor(opts: Partial<SlipOptions> = {}) {
     const given = Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)) as Partial<SlipOptions>;
@@ -296,7 +351,20 @@ export class SlipEstimator {
 
   /** Current gyro-bias estimate (rad/s) and its 1σ. */
   get gyroBias(): { value: number; sigma: number } {
-    return { value: this.bias, sigma: Math.sqrt(Math.max(this.P[8], 0)) };
+    return { value: this.bias, sigma: Math.sqrt(Math.max(this.P[IG * N + IG], 0)) };
+  }
+
+  /**
+   * Estimated lateral specific-force scale error and its 1σ: a_y,true ≈ (1+s)·a_y,measured.
+   * Physically ≈ G·(roll gradient) + G·(mean banking per unit a_y); ~5 % on a stiff car.
+   */
+  get ayScaleError(): { value: number; sigma: number } {
+    return { value: this.ayScale, sigma: Math.sqrt(Math.max(this.P[IS * N + IS], 0)) };
+  }
+
+  /** Estimated longitudinal specific-force bias (m/s²) — accelerometer bias plus road grade. */
+  get axBias(): number {
+    return this.aBias;
   }
 
   get state(): SlipState {
@@ -314,10 +382,12 @@ export class SlipEstimator {
     this.beta = 0;
     this.psiOff = 0;
     this.bias = 0;
+    this.ayScale = 0;
     this.P.fill(0);
-    this.P[0] = degToRad(5) ** 2;
-    this.P[4] = Math.PI ** 2;
-    this.P[8] = o.gyroBiasSigma0 ** 2;
+    this.P[IB * N + IB] = degToRad(5) ** 2;
+    this.P[IO * N + IO] = Math.PI ** 2;
+    this.P[IG * N + IG] = o.gyroBiasSigma0 ** 2;
+    this.P[IS * N + IS] = o.ayScaleSigma0 ** 2;
     this.psiG = 0;
     this.vel = 0;
     this.aBias = 0;
@@ -328,8 +398,10 @@ export class SlipEstimator {
     this.vInt = 0;
     this.xInt = 0;
     this.yInt = 0;
+    this.sInt = 0;
     this.cLp = 0;
     this.vLp = 0;
+    this.sLp = 0;
     this.hist.clear();
     this.posX = 0;
     this.posY = 0;
@@ -407,21 +479,26 @@ export class SlipEstimator {
     }
     const qCal = Number.isFinite(m.calibrationQuality) ? clamp(m.calibrationQuality, 0, 1) : 1;
     const calInflate = 1 + 3 * (1 - qCal);
+    // calibrated specific force: lateral scale (body roll / banking) and longitudinal bias
+    // (accelerometer bias + road grade) both come from filter states.
+    const ayC = ay * (1 + this.ayScale);
+    const axC = ax - this.aBias;
 
     // ── speed KF prediction ─────────────────────────────────────────
     const cb = Math.cos(this.beta);
     const sb = Math.sin(this.beta);
-    const aLong = ax * cb + ay * sb;
-    this.vInt += aLong * dt;
-    this.vel += (aLong - this.aBias) * dt;
+    const aLong = axC * cb + ayC * sb;
+    this.vInt += (ax * cb + ayC * sb) * dt; // raw (un-debiased) integral: see pushGps
+    this.vel += aLong * dt;
     if (this.vel < 0) this.vel = 0;
     {
-      // F = [[1, -dt],[0, 1]]; P = F P Fᵀ + Q
+      // F = [[1, -cosβ·dt],[0, 1]]; P = F P Fᵀ + Q
+      const fb = cb * dt;
       const p0 = this.Pv[0];
       const p1 = this.Pv[1];
       const p3 = this.Pv[3];
-      const n0 = p0 - 2 * dt * p1 + dt * dt * p3;
-      const n1 = p1 - dt * p3;
+      const n0 = p0 - 2 * fb * p1 + fb * fb * p3;
+      const n1 = p1 - fb * p3;
       const qv = (o.speedAccelSigma * calInflate) ** 2 + (0.02 * Math.abs(aLong)) ** 2;
       this.Pv[0] = n0 + qv * (dt + gap);
       this.Pv[1] = n1;
@@ -435,49 +512,42 @@ export class SlipEstimator {
     // ── heading / slip EKF prediction ───────────────────────────────
     let chiDot: number; // course rate actually propagated this step
     let betaDot: number;
+    let dSdt = 0; // ∂χ̇/∂s, the scale state's regressor
     // the β kinematics divide by v: only run them once the speed is actually known
     const speedKnown = this.Pv[0] < o.speedKnownSigma * o.speedKnownSigma;
     const moving = speedKnown && this.vel > o.minSpeed;
+    const P = this.P;
+    const qt = dt + gap;
     if (moving) {
       const vEff = Math.max(this.vel, o.minSpeed);
-      const g = (ay * cb - ax * sb) / vEff; // χ̇
+      const g = (ayC * cb - axC * sb) / vEff; // χ̇
       betaDot = g - r + this.bias;
       chiDot = g;
-      const dgdb = (-ay * sb - ax * cb) / vEff; // ∂χ̇/∂β
+      dSdt = (ay * cb) / vEff;
+      const dgdb = (-ayC * sb - axC * cb) / vEff; // ∂χ̇/∂β
       // x ← f(x)
       this.beta = clamp(this.beta + betaDot * dt, -BETA_LIMIT, BETA_LIMIT);
       this.psiOff = wrapAngle(this.psiOff - this.bias * dt);
-      // P ← Φ P Φᵀ + Q dt,  Φ = I + F dt,  F = [[dgdb, 0, 1], [0, 0, -1], [0, 0, 0]]
-      const f00 = 1 + dgdb * dt;
-      const f02 = dt;
-      const f12 = -dt;
-      const P = this.P;
-      const [p00, p01, p02, , p11, p12, , , p22] = [P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], P[8]];
-      // rows of Φ: [f00 0 f02], [0 1 f12], [0 0 1]
-      const a00 = f00 * p00 + f02 * p02;
-      const a01 = f00 * p01 + f02 * p12;
-      const a02 = f00 * p02 + f02 * p22;
-      const a10 = p01 + f12 * p02;
-      const a11 = p11 + f12 * p12;
-      const a12 = p12 + f12 * p22;
-      const n00 = a00 * f00 + a02 * f02;
-      const n01 = a01 + a02 * f12;
-      const n02 = a02;
-      const n11 = a11 + a12 * f12;
-      const n12 = a12;
-      const n22 = p22;
+      // Φ = I + F dt, F = [[∂χ̇/∂β, 0, 1, ∂χ̇/∂s], [0, 0, −1, 0], [0 0 0 0], [0 0 0 0]]
+      const Phi = this.Phi;
+      Phi.fill(0);
+      Phi[IB * N + IB] = 1 + dgdb * dt;
+      Phi[IB * N + IG] = dt;
+      Phi[IB * N + IS] = dSdt * dt;
+      Phi[IO * N + IO] = 1;
+      Phi[IO * N + IG] = -dt;
+      Phi[IG * N + IG] = 1;
+      Phi[IS * N + IS] = 1;
+      this.propagate(Phi);
+      // Q: the accelerometer noise that survives into χ̇, gyro white noise (shared by β and
+      // ψ_off with a negative cross-term, since both integrate the same r_m), and the two
+      // parameter random walks.
       const sigG2 = ((o.accelSigma * calInflate) / vEff) ** 2 + (o.accelScaleSigma * calInflate * Math.abs(g)) ** 2;
       const sigR2 = (o.gyroSigma * calInflate) ** 2;
-      const qt = dt + gap;
-      P[0] = n00 + (sigG2 + sigR2) * qt;
-      P[1] = n01 - sigR2 * qt;
-      P[2] = n02;
-      P[3] = P[1];
-      P[4] = n11 + sigR2 * qt;
-      P[5] = n12;
-      P[6] = P[2];
-      P[7] = P[5];
-      P[8] = n22 + o.gyroBiasWalk ** 2 * qt;
+      P[IB * N + IB] += (sigG2 + sigR2) * qt;
+      P[IB * N + IO] -= sigR2 * qt;
+      P[IO * N + IB] = P[IB * N + IO];
+      P[IO * N + IO] += sigR2 * qt;
     } else {
       // too slow for a course: hold β decaying toward 0, keep integrating the bias into ψ_off
       const k = dt > 0 ? Math.min(1, dt / o.lowSpeedDecayS) : 0;
@@ -486,29 +556,32 @@ export class SlipEstimator {
       betaDot = dt > 0 ? dBeta / dt : 0;
       this.psiOff = wrapAngle(this.psiOff - this.bias * dt);
       chiDot = r - this.bias + betaDot;
-      const P = this.P;
-      const qt = dt + gap;
       const restVar = degToRad(3) ** 2;
-      P[0] += (restVar - P[0]) * k;
-      P[1] *= 1 - k;
-      P[3] = P[1];
-      P[2] *= 1 - k;
-      P[6] = P[2];
+      P[IB * N + IB] += (restVar - P[IB * N + IB]) * k;
+      for (let j = 0; j < N; j++) {
+        if (j === IB) continue;
+        P[IB * N + j] *= 1 - k;
+        P[j * N + IB] = P[IB * N + j];
+      }
       // ψ_off uncertainty grows with bias uncertainty; bias random-walks
-      P[4] += (P[8] + o.gyroSigma ** 2) * qt;
-      P[5] -= P[8] * qt;
-      P[7] = P[5];
-      P[8] += o.gyroBiasWalk ** 2 * qt;
+      P[IO * N + IO] += (P[IG * N + IG] + o.gyroSigma ** 2) * qt;
+      P[IO * N + IG] -= P[IG * N + IG] * qt;
+      P[IG * N + IO] = P[IO * N + IG];
     }
+    P[IG * N + IG] += o.gyroBiasWalk ** 2 * qt;
+    P[IS * N + IS] += o.ayScaleWalk ** 2 * qt;
     this.cInt += chiDot * dt;
+    this.sInt += dSdt * dt;
     this.lastBetaDot = betaDot;
     if (o.gpsFilterS > 0 && dt > 0) {
       const kf = Math.min(1, dt / o.gpsFilterS);
       this.cLp += (this.cInt - this.cLp) * kf;
       this.vLp += (this.vInt - this.vLp) * kf;
+      this.sLp += (this.sInt - this.sLp) * kf;
     } else {
       this.cLp = this.cInt;
       this.vLp = this.vInt;
+      this.sLp = this.sInt;
     }
 
     // ── position dead reckoning + smooth application of pending corrections ──
@@ -540,13 +613,17 @@ export class SlipEstimator {
       this.Ppos += (o.posDriftPerS + o.posDriftPerV2 * this.vel * this.vel) * (dt + gap);
     }
 
-    this.hist.push({ t: m.t, c: this.cInt, v: this.vInt, x: this.xInt, y: this.yInt, cl: this.cLp, vl: this.vLp });
+    this.hist.push({ t: m.t, c: this.cInt, v: this.vInt, x: this.xInt, y: this.yInt, cl: this.cLp, vl: this.vLp, s: this.sInt, sl: this.sLp });
 
-    // ── "not sliding" prior: β ≈ 0 while calm ──────────────────────
+    // ── "not sliding" prior: the CG is not sliding while calm ──────
+    // The phone runs ahead of the CG, so a gripping car still shows the phone a slip angle
+    // of atan(r·d_x/v) — up to a couple of degrees in a tight corner. Pinning the phone's β
+    // to zero instead would inject exactly that error into every corner.
     if (dt > 0) this.betaDotFiltered += (betaDot - this.betaDotFiltered) * Math.min(1, dt / 0.2);
+    const betaGrip = moving ? Math.atan2((r - this.bias) * o.leverArmX, Math.max(this.vel, o.minSpeed)) : 0;
     const settled = moving && this.courseLocked && Math.abs(this.betaDotFiltered) < o.priorBetaDotMax;
-    const straight = settled && Math.abs(ay) < o.straightAyMax && Math.abs(r - this.bias) < o.straightYawMax;
-    const calm = settled && Math.abs(this.beta) < degToRad(o.priorBetaMaxDeg);
+    const straight = settled && Math.abs(ayC) < o.straightAyMax && Math.abs(r - this.bias) < o.straightYawMax;
+    const calm = settled && Math.abs(this.beta - betaGrip) < degToRad(o.priorBetaMaxDeg);
     if (calm) {
       if (!Number.isFinite(this.calmSince)) this.calmSince = m.t;
     } else this.calmSince = NaN;
@@ -556,16 +633,19 @@ export class SlipEstimator {
     const calmReady = calm && m.t - this.calmSince >= o.priorHoldS;
     const straightReady = straight && m.t - this.straightSince >= o.straightHoldS;
     if ((calmReady || straightReady) && this.stepCounter % this.priorStride === 0) {
-      const sig = degToRad(o.priorSigmaDeg + o.priorSigmaDegPerAy * Math.abs(ay));
+      const sig = degToRad(o.priorSigmaDeg + o.priorSigmaDegPerAy * Math.abs(ayC));
       let R = sig * sig;
-      const nu = -this.beta;
-      const S = this.P[0] + R;
+      const nu = betaGrip - this.beta;
+      const S = P[IB * N + IB] + R;
       if (nu * nu > o.gateSigma ** 2 * S) {
-        // a β far from 0 that the filter is confident about: distrust the prior unless it persists
+        // a β far from the grip value that the filter is confident about: distrust the prior
+        // unless it persists
         this.priorGateRun++;
         if (this.priorGateRun < 3) R *= (nu * nu) / (o.gateSigma ** 2 * S);
       } else this.priorGateRun = 0;
-      this.ekfUpdate(nu, 1, 0, 0, R);
+      this.hRow.fill(0);
+      this.hRow[IB] = 1;
+      this.ekfUpdate(nu, this.hRow, R);
     }
 
     // ── standstill: the gyro reads its bias ───────────────────────────
@@ -573,12 +653,22 @@ export class SlipEstimator {
     // speed while parked — the displacement between the last fixes); the IMU must be quiet.
     const gpsSaysStill = Number.isFinite(this.lastGpsSpeed) && this.lastGpsSpeed < 0.8 && m.t - this.lastGpsT < 3;
     if (gpsSaysStill && this.vel < 0.5 && Math.abs(r) < 0.05 && Math.abs(ax) < 0.6 && Math.abs(ay) < 0.6) {
-      this.ekfUpdate(r - this.bias, 0, 0, 1, o.standstillGyroSigma ** 2);
+      this.hRow.fill(0);
+      this.hRow[IG] = 1;
+      this.ekfUpdate(r - this.bias, this.hRow, o.standstillGyroSigma ** 2);
     }
 
-    this.lastAx = ax;
-    this.lastAy = ay;
+    this.lastAx = axC;
+    this.lastAy = ayC;
     this.lastRawYaw = r;
+    if (this.debugSink) {
+      this.debugSink({
+        t: m.t, beta: this.beta, psiOff: this.psiOff, bias: this.bias, s: this.ayScale, aBias: this.aBias,
+        P00: P[0], P11: P[N + 1], P22: P[2 * N + 2], P33: P[3 * N + 3], Pv0: this.Pv[0],
+        prior: calmReady || straightReady ? 1 : 0, ay: ayC, ax: axC, r, vel: this.vel, betaDotF: this.betaDotFiltered,
+        chiDot: chiDot, moving: moving ? 1 : 0,
+      });
+    }
     this.compose(m.t);
     return this.currentState;
   }
@@ -606,6 +696,8 @@ export class SlipEstimator {
     const dV = h && hNow ? hNow.v - h.vl : 0;
     const dX = h && hNow ? hNow.x - h.x : 0;
     const dY = h && hNow ? hNow.y - h.y : 0;
+    // how much of that course change came from the (uncertain) lateral-accel scale
+    const dS = h && hNow ? hNow.s - h.sl : 0;
     const clampedS = h ? h.clamped : 0;
     // local course / speed change across the latency jitter window → extra measurement noise
     const hA = this.hist.at(tFix - jit);
@@ -631,8 +723,12 @@ export class SlipEstimator {
           // β was integrated as a_y / v with a badly wrong v — that estimate is void
           this.beta = 0;
           const P = this.P;
-          P[0] = degToRad(5) ** 2;
-          P[1] = P[2] = P[3] = P[6] = 0;
+          P[IB * N + IB] = degToRad(5) ** 2;
+          for (let j = 0; j < N; j++) {
+            if (j === IB) continue;
+            P[IB * N + j] = 0;
+            P[j * N + IB] = 0;
+          }
           this.calmSince = NaN;
         }
       }
@@ -668,31 +764,39 @@ export class SlipEstimator {
       const nu = wrapAngle(chiMeas - (chiNow - dC));
       const sigDeg = o.courseSigmaDeg + o.courseSigmaDegOverV / Math.max(vForCourse, 1);
       let R = degToRad(sigDeg) ** 2 + chiJit * chiJit + (0.3 * clampedS) ** 2;
+      const P = this.P;
       if (!this.courseLocked) {
         // first lock: ψ_off absorbs the whole innovation (β keeps its prior)
         this.psiOff = wrapAngle(this.psiOff + nu);
-        const P = this.P;
-        P[4] = R + P[0];
-        P[1] = -P[0];
-        P[3] = P[1];
-        P[5] = -P[2];
-        P[7] = P[5];
+        P[IO * N + IO] = R + P[IB * N + IB];
+        P[IB * N + IO] = -P[IB * N + IB];
+        P[IO * N + IB] = P[IB * N + IO];
+        for (const j of [IG, IS]) {
+          P[IO * N + j] = -P[IB * N + j];
+          P[j * N + IO] = P[IO * N + j];
+        }
         this.courseLocked = true;
         this.courseGateRun = 0;
       } else {
-        const S = this.P[0] + 2 * this.P[1] + this.P[4] + R;
+        // the measurement is the course at the fix time = χ_now − (DR change since then), and
+        // that DR change carries the scale state, hence the −dS entry in H.
+        this.hRow[IB] = 1;
+        this.hRow[IO] = 1;
+        this.hRow[IG] = 0;
+        this.hRow[IS] = -dS;
+        const S = this.innovationVar(this.hRow) + R;
         if (nu * nu > o.gateSigma ** 2 * S) {
           this.courseGateRun++;
           if (this.courseGateRun < 3) {
             R *= (nu * nu) / (o.gateSigma ** 2 * S); // soft rejection: down-weight the outlier
           } else {
             // three wild fixes in a row: it is us who are wrong — let the sum re-lock
-            this.P[4] += nu * nu;
+            P[IO * N + IO] += nu * nu;
           }
         } else {
           this.courseGateRun = 0;
         }
-        this.ekfUpdate(nu, 1, 1, 0, R);
+        this.ekfUpdate(nu, this.hRow, R);
       }
       this.lastCourseT = tNow;
     }
@@ -737,35 +841,73 @@ export class SlipEstimator {
   //  Internals
   // ═══════════════════════════════════════════════════════════════════
 
-  /** Scalar EKF update on x = [β, ψ_off, b] with H = [h0 h1 h2], innovation nu, noise R. */
-  private ekfUpdate(nu: number, h0: number, h1: number, h2: number, R: number): void {
+  /** P ← Φ P Φᵀ, symmetrised. Φ is `this.Phi`; `this.tmp` is scratch. */
+  private propagate(Phi: Float64Array): void {
     const P = this.P;
-    // PHᵀ
-    const ph0 = P[0] * h0 + P[1] * h1 + P[2] * h2;
-    const ph1 = P[3] * h0 + P[4] * h1 + P[5] * h2;
-    const ph2 = P[6] * h0 + P[7] * h1 + P[8] * h2;
-    const S = h0 * ph0 + h1 * ph1 + h2 * ph2 + R;
+    const T = this.tmp;
+    // T = Φ P
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        let s = 0;
+        for (let k = 0; k < N; k++) s += Phi[i * N + k] * P[k * N + j];
+        T[i * N + j] = s;
+      }
+    }
+    // P = T Φᵀ
+    for (let i = 0; i < N; i++) {
+      for (let j = i; j < N; j++) {
+        let s = 0;
+        for (let k = 0; k < N; k++) s += T[i * N + k] * Phi[j * N + k];
+        P[i * N + j] = s;
+        P[j * N + i] = s;
+      }
+    }
+  }
+
+  /** H P Hᵀ for a row vector H (without the measurement noise). */
+  private innovationVar(h: Float64Array): number {
+    const P = this.P;
+    let s = 0;
+    for (let i = 0; i < N; i++) {
+      if (h[i] === 0) continue;
+      for (let j = 0; j < N; j++) {
+        if (h[j] === 0) continue;
+        s += h[i] * P[i * N + j] * h[j];
+      }
+    }
+    return s;
+  }
+
+  /** Scalar EKF update on x = [β, ψ_off, b, s] with row vector H, innovation nu, noise R. */
+  private ekfUpdate(nu: number, h: Float64Array, R: number): void {
+    const P = this.P;
+    const ph = this.ph;
+    let S = R;
+    for (let i = 0; i < N; i++) {
+      let s = 0;
+      for (let j = 0; j < N; j++) s += P[i * N + j] * h[j];
+      ph[i] = s;
+      S += h[i] * s;
+    }
     if (!(S > 0) || !Number.isFinite(S)) return;
-    const k0 = ph0 / S;
-    const k1 = ph1 / S;
-    const k2 = ph2 / S;
-    this.beta = clamp(this.beta + k0 * nu, -BETA_LIMIT, BETA_LIMIT);
-    this.psiOff = wrapAngle(this.psiOff + k1 * nu);
-    this.bias = clamp(this.bias + k2 * nu, -0.2, 0.2);
+    const o = this.opts;
+    this.beta = clamp(this.beta + (ph[IB] / S) * nu, -BETA_LIMIT, BETA_LIMIT);
+    this.psiOff = wrapAngle(this.psiOff + (ph[IO] / S) * nu);
+    this.bias = clamp(this.bias + (ph[IG] / S) * nu, -0.2, 0.2);
+    this.ayScale = clamp(this.ayScale + (ph[IS] / S) * nu, -o.ayScaleMax, o.ayScaleMax);
     // P ← P − K (H P)  (Joseph form not needed for these well-conditioned scalar updates)
-    P[0] -= k0 * ph0;
-    P[1] -= k0 * ph1;
-    P[2] -= k0 * ph2;
-    P[4] -= k1 * ph1;
-    P[5] -= k1 * ph2;
-    P[8] -= k2 * ph2;
-    P[3] = P[1];
-    P[6] = P[2];
-    P[7] = P[5];
+    for (let i = 0; i < N; i++) {
+      for (let j = i; j < N; j++) {
+        const v = P[i * N + j] - (ph[i] * ph[j]) / S;
+        P[i * N + j] = v;
+        P[j * N + i] = v;
+      }
+    }
     // guard against negative variances from round-off
-    if (P[0] < 1e-8) P[0] = 1e-8;
-    if (P[4] < 1e-8) P[4] = 1e-8;
-    if (P[8] < 1e-12) P[8] = 1e-12;
+    if (P[IB * N + IB] < 1e-8) P[IB * N + IB] = 1e-8;
+    if (P[IO * N + IO] < 1e-8) P[IO * N + IO] = 1e-8;
+    if (P[IG * N + IG] < 1e-12) P[IG * N + IG] = 1e-12;
+    if (P[IS * N + IS] < 1e-8) P[IS * N + IS] = 1e-8;
   }
 
   /**
@@ -842,7 +984,7 @@ export class SlipEstimator {
     const betaCg = this.vel > o.minSpeed ? Math.atan2(vyCg, vxCg) : this.beta;
     const speedCg = Math.hypot(vxCg, vyCg);
     const course = wrapAngle(heading + betaCg);
-    let sigma = Math.sqrt(Math.max(this.P[0], 0));
+    let sigma = Math.sqrt(Math.max(this.P[IB * N + IB], 0));
     if (!this.courseLocked) sigma = Math.max(sigma, degToRad(30));
     const courseFresh = t - this.lastCourseT < o.courseTimeoutS;
     const speedKnown = this.Pv[0] < o.speedKnownSigma * o.speedKnownSigma;
@@ -882,6 +1024,7 @@ export class SlipEstimator {
     if (!Number.isFinite(this.beta)) this.beta = 0;
     if (!Number.isFinite(this.psiOff)) this.psiOff = 0;
     if (!Number.isFinite(this.bias)) this.bias = 0;
+    if (!Number.isFinite(this.ayScale)) this.ayScale = 0;
     if (!Number.isFinite(this.psiG)) this.psiG = 0;
     if (!Number.isFinite(this.vel)) this.vel = 0;
     if (!Number.isFinite(this.aBias)) this.aBias = 0;
@@ -894,12 +1037,13 @@ export class SlipEstimator {
       this.pendY = 0;
     }
     let bad = false;
-    for (let i = 0; i < 9; i++) if (!Number.isFinite(this.P[i])) bad = true;
+    for (let i = 0; i < N * N; i++) if (!Number.isFinite(this.P[i])) bad = true;
     if (bad) {
       this.P.fill(0);
-      this.P[0] = degToRad(5) ** 2;
-      this.P[4] = degToRad(10) ** 2;
-      this.P[8] = o.gyroBiasSigma0 ** 2;
+      this.P[IB * N + IB] = degToRad(5) ** 2;
+      this.P[IO * N + IO] = degToRad(10) ** 2;
+      this.P[IG * N + IG] = o.gyroBiasSigma0 ** 2;
+      this.P[IS * N + IS] = o.ayScaleSigma0 ** 2;
     }
     for (let i = 0; i < 4; i++) if (!Number.isFinite(this.Pv[i])) bad = true;
     if (bad) {
@@ -908,11 +1052,15 @@ export class SlipEstimator {
       this.Pv[3] = o.accelBiasSigma0 ** 2;
     }
     if (!Number.isFinite(this.Ppos)) this.Ppos = 4;
-    if (!Number.isFinite(this.cInt) || !Number.isFinite(this.vInt) || !Number.isFinite(this.xInt) || !Number.isFinite(this.yInt)) {
+    if (!finite(this.cInt, this.vInt, this.xInt, this.yInt, this.sInt, this.cLp, this.vLp, this.sLp)) {
       this.cInt = 0;
       this.vInt = 0;
       this.xInt = 0;
       this.yInt = 0;
+      this.sInt = 0;
+      this.cLp = 0;
+      this.vLp = 0;
+      this.sLp = 0;
       this.hist.clear();
     }
   }

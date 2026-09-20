@@ -32,10 +32,29 @@ export interface DetectOptions {
   transitionMaxSwingS: number;
   /** |yawRate| that must be reached somewhere in the swing. */
   transitionYawRate: number;
+  /**
+   * A swing only counts once the new side has been HELD this long. A shorter excursion that
+   * falls back to the side it came from is a feint / flick, not a direction change, and is
+   * never counted (see `feintAngle`).
+   */
+  transitionMinDwellS: number;
   /** How long the phase reads 'transition' after one is counted. */
   transitionPhaseHoldS: number;
   /** Two drifts whose gap (end of one to start of the next) is shorter than this become one linked event. */
   mergeGapS: number;
+  /**
+   * Initiation / Scandinavian flick ("feint"): |β| above this counts as having left straight
+   * running. Used only to recognise the brief OPPOSITE excursion that a driver makes to load
+   * the car before a fresh initiation, and to backdate the drift to where that flick began.
+   */
+  feintAngle: number;
+  /** The opposite excursion may last at most this long and peak at most this high to be a feint. */
+  feintMaxDurationS: number;
+  feintMaxAngle: number;
+  /** The real slide must start within this long after the flick falls back under `feintAngle`. */
+  feintReverseGapS: number;
+  /** Maximum backdating when a feint is recognised (replaces `onsetMaxLookbackS` for that case). */
+  feintLookbackS: number;
   /** Events shorter than this are twitches and dropped (spins are always kept). */
   minDurationS: number;
   /** |β| above which the car is spinning. */
@@ -71,8 +90,14 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   transitionAngle: degToRad(5),
   transitionMaxSwingS: 1.5,
   transitionYawRate: 0.15,
+  transitionMinDwellS: 0.4,
   transitionPhaseHoldS: 0.4,
   mergeGapS: 1.0,
+  feintAngle: degToRad(2.5),
+  feintMaxDurationS: 0.6,
+  feintMaxAngle: degToRad(9),
+  feintReverseGapS: 0.35,
+  feintLookbackS: 1.0,
   minDurationS: 0.7,
   spinAngle: degToRad(75),
   spinMinAngle: degToRad(30),

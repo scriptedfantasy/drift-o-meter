@@ -20,9 +20,17 @@ export interface HistoryPoint {
   /** Low-passed copies of c and v (the GPS receiver filters course/speed before reporting them). */
   cl: number;
   vl: number;
+  /**
+   * Sensitivity of the propagated course to the lateral-accel scale state,
+   * ∫ (∂χ̇/∂s) dt = ∫ a_y cos β / v dt (rad), and its low-passed copy: a delayed course
+   * measurement sees the scale error accumulated over the latency window, not just the
+   * current state, so the EKF needs this in the measurement Jacobian.
+   */
+  s: number;
+  sl: number;
 }
 
-const STRIDE = 7;
+const STRIDE = 9;
 
 export class History {
   private readonly buf: Float64Array;
@@ -53,6 +61,8 @@ export class History {
     this.buf[o + 4] = p.y;
     this.buf[o + 5] = p.cl;
     this.buf[o + 6] = p.vl;
+    this.buf[o + 7] = p.s;
+    this.buf[o + 8] = p.sl;
     this.head = (this.head + 1) % this.cap;
     if (this.count < this.cap) this.count++;
   }
@@ -102,12 +112,24 @@ export class History {
       y: a.y + (b.y - a.y) * f,
       cl: a.cl + (b.cl - a.cl) * f,
       vl: a.vl + (b.vl - a.vl) * f,
+      s: a.s + (b.s - a.s) * f,
+      sl: a.sl + (b.sl - a.sl) * f,
       clamped: 0,
     };
   }
 
   private read(i: number): HistoryPoint {
     const o = this.slot(i);
-    return { t: this.buf[o], c: this.buf[o + 1], v: this.buf[o + 2], x: this.buf[o + 3], y: this.buf[o + 4], cl: this.buf[o + 5], vl: this.buf[o + 6] };
+    return {
+      t: this.buf[o],
+      c: this.buf[o + 1],
+      v: this.buf[o + 2],
+      x: this.buf[o + 3],
+      y: this.buf[o + 4],
+      cl: this.buf[o + 5],
+      vl: this.buf[o + 6],
+      s: this.buf[o + 7],
+      sl: this.buf[o + 8],
+    };
   }
 }

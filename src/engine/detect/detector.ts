@@ -16,6 +16,11 @@ import { type DetectOptions, resolveOptions } from './options';
  * last rose through `exitAngle` before the 8° confirmation (backdated, ≤ onsetMaxLookbackS) and
  * ends where |β| dropped below `exitAngle` for good, not where the 600 ms hold expired.
  *
+ * Initiations that begin with a Scandinavian-flick FEINT — a brief, small excursion the wrong
+ * way that reverses straight into the slide — start at the flick: that is where the car left
+ * straight running. The flick is part of the initiation, never a transition, which is enforced
+ * generally by only counting a swing once the new side has been held `transitionMinDwellS`.
+ *
  * A finished drift is kept "pending" for `mergeGapS`; a new drift confirmed inside that window
  * re-opens it (one linked event). `completed` is therefore emitted up to mergeGapS after the
  * exit, except for spins / stops / finish(), which close at once.
@@ -63,6 +68,16 @@ interface Rec {
   dt: number;
 }
 
+/** One departure from straight running: |β| above `feintAngle` on one side. */
+interface Excursion {
+  startT: number;
+  startIdx: number;
+  sign: 1 | -1;
+  peak: number;
+  /** Last time |β| was still above the level. */
+  endT: number;
+}
+
 interface Snapshot {
   peak: number;
   peakT: number;
@@ -82,10 +97,13 @@ class Drift {
   entrySpeed: number;
   initialDirection: 1 | -1;
   side: 1 | -1;
-  /** Last time |β| exceeded transitionAngle on `side`. */
+  /** When the current side began, and the last time |β| exceeded transitionAngle on it. */
+  sideSinceT: number;
   sideLastT: number;
   swingPeakYaw = 0;
   transitions = 0;
+  /** A swing that has happened but is not yet held long enough to be called a transition. */
+  pendingSwing: { from: 1 | -1; fromSinceT: number; at: number } | null = null;
   transitionPhaseUntil = -Infinity;
   peak = 0;
   peakT: number;
@@ -118,6 +136,7 @@ class Drift {
     this.entrySpeed = r.speed;
     this.initialDirection = r.sign;
     this.side = r.sign;
+    this.sideSinceT = r.t;
     this.sideLastT = r.t;
     this.peakT = r.t;
   }
@@ -222,6 +241,11 @@ export class DriftDetector {
   private prev: Rec | null = null;
   private onsetT: number | null = null;
   private onsetIdx = 0;
+  /** Current excursion out of the straight band (|β| ≥ feintAngle) and the one before it. */
+  private exc: Excursion | null = null;
+  private prevExc: Excursion | null = null;
+  /** End of the newest finalised event: no later drift may be backdated before it. */
+  private lastEventEndT = -Infinity;
   /** No start may be backdated before this (first valid sample after a blind gap > invalidHoldS). */
   private floorT = -Infinity;
   private floorIdx = 0;
@@ -255,6 +279,9 @@ export class DriftDetector {
     this.hist = [];
     this.prev = null;
     this.onsetT = null;
+    this.exc = null;
+    this.prevExc = null;
+    this.lastEventEndT = -Infinity;
     this.floorT = -Infinity;
     this.floorIdx = 0;
     this.floorPending = false;
@@ -322,6 +349,8 @@ export class DriftDetector {
       if (streak > o.invalidHoldS) {
         // blind for too long: whatever happens next is a new story
         this.onsetT = null;
+        this.exc = null;
+        this.prevExc = null;
         this.prev = null;
         this.floorPending = true;
         if (this.mode === 'entry') {
@@ -378,7 +407,7 @@ export class DriftDetector {
 
     // history for backdating the start
     this.hist.push(r);
-    const keep = o.onsetMaxLookbackS + Math.max(3 * o.entryHoldS, 1) + 0.2;
+    const keep = Math.max(o.onsetMaxLookbackS, o.feintLookbackS) + Math.max(3 * o.entryHoldS, 1) + 0.2;
     while (this.hist.length > 1 && this.hist[0].t < t - keep) this.hist.shift();
 
     // onset tracking: last upward crossing of exitAngle (interpolated across a gap)
@@ -393,6 +422,18 @@ export class DriftDetector {
     }
     const prev = this.prev;
     this.prev = r;
+    // excursions out of the straight band: the one before the current one is the feint candidate
+    if (this.exc && (b < o.feintAngle - o.onsetHysteresis || (sign !== this.exc.sign && b >= o.feintAngle))) {
+      this.prevExc = this.exc;
+      this.exc = null;
+    }
+    if (this.exc) {
+      if (b > this.exc.peak) this.exc.peak = b;
+      this.exc.endT = t;
+    } else if (b >= o.feintAngle) {
+      const c = crossing(prev, r, o.feintAngle);
+      this.exc = { startT: Math.max(c.t, this.floorT), startIdx: c.idx, sign, peak: b, endT: t };
+    }
 
     const sigmaMargin = o.entrySigmaK > 0 && Number.isFinite(s.betaSigma) ? o.entrySigmaK * Math.max(0, s.betaSigma) : 0;
     const entryCond =
@@ -523,8 +564,17 @@ export class DriftDetector {
       startT = this.onsetT;
       startIdx = this.onsetIdx;
     }
-    if (startT < c.startT - o.onsetMaxLookbackS) {
-      startT = c.startT - o.onsetMaxLookbackS;
+    // a fresh initiation may begin with a flick the OTHER way (Scandinavian feint): the drift
+    // started when the car first left straight running, not at the crossing on the final side
+    let lookback = o.onsetMaxLookbackS;
+    const feint = this.feintBefore(c.sign, startT);
+    if (feint) {
+      startT = feint.startT;
+      startIdx = feint.startIdx;
+      lookback = o.feintLookbackS;
+    }
+    if (startT < c.startT - lookback) {
+      startT = c.startT - lookback;
       startIdx = -1;
     }
     if (this.hist.length && startT < this.hist[0].t) {
@@ -535,10 +585,6 @@ export class DriftDetector {
       startT = this.floorT;
       startIdx = this.floorIdx;
     }
-    let first = 0;
-    while (first < this.hist.length && this.hist[first].t < startT) first++;
-    const firstRec = this.hist[first] ?? r;
-    if (startIdx < 0) startIdx = firstRec.idx;
 
     let out = completed;
     if (this.pending) {
@@ -559,13 +605,27 @@ export class DriftDetector {
       out = out ?? this.finalize(this.pending);
       this.pending = null;
     }
+    // never reach back into an event that has already been closed
+    if (startT < this.lastEventEndT) {
+      startT = this.lastEventEndT;
+      startIdx = -1;
+    }
+    let first = 0;
+    while (first < this.hist.length && this.hist[first].t < startT) first++;
+    const firstRec = this.hist[first] ?? r;
+    if (startIdx < 0) startIdx = firstRec.idx;
+
     const d = new Drift(this.events.length + 1, firstRec);
     d.startT = startT;
     d.startIdx = startIdx;
     for (let i = first; i < this.hist.length; i++) d.add(this.hist[i]);
+    // the samples before the confirmation (feint included) are part of the initiation, never a
+    // direction change: the side starts at the side the entry was confirmed on
     d.side = c.sign;
     d.initialDirection = c.sign;
+    d.sideSinceT = startT;
     d.sideLastT = r.t;
+    d.pendingSwing = null;
     d.swingPeakYaw = Math.abs(r.yaw);
     this.drift = d;
     this.cand = null;
@@ -575,15 +635,50 @@ export class DriftDetector {
     return out;
   }
 
+  /**
+   * The flick that started an initiation, if there was one: a brief excursion the other way,
+   * small and short, that reversed promptly into the slide being confirmed on `sign`.
+   * Returns the point at which the car left straight running, i.e. where the drift really began.
+   */
+  private feintBefore(sign: 1 | -1, startT: number): Excursion | null {
+    const o = this.opts;
+    const f = this.prevExc;
+    if (!f || f.sign === sign || f.startT >= startT) return null;
+    if (f.peak > o.feintMaxAngle || f.endT - f.startT > o.feintMaxDurationS) return null;
+    // the real slide has to follow the flick promptly, or they are two separate things
+    const realStart = this.exc && this.exc.sign === sign ? this.exc.startT : startT;
+    if (realStart - f.endT > o.feintReverseGapS) return null;
+    return f;
+  }
+
+  /**
+   * Follow which side the car is sliding on and count direction changes.
+   *
+   * Both sides of a swing must be held for `transitionMinDwellS` for it to be a transition: the
+   * side being left has to have been held, and the new side is only PROVISIONAL until it has
+   * been. An excursion that falls back to the side it came from inside that window is a feint
+   * (or a twitch through zero), so it is cancelled instead of counted — an initiation that
+   * flicks the wrong way first stays one drift with the transition count of the real swings.
+   */
   private trackSide(d: Drift, r: Rec): void {
     const o = this.opts;
     if (r.b > o.transitionAngle) {
       if (r.sign !== d.side) {
         const swing = r.t - d.sideLastT;
         const yaw = Math.max(d.swingPeakYaw, Math.abs(r.yaw));
-        if (swing < o.transitionMaxSwingS && yaw >= o.transitionYawRate) {
-          d.transitions++;
+        const p = d.pendingSwing;
+        if (p && r.sign === p.from) {
+          // back to where it came from before the dwell elapsed: a feint, not a transition
+          d.pendingSwing = null;
+          d.sideSinceT = p.fromSinceT;
+        } else if (swing < o.transitionMaxSwingS && yaw >= o.transitionYawRate && d.sideLastT - d.sideSinceT >= o.transitionMinDwellS) {
+          d.pendingSwing = { from: d.side, fromSinceT: d.sideSinceT, at: r.t };
           d.transitionPhaseUntil = r.t + o.transitionPhaseHoldS;
+          d.sideSinceT = r.t;
+        } else {
+          // a slow wander or a swing with no yaw behind it: the side moves, nothing is counted
+          d.pendingSwing = null;
+          d.sideSinceT = r.t;
         }
         d.side = r.sign;
       }
@@ -591,6 +686,12 @@ export class DriftDetector {
       d.swingPeakYaw = Math.abs(r.yaw);
     } else if (Math.abs(r.yaw) > d.swingPeakYaw) {
       d.swingPeakYaw = Math.abs(r.yaw);
+    }
+    // commit a provisional swing once the new side has been held long enough to be real
+    const p = d.pendingSwing;
+    if (p && d.sideLastT - p.at >= o.transitionMinDwellS) {
+      d.transitions++;
+      d.pendingSwing = null;
     }
   }
 
@@ -620,8 +721,12 @@ export class DriftDetector {
     let potential: number;
     if (this.mode === 'entry' && this.cand) {
       potential = Math.max(this.onsetT ?? this.cand.startT, this.cand.startT - o.onsetMaxLookbackS);
+      const f = this.feintBefore(this.cand.sign, potential);
+      if (f) potential = Math.max(f.startT, this.cand.startT - o.feintLookbackS);
     } else if (this.onsetT !== null) {
       potential = Math.max(this.onsetT, now - o.onsetMaxLookbackS);
+      const f = this.exc ? this.feintBefore(this.exc.sign, potential) : null;
+      if (f) potential = Math.max(f.startT, now - o.feintLookbackS);
     } else if (this.invalidSince !== null && this.prev) {
       // blind right now: an onset may still be interpolated back to the last valid sample
       potential = Math.max(this.prev.t, now - o.onsetMaxLookbackS);
@@ -630,7 +735,7 @@ export class DriftDetector {
     }
     potential = Math.max(potential, this.floorT);
     const canStillMerge = potential - p.endT < o.mergeGapS;
-    if (canStillMerge && age <= o.mergeGapS + o.onsetMaxLookbackS + 3 * o.entryHoldS) return null;
+    if (canStillMerge && age <= o.mergeGapS + Math.max(o.onsetMaxLookbackS, o.feintLookbackS) + 3 * o.entryHoldS) return null;
     this.pending = null;
     return this.finalize(p);
   }
@@ -669,6 +774,7 @@ export class DriftDetector {
     };
     this.events.push(ev);
     this.spins.set(id, d.spin);
+    if (d.endT > this.lastEventEndT) this.lastEventEndT = d.endT;
     return ev;
   }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { simulateRun, type TrackId } from '../../sim';
-import { type DriftEvent, type DriftPhase, type SlipState, degToRad, radToDeg } from '../types';
+import { type DriftEvent, type DriftPhase, type SlipState, type TruthSample, degToRad, radToDeg } from '../types';
 import { DriftDetector, type DetectorOutput } from './index';
 import { aggregate, evaluateRun, formatMetricsTable, noisyStream, truthEvents, type RunMetrics } from './eval';
 
@@ -57,6 +57,30 @@ function trapezoid(t: number, t0: number, ramp: number, hold: number, amp: numbe
   return 0;
 }
 
+/**
+ * True when the scripted driver opened this initiation with a Scandinavian-flick FEINT: |β|
+ * leaves straight running (2.5°) briefly on one side, stays small, and reverses into the slide.
+ */
+function startsWithFeint(truth: TruthSample[], startT: number, level = degToRad(2.5)): boolean {
+  let i = truth.findIndex((x) => x.t >= startT);
+  if (i < 0) return false;
+  while (i < truth.length && Math.abs(truth[i].beta) < level && truth[i].t < startT + 2) i++;
+  if (i >= truth.length || truth[i].t >= startT + 2) return false;
+  const sign = Math.sign(truth[i].beta);
+  const up = truth[i].t;
+  let peak = 0;
+  let j = i;
+  while (j < truth.length && Math.abs(truth[j].beta) >= level * 0.8 && Math.sign(truth[j].beta) === sign) {
+    peak = Math.max(peak, Math.abs(truth[j].beta));
+    j++;
+  }
+  const down = truth[j - 1].t;
+  if (peak > degToRad(9) || down - up > 0.6) return false; // a real slide, not a flick
+  let k = j;
+  while (k < truth.length && (Math.abs(truth[k].beta) < level || Math.sign(truth[k].beta) === sign) && truth[k].t < down + 0.6) k++;
+  return k < truth.length && truth[k].t < down + 0.6;
+}
+
 const phasesOf = (outputs: DetectorOutput[]) => new Set<DriftPhase>(outputs.map((o) => o.phase));
 const phaseAt = (outputs: DetectorOutput[], t: number) => outputs[Math.round(t * 100)].phase;
 
@@ -75,6 +99,7 @@ describe('DriftDetector on simulated runs (noisy estimator)', () => {
   const DELAY = 0.08;
   const rows: RunMetrics[] = [];
   const perRun = new Map<string, { events: DriftEvent[]; states: SlipState[]; outputs: DetectorOutput[] }>();
+  let feintStarts = 0;
   for (const sc of scenarios) {
     const run = simulateRun(sc.track, sc.opts);
     const states = noisyStream(run.truth, { seed: (sc.opts?.seed ?? 1) * 11 + (sc.track === 'touge' ? 100 : 0), delayS: DELAY });
@@ -82,22 +107,28 @@ describe('DriftDetector on simulated runs (noisy estimator)', () => {
     const { events, outputs } = runDetector(states);
     perRun.set(sc.name, { events, states, outputs });
     rows.push(evaluateRun(sc.name, events, truth));
+    feintStarts += truth.filter((e) => startsWithFeint(run.truth, e.startT)).length;
   }
   const all = aggregate(rows);
 
   it('prints the metrics table', () => {
     const table = formatMetricsTable([...rows, all]);
-    console.log(
-      `\nDrift detector vs simulator truth (β noise 1.5° 1σ, ${DELAY * 1000} ms lag, 300 ms valid:false gaps every ~4 s; IoU ≥ 0.5)\n${table}\n` +
-        `entry latency minus injected lag: mean ${((all.entryMean - DELAY) * 1000).toFixed(0)} ms\n`,
-    );
+    const lines = [
+      `\nDrift detector vs simulator truth (β noise 1.5° 1σ, ${DELAY * 1000} ms lag, 300 ms valid:false gaps every ~4 s; IoU ≥ 0.5)`,
+      table,
+      `entry latency minus injected lag: mean ${((all.entryMean - DELAY) * 1000).toFixed(0)} ms`,
+      `feint-started initiations in these runs: ${feintStarts}/${all.truthN} (drift backdated to the flick)`,
+    ];
     for (const r of rows) {
-      for (const u of r.unmatchedTruth) console.log(`  MISSED  ${r.name}: truth [${u.startT.toFixed(2)}..${u.endT.toFixed(2)}] peak ${radToDeg(u.peak).toFixed(1)}°`);
-      for (const u of r.unmatchedEvents) console.log(`  SPURIOUS ${r.name}: event [${u.startT.toFixed(2)}..${u.endT.toFixed(2)}] peak ${radToDeg(u.peakAngle).toFixed(1)}°`);
+      for (const u of r.unmatchedTruth) lines.push(`  MISSED  ${r.name}: truth [${u.startT.toFixed(2)}..${u.endT.toFixed(2)}] peak ${radToDeg(u.peak).toFixed(1)}°`);
+      for (const u of r.unmatchedEvents) lines.push(`  SPURIOUS ${r.name}: event [${u.startT.toFixed(2)}..${u.endT.toFixed(2)}] peak ${radToDeg(u.peakAngle).toFixed(1)}°`);
       for (const p of r.pairs)
         if (p.event.transitions !== p.truth.transitions)
-          console.log(`  TRANS   ${r.name}: event [${p.event.startT.toFixed(2)}..${p.event.endT.toFixed(2)}] got ${p.event.transitions} truth ${p.truth.transitions}`);
+          lines.push(`  TRANS   ${r.name}: event [${p.event.startT.toFixed(2)}..${p.event.endT.toFixed(2)}] got ${p.event.transitions} truth ${p.truth.transitions}`);
     }
+    // vitest 5 defaults to `silent: 'passed-only'`, which hides console.log from passing tests;
+    // a direct stdout write is not captured, so the table is visible under the default config.
+    process.stdout.write(`${lines.join('\n')}\n`);
     expect(rows.length).toBe(scenarios.length);
   });
 
@@ -377,6 +408,93 @@ describe('DriftDetector rules', () => {
     expect(events[0].transitions).toBe(0);
     expect(outputs[700].live?.direction).toBe(-1); // the side still updates
     expect(outputs.some((o) => o.phase === 'transition')).toBe(false);
+  });
+
+  it('feint: an initiation that flicks the wrong way first is ONE event, counted from the real swings only', () => {
+    // Scandinavian flick: |β| goes the WRONG way to 5° for ~0.3 s, reverses into a 25° left-hand
+    // slide, then ONE genuine transition to the right. This is what the scripted driver does.
+    const FLICK = degToRad(5);
+    const AMP = degToRad(25);
+    const feint = (t: number): number => {
+      if (t < 1) return 0;
+      if (t < 1.42) return FLICK * Math.sin((Math.PI * (t - 1)) / 0.42); // flick out and back
+      if (t < 1.8) return (-AMP * (t - 1.42)) / 0.38; // the real initiation (β̈-limited ramp)
+      if (t < 3.8) return -AMP;
+      if (t < 4.1) return -AMP + (2 * AMP * (t - 3.8)) / 0.3; // one real transition
+      if (t < 6.1) return AMP;
+      if (t < 6.3) return AMP * (1 - (t - 6.1) / 0.2);
+      return 0;
+    };
+    const yawOf = (t: number) => (t > 3.8 && t < 4.1 ? 3 : t < 1.42 ? 0.5 : 0.4);
+    const stream = synth(7, (t) => ({ beta: feint(t), yawRate: yawOf(t) }));
+    const { events, outputs } = runDetector(stream);
+    expect(events.length).toBe(1);
+    const ev = events[0];
+    // ONE transition: the flick is part of the initiation, the swing at 3.8 s is the real one
+    expect(ev.transitions).toBe(1);
+    expect(ev.initialDirection).toBe(-1); // the side the car actually ends up on, not the flick
+    // the drift starts where the car left straight running — inside the flick, not after it
+    expect(ev.startT).toBeGreaterThan(1.05); // |β| crosses 2.5° at t ≈ 1.07
+    expect(ev.startT).toBeLessThan(1.2);
+    expect(ev.startT).toBeLessThan(1.42); // i.e. before the real slide even begins
+    expect(ev.peakAngle).toBeCloseTo(AMP, 1);
+    expect(radToDeg(ev.peakAngle)).toBeLessThan(26);
+    // it never counts as an exit or a second event in between
+    expect(outputs.slice(120, 620).every((o) => o.phase !== 'idle')).toBe(true);
+    expect(outputs.filter((o) => o.completed).length).toBe(1);
+
+    // control: the same slide WITHOUT the flick — same event, same transition count, later start
+    const plain = synth(7, (t) => ({ beta: t < 1.42 ? 0 : feint(t), yawRate: yawOf(t) }));
+    const bare = runDetector(plain).events;
+    expect(bare.length).toBe(1);
+    expect(bare[0].transitions).toBe(1);
+    expect(bare[0].startT).toBeGreaterThan(1.42);
+    expect(bare[0].startT - ev.startT).toBeGreaterThan(0.3); // the flick really did move the start
+  });
+
+  it('feint: a flick in the middle of a drift is not a transition either', () => {
+    const AMP = degToRad(25);
+    const mid = (t: number): number => {
+      if (t < 1) return 0;
+      if (t < 1.2) return (-AMP * (t - 1)) / 0.2;
+      if (t < 3.0) return -AMP;
+      if (t < 3.15) return -AMP + ((AMP + degToRad(6)) * (t - 3.0)) / 0.15; // out to +6°...
+      if (t < 3.3) return degToRad(6);
+      if (t < 3.45) return degToRad(6) - ((AMP + degToRad(6)) * (t - 3.3)) / 0.15; // ...and back
+      if (t < 5.45) return -AMP;
+      if (t < 5.65) return -AMP * (1 - (t - 5.45) / 0.2);
+      return 0;
+    };
+    const stream = synth(6.5, (t) => ({ beta: mid(t), yawRate: t > 3 && t < 3.45 ? 3 : 0.4 }));
+    const { events, outputs } = runDetector(stream);
+    expect(events.length).toBe(1);
+    expect(events[0].transitions).toBe(0); // +6° held 0.16 s: a flick, not a direction change
+    expect(events[0].durationS).toBeGreaterThan(4.3);
+    expect(outputs.slice(120, 550).every((o) => o.phase !== 'idle')).toBe(true);
+    expect(outputs[500].live?.direction).toBe(-1); // back on the side it came from
+    // held for 0.5 s instead, the very same swing IS a transition
+    const held = (t: number): number => (t >= 3.15 && t < 3.65 ? degToRad(6) : t >= 3.65 && t < 3.8 ? degToRad(6) - ((AMP + degToRad(6)) * (t - 3.65)) / 0.15 : mid(t < 3.15 ? t : t - 0.35));
+    const long = runDetector(synth(7, (t) => ({ beta: held(t), yawRate: t > 3 && t < 3.8 ? 3 : 0.4 })));
+    expect(long.events.length).toBe(1);
+    expect(long.events[0].transitions).toBe(2); // out and back, both sides held
+  });
+
+  it('feint: the simulator\'s flicked initiations are timed and counted like the plain ones', () => {
+    const run = simulateRun('harbor', { seed: 2, laps: 2 });
+    const states = noisyStream(run.truth, { seed: 22, delayS: 0.08 });
+    const truth = truthEvents(run.truth);
+    const { events } = runDetector(states);
+    const flicked = truth.filter((e) => startsWithFeint(run.truth, e.startT));
+    expect(flicked.length).toBeGreaterThanOrEqual(4); // this run really does contain feints
+    const m = evaluateRun('feint', events, truth);
+    for (const p of m.pairs) {
+      if (!startsWithFeint(run.truth, p.truth.startT)) continue;
+      const latency = p.event.startT - p.truth.startT;
+      expect(latency, `start ${p.truth.startT.toFixed(2)}`).toBeGreaterThan(0);
+      expect(latency, `start ${p.truth.startT.toFixed(2)}`).toBeLessThan(0.5); // flick included, not skipped
+      expect(p.event.transitions, `start ${p.truth.startT.toFixed(2)}`).toBe(p.truth.transitions);
+    }
+    expect(m.matched).toBe(truth.length);
   });
 
   it('spin: |β| beyond 75° ends the drift, flags it, and blocks re-entry until recovered', () => {

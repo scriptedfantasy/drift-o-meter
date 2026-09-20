@@ -1,0 +1,260 @@
+/**
+ * Deterministic sessions for developing and verifying the results screen.
+ *
+ * The real screen renders a `Session` loaded from storage. Until the live pipeline writes
+ * sessions, and for the screenshot harness afterwards, `/results/<anything>?fixture=<name>`
+ * (or the id `fixture-<name>`) rebuilds one from the simulator: SAME simulator, SAME session
+ * shape, and the numbers on screen come from the real scorer (`scoreSession`), never from
+ * `sessionFromSimulation`'s placeholder score.
+ *
+ * Everything here is pure and seeded, so a given URL always produces the same pixels.
+ */
+import { sessionFromSimulation } from '../../engine/replay';
+import { clamp, degToRad, radToDeg, type Session, type SlipState } from '../../engine/types';
+import { simulateRun, type TrackId } from '../../sim';
+
+export interface FixtureSpec {
+  /** Named scenario (what the screenshot is about). */
+  name: string;
+  track: TrackId;
+  seed: number;
+  laps: number;
+  /** Driver skill knobs handed to the simulator (0..1 nominal; > 1 = a hero lap). */
+  aggression: number;
+  consistency: number;
+  /** Force the biggest slide past the scorer's 85° spin threshold. */
+  spin: boolean;
+  /** Drive it on grip: |β| stays under 5°, so there is honestly nothing to detect. */
+  noDrifts: boolean;
+  /** Rattling cradle + GPS dropouts, so the integrity notes have something true to report. */
+  rough: boolean;
+  /** One-line, driver-facing description of what this scenario is. */
+  blurb: string;
+}
+
+const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
+  track: 'harbor',
+  seed: 3,
+  laps: 2,
+  aggression: 0.85,
+  consistency: 0.7,
+  spin: false,
+  noDrifts: false,
+  rough: false,
+};
+
+/**
+ * The scenarios the harness shoots. Grades below are what `scoreSession` actually returns for
+ * these inputs (checked in, re-checked by the harness), not what we wish it returned.
+ */
+export const FIXTURES: Record<string, FixtureSpec> = {
+  /** S: a hero lap — huge held angles, repeatable corner after corner. */
+  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.5, consistency: 1, blurb: 'Hero lap · grade S' },
+  /** A/B: the default, a good but human run. */
+  good: { ...BASE, name: 'good', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap · grade A' },
+  /** D: low angles, wandering, corners never repeated. */
+  sloppy: { ...BASE, name: 'sloppy', seed: 5, aggression: 0, consistency: 0, blurb: 'Sloppy night · grade D' },
+  /** The chain-ending spin: the biggest slide goes past 85° and takes its chain with it. */
+  spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spin: true, blurb: 'Spun it · chain lost' },
+  /** Nothing slid: a clean lap with no drift events at all. */
+  clean: { ...BASE, name: 'clean', seed: 2, aggression: 0.2, consistency: 0.9, noDrifts: true, blurb: 'Clean lap · no slides' },
+  /** Bad data: phone loose in the cradle, GPS dropping out. */
+  rough: { ...BASE, name: 'rough', seed: 6, aggression: 0.9, consistency: 0.55, rough: true, blurb: 'Loose mount · poor GPS' },
+  /** Point-to-point mountain road: no laps, so the lap table is correctly absent. */
+  touge: { ...BASE, name: 'touge', track: 'touge', seed: 3, laps: 1, aggression: 1, consistency: 0.85, blurb: 'Touge run · one way' },
+};
+
+export const DEFAULT_FIXTURE = 'good';
+
+function num(v: string | undefined, fallback: number, lo: number, hi: number, integer = false): number {
+  if (v === undefined || v.trim() === '') return fallback;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  const c = clamp(n, lo, hi);
+  return integer ? Math.round(c) : c;
+}
+
+function bool(v: string | undefined): boolean | null {
+  if (v === undefined) return null;
+  const s = v.trim().toLowerCase();
+  if (s === '' || s === '1' || s === 'true' || s === 'on' || s === 'yes') return true;
+  if (s === '0' || s === 'false' || s === 'off' || s === 'no') return false;
+  return null;
+}
+
+/**
+ * Decide whether this route should render a fixture, and which one.
+ *
+ *   /results/fixture-sloppy                     → the `sloppy` scenario
+ *   /results/anything?fixture=spin              → the `spin` scenario
+ *   /results/demo                               → the default scenario (the HUD's placeholder id)
+ *   /results/anything?fixture=hero&seed=9&laps=3&agg=1.2&cons=0.4&spin=1&drifts=none
+ *
+ * Returns null when the id should be looked up in storage instead.
+ */
+export function resolveFixture(id: string | undefined, params: Record<string, string | undefined>): FixtureSpec | null {
+  const raw = params.fixture ?? (id && id.startsWith('fixture-') ? id.slice('fixture-'.length) : id === 'fixture' || id === 'demo' ? DEFAULT_FIXTURE : undefined);
+  if (raw === undefined) return null;
+  const key = raw.trim().toLowerCase();
+  const base = FIXTURES[key] ?? FIXTURES[DEFAULT_FIXTURE];
+  const spin = bool(params.spin);
+  const noDrifts = params.drifts === 'none' || params.drifts === '0';
+  const rough = bool(params.rough);
+  const track = params.track === 'touge' || params.track === 'harbor' ? params.track : base.track;
+  return {
+    ...base,
+    name: FIXTURES[key] ? base.name : key,
+    track,
+    seed: num(params.seed, base.seed, 0, 2 ** 31 - 1, true),
+    laps: num(params.laps, base.laps, 1, 6, true),
+    aggression: num(params.agg, base.aggression, 0, 2),
+    consistency: num(params.cons, base.consistency, 0, 1),
+    spin: spin === null ? base.spin : spin,
+    noDrifts: noDrifts || base.noDrifts,
+    rough: rough === null ? base.rough : rough,
+  };
+}
+
+export function fixtureQuery(spec: FixtureSpec): string {
+  const q = new URLSearchParams();
+  q.set('fixture', spec.name);
+  const base = FIXTURES[spec.name] ?? BASE;
+  if (spec.track !== base.track) q.set('track', spec.track);
+  if (spec.seed !== base.seed) q.set('seed', String(spec.seed));
+  if (spec.laps !== base.laps) q.set('laps', String(spec.laps));
+  if (spec.aggression !== base.aggression) q.set('agg', String(spec.aggression));
+  if (spec.consistency !== base.consistency) q.set('cons', String(spec.consistency));
+  if (spec.spin !== base.spin) q.set('spin', spec.spin ? '1' : '0');
+  if (spec.noDrifts) q.set('drifts', 'none');
+  return q.toString();
+}
+
+/** Smooth 0→1 ramp. */
+function smoothstep(x: number): number {
+  const t = clamp(x, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * After β has been rewritten, put the yaw rate back on the kinematic identity
+ * β̇ ≈ a_y / v − r, so the trace stays a possible car rather than a drawing of one.
+ */
+function recomputeYaw(states: SlipState[], from: number, to: number): void {
+  for (let i = from; i <= to; i++) {
+    const s = states[i];
+    const prev = states[Math.max(from, i - 1)];
+    const next = states[Math.min(to, i + 1)];
+    const dt = next.t - prev.t;
+    const betaDot = dt > 1e-6 ? (next.beta - prev.beta) / dt : 0;
+    states[i] = { ...s, yawRate: s.speed > 1 ? s.ay / s.speed - betaDot : s.yawRate };
+  }
+}
+
+/**
+ * Turn the run into a grip lap: the same line and speeds, but the rear never steps out — |β|
+ * compressed to the few degrees of tyre slip a car actually carries when it is not sliding.
+ * Nothing crosses the detector's 8° floor, so the session honestly has no drifts in it.
+ */
+function gripLap(session: Session): void {
+  const ceiling = degToRad(4.2);
+  const knee = degToRad(12);
+  for (let i = 0; i < session.states.length; i++) {
+    const s = session.states[i];
+    const sign = s.beta >= 0 ? 1 : -1;
+    session.states[i] = { ...s, beta: sign * ceiling * Math.tanh(Math.abs(s.beta) / knee) };
+  }
+  recomputeYaw(session.states, 0, session.states.length - 1);
+  if (session.truth) {
+    session.truth = session.truth.map((t, i) => ({ ...t, beta: session.states[i]?.beta ?? 0, drifting: false }));
+  }
+  session.drifts = [];
+}
+
+/**
+ * Push one slide past the spin threshold, in the state trace itself rather than by setting a
+ * flag: |β| ramps past 85° through the back half of the drift, the yaw rate follows from the
+ * kinematic identity r = a_y/v − β̇, and the car scrubs speed like a real spin. The scorer then
+ * finds the spin with its own rule and takes the chain's un-banked points away.
+ */
+function injectSpin(session: Session): void {
+  if (session.drifts.length === 0) return;
+  let target = session.drifts[0];
+  for (const d of session.drifts) if (d.peakAngle > target.peakAngle) target = d;
+  const a = Math.max(0, Math.min(session.states.length - 1, target.sampleStart));
+  const b = Math.max(a, Math.min(session.states.length - 1, target.sampleEnd));
+  const t0 = session.states[a].t;
+  const t1 = session.states[b].t;
+  if (!(t1 > t0)) return;
+  const spinPeak = degToRad(118);
+  const startF = 0.5;
+  const scaled: SlipState[] = [];
+  for (let i = a; i <= b; i++) {
+    const s = session.states[i];
+    const f = (s.t - t0) / (t1 - t0);
+    const k = smoothstep((f - startF) / (1 - startF));
+    const sign = s.beta >= 0 ? 1 : -1;
+    const mag = Math.abs(s.beta);
+    const beta = sign * (mag + (spinPeak - mag) * k);
+    const speed = s.speed * (1 - 0.38 * k);
+    scaled.push({ ...s, beta, speed });
+  }
+  for (let j = 0; j < scaled.length; j++) session.states[a + j] = scaled[j];
+  recomputeYaw(session.states, a, b);
+  // the drift event has to agree with the trace it points at
+  let peak = 0;
+  let peakT = target.peakAngleT;
+  let sum = 0;
+  for (let i = a; i <= b; i++) {
+    const v = Math.abs(session.states[i].beta);
+    if (v > peak) {
+      peak = v;
+      peakT = session.states[i].t;
+    }
+    sum += v;
+  }
+  target.peakAngle = peak;
+  target.peakAngleT = peakT;
+  target.meanAngle = sum / Math.max(1, b - a + 1);
+  target.minSpeed = Math.min(target.minSpeed, session.states[b].speed);
+}
+
+/** Degrade the mount calibration to match a cradle the simulator was told to rattle. */
+function degradeCalibration(session: Session): void {
+  session.calibration = { ...session.calibration, quality: 0.41, forwardResolved: false };
+}
+
+const TRACK_TITLES: Record<TrackId, string> = {
+  harbor: 'Harbor Loop',
+  touge: 'Mountain Touge',
+};
+
+/**
+ * Build the fixture session. Deterministic: same spec → same session, every time, on every
+ * platform. Takes 100–300 ms (the simulator runs the whole lap at 100 Hz).
+ */
+export function buildFixtureSession(spec: FixtureSpec): Session {
+  const run = simulateRun(spec.track, {
+    seed: spec.seed,
+    laps: spec.laps,
+    aggression: spec.aggression,
+    consistency: spec.consistency,
+    looseness: spec.rough ? 0.7 : 0,
+    vibration: spec.rough ? 2 : 1,
+    gpsDropouts: spec.rough,
+    mount: spec.rough ? 'flat-console' : 'portrait-vent',
+  });
+  const session = sessionFromSimulation(run, { name: `${TRACK_TITLES[spec.track]} · ${spec.blurb}` });
+  if (spec.noDrifts) gripLap(session);
+  if (spec.spin) injectSpin(session);
+  if (spec.rough) degradeCalibration(session);
+  session.id = `fixture-${spec.name}`;
+  session.startedAt = Date.UTC(2026, 8, 19, 21, 44) + spec.seed * 60_000;
+  session.meta = {
+    ...session.meta,
+    fixture: spec.name,
+    fixtureQuery: fixtureQuery(spec),
+    track: TRACK_TITLES[spec.track],
+    peakAngleDeg: Math.round(session.drifts.reduce((m, d) => Math.max(m, radToDeg(d.peakAngle)), 0)),
+  };
+  return session;
+}

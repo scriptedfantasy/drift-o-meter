@@ -4,15 +4,25 @@ import { type GpsSample, type MotionSample, type MountCalibration, type VehicleM
  * Mount calibration: phone frame → vehicle frame, with no user gesture.
  *
  *   UP       The OS gravity vector is NOT trusted as such: Core Motion's gravity leans into any
- *            acceleration sustained for a few seconds (the simulator models up to 10°), and its
- *            "user acceleration" loses the same amount.  But gravity + userAcceleration is the
- *            true specific force f, so the calibrator separates gravity itself:
+ *            acceleration sustained for a few seconds (the simulator models τ≈4 s up to 10°),
+ *            and its "user acceleration" loses the same amount.  But gravity + userAcceleration
+ *            is the true specific force f, so the calibrator separates gravity itself:
  *              stage 1  inertial up û in the phone frame, propagated with the gyro (bias
  *                       estimated) and corrected toward −f̂ only when the accelerometer is
  *                       trustworthy: |f|≈g, small OS acceleration, small expected acceleration
  *                       from GPS (|Δv/Δt| and v·r) and small own separated acceleration;
- *              stage 2  body up = slow low-pass of û (τ≈2.5 s, slowed further under hard
- *                       acceleration so it does not chase body roll/pitch or banking).
+ *              stage 2  gravity up = slow low-pass of û over `gravityTau` (9 s — LONGER than
+ *                       the 4 s gravity-lean constant and than a corner, so body roll/pitch and
+ *                       banking average out instead of being chased), slowed further under hard
+ *                       acceleration;
+ *              stage 3  BODY up = gravity up + p̂·forward, where p̂ is the road pitch (grade).
+ *                       On a sustained slope the body's up axis is the road normal, not the
+ *                       gravity vertical: the simulator's touge averages −6 % grade, i.e. 2.8°
+ *                       of steady body pitch that gravity alone reads as a mount error.  p̂ is
+ *                       measured per GPS interval as (∫f·forward dt − Δv_gps)/(g·Δt) — the part
+ *                       of the longitudinal specific force that never shows up as speed — and
+ *                       is accumulated only over intervals that were clean (low yaw, low slip),
+ *                       because a_long = v̇·cos β − v·χ̇·sin β only equals v̇ when β ≈ 0.
  *            Own user acceleration a = f + g·û feeds everything downstream.  When û and the
  *            slow up disagree by more than `gravityJumpDeg` for `gravityJumpHoldS` the phone
  *            was knocked: the slow up snaps to û and every forward estimate is discarded.
@@ -20,25 +30,38 @@ import { type GpsSample, type MotionSample, type MountCalibration, type VehicleM
  *   FORWARD  the principal axis of the horizontal user acceleration, accumulated only during
  *            sustained events (|a_h| > 1.2 m/s² for > 0.4 s).  On a drift track most
  *            acceleration is cornering, and cornering acceleration is not along the body axis,
- *            so each sample is weighted by two "was this longitudinal?" gates:
+ *            so each sample is weighted by three "was this longitudinal, and was the car
+ *            pointing where it was going?" gates:
  *              - lateral gate exp(−(v·r/σ)²) on the lateral acceleration implied by the yaw
  *                            rate about gravity-up and the last GPS speed (assumed speed
  *                            without GPS): at 26 m/s a yaw rate of 0.03 rad/s is already
- *                            1 m/s² of lateral acceleration;
+ *                            0.8 m/s² of lateral acceleration;
+ *              - SLIP gate   exp(−(β̂/σ)²).  A car sliding at β with zero yaw rate accelerates
+ *                            along its VELOCITY, not along its nose, so a straight power-slide
+ *                            drags the axis off by β and passes every other gate.  β̂ is the
+ *                            leaky integral (τ `betaTau`) of the GPS course rate minus the
+ *                            integrated gyro yaw: β̇ = χ̇ − r needs no frame, only the up axis,
+ *                            and the leak keeps residual gyro bias out (bias·τ ≈ 0.7°).
+ *                            Measured against the simulator's truth it correlates ≈0.8 and
+ *                            catches ~87 % of |β|>0.2 rad; without it the axis lands ≈3° off
+ *                            on a track whose corners are mostly one-handed.
  *              - GPS gate    per GPS interval, ρ = |Δv_gps| / |∫a_h dt|: a purely longitudinal
  *                            interval has ρ≈1, a drift transition (yaw rate ≈ 0 but large
  *                            lateral acceleration) has ρ≪1.  The verdict arrives with the next
  *                            fix, so contributions are parked in 0.1 s slices and committed
  *                            once the fix is in (or after 3.5 s without GPS, unweighted).
- *            A drift car can also slide sideways at 40° with zero yaw rate while GPS speed rises
- *            consistently with |∫a| (a straight powerslide between corners); nothing in the raw
- *            signals separates that from straight-line driving except time.  So slices whose
- *            energy lies > `outlierDeg` off the established line go to a CHALLENGER
- *            accumulator; it replaces the line only once it holds ≥ `challengerMinEvidence` of
- *            evidence in one consistent direction (anisotropy ≥ `challengerAnisotropy`).
- *            Transient slides point in varying directions and decay away; a phone rotated about
- *            the vertical (gravity untouched) makes every later event agree with the challenger.
- *            Independently, a GPS sign vote that stops correlating with the line marks it stale.
+ *            The accumulator's memory (`lineTau`) is ~25 s of GATED evidence — about a lap's
+ *            worth of events — because the phone's lever arm from the CG adds a tangential
+ *            ṙ·d lateral bias that averages out over a lap but not over a single corner exit,
+ *            and because a single launch from rest would otherwise own the axis for the whole
+ *            session.
+ *            Slices whose energy lies > `outlierDeg` off the established line go to a
+ *            CHALLENGER accumulator; it replaces the line only once it holds ≥
+ *            `challengerMinEvidence` of evidence in one consistent direction (anisotropy ≥
+ *            `challengerAnisotropy`).  Transient slides point in varying directions and decay
+ *            away; a phone rotated about the vertical (gravity untouched) makes every later
+ *            event agree with the challenger.  Independently, a GPS sign vote that stops
+ *            correlating with the line marks it stale.
  *
  *   SIGN     two independent votes, both accumulated as phone-frame vectors so they do not
  *            depend on the axis line being stable:
@@ -49,7 +72,17 @@ import { type GpsSample, type MotionSample, type MountCalibration, type VehicleM
  *
  *   R        rows = [forward; left = up × forward; up]  (v_vehicle = R · v_phone).
  *
- * All state lives in scalar fields and two preallocated Float64Arrays: the only allocation per
+ *   LEVER    The phone does not sit at the CG.  With the phone d metres ahead of it the
+ *   ARM      accelerometer genuinely reads a_y + ṙ·d_x and a_x − r²·d_x; that is real physics,
+ *            not a mount error, and it is NOT calibrated away — the axes above are estimated
+ *            with it present.  But `VehicleMotionSample` is consumed by kinematics that hold at
+ *            the CG (β̇ = a_y/v − r), so the OUTPUT is translated back: d̂_x is estimated by a
+ *            ridge regression of the high-passed lateral acceleration on the high-passed yaw
+ *            acceleration (both high-passed at `leverHpTau`, so the smooth cornering signal
+ *            cannot bias it), and a_y −= d̂_x·ṙ, a_x += d̂_x·r².  Set `leverCompensation: false`
+ *            to report the acceleration at the phone instead.
+ *
+ * All state lives in scalar fields and one preallocated Float64Array: the only allocation per
  * push() is the returned sample.
  */
 export interface MountOptions {
@@ -99,6 +132,14 @@ export interface MountOptions {
   gpsGateHigh: number;
   /** Seconds after which parked contributions are committed without a GPS verdict. */
   sliceExpiry: number;
+  /**
+   * Slip gate: β̂ (the leaky integral of the GPS course rate minus the integrated gyro yaw)
+   * at which a sample is half rejected, radians, and the leak time constant, seconds.
+   */
+  betaGate: number;
+  betaTau: number;
+  /** Minimum GPS speed (m/s) at which the course is trusted for β̂. */
+  betaMinSpeed: number;
   /** Memory of the axis accumulator, seconds of gated event evidence. */
   lineTau: number;
   /** Evidence (gated event seconds) needed before the axis line counts as known. */
@@ -125,18 +166,33 @@ export interface MountOptions {
   /** Correlation score at which the forward sign is accepted / flipped. */
   signAcceptScore: number;
   /**
-   * Tilt the UP axis so that it is perpendicular to the 3-D acceleration axis (the road
-   * surface) instead of exactly anti-parallel to gravity. Corrects the pitch component of a
-   * road grade (on a −6 % grade gravity-up is 3.4° off the body's up) at the cost of coupling
-   * the up axis to the noisier acceleration estimate; blended in by the line quality.
+   * Tilt the UP axis off the gravity vertical by the estimated road pitch, so it follows the
+   * road normal (which is what the phone is bolted to) rather than gravity. On the simulator's
+   * −6 % touge that is 2.8° of otherwise irreducible up error.
    */
   gradeCompensation: boolean;
+  /** Memory of the road-pitch estimate, seconds of clean evidence, and its cap (radians). */
+  gradeTau: number;
+  gradeMaxRad: number;
+  /**
+   * Translate the reported acceleration from the phone back to the CG (see LEVER ARM above).
+   * `leverTau` smooths the yaw-rate derivative (two poles), `leverHpTau` high-passes both
+   * regression signals, `leverRegressTau` is the regression memory in seconds, `leverRidge`
+   * the ridge term (units of the regressor's integrated square) and `leverMax` the cap on the
+   * estimated forward offset, metres.
+   */
+  leverCompensation: boolean;
+  leverTau: number;
+  leverHpTau: number;
+  leverRegressTau: number;
+  leverRidge: number;
+  leverMax: number;
   /** Largest dt accepted between motion samples, seconds (gaps are clamped). */
   maxDt: number;
 }
 
 export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
-  gravityTau: 2.5,
+  gravityTau: 9,
   forceTau: 0.25,
   upCorrectionTau: 2,
   upBiasGain: 0.05,
@@ -156,12 +212,15 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   accelTau: 0.1,
   eventThreshold: 1.2,
   eventMinDuration: 0.4,
-  lateralGate: 0.7,
+  lateralGate: 0.5,
   assumedSpeed: 15,
   gpsGateLow: 0.5,
   gpsGateHigh: 0.85,
   sliceExpiry: 3.5,
-  lineTau: 8,
+  betaGate: 0.2,
+  betaTau: 8,
+  betaMinSpeed: 4,
+  lineTau: 25,
   lineMinEvidence: 0.8,
   outlierDeg: 20,
   challengerTau: 3,
@@ -177,6 +236,14 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gpsVoteMinEvidence: 3,
   signAcceptScore: 0.5,
   gradeCompensation: true,
+  gradeTau: 25,
+  gradeMaxRad: 0.25,
+  leverCompensation: true,
+  leverTau: 0.02,
+  leverHpTau: 0.3,
+  leverRegressTau: 40,
+  leverRidge: 4,
+  leverMax: 2.5,
   maxDt: 0.1,
 };
 
@@ -223,17 +290,23 @@ export interface MountDiagnostics {
   forwardResolvedAt: number;
   forwardResolved: boolean;
   quality: number;
-  /** Road-forward tilt against the gravity horizon actually applied, degrees (grade compensation). */
+  /** Road pitch actually applied to the up axis, degrees (+ = nose down / the body's up leans forward). */
   gradeTiltDeg: number;
+  /** Slip proxy β̂ (rad) from the GPS course rate vs the integrated gyro yaw. */
+  betaHat: number;
+  /** Estimated forward lever arm from the CG to the phone, metres (0 until it has evidence). */
+  leverDx: number;
 }
 
-// Ring of 0.1 s slices. Each slice: [t0, Cx, Cy, Cz, m00, m01, m02, m11, m12, m22, w]
-// where C is the running integral of the horizontal acceleration at the slice start and
-// m../w the yaw-gated event second moments accumulated inside the slice.
+// Ring of 0.1 s slices. Each slice: [t0, Cx, Cy, Cz, m00, m01, m02, m11, m12, m22, w, psi, cw]
+// where C is the running integral of the horizontal acceleration at the slice start, psi the
+// integrated yaw about the inertial up and cw the running integral of the clean-sample weight
+// (both also at the slice start), and m../w the gated event second moments accumulated inside
+// the slice.
 const G_ACC = 9.80665;
 const SLICE_DT = 0.1;
 const NS = 64; // 6.4 s of history; slices are committed after at most `sliceExpiry` s
-const SL = 11;
+const SL = 13;
 const EPS = 1e-9;
 
 export class MountCalibrator {
@@ -357,6 +430,32 @@ export class MountCalibrator {
   private prevCx = 0;
   private prevCy = 0;
   private prevCz = 0;
+  private prevPsi = 0;
+  private prevCw = 0;
+  private gpsVdot = 0; // last GPS-derived longitudinal acceleration (not used for the axis)
+
+  // ---- slip proxy: integrated gyro yaw vs GPS course
+  private psi = 0;
+  private cw = 0; // running integral of the clean-sample weight
+  private betaHat = 0;
+  private prevChi = NaN;
+  private prevChiPsi = 0;
+  private prevChiT = -Infinity;
+  private gateW = 0; // yaw × slip gate for the current sample
+
+  // ---- road pitch (grade): weighted mean of (∫f·forward dt − Δv_gps) / (g·Δt)
+  private gradeNum = 0;
+  private gradeDen = 0;
+  private pitchHat = 0;
+
+  // ---- lever arm: forward offset of the phone from the CG
+  private rFast = 0;
+  private rDot = 0;
+  private rDotSlow = 0;
+  private ayVSlow = 0;
+  private lSxy = 0;
+  private lSxx = 0;
+  private leverDx = 0;
 
   // ---- output frame
   private fx = 1;
@@ -387,6 +486,8 @@ export class MountCalibrator {
   private outY = 0;
   private outZ = 0;
   private outAniso = 0;
+  private lookP = 0;
+  private lookW = 0;
 
   constructor(opts?: Partial<MountOptions>) {
     this.opts = { ...DEFAULT_MOUNT_OPTIONS, ...(opts ?? {}) };
@@ -432,7 +533,9 @@ export class MountCalibrator {
       forwardResolvedAt: this.forwardResolvedAt,
       forwardResolved: this.forwardResolved,
       quality: this.quality,
-      gradeTiltDeg: (Math.asin(clamp(this.gradeTilt * this.lineQuality, -1, 1)) * 180) / Math.PI,
+      gradeTiltDeg: (this.appliedPitch() * 180) / Math.PI,
+      betaHat: this.betaHat,
+      leverDx: this.leverDx,
     };
   }
 
@@ -491,6 +594,21 @@ export class MountCalibrator {
     this.gpsSpeedT = -Infinity;
     this.gpsAccel = 0;
     this.gpsAccelT = -Infinity;
+    this.gpsVdot = 0;
+    this.psi = 0;
+    this.cw = 0;
+    this.betaHat = 0;
+    this.prevChi = NaN;
+    this.prevChiPsi = 0;
+    this.prevChiT = -Infinity;
+    this.gateW = 0;
+    this.rFast = 0;
+    this.rDot = 0;
+    this.rDotSlow = 0;
+    this.ayVSlow = 0;
+    this.lSxy = 0;
+    this.lSxx = 0;
+    this.leverDx = 0;
     this.resetForward();
     this.fx = 1;
     this.fy = 0;
@@ -1091,6 +1209,9 @@ export class MountCalibrator {
   // ------------------------------------------------------------------ internals
 
   private resetForward(): void {
+    this.gradeNum = 0;
+    this.gradeDen = 0;
+    this.pitchHat = 0;
     this.m00 = this.m01 = this.m02 = this.m11 = this.m12 = this.m22 = this.mE = 0;
     this.q00 = this.q01 = this.q02 = this.q11 = this.q12 = this.q22 = this.qE = 0;
     this.lineValid = false;

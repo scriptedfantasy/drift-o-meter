@@ -77,10 +77,11 @@
       "id": "replay",
       "name": "Replay scene",
       "layer": "engine",
-      "status": "critique",
-      "rounds": 0,
-      "verdict": "Complete: trail, smoke, markers, ghost, three camera modes, telemetry strip. Renders out for judging.",
-      "note": "Session \u2192 timeline, glow trail, camera, ghost"
+      "status": "fixing",
+      "rounds": 1,
+      "verdict": "Failed: the frames are a telemetry map, not a replay. The ghost was the car itself for half the run, one bad sensor sample killed the camera for good, and a 70\u00b0 near-spin looked identical to a 15\u00b0 slide.",
+      "note": "Session \u2192 timeline, glow trail, camera, ghost",
+      "score": "4.5 \u2192 round 2"
     },
     {
       "id": "pipeline",
@@ -148,6 +149,23 @@
   ],
   "verdicts": [
     {
+      "piece": "Replay scene",
+      "round": 1,
+      "t": "18:40",
+      "pass": false,
+      "score": "4.5 / 10",
+      "summary": "A fresh-context critic wrote its own probes, rendered 26 extra frames including the ones a builder would avoid, and measured the images pixel by pixel. The model underneath is clean and well tested. What it draws is not a replay.",
+      "findings": [
+        "The ghost car was numerically identical to the car being watched for 47 % of the replay, and its gap readout divided a distance by instantaneous speed, so a constant 3.9 second gap flickered between 3.9 and 4.5.",
+        "A single NaN speed sample permanently destroyed the camera: 1203 of 1800 frames went non-finite and never recovered, which on the phone is a blank screen for the rest of the session.",
+        "Markers from lap one were never retired, so every label on lap two was drawn on top of its own twin, making the same corner look like it had six transitions.",
+        "Nothing escalated. The intensity ceiling was set to exactly the simulator peak, so a forced 70\u00b0 slide rendered pixel for pixel like a 15\u00b0 one, and the gold reserved for extreme angles appeared in none of the 26 frames.",
+        "The world window measured 74 to 91 percent pure background and the car occupied 0.151 percent of it, about 5 mm on a real phone.",
+        "Fourteen of 23 text elements were below the iOS minimum size, and the points numeral was the biggest thing on screen instead of the angle.",
+        "The telemetry strip showed the final score and grade in the very first frame, so the replay opened by revealing its own ending."
+      ]
+    },
+    {
       "piece": "Sensor simulator",
       "round": 1,
       "t": "14:00",
@@ -196,6 +214,10 @@
     {
       "t": "18:20",
       "text": "Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired."
+    },
+    {
+      "t": "18:45",
+      "text": "Replay visuals failed their first critique at 4.5 out of 10 with four severity-one defects. The full findings went back to the builder with before-and-after measurements required for each one."
     }
   ],
   "shots": []

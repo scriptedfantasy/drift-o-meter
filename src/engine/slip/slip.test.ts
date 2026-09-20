@@ -236,7 +236,7 @@ describe('SlipEstimator behaviour', () => {
 describe('History ring buffer', () => {
   it('interpolates and clamps', () => {
     const h = new History(8);
-    for (let i = 0; i < 20; i++) h.push({ t: i, c: i * 2, v: i * 3, x: i, y: -i, cl: i * 2 - 1, vl: i * 3 - 1 });
+    for (let i = 0; i < 20; i++) h.push({ t: i, c: i * 2, v: i * 3, x: i, y: -i, cl: i * 2 - 1, vl: i * 3 - 1, s: i * 0.5, sl: i * 0.5 - 1 });
     expect(h.length).toBe(8);
     expect(h.oldestT()).toBe(12);
     expect(h.newestT()).toBe(19);

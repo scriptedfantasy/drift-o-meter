@@ -54,14 +54,14 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <div class="wrap">
 <header>
   <div><h1>Drift-<span>O</span>-Meter <span>Build Board</span></h1><div class="phase">Phase 2 — engine tuning against the reworked simulator, app screens next</div></div>
-  <div class="updated">Updated 2026-09-20 18:19 UTC</div>
+  <div class="updated">Updated 2026-09-20 18:35 UTC</div>
 </header>
 <p class="summary">An iPhone app (Expo SDK 57, TypeScript) that judges real drifting from the gyroscope, accelerometer and GPS and turns a run into a cinematic replay. Each piece is built by its own agent and judged by a separate fresh-context critic that re-runs the code and looks at the actual output, never the builder&#x27;s summary. The reference bar is Need for Speed and Tokyo Drift.</p>
 <div class="strip">
   <div class="tile"><b>15</b><span>pieces</span></div>
   <div class="tile pass"><b>2</b><span>passed critic</span></div>
-  <div class="tile crit"><b>3</b><span>in critique</span></div>
-  <div class="tile build"><b>5</b><span>building / fixing</span></div>
+  <div class="tile crit"><b>2</b><span>in critique</span></div>
+  <div class="tile build"><b>6</b><span>building / fixing</span></div>
   <div class="tile"><b>5</b><span>queued</span></div>
 </div>
 <h2>Pieces</h2>
@@ -127,10 +127,10 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Replay scene</span><span class="note">Session → timeline, glow trail, camera, ghost</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip critique">In critique</span></td>
-      <td class="num">0</td>
-      <td class="num">–</td>
-      <td class="verdict">Complete: trail, smoke, markers, ghost, three camera modes, telemetry strip. Renders out for judging.</td>
+      <td><span class="chip building">Fixing</span></td>
+      <td class="num">1</td>
+      <td class="num">4.5 → round 2</td>
+      <td class="verdict">Failed: the frames are a telemetry map, not a replay. The ghost was the car itself for half the run, one bad sensor sample killed the camera for good, and a 70° near-spin looked identical to a 15° slide.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Engine pipeline</span><span class="note">One object the app talks to: sensors in, live frames and a scored session out</span></td>
@@ -191,6 +191,11 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <h2>Latest critic verdicts</h2>
 
     <details class="verdict-card" open>
+      <summary><span class="chip failed">FAIL</span> <strong>Replay scene</strong> · round 1 · 18:40 <span class="score">4.5 / 10</span></summary>
+      <p>A fresh-context critic wrote its own probes, rendered 26 extra frames including the ones a builder would avoid, and measured the images pixel by pixel. The model underneath is clean and well tested. What it draws is not a replay.</p>
+      <ol><li>The ghost car was numerically identical to the car being watched for 47 % of the replay, and its gap readout divided a distance by instantaneous speed, so a constant 3.9 second gap flickered between 3.9 and 4.5.</li><li>A single NaN speed sample permanently destroyed the camera: 1203 of 1800 frames went non-finite and never recovered, which on the phone is a blank screen for the rest of the session.</li><li>Markers from lap one were never retired, so every label on lap two was drawn on top of its own twin, making the same corner look like it had six transitions.</li><li>Nothing escalated. The intensity ceiling was set to exactly the simulator peak, so a forced 70° slide rendered pixel for pixel like a 15° one, and the gold reserved for extreme angles appeared in none of the 26 frames.</li><li>The world window measured 74 to 91 percent pure background and the car occupied 0.151 percent of it, about 5 mm on a real phone.</li><li>Fourteen of 23 text elements were below the iOS minimum size, and the points numeral was the biggest thing on screen instead of the angle.</li><li>The telemetry strip showed the final score and grade in the very first frame, so the replay opened by revealing its own ending.</li></ol>
+    </details>
+    <details class="verdict-card" >
       <summary><span class="chip failed">FAIL</span> <strong>Sensor simulator</strong> · round 1 · 14:00 <span class="score">5.5 / 10</span></summary>
       <p>A fresh-context critic re-derived the simulator physics from its own output and failed it. Everything downstream is tuned against this ground truth, so a wrong simulator means a wrong app.</p>
       <ol><li>Ground truth teleported 0 → 46 km/h in one 10 ms sample at the start and snapped 33° of heading at the end of every lap.</li><li>The hand-held sway fed the gyroscope with the wrong sign, so loose-mount data was physically impossible.</li><li>The advertised under-damped initiation flick was dead code; every drift began with a 1255°/s² kink no car can produce.</li><li>Linked corners were never actually linked, so the signature transition happened once per lap instead of throughout.</li><li>Vibration was three pure tones, which a downstream filter could trivially notch out instead of learning to be robust.</li><li>The track did not match its own description: the &quot;right-hand sweeper&quot; was a left, the chicane had no left-right.</li></ol>
@@ -200,5 +205,5 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <h2>How things are verified</h2>
 <ul class="verif"><li>This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.</li><li>The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder&#x27;s summary.</li><li>What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off.</li></ul>
 <h2>Log</h2>
-<ol class="log"><li><time>18:20</time><span>Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired.</span></li><li><time>17:40</time><span>Session limit paused four agents mid-tuning. Everything they had written was already on disk.</span></li><li><time>15:10</time><span>Simulator rewritten against the critic verdict: continuous start and roll-out, feint plus bounded yaw acceleration on initiation, linked corners, broadband vibration, phone lever arm, leaning OS gravity, per-seed GPS latency with a filtered course.</span></li><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
+<ol class="log"><li><time>18:45</time><span>Replay visuals failed their first critique at 4.5 out of 10 with four severity-one defects. The full findings went back to the builder with before-and-after measurements required for each one.</span></li><li><time>18:20</time><span>Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired.</span></li><li><time>17:40</time><span>Session limit paused four agents mid-tuning. Everything they had written was already on disk.</span></li><li><time>15:10</time><span>Simulator rewritten against the critic verdict: continuous start and roll-out, feint plus bounded yaw acceleration on initiation, linked corners, broadband vibration, phone lever arm, leaning OS gravity, per-seed GPS latency with a filtered course.</span></li><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
 </div>
