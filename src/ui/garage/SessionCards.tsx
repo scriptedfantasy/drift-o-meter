@@ -86,7 +86,7 @@ export function LastRunCard({ entry, facts, onOpen, onDelete, testID }: RunProps
       ) : null}
 
       <View style={styles.cardStats}>
-        <CardStat label="Best angle" value={angleText(facts)} color={untrusted || !facts?.peakAngleDeg ? colors.muted : colors.ember} />
+        <CardStat label="Best angle held" value={angleText(facts)} color={untrusted || !facts?.peakAngleDeg ? colors.muted : colors.ember} />
         <CardStat label={entry.drifts === 1 ? 'Slide' : 'Slides'} value={String(entry.drifts)} color={colors.text} />
         <CardStat
           label={untrusted ? 'Mount' : 'Best chain'}
@@ -143,7 +143,7 @@ export function RunRow({ entry, facts, onOpen, onDelete, testID }: RunProps) {
           {pending ? '--' : formatScore(entry.total)}
         </AppText>
         <Micro color={untrusted ? 'red' : 'muted'} numberOfLines={1}>
-          {untrusted ? 'logged only' : `${angleText(facts)} peak`}
+          {untrusted ? 'logged only' : `${angleText(facts)} best`}
         </Micro>
       </View>
     </Pressable>

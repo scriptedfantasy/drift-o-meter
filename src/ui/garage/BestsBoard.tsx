@@ -24,6 +24,10 @@ export function BestsBoard({ bests, onOpen }: BestsBoardProps) {
       {bests.map((t) => (
         <TrackPanel key={t.track} bests={t} onOpen={onOpen} />
       ))}
+      <Micro numberOfLines={2} style={styles.footnote}>
+        Only runs the engine vouched for can hold a record — and the biggest angle is one you held and
+        drove out of, not one you spun into
+      </Micro>
     </View>
   );
 }
@@ -115,5 +119,6 @@ const styles = StyleSheet.create({
   },
   value: { fontSize: 30, lineHeight: 32 },
   last: {},
+  footnote: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.75, maxWidth: 420 },
   pressed: { opacity: 0.7 },
 });

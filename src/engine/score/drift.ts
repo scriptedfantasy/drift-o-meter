@@ -140,18 +140,23 @@ export function scoreDrift(
   // TWO PATHS, and they must agree. With the per-sample mask (the live pipeline, and a replay
   // the pipeline hands it to) the accumulator has already refused to pay for the instants the
   // integrity monitor did not believe, bit for bit. WITHOUT it — a session re-scored from
-  // storage, where a sample-indexed mask could not survive decimation — `DriftEvent.suppressedS`
-  // is the durable fallback: scale this drift's base points by the fraction that WAS believed.
-  // Measured over 194 drifts spanning every looseness, suppression is all-or-nothing on 89.7 %
-  // of them, where the scaling is exact; the rest err by a few percent, inside runs that are
-  // already refusing to publish a total.
+  // storage, where a sample-indexed mask could not survive decimation without silently
+  // misaligning — `DriftEvent.suppressedS` is the durable fallback: scale what this drift
+  // earned by the fraction of it that WAS believed.
+  //
+  // Earnings, not just base points: a suppressed sample also fails to advance the sustained
+  // multiplier and fails to accrue the seconds LONG DRIFT, SMOOTH and HIGH SPEED need, so a
+  // re-score fires callouts at a multiplier the live pass never reached. Scaling the whole
+  // drift is the closest a single duration can come. Measured over both tracks at looseness
+  // 0 → 0.2 it lands within 1 % of the live total; on a run the monitor rejected outright it
+  // UNDER-states the points, which is the safe direction for a number nobody may publish.
   if (!plausible && e.suppressedS > 0 && e.durationS > 0) {
     const believed = clamp((e.durationS - e.suppressedS) / e.durationS, 0, 1);
     stats.implausibleS = Math.min(e.suppressedS, stats.durationS);
     stats.durationS = Math.max(0, stats.durationS - stats.implausibleS);
     acc.base *= believed;
     acc.points *= believed;
-    acc.bonus *= believed; // EXPERIMENT
+    acc.bonus *= believed;
   }
   const sd = buildDriftScore(acc, stats, o, tf);
   if (count <= 0) {

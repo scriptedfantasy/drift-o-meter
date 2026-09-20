@@ -255,7 +255,7 @@ describe('a stored session re-scores without the per-sample mask', () => {
       `\nRE-SCORE FROM STORAGE: live ${live.score.total} → ${re.total} (${(100 * err).toFixed(1)} %), ` +
         `${partial.length} partially and ${stored.drifts.filter((d) => d.suppressedS >= d.durationS - 0.01).length} fully suppressed slides of ${stored.drifts.length}\n`,
     );
-    expect(err, `re-score drifted ${(100 * err).toFixed(1)} % from the live total`).toBeLessThan(0.08);
+    expect(err, `re-score drifted ${(100 * err).toFixed(1)} % from the live total`).toBeLessThan(0.04);
     // and it reproduces the VERDICT exactly, which is the part a screen must obey
     expect(re.integrity.scoreTrusted).toBe(live.score.trusted);
     expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
@@ -272,6 +272,9 @@ describe('a stored session re-scores without the per-sample mask', () => {
     expect(re.integrity.scoreTrusted).toBe(false);
     expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
     expect(re.integrity.suppressedS).toBeGreaterThan(0.5 * live.integrity.suppressedS);
+    // it errs DOWNWARD on a refused run: over-stating a run nobody may publish is the failure
+    // mode this whole finding was about
+    expect(re.total).toBeLessThanOrEqual(live.score.total);
   }, 120_000);
 
   it('a clean run round-trips to the same total', () => {

@@ -75,6 +75,20 @@ recordings knows what to look for rather than re-tuning on a hunch.
   `looseScore` and `calibrationQuality` together against a run you have watched.
   Known residual: at simulator looseness ≤ 0.2 the sway inflates the measured angle by roughly
   15–18 % and nothing flags it.
+* **Forward-axis resolution time.** The mount calibrator resolves *which way the car points*
+  from longitudinal acceleration, and how long that takes was measured against a simulated
+  drift circuit that offers braking and throttle at a particular rate. A real street, or a
+  track of long sweepers, offers less. Symptom: the forward axis staying unresolved for a whole
+  session — visible as a calibration quality that never climbs past the mid range
+  (`diagnostics.calibrationQuality` / `calibrationForwardResolved`). Note this now gates
+  scoring: an unresolved forward axis vetoes `driftPlausible`, so getting this wrong on real
+  roads would refuse to score runs that deserve it.
+* **The lever arm.** The estimator assumes a fixed 0.9 m from the phone to the centre of
+  gravity. Real phones sit anywhere from a windscreen mount well forward of it to a console
+  mount nearly on it. The calibrator measures its own d̂x and publishes it as a diagnostic, so
+  the assumption is checkable against what a given mount actually shows. Symptom: a slip-angle
+  bias that scales with yaw rate and reverses with corner direction — left-handers reading high
+  and right-handers low by the same amount, growing with how hard the corner is taken.
 * **Haptics.** Never exercised — the web harness has no haptic engine, so every callout's feel
   is unverified. Symptom: buzzing on every frame, or nothing at all.
 * **Drift durations.** The detector's linked-drift cap (`maxDurationS + chainBonusS × n`) is set
