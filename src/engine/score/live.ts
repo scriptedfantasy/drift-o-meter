@@ -239,11 +239,13 @@ export class LiveScorer {
     const o = this.o;
     const inLap = this.log.filter((d) => d.endT >= lap.startT && d.endT < lap.endT);
     if (inLap.length < o.cleanLapMinDrifts || inLap.some((d) => d.spun)) return null;
-    const pts = o.calloutPoints['clean-lap'];
-    const c: StyleCallout = { t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts };
-    this.bankedTotal += pts;
     const last = inLap[inLap.length - 1];
     const sd = this.completed.get(last.id);
+    // the same multiplier rule as every other callout, and the same one `scoreSession` applies
+    // offline (the lap's last drift's end multiplier), so live and replay agree to the point
+    const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, sd ? sd.multiplierEnd : 1) : 1);
+    const c: StyleCallout = { t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts };
+    this.bankedTotal += pts;
     if (sd) {
       sd.callouts.push(c);
       sd.bonus += pts;

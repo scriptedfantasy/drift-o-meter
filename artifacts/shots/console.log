@@ -1,2 +1,50 @@
 
-===== drive  http://127.0.0.1:36315/drive?sim=harbor&rate=1&at=96.3
+===== home  http://127.0.0.1:38315/
+
+===== calibrate  http://127.0.0.1:38315/calibrate
+
+===== drive-idle  http://127.0.0.1:38315/drive?sim=harbor&rate=1
+
+===== drive  http://127.0.0.1:38315/drive?sim=harbor&rate=1&at=96.3
+
+===== drive-peak  http://127.0.0.1:38315/drive?sim=harbor&rate=1&at=100.85&hold=1
+
+===== drive-transition  http://127.0.0.1:38315/drive?sim=harbor&rate=1&at=85.05&hold=1
+
+===== drive-bank  http://127.0.0.1:38315/drive?sim=harbor&rate=1&at=50.75&hold=1
+
+===== drive-warn  http://127.0.0.1:38315/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose
+
+===== results-reveal  http://127.0.0.1:38315/results/fixture-hero
+
+===== results-skip  http://127.0.0.1:38315/results/fixture-hero?reveal=slam
+
+===== results-reveal-hold  http://127.0.0.1:38315/results/fixture-hero?reveal=hold
+
+===== results-reveal-slam  http://127.0.0.1:38315/results/fixture-hero?reveal=slam
+
+===== results  http://127.0.0.1:38315/results/fixture-hero?reveal=off
+
+===== results-sloppy  http://127.0.0.1:38315/results/fixture-sloppy?reveal=off
+
+===== results-spin  http://127.0.0.1:38315/results/fixture-spin?reveal=off
+
+===== results-clean  http://127.0.0.1:38315/results/fixture-clean?reveal=off
+
+===== results-best  http://127.0.0.1:38315/results/fixture-hero?reveal=off
+
+===== results-drifts  http://127.0.0.1:38315/results/fixture-spin?reveal=off
+
+===== results-laps  http://127.0.0.1:38315/results/fixture-sloppy?reveal=off
+
+===== results-integrity  http://127.0.0.1:38315/results/fixture-rough?reveal=off
+
+===== results-pipeline  http://127.0.0.1:38315/results/fixture-good?reveal=off&source=pipeline
+
+===== results-reduced  http://127.0.0.1:38315/results/fixture-hero?reveal=hold&motion=reduce
+
+===== results-missing  http://127.0.0.1:38315/results/no-such-session
+
+===== replay  http://127.0.0.1:38315/replay/demo
+
+===== settings  http://127.0.0.1:38315/settings

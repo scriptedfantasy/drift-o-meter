@@ -127,7 +127,10 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
     refTau = lo / trail.hz;
   }
   const inLap = refTau < ref.durationS - 1e-6;
-  const tg = clamp(ref.startT + Math.min(refTau, ref.durationS), 0, replay.durationS);
+  // `time` sync places the ghost where the reference lap was at the same ELAPSED time — a car
+  // to chase rather than a line to compare. The gaps below are identical either way.
+  const poseTau = replay.options.ghostSync === 'time' ? Math.min(tau, ref.durationS) : Math.min(refTau, ref.durationS);
+  const tg = clamp(ref.startT + poseTau, 0, replay.durationS);
   const fi = trailIndexOf(trail, tg);
   const i0 = Math.floor(fi);
   const i1 = Math.min(i0 + 1, trail.n - 1);
@@ -149,6 +152,7 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
     gapS: Number.isFinite(gapS) ? gapS : 0,
     gapPoints: carPoints - ghostPoints,
     inLap,
+    sync: replay.options.ghostSync,
   };
 }
 

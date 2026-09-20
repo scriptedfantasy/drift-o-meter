@@ -30,6 +30,14 @@ export interface ReplayOptions {
   intensityHi: number;
   /** Build the best-lap ghost when the session is a closed circuit with ≥ 2 laps. */
   ghost: boolean;
+  /**
+   * How the ghost is placed. `distance` (default) puts it where the reference lap was at the
+   * same distance into the lap: it stays beside you showing the line through this corner.
+   * `time` puts it where that lap was at the same elapsed time: a car to chase, which is more
+   * dramatic but is off screen whenever the laps differ by more than a second or two.
+   * Either way `gapS` / `gapPoints` report the same delta.
+   */
+  ghostSync: 'distance' | 'time';
   /** Fallback points rate (pts/s at intensity 1) when the session has no per-drift score. */
   fallbackPointsPerS: number;
   /** Trim leading/trailing dead air (parked car) to this many seconds. */
@@ -298,7 +306,19 @@ export interface Replay {
     corners: Array<{ x: number; y: number; direction: 1 | -1; radiusM: number; apexS: number }>;
   } | null;
   /** Session summary for HUD chrome. */
-  info: { name: string; totalPoints: number; grade: string; driftCount: number; peakAngle: number; maxSpeed: number; severity: DriftSeverity };
+  info: {
+    name: string;
+    totalPoints: number;
+    grade: string;
+    driftCount: number;
+    /** The single biggest |β| of the session, radians. */
+    peakAngle: number;
+    /** 90th percentile of |β| while drifting — what the run actually looked like. */
+    typicalAngle: number;
+    maxSpeed: number;
+    /** Band of `typicalAngle`, so one spike does not relabel a whole session. */
+    severity: DriftSeverity;
+  };
   /** Non-fatal data problems found while building (bad timestamps, missing positions…). */
   warnings: string[];
   options: ReplayOptions;
@@ -353,6 +373,8 @@ export interface GhostPose {
   gapPoints: number;
   /** True while the car is still within the reference lap's distance. */
   inLap: boolean;
+  /** How this pose was placed (see `ReplayOptions.ghostSync`). */
+  sync: 'distance' | 'time';
 }
 
 export interface SmokeState {

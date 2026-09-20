@@ -36,8 +36,14 @@ export interface FixtureOptions {
    */
   settleAngle: number;
   settleS: number;
-  /** Split anything still longer than this at its deepest interior |β| minimum, s. */
+  /** Split anything still longer than this, s. */
   maxDurationS: number;
+  /**
+   * How much extra length each linked transition buys. A switchback must not be severed, but
+   * "has one transition" cannot license any duration: a 35 s continuous drift is still not a
+   * drift. The allowance is `maxDurationS + chainBonusS × transitions`.
+   */
+  chainBonusS: number;
   /** Points per second at the reference angle. */
   pointsPerS: number;
   /** Angle at which the angle factor is 1. */
@@ -55,6 +61,7 @@ const DEFAULT_FIXTURE: FixtureOptions = {
   settleAngle: degToRad(10),
   settleS: 0.35,
   maxDurationS: 10,
+  chainBonusS: 8,
   pointsPerS: 100,
   refAngle: degToRad(30),
   track: true,
@@ -118,36 +125,53 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
     const tail = dipStart >= 0 && truth[b].t - truth[dipStart].t >= opt.settleS ? dipStart : b;
     if (tail > segStart) split.push([segStart, tail]);
   }
-  // Anything still too long is cut at its deepest interior |β| minimum — but NEVER at a
-  // direction change. In a linked sequence the deepest interior minimum IS the transition (the
-  // zero crossing where the car flicks the other way), so a naive cutter severs precisely the
-  // moment that owns its own colour, callout, flash, shake and haptic. A switchback therefore
-  // stays one drift with its transition intact; only genuinely long same-direction slides split.
+  // Anything still too long is cut, but NEVER at a direction change: in a linked sequence the
+  // deepest interior |β| minimum IS the transition (the zero crossing where the car flicks the
+  // other way), and a naive cutter severs precisely the beat that owns its own colour, callout,
+  // flash, shake and haptic. So we cut at the CENTRE OF THE LONGEST LOBE instead, which always
+  // lands mid-slide and leaves every transition strictly inside one of the two pieces.
   const out: Array<[number, number]> = [];
-  const meanSign = (a: number, b: number): number => {
-    let acc = 0;
-    for (let i = a; i <= b; i++) acc += truth[i].beta;
-    return Math.sign(acc);
+  /** Runs of constant β sign (above the strong threshold) inside [a, b]. */
+  const lobesIn = (a: number, b: number): Array<[number, number]> => {
+    const lobes: Array<[number, number]> = [];
+    let sign = 0;
+    let start = a;
+    for (let i = a; i <= b; i++) {
+      const v = truth[i].beta;
+      const sg = Math.abs(v) > opt.strongAngle ? Math.sign(v) : 0;
+      if (sg === 0) continue;
+      if (sign === 0) {
+        sign = sg;
+        start = i;
+      } else if (sg !== sign) {
+        lobes.push([start, i - 1]);
+        sign = sg;
+        start = i;
+      }
+    }
+    if (sign !== 0) lobes.push([start, b]);
+    return lobes;
   };
   const cut = (a: number, b: number, depth: number): void => {
-    if (truth[b].t - truth[a].t <= opt.maxDurationS || depth > 4) {
+    const lobes = lobesIn(a, b);
+    const transitions = Math.max(0, lobes.length - 1);
+    const allowance = opt.maxDurationS + opt.chainBonusS * transitions;
+    if (truth[b].t - truth[a].t <= allowance || depth > 5) {
       out.push([a, b]);
       return;
     }
     const guard = Math.round(1.5 / Math.max(1e-6, truth[a + 1].t - truth[a].t));
-    const centre = 0.5 * (a + b);
-    const span = Math.max(1, b - a);
+    // cut through the middle of the longest lobe: mid-slide, never on a flick
     let best = -1;
-    let bestV = Infinity;
-    for (let i = a + guard; i <= b - guard; i++) {
-      // a tiny centre bias breaks ties: a slide held at a CONSTANT angle has no valley, and
-      // without this the first candidate wins and shaves 1.5 s off the front repeatedly
-      const v = Math.abs(truth[i].beta) + 1e-4 * (Math.abs(i - centre) / span);
-      if (v >= bestV) continue;
-      // reject a candidate that separates two lobes of OPPOSITE sign: that is a transition
-      if (meanSign(a, i) * meanSign(i, b) < 0) continue;
-      bestV = v;
-      best = i;
+    let bestLen = -1;
+    for (const [ls, le] of lobes) {
+      const mid = Math.round(0.5 * (ls + le));
+      if (mid < a + guard || mid > b - guard) continue;
+      const len = truth[le].t - truth[ls].t;
+      if (len > bestLen) {
+        bestLen = len;
+        best = mid;
+      }
     }
     if (best < 0) {
       out.push([a, b]);

@@ -28,6 +28,7 @@ export const DEFAULT_REPLAY_OPTIONS: ReplayOptions = {
   // 60°, NOT the simulator's ~49° ceiling: a 70° near-spin must look different from a 45° slide.
   intensityHi: degToRad(60),
   ghost: true,
+  ghostSync: 'distance',
   fallbackPointsPerS: 100,
   deadAirS: 1.5,
 };
@@ -506,13 +507,16 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
     const mag = clamp(seg.peakAngle / SEVERITY_EDGES.spin, 0.2, 1);
     events.push({ kind: 'entry', t: seg.startT, holdS: 0.6, magnitude: 0.45 * mag, priority: 20, label: '', driftId: seg.driftId, lapIndex: seg.lapIndex });
     if (seg.severity === 'extreme' || seg.severity === 'spin') {
+      const peakDeg = Math.round((seg.peakAngle * 180) / Math.PI);
       events.push({
         kind: seg.severity === 'spin' ? 'spin' : 'peak',
         t: seg.peakT,
         holdS: 1.1,
         magnitude: mag,
         priority: seg.severity === 'spin' ? 90 : 60,
-        label: seg.severity === 'spin' ? 'ON THE EDGE' : 'BIG ANGLE',
+        // the spin band is the one moment a driver most wants named, and it must not read the
+        // same at 70° as at 93°, so it carries its own word AND its magnitude
+        label: seg.severity === 'spin' ? `SAVED IT ${peakDeg}\u00b0` : 'BIG ANGLE',
         driftId: seg.driftId,
         lapIndex: seg.lapIndex,
       });
@@ -725,7 +729,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
       telemetry,
       highlights: [],
       track: null,
-      info: { name: session.name ?? '', totalPoints: 0, grade: session.score?.grade ?? 'D', driftCount: 0, peakAngle: 0, maxSpeed: 0, severity: 'none' },
+      info: { name: session.name ?? '', totalPoints: 0, grade: session.score?.grade ?? 'D', driftCount: 0, peakAngle: 0, typicalAngle: 0, maxSpeed: 0, severity: 'none' },
       warnings,
       options: opts,
     };
@@ -756,6 +760,13 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   const bounds = buildBounds(trail, track, opts);
   let peakAngle = 0;
   for (const s of segments) if (s.peakAngle > peakAngle) peakAngle = s.peakAngle;
+  // The session headline describes the RUN, not its single biggest spike: one 71° save used to
+  // make a whole session read "spin". Use the 90th percentile of |β| while drifting, which is
+  // what the driving actually looked like.
+  const driftAngles: number[] = [];
+  for (let k = 0; k < trail.n; k++) if (trail.segmentOf[k] >= 0) driftAngles.push(Math.abs(trail.beta[k]));
+  driftAngles.sort((a, b) => a - b);
+  const typicalAngle = driftAngles.length ? driftAngles[Math.min(driftAngles.length - 1, Math.floor(driftAngles.length * 0.9))] : 0;
   const totalPoints = session.score && Number.isFinite(session.score.total) && session.score.total > 0 ? session.score.total : trail.score[trail.n - 1];
   return {
     t0,
@@ -777,8 +788,9 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
       grade: session.score?.grade ?? 'D',
       driftCount: segments.length,
       peakAngle,
+      typicalAngle,
       maxSpeed: telemetry.maxSpeed,
-      severity: severityOf(peakAngle),
+      severity: severityOf(typicalAngle),
     },
     warnings,
     options: opts,
