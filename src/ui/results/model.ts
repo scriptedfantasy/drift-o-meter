@@ -119,6 +119,12 @@ export interface ResultsBase {
   stats: {
     /** Peak |β| anywhere in the run, drifting or not, degrees. */
     sessionPeakDeg: number;
+    /**
+     * Seconds of sliding in the RECORDING, summed from the drift events. `driftTimeS` is the
+     * seconds the scorer counted, which is zero on a run whose sliding it would not believe —
+     * reporting "5 slides, 0:00 sideways" from the two together was a contradiction.
+     */
+    recordedDriftTimeS: number;
     peakDeg: number;
     heldPeakDeg: number;
     driftTimeS: number;
@@ -445,6 +451,7 @@ export function buildResultsModel(session: Session): ResultsModel {
     gps,
     stats: {
       sessionPeakDeg: sessionPeak,
+      recordedDriftTimeS: rows.reduce((a, r) => a + r.durationS, 0),
       peakDeg: rows.reduce((m, r) => Math.max(m, r.peakDeg), 0),
       heldPeakDeg: rows.reduce((m, r) => Math.max(m, r.heldPeakDeg), 0),
       driftTimeS,

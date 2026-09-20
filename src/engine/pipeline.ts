@@ -90,6 +90,19 @@ export interface LiveFrame {
     chainActive: boolean;
     banked: boolean;
     lost: boolean;
+    /**
+     * Whether an instant of drifting WOULD earn points right now — the scorer's own verdict,
+     * not an inference from it. False while the integrity monitor does not believe the slide
+     * (loose mount, impossible physics, uncalibrated, too slow) or while the estimator's state
+     * is invalid (no usable GPS course — past `courseTimeoutS` the slip angle stops tracking).
+     *
+     * A display that wants to say "NOT SCORING" must read THIS, never guess from `integrity`:
+     * a HUD that inferred it from `gps: 'none'` announced "NO FIX — NOT SCORING" through
+     * dropouts in which the engine was scoring normally, and correctly so — see
+     * docs/ARCHITECTURE.md § "What only a phone can settle". Pair it with
+     * `integrity.message` for the reason to show.
+     */
+    counting: boolean;
     /** Callouts fired on this frame. */
     callouts: StyleCallout[];
   };
@@ -612,6 +625,7 @@ export class DriftPipeline implements DriftPipelineApi {
         chainActive: tick.chainDrifts > 0,
         banked: tick.banked,
         lost: tick.lost,
+        counting: plausible && state.valid,
         callouts,
       },
       calibration: this.cal,
@@ -971,17 +985,10 @@ export class DriftPipeline implements DriftPipelineApi {
 
   /** A valid, all-zero frame for the pathological case of a dropped very first sample. */
   private blankFrame(): LiveFrame {
-    return {
-      t: 0,
-      state: { t: 0, beta: 0, betaSigma: 1, heading: 0, course: 0, speed: 0, yawRate: 0, ay: 0, ax: 0, x: 0, y: 0, valid: false },
-      phase: 'idle',
-      live: null,
-      completed: null,
-      score: { total: 0, delta: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, callouts: EMPTY_CALLOUTS },
-      calibration: this.cal,
-      integrity: this.integritySnapshot,
-      lap: { count: 0, progress: 0, completed: null },
-    };
+    const f = idleLiveFrame(0);
+    f.calibration = this.cal;
+    f.integrity = this.integritySnapshot;
+    return f;
   }
 }
 
@@ -1022,6 +1029,28 @@ class BitMask {
     for (let i = 0; i < len; i++) out[i] = i < this.n ? (this.words[i >>> 5] >>> (i & 31)) & 1 : 1;
     return out;
   }
+}
+
+/**
+ * A frame that claims nothing: what a display shows before the first sample arrives.
+ *
+ * Exported so nothing outside the engine hand-rolls a `LiveFrame` literal. Every field added to
+ * the frame has to be answered here, and a consumer that built its own idle frame would other-
+ * wise keep compiling with the new field missing — which is how a HUD ends up guessing at a
+ * value the engine could have told it.
+ */
+export function idleLiveFrame(t = 0): LiveFrame {
+  return {
+    t,
+    state: { t, beta: 0, betaSigma: 1, heading: 0, course: 0, speed: 0, yawRate: 0, ay: 0, ax: 0, x: 0, y: 0, valid: false },
+    phase: 'idle',
+    live: null,
+    completed: null,
+    score: { total: 0, delta: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, counting: false, callouts: EMPTY_CALLOUTS },
+    calibration: { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 0, forwardResolved: false, t: 0 },
+    integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS' },
+    lap: { count: 0, progress: 0, completed: null },
+  };
 }
 
 type EventNumKey =

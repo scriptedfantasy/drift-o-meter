@@ -11,13 +11,12 @@
  * events. Skia components are imported through their `*View` wrappers so the web build never
  * evaluates Skia before CanvasKit is ready.
  */
-import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/platform';
-import { AppText, Body, Button, colors, fontFamilies, gutter, Micro, Panel, radii, space } from '@/ui';
+import { AppText, Body, Button, colors, fontFamilies, formatDuration, gradeColors, gutter, Micro, Panel, radii, space } from '@/ui';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
 import { CalloutStack, ScoreBanner } from '@/ui/hud/CalloutStack';
 import { DriftStrip, EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
@@ -25,13 +24,12 @@ import MiniMapView from '@/ui/hud/MiniMapView';
 import ScorePanel from '@/ui/hud/ScorePanel';
 import { useHudSignals } from '@/ui/hud/signals';
 import TelemetryRow from '@/ui/hud/TelemetryRow';
-import { useDriveRun } from '@/ui/hud/useDriveRun';
+import { useDriveRun, type RunError } from '@/ui/hud/useDriveRun';
 
 export default function DriveScreen() {
   const signals = useHudSignals();
   const run = useDriveRun(signals);
   const { settings } = useSettings();
-  const router = useRouter();
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
 
@@ -133,9 +131,8 @@ export default function DriveScreen() {
         </SafeAreaView>
       </Animated.View>
 
-      {run.status === 'error' && run.error ? (
-        <ErrorOverlay title={run.error.title} body={run.error.body} retryable={run.error.retryable} onRetry={run.retry} onBack={() => router.replace('/')} />
-      ) : null}
+      {run.status === 'error' && run.error ? <ErrorOverlay error={run.error} onRetry={run.retry} onLeave={run.leave} /> : null}
+      {run.status === 'discarded' ? <DiscardedOverlay onLeave={run.leave} /> : null}
       {run.status === 'saving' ? <SavingOverlay /> : null}
     </View>
   );
@@ -157,15 +154,47 @@ function StopControl({ onPress, compact = false }: { onPress: () => void; compac
   );
 }
 
-function ErrorOverlay({ title, body, retryable, onRetry, onBack }: { title: string; body: string; retryable: boolean; onRetry: () => void; onBack: () => void }) {
+function ErrorOverlay({ error, onRetry, onLeave }: { error: RunError; onRetry: () => void; onLeave: () => void }) {
+  const verdict = error.verdict;
   return (
     <View style={styles.overlay} testID="hud-error">
       <Panel accent={colors.red} style={styles.errorCard}>
-        <AppText style={[styles.errorTitle, { color: colors.red }]}>{title}</AppText>
-        <Body color="muted">{body}</Body>
+        <AppText style={[styles.errorTitle, { color: colors.red }]}>{error.title}</AppText>
+        {/* A finished run is not lost because the write failed: show what it scored. */}
+        {verdict ? (
+          <View style={styles.verdict} testID="hud-verdict">
+            <AppText style={[styles.verdictGrade, { color: gradeColors[verdict.grade] }]}>{verdict.grade}</AppText>
+            <View style={styles.verdictFacts}>
+              <AppText numeric style={styles.verdictPoints}>
+                {Math.round(verdict.points).toLocaleString('en-US')}
+              </AppText>
+              <Micro>
+                {verdict.drifts === 1 ? '1 drift' : `${verdict.drifts} drifts`} · peak {Math.round(verdict.peakDeg)}° · {formatDuration(verdict.durationS)}
+              </Micro>
+            </View>
+          </View>
+        ) : null}
+        <Body color="muted">{error.body}</Body>
         <View style={styles.errorButtons}>
-          {retryable ? <Button label="Allow access" size="md" onPress={onRetry} testID="cta-retry" /> : null}
-          <Button label="Garage" variant="secondary" size="md" onPress={onBack} testID="cta-garage" />
+          {error.retryable ? <Button label={error.retryLabel} size="md" onPress={onRetry} testID="cta-retry" /> : null}
+          <Button label="Garage" variant="secondary" size="md" onPress={onLeave} testID="cta-garage" />
+        </View>
+      </Panel>
+    </View>
+  );
+}
+
+/** A run that never got above walking pace: say so, rather than returning to an empty garage. */
+function DiscardedOverlay({ onLeave }: { onLeave: () => void }) {
+  return (
+    <View style={styles.overlay} testID="hud-discarded">
+      <Panel style={styles.errorCard}>
+        <AppText style={styles.errorTitle}>NOTHING TO SCORE</AppText>
+        <Body color="muted">
+          That run never got above walking pace and found no drifts, so it was not saved. Drive it like you stole it, then press STOP.
+        </Body>
+        <View style={styles.errorButtons}>
+          <Button label="Garage" size="md" onPress={onLeave} testID="cta-garage" />
         </View>
       </Panel>
     </View>
@@ -233,6 +262,10 @@ const styles = StyleSheet.create({
   errorTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 40, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },
 
   errorCard: { maxWidth: 420, gap: space[3] },
+  verdict: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
+  verdictGrade: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 64, lineHeight: 62 },
+  verdictFacts: { gap: 2 },
+  verdictPoints: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 34, lineHeight: 34, color: colors.ember },
   errorButtons: { flexDirection: 'row', gap: space[3], marginTop: space[2] },
 
   saving: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(7, 9, 13, 0.82)' },

@@ -7,11 +7,7 @@ import { formatScore } from '../format';
 import { alpha, colors, radii, space } from '../theme';
 import { useEnter } from './entrance';
 import type { CalloutTally } from './model';
-
-/** Callouts belong to magenta in the design language; initiation is bookkeeping, so it greys out. */
-function calloutColor(kind: string): string {
-  return kind === 'initiation' ? colors.muted : colors.magenta;
-}
+import { calloutColor } from './palette';
 
 export function CalloutReel({
   callouts,

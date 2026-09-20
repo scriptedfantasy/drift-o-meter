@@ -21,7 +21,7 @@ import { Platform } from 'react-native';
 import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import type { LiveFrame } from '../../engine/pipeline';
-import { G, radToDeg, type DriftPhase, type GpsSample, type MotionSample } from '../../engine/types';
+import { G, radToDeg, type DriftPhase, type GpsSample, type Grade, type MotionSample, type Session } from '../../engine/types';
 import {
   currentSearch,
   describeSensorError,
@@ -45,7 +45,7 @@ import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
  * four steps"): the run starts on mount, and anything the engine has not worked out yet — the
  * forward axis, the first GPS fix — is reported while it records.
  */
-export type RunStatus = 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'error';
+export type RunStatus = 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'discarded' | 'error';
 
 export type EventTone = 'ember' | 'magenta' | 'gold' | 'green' | 'cyan' | 'red';
 
@@ -96,8 +96,13 @@ export interface HudSnapshot {
   gpsEverGood: boolean;
   /** 0..1: how much of the reading the engine stands behind (see `HudSignals.trust`). */
   trust: number;
-  /** False when the run is not scoreable at all: the score block says so instead of counting. */
-  scoring: boolean;
+  /**
+   * The SCORER's own statement that points are accruing on this frame (`LiveFrame.score.counting`).
+   * Never inferred from `integrity`: through a GPS dropout the engine dead-reckons β and keeps
+   * paying, and a HUD that guessed from `gps: 'none'` told the driver their points had stopped
+   * while the results screen banked them.
+   */
+  counting: boolean;
   /** Trail points committed so far (bumps the mini-map's memo). */
   trailCount: number;
 }
@@ -107,6 +112,19 @@ export interface RunError {
   body: string;
   /** True when trying again might work (permissions, storage). */
   retryable: boolean;
+  /** The label for that retry — a storage failure is not an access request. */
+  retryLabel: string;
+  /** Set when the run FINISHED and only the save failed: the verdict is still in hand. */
+  verdict: RunVerdict | null;
+}
+
+/** The run's own result, shown when a completed run cannot be written to storage. */
+export interface RunVerdict {
+  grade: Grade;
+  points: number;
+  drifts: number;
+  peakDeg: number;
+  durationS: number;
 }
 
 export interface DriveRun {
@@ -120,8 +138,10 @@ export interface DriveRun {
   banner: HudBanner | null;
   trail: Trail;
   params: HudParams;
-  /** Retry after a failed start (a denied permission is the one case a driver can fix here). */
+  /** Retry after a failed start or a failed save. */
   retry(): void;
+  /** Leave without saving (used by the save-failed verdict and the discarded-run notice). */
+  leave(): void;
   stop(): void;
 }
 
@@ -145,7 +165,7 @@ const IDLE_SNAPSHOT: HudSnapshot = {
   forwardResolved: false,
   gpsEverGood: false,
   trust: 0,
-  scoring: false,
+  counting: false,
   trailCount: 0,
 };
 
@@ -184,15 +204,15 @@ function errorFor(err: unknown): RunError {
   const code = err instanceof SensorSourceError ? err.code : null;
   switch (code) {
     case 'permission-denied':
-      return { title: 'Motion access denied', body: 'Drift-O-Meter needs Motion & Fitness and Location to judge a run. Turn them on in Settings → Drift-O-Meter, then try again.', retryable: true };
+      return { title: 'Motion access denied', body: 'Drift-O-Meter needs Motion & Fitness and Location to judge a run. Turn them on in Settings → Drift-O-Meter, then try again.', retryable: true, retryLabel: 'Allow access', verdict: null };
     case 'unsupported':
-      return { title: 'No sensors here', body: 'This device has no usable gyroscope or GPS. Switch to the simulated source in Settings to see how a run is scored.', retryable: false };
+      return { title: 'No sensors here', body: 'This device has no usable gyroscope or GPS. Switch to the simulated source in Settings to see how a run is scored.', retryable: false, retryLabel: '', verdict: null };
     case 'services-disabled':
-      return { title: 'Location is off', body: 'Turn Location Services on — without GPS there is no direction of travel, and without that there is no slip angle.', retryable: true };
+      return { title: 'Location is off', body: 'Turn Location Services on — without GPS there is no direction of travel, and without that there is no slip angle.', retryable: true, retryLabel: 'Allow access', verdict: null };
     case 'unavailable':
-      return { title: 'Sensors unavailable', body: describeSensorError(err), retryable: true };
+      return { title: 'Sensors unavailable', body: describeSensorError(err), retryable: true, retryLabel: 'Try again', verdict: null };
     default:
-      return { title: 'Could not start the run', body: describeSensorError(err), retryable: true };
+      return { title: 'Could not start the run', body: describeSensorError(err), retryable: true, retryLabel: 'Try again', verdict: null };
   }
 }
 
@@ -219,6 +239,8 @@ export function useDriveRun(signals: HudSignals): DriveRun {
   const startedRef = useRef(false);
   const stoppingRef = useRef(false);
   const sessionIdRef = useRef<string>('');
+  /** The finished session, kept so a failed save can be retried without re-scoring the run. */
+  const sessionRef = useRef<Session | null>(null);
 
   // Hot-path scratch state (never triggers a render).
   const hot = useRef({
@@ -269,8 +291,12 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       // no fix means the scorer is not paying for this slide, so the gauge must not celebrate it.
       const integrity = params.integrity ?? f.integrity;
       if (integrity.gps === 'good') h.gpsEverGood = true;
-      const scoreable = integrity.mount !== 'loose' && integrity.physics === 'ok' && integrity.gps !== 'none' && f.state.valid;
-      h.trust = !scoreable ? 0 : integrity.mount === 'suspect' || integrity.gps === 'poor' ? 0.65 : 1;
+      // 0 when the engine has nothing to stand behind (loose mount, impossible physics, or the
+      // estimator itself dropping `valid`), 0.65 when it is working from a degraded input — a
+      // shaking mount, a weak fix, or β dead-reckoned through a dropout — and 1 otherwise.
+      const broken = integrity.mount === 'loose' || integrity.physics === 'implausible' || !f.state.valid;
+      const degraded = integrity.mount === 'suspect' || integrity.gps === 'poor' || integrity.gps === 'none';
+      h.trust = broken ? 0 : degraded ? 0.65 : 1;
 
       // Running peak of the drift in progress (the detector publishes its own only after entry).
       if (f.live) {
@@ -407,12 +433,13 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         meta.seed = sel.sim.params.seed;
         meta.rate = sel.sim.params.rate;
       }
-      const session = pipe.finish(meta);
+      const session = sessionRef.current ?? pipe.finish(meta);
+      sessionRef.current = session;
       // A run that never got above walking pace and never found a drift is the walk to the car,
-      // not a session. Discard it rather than making the driver decide (and rather than gating
-      // the start on a tap).
+      // not a session. Say so and go back rather than filing it — and rather than gating the
+      // start on a tap.
       if (hot.current.maxSpeed < WALKING_PACE_MPS && session.drifts.length === 0) {
-        router.replace('/');
+        setStatus('discarded');
         return;
       }
       const entry = await saveSession(session);
@@ -420,10 +447,23 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     } catch (err) {
       stoppingRef.current = false;
       setStatus('error');
+      // The run is FINISHED — only the write failed. Hand the driver the verdict rather than
+      // stranding them on the display with a completed run trapped behind a dialog.
+      const s = sessionRef.current;
       setError({
         title: 'Could not save the run',
-        body: err instanceof Error ? err.message : String(err),
+        body: `${err instanceof Error ? err.message : String(err)} The run itself is intact — free some space and try again, or take the verdict as it stands.`,
         retryable: true,
+        retryLabel: 'Try again',
+        verdict: s
+          ? {
+              grade: s.score.grade,
+              points: s.score.total,
+              drifts: s.drifts.length,
+              peakDeg: s.drifts.reduce((m, d) => Math.max(m, radToDeg(d.peakAngle)), 0),
+              durationS: s.durationS,
+            }
+          : null,
       });
     }
   }, [router]);
@@ -505,12 +545,20 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     void finishAndSave();
   }, [finishAndSave]);
 
-  /** A denied permission is the one failure a driver can fix without leaving: ask again. */
+  /** Retry whatever failed: a denied permission before the run, or the write after it. */
   const retry = useCallback(() => {
     setError(null);
+    if (sessionRef.current) {
+      void finishAndSave();
+      return;
+    }
     startedRef.current = false;
     start();
-  }, [start]);
+  }, [finishAndSave, start]);
+
+  const leave = useCallback(() => {
+    router.replace('/');
+  }, [router]);
 
   // Haptics follow the setting; read once and on change, never inside the hot path.
   useEffect(() => {
@@ -560,7 +608,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         forwardResolved: f.calibration.forwardResolved,
         gpsEverGood: h.gpsEverGood,
         trust: h.trust,
-        scoring: h.trust > 0,
+        counting: f.score.counting,
         trailCount: trail.n,
       });
       setEvents((prev) => (prev.length === 0 ? prev : prev.filter((e) => f.t - e.t <= CALLOUT_HOLD_S)));
@@ -593,6 +641,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     params,
     stop,
     retry,
+    leave,
   };
 }
 

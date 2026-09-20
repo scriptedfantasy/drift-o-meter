@@ -1,2 +1,34 @@
 
-===== drive  http://127.0.0.1:36439/drive?sim=harbor&rate=1&at=39.2
+===== results-reveal  http://127.0.0.1:46039/results/fixture-hero
+
+===== results-skip  http://127.0.0.1:46039/results/fixture-hero?reveal=slam
+
+===== results-reveal-hold  http://127.0.0.1:46039/results/fixture-hero?reveal=hold
+
+===== results-reveal-slam  http://127.0.0.1:46039/results/fixture-hero?reveal=slam
+
+===== results  http://127.0.0.1:46039/results/fixture-hero?reveal=off
+
+===== results-sloppy  http://127.0.0.1:46039/results/fixture-sloppy?reveal=off
+
+===== results-spin  http://127.0.0.1:46039/results/fixture-spin?reveal=off
+
+===== results-clean  http://127.0.0.1:46039/results/fixture-clean?reveal=off
+
+===== results-best  http://127.0.0.1:46039/results/fixture-hero?reveal=off
+
+===== results-drifts  http://127.0.0.1:46039/results/fixture-spin?reveal=off
+
+===== results-laps  http://127.0.0.1:46039/results/fixture-sloppy?reveal=off
+
+===== results-untrusted  http://127.0.0.1:46039/results/fixture-handheld?reveal=off
+
+===== results-untrusted-foot  http://127.0.0.1:46039/results/fixture-handheld?reveal=off
+
+===== results-integrity  http://127.0.0.1:46039/results/fixture-rough?reveal=off
+
+===== results-pipeline  http://127.0.0.1:46039/results/fixture-good?reveal=off&source=pipeline
+
+===== results-reduced  http://127.0.0.1:46039/results/fixture-hero?reveal=hold&motion=reduce
+
+===== results-missing  http://127.0.0.1:46039/results/no-such-session

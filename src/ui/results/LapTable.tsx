@@ -40,17 +40,24 @@ const LAP_COLORS = [colors.ember, colors.text, colors.cyan, colors.magenta, colo
  * peaks AND an entry spread of exactly zero. No human puts the car within 0.0 m of the same
  * point twice, so that is reported as unmeasured, never as perfection.
  */
+/**
+ * The chip carries the corner's OWN repeatability number, not a band: nine corners whose spread
+ * varies 27-fold used to show nine identical "LOCKED IN" chips, which told the driver nothing on
+ * the very run the table exists to explain. Words are kept only where a number would mislead —
+ * a spin, a skipped lap, a single trajectory.
+ */
 function verdict(score: number, skipped: number, exact: boolean, spun: boolean): { label: string; color: string } {
   // A corner the car span at is not "locked in", however alike the two laps look: the cross-lap
   // score is a coefficient of variation, and two 118° spins have a very small one.
   if (spun) return { label: 'SPUN', color: colors.red };
   if (exact) return { label: 'UNMEASURED', color: colors.muted };
   // a corner the driver only drifted on some laps is not "close", it is missing
-  if (skipped > 0) return { label: 'SKIPPED', color: colors.muted };
-  if (score >= 0.75) return { label: 'LOCKED IN', color: colors.green };
-  if (score >= 0.5) return { label: 'CLOSE', color: colors.text };
-  if (score >= 0.25) return { label: 'WANDERING', color: colors.ember };
-  return { label: 'ALL OVER', color: colors.red };
+  if (skipped > 0) return { label: `SKIPPED · ${Math.round(score * 100)}`, color: colors.muted };
+  const n = Math.round(score * 100);
+  if (score >= 0.8) return { label: `${n} / 100`, color: colors.green };
+  if (score >= 0.6) return { label: `${n} / 100`, color: colors.text };
+  if (score >= 0.35) return { label: `${n} / 100`, color: colors.ember };
+  return { label: `${n} / 100`, color: colors.red };
 }
 
 export function LapTable({ laps, corners, width, run, reduceMotion = false, testID }: LapTableProps) {
@@ -75,7 +82,7 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
     <Animated.View style={[styles.wrap, enter]} testID={testID}>
       <View style={styles.legend}>
         <AppText variant="micro" color="muted" style={styles.noCaps}>
-          Peak |β| per lap · 0–{maxDeg}° · worst corner first
+          Peak |β| per lap · 0–{maxDeg}° · worst corner first · repeatability out of 100
         </AppText>
         <View style={styles.legendKeys}>
           {laps.perCorner[0]?.laps.map((_, i) => (
@@ -105,7 +112,7 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
               <AppText variant="micro" color="muted" numberOfLines={1}>
                 {cornerShape(corner)}
               </AppText>
-              <AppText variant="micro" color="muted" numeric numberOfLines={1}>
+              <AppText variant="micro" color="muted" numeric numberOfLines={2}>
                 {spun
                   ? 'spun here'
                   : exact
@@ -158,8 +165,9 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
       })}
 
       <AppText variant="small" color="muted" style={styles.footer}>
-        Overall repeatability {Math.round(laps.overall * 100)} / 100 across {laps.lapsCompared} laps. {Math.round(DEFAULT_SCORE_OPTIONS.crossLapWeight * 100)}% of your consistency score is this
-        table; the rest is how steadily you held each angle.
+        This table's own measure: {Math.round(laps.overall * 100)} / 100 across {laps.lapsCompared} laps, every drifted corner weighted equally and docked for the laps you skipped. The scorer's
+        cross-lap term weights corners by angle instead, so it reads differently, and it is {Math.round(DEFAULT_SCORE_OPTIONS.crossLapWeight * 100)}% of your consistency score — the rest is how
+        steadily you held each angle.
       </AppText>
     </Animated.View>
   );
@@ -187,7 +195,7 @@ const styles = StyleSheet.create({
   cornerName: { fontSize: 18, lineHeight: 20 },
   plotCol: { gap: 2 },
   plotVals: { flexDirection: 'row', justifyContent: 'space-between' },
-  verdictCol: { alignItems: 'flex-end', gap: 3, minWidth: 74 },
+  verdictCol: { alignItems: 'flex-end', gap: 3, minWidth: 82 },
   footer: { marginTop: space[1] },
   // `micro` uppercases, and uppercase β is Β — a Latin-looking B. The app's own symbol must survive.
   noCaps: { textTransform: 'none' },

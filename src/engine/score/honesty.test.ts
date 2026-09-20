@@ -226,6 +226,88 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
   }, 120_000);
 });
 
+// ── GPS dropouts: dead reckoning is a measurement for a few seconds, then it is not ────────
+
+describe('a GPS dropout keeps scoring while the estimate is still a measurement', () => {
+  /** Drive a run frame by frame, keeping the truth alongside. */
+  const driveFrames = (o: Parameters<typeof simulateRun>[1], cutGpsAfterS = Infinity) => {
+    const run = simulateRun('harbor', o);
+    const p = new DriftPipeline({});
+    const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+    let j = 0;
+    let lastFixT = -Infinity;
+    const frames: Array<{ t: number; sinceFix: number; errDeg: number; counting: boolean; drifting: boolean; dPoints: number }> = [];
+    let prev = 0;
+    for (let i = 0; i < run.motion.length; i++) {
+      while (j < gps.length && gps[j].t <= run.motion[i].t) {
+        if (gps[j].t <= cutGpsAfterS) {
+          p.pushGps(gps[j]);
+          lastFixT = gps[j].t;
+        }
+        j++;
+      }
+      const f = p.pushMotion(run.motion[i]);
+      frames.push({
+        t: f.t,
+        sinceFix: f.t - lastFixT,
+        errDeg: Math.abs(radToDeg(f.state.beta - run.truth[i].beta)),
+        counting: f.score.counting,
+        drifting: f.phase !== 'idle',
+        dPoints: f.score.total - prev,
+      });
+      prev = f.score.total;
+    }
+    p.finish();
+    return { run, pipe: p, frames };
+  };
+
+  it('a few seconds without a fix is still accurate, still counting, and still paid', () => {
+    const { frames } = driveFrames({ seed: 1, laps: 2, aggression: 0.8, consistency: 0.7, gpsDropouts: true });
+    const inGap = frames.filter((f) => f.sinceFix > 1.5 && f.drifting);
+    expect(inGap.length, 'this run is meant to drift through GPS dropouts').toBeGreaterThan(100);
+
+    // the estimate is still tracking the truth: measured mean 1.4–3.2°, worse than 5° never
+    const meanErr = inGap.reduce((a, f) => a + f.errDeg, 0) / inGap.length;
+    const earned = inGap.reduce((a, f) => a + Math.max(0, f.dPoints), 0);
+    const counting = inGap.filter((f) => f.counting).length / inGap.length;
+    process.stdout.write(
+      `\nGPS DROPOUTS: ${inGap.length} drifting samples with no fix, mean |β| error ${meanErr.toFixed(2)}°, ` +
+        `${(100 * counting).toFixed(0)} % counting, ${Math.round(earned)} points earned\n`,
+    );
+    expect(meanErr, 'dead reckoning drifted off inside a short gap').toBeLessThan(5);
+    // those points are EARNED: the car really was sideways and the angle was right
+    expect(earned).toBeGreaterThan(0);
+    // The great majority still counts. The minority that does not is doubted for a stated
+    // reason at that instant (measured: slip inconsistent with the g-forces, or the forward
+    // axis unresolvable without fixes) — never a blanket "there is no fix, so no points".
+    expect(counting, 'a short gap should not stop the scorer').toBeGreaterThan(0.75);
+  }, 120_000);
+
+  it('once the estimator loses its course lock, nothing is scored and the engine says so', () => {
+    // a dropout the simulator cannot produce: GPS simply stops. Past `courseTimeoutS` the slip
+    // angle stops tracking truth — measured mean error 8.6° at 10–20 s, 24° at 40–80 s — and
+    // the engine must already be refusing to pay by then.
+    const CUT = 40;
+    const { frames } = driveFrames({ seed: 1, laps: 2, aggression: 0.8, consistency: 0.7 }, CUT);
+    const blind = frames.filter((f) => f.t > CUT + 12);
+    expect(blind.length).toBeGreaterThan(500);
+    const earned = blind.reduce((a, f) => a + Math.max(0, f.dPoints), 0);
+    const counting = blind.filter((f) => f.counting).length;
+    const meanErr = blind.reduce((a, f) => a + f.errDeg, 0) / blind.length;
+    process.stdout.write(
+      `TOTAL OUTAGE: ${blind.length} samples past ${CUT + 12} s, mean |β| error ${meanErr.toFixed(1)}°, ` +
+        `${counting} counting, ${Math.round(earned)} points earned\n`,
+    );
+    expect(meanErr, 'the estimate should have degraded — if not, this test proves nothing').toBeGreaterThan(5);
+    expect(earned, 'points were awarded from an extrapolation').toBe(0);
+    expect(counting, 'the engine claimed to be scoring while blind').toBe(0);
+    // the contrast is the point: a few seconds without a fix keeps scoring, a lost course lock
+    // does not, and one boolean on the frame tells a display which of the two it is looking at
+    const shortGap = driveFrames({ seed: 1, laps: 2, aggression: 0.8, consistency: 0.7, gpsDropouts: true }).frames.filter((f) => f.sinceFix > 1.5 && f.drifting);
+    expect(shortGap.filter((f) => f.counting).length / shortGap.length).toBeGreaterThan(0.5);
+  }, 120_000);
+});
+
 // ── the durable fallback: a session re-scored from storage, with no per-sample mask ────────
 
 describe('a stored session re-scores without the per-sample mask', () => {

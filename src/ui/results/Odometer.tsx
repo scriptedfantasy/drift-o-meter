@@ -124,7 +124,9 @@ function Digit({
     const f = Math.min(1, Math.max(0, (frac - 0.72) / 0.28)) * (1 - settle.value);
     return { transform: [{ translateY: -(digit + f) * digitH }] };
   });
-  const dim = useAnimatedStyle(() => ({ opacity: v.value >= scale || place === 0 ? 1 : 0.2 }));
+  // A leading zero is not a digit of the score, it is padding: the drive display hides them and
+  // so does this one, rather than leaving 1.16:1 ghosts beside the biggest number on the page.
+  const dim = useAnimatedStyle(() => ({ opacity: v.value >= scale || place === 0 ? 1 : 0 }));
 
   return (
     <Animated.View style={[styles.window, { height: digitH, width: digitW }, dim]}>

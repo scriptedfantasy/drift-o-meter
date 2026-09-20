@@ -221,10 +221,13 @@ function ResultsPage({
   onDrive(): void;
 }) {
   const [shareNote, setShareNote] = useState<string | null>(null);
-  const content = Math.min(width, 620) - gutter * 2;
+  // landscape gets a wider measure: a 620 px column centred in a 852 px viewport reads as a
+  // portrait page someone forgot to lay out
+  const column = Math.min(width, width > height ? 900 : 620);
+  const content = column - gutter * 2;
   // the page is a centred column; the wash still belongs to the whole screen, or its hard edges
   // read as a stray card in landscape
-  const washInset = gutter + Math.max(0, (width - Math.min(width, 620)) / 2);
+  const washInset = gutter + Math.max(0, (width - column) / 2);
   // and it stops well short of the bottom of a short (landscape) viewport, or it tints the
   // corner pixels the harness checks and, worse, washes the whole screen
   const washHeight = Math.min(440, height * 0.5);
@@ -257,7 +260,7 @@ function ResultsPage({
   }, [model]);
 
   return (
-    <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} testID="results-scroll">
+    <ScrollView style={styles.flex} contentContainerStyle={[styles.scroll, { maxWidth: column }]} showsVerticalScrollIndicator={false} testID="results-scroll">
       <View style={styles.topRow}>
         <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => pressed && styles.pressed}>
           <AppText variant="micro" color="muted">
@@ -357,7 +360,12 @@ function ResultsPage({
         <View style={styles.statStrip}>
           <Stat label={untrusted ? 'Slides recorded' : 'Slides'} value={String(model.drifts.length)} color={untrusted ? colors.muted : colors.text} size={26} />
           <Stat label="Peak angle" value={`${Math.round(model.stats.peakDeg)}°`} color={untrusted || model.stats.peakDeg === 0 ? colors.muted : colors.ember} size={26} />
-          <Stat label="Sideways" value={formatDuration(model.stats.driftTimeS)} color={untrusted ? colors.muted : colors.text} size={26} />
+          <Stat
+            label="Sideways"
+            value={formatDuration(untrusted ? model.stats.recordedDriftTimeS : model.stats.driftTimeS)}
+            color={untrusted ? colors.muted : colors.text}
+            size={26}
+          />
           {untrusted ? (
             <Stat label="Mount" value="LOOSE" color={colors.red} size={20} />
           ) : (
@@ -524,7 +532,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   boot: { flex: 1, backgroundColor: colors.bg0, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[16], maxWidth: 620, alignSelf: 'center', width: '100%' },
+  scroll: { paddingHorizontal: gutter, paddingBottom: space[16], alignSelf: 'center', width: '100%' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space[2], paddingBottom: space[3] },
   pressed: { opacity: 0.6 },
   hero: { gap: space[4] },

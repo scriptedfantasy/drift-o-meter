@@ -163,16 +163,30 @@ const CALIBRATION_GRACE_S = 8;
 export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
   const { mount, gps, physics, message } = snapshot.integrity;
   const settling = !snapshot.forwardResolved && snapshot.elapsedS < CALIBRATION_GRACE_S;
-  if (mount === 'loose') return { tier: 'severe', heading: 'LOOSE MOUNT', message, scoreNote: 'MOUNT LOOSE — THESE POINTS MAY NOT STAND' };
-  if (physics === 'implausible') return { tier: 'severe', heading: 'IMPLAUSIBLE READINGS', message, scoreNote: 'READINGS ARE NOT PHYSICALLY POSSIBLE' };
-  if (gps === 'none' && snapshot.gpsEverGood) return { tier: 'severe', heading: 'GPS LOST', message, scoreNote: 'NO FIX — NOT SCORING' };
+  // "Not scoring" is the SCORER's word (`LiveFrame.score.counting`), never this component's
+  // guess. Through a GPS dropout the engine dead-reckons β and keeps paying; a note inferred
+  // from `gps: 'none'` claimed the opposite, and the results screen then banked those points.
+  const counting = snapshot.counting;
+  const stopped = (reason: string) => `${reason} — NOT SCORING`;
+
+  if (mount === 'loose') {
+    return { tier: 'severe', heading: 'LOOSE MOUNT', message, scoreNote: counting ? 'MOUNT LOOSE — THESE POINTS MAY NOT STAND' : stopped('MOUNT LOOSE') };
+  }
+  if (physics === 'implausible') {
+    return { tier: 'severe', heading: 'IMPLAUSIBLE READINGS', message, scoreNote: counting ? 'READINGS ARE NOT PHYSICALLY POSSIBLE' : stopped('IMPLAUSIBLE READINGS') };
+  }
+  if (gps === 'none' && snapshot.gpsEverGood) {
+    return { tier: 'severe', heading: 'GPS LOST', message, scoreNote: counting ? 'NO FIX — DEAD-RECKONED FROM THE GYRO' : stopped('NO FIX') };
+  }
   // The first seconds of every run: no fix yet and the forward axis still unknown. That is the
   // monitor describing its own startup, not an alarm, and it gets said calmly.
-  if (settling) return { tier: 'calibrating', heading: 'FINDING FORWARD', message, scoreNote: gps === 'none' ? 'WAITING FOR GPS' : null };
-  if (gps === 'none') return { tier: 'warn', heading: 'WAITING FOR GPS', message, scoreNote: 'WAITING FOR GPS' };
-  if (gps === 'poor') return { tier: 'warn', heading: 'WEAK GPS', message, scoreNote: null };
-  if (mount === 'suspect') return { tier: 'warn', heading: 'MOUNT SHAKING', message, scoreNote: null };
-  if (!snapshot.forwardResolved) return { tier: 'warn', heading: 'FINDING FORWARD', message, scoreNote: null };
+  if (settling) return { tier: 'calibrating', heading: 'FINDING FORWARD', message, scoreNote: counting ? null : 'WAITING FOR THE FIRST FIX' };
+  if (gps === 'none') return { tier: 'warn', heading: 'WAITING FOR GPS', message, scoreNote: counting ? 'NO FIX YET — DEAD-RECKONED' : 'WAITING FOR THE FIRST FIX' };
+  if (gps === 'poor') return { tier: 'warn', heading: 'WEAK GPS', message, scoreNote: counting ? null : stopped('WEAK GPS') };
+  if (mount === 'suspect') return { tier: 'warn', heading: 'MOUNT SHAKING', message, scoreNote: counting ? null : stopped('MOUNT SHAKING') };
+  if (!snapshot.forwardResolved) return { tier: 'warn', heading: 'FINDING FORWARD', message, scoreNote: counting ? null : null };
+  // Everything reads fine and the scorer is simply not paying — parked, crawling, between
+  // slides. That is not a fault and the HUD does not nag about it.
   return { tier: 'ok', heading: '', message, scoreNote: null };
 }
 

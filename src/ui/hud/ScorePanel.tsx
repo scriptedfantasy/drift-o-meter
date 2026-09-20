@@ -33,8 +33,9 @@ function ScorePanelImpl({ signals, snapshot, size = 54, align = 'left', testID }
   // the results screen may never agree with.
   const integrity = readIntegrity(snapshot);
   const note = integrity.scoreNote;
-  // Red is for a fault. "Waiting for GPS" in the first seconds of a run is not one.
-  const noteTone = integrity.tier === 'severe' ? colors.red : colors.muted;
+  // Red is for a fault that has stopped the scoring. A degraded-but-still-counting note (a
+  // dead-reckoned dropout) is information, not an alarm.
+  const noteTone = integrity.tier === 'severe' && !snapshot.counting ? colors.red : integrity.tier === 'severe' ? colors.gold : colors.muted;
   const trusted = snapshot.trust > 0;
   return (
     <View style={[styles.wrap, right && styles.wrapRight]} testID={testID}>

@@ -89,6 +89,21 @@ recordings knows what to look for rather than re-tuning on a hunch.
   the assumption is checkable against what a given mount actually shows. Symptom: a slip-angle
   bias that scales with yaw rate and reverses with corner direction — left-handers reading high
   and right-handers low by the same amount, growing with how hard the corner is taken.
+* **What a GPS dropout looks like.** The engine keeps scoring through a dropout, and measurement
+  says it should: with the simulator's 2–6 s gaps the slip angle stays within 2.7° of truth on
+  average (the error with a *live* fix is 1.4°), with no bias that would inflate the angle
+  (+0.46° at 1–3 s, −2.9° at 5 s+, i.e. a long gap costs the driver rather than paying him).
+  Past the estimator's `courseTimeoutS` (8 s) the course lock is gone, the state goes
+  `valid:false`, and nothing is scored at all — measured 0 points and 0 counting samples beyond
+  12 s of a forced total outage, by which point the error has grown to 17°. The threshold that
+  matters is therefore the estimator's course timeout, not anything in the scorer.
+  **Do not gate this on `betaSigma`:** it is well calibrated while the filter is healthy (p90
+  error within a factor of 1.6 of sigma out to 6 s) and saturates at 3.0° once fixes stop, while
+  the true error climbs to 24° — it stops being informative exactly where a gate would need to
+  fire. Symptom that this needs re-deriving: a real dropout in a street canyon is not a clean
+  absence of fixes but a stream of *bad* ones — large `hAcc`, plausible-looking wrong courses —
+  which the simulator does not produce, so the 8 s figure is fitted to a clean model. Watch for
+  scores accruing through canyon sections with `hAcc` in the tens of metres.
 * **Haptics.** Never exercised — the web harness has no haptic engine, so every callout's feel
   is unverified. Symptom: buzzing on every frame, or nothing at all.
 * **Drift durations.** The detector's linked-drift cap (`maxDurationS + chainBonusS × n`) is set

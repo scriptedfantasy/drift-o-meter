@@ -57,3 +57,28 @@ export const KIND_NAMES: Record<StyleCalloutKind, string> = {
 export function gradeWord(grade: Grade, drifts: number): string {
   return drifts === 0 ? 'No slides' : GRADE_WORDS[grade];
 }
+
+/**
+ * Event colour by callout kind, matching the drive HUD's `toneFor` (src/ui/hud/useDriveRun.ts):
+ * a driver who learned gold = EXTREME ANGLE and green = PERFECT EXIT in the car must not have to
+ * unlearn it in the verdict. The two should be one exported helper — see the hand-back note.
+ */
+export function calloutColor(kind: StyleCalloutKind | string): string {
+  switch (kind) {
+    case 'transition':
+    case 'manji':
+      return colors.magenta;
+    case 'extreme-angle':
+      return colors.gold;
+    case 'smooth':
+    case 'perfect-exit':
+    case 'clean-lap':
+      return colors.green;
+    case 'high-speed':
+      return colors.cyan;
+    case 'initiation':
+      return colors.muted;
+    default:
+      return colors.ember;
+  }
+}

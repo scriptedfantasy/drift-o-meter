@@ -35,9 +35,15 @@ function wmean(items: Array<{ w: number; v: number }>): number {
   return sw > 0 ? sv / sw : 0;
 }
 
-/** The duration-weighted held peak the angle component is built on, degrees. */
+/**
+ * The duration-weighted held peak the ANGLE component is built on, degrees.
+ *
+ * Spun drifts are excluded, because `scoreSession` excludes them (`controlled` in session.ts).
+ * Quoting a 69° hold that ended in a spin next to an ANGLE of 0 made the page argue with itself.
+ */
 export function weightedHeldPeak(rows: DriftRow[]): number {
-  return wmean(rows.map((r) => ({ w: Math.max(O.minWeightS, r.durationS), v: r.heldPeakDeg })));
+  const controlled = rows.filter((r) => !r.spun);
+  return wmean(controlled.map((r) => ({ w: Math.max(O.minWeightS, r.durationS), v: r.heldPeakDeg })));
 }
 
 /** The plateau-weighted jitter the steadiness score is built on, degrees RMS. */
@@ -137,10 +143,10 @@ function praiseFor(model: ResultsBase): string | null {
   const best = model.best;
   const held = model.stats.heldPeakDeg;
   // the corner that produced the biggest HELD angle, which is not always the biggest scorer
-  const holder = model.drifts.reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
+  const holder = model.drifts.filter((r) => !r.spun).reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
   const perDrift = b.drifts > 0 ? b.transitions / b.drifts : 0;
-  if (b.angle >= 85 && best) {
-    return `Huge angles — ${round(held)}° held${holder?.corner ? ` through ${cornerLabel(holder.corner)}` : ''}`;
+  if (b.angle >= 85 && best && holder) {
+    return `Huge angles — ${round(holder.heldPeakDeg)}° held${holder.corner ? ` through ${cornerLabel(holder.corner)}` : ''}`;
   }
   if (b.spins === 0 && b.consistency >= 85 && model.lapCount >= 2) {
     return `You put the car in the same place lap after lap`;
@@ -151,8 +157,8 @@ function praiseFor(model: ResultsBase): string | null {
   if (b.quality >= 85) {
     return `Committed slides — ${Math.round(timeAtAngleFraction(model) * 100)}% of the sideways time was past ${O.qualityAngleDeg}°`;
   }
-  if (b.angle >= 70) {
-    return `Real angle on the board (${round(held)}° held)`;
+  if (b.angle >= 70 && holder) {
+    return `Real angle on the board (${round(holder.heldPeakDeg)}° held)`;
   }
   if (b.speed >= 70) {
     return `You carried ${round(meanDriftKmh(model))} km/h while sideways`;
@@ -172,6 +178,25 @@ function timeAtAngleFraction(model: ResultsBase): number {
   let at = 0;
   for (const d of model.drifts) at += d.scored?.stats.timeAtAngleS ?? 0;
   return at / total;
+}
+
+/**
+ * Fraction of the RECORDED sliding spent past the quality angle, read off the |β| traces rather
+ * than the accumulator — on an unpublished run the accumulator's seconds are all suppressed, and
+ * "0% of 0:00" is not a description of a recording that plainly contains slides.
+ */
+function recordedTimeAtAngleFraction(rows: DriftRow[]): number {
+  let at = 0;
+  let all = 0;
+  for (const r of rows) {
+    if (!r.trace.length) continue;
+    const per = r.durationS / r.trace.length;
+    for (const v of r.trace) {
+      all += per;
+      if (v >= O.qualityAngleDeg) at += per;
+    }
+  }
+  return all > 0 ? at / all : 0;
 }
 
 function meanDriftKmh(model: ResultsBase): number {
@@ -271,13 +296,17 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
   const rows = model.drifts;
   const empty = rows.length === 0;
 
-  // ---- angle
-  const bestHold = rows.reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
+  // ---- angle (spun drifts lend it nothing, so they may not be quoted for it either)
+  const controlled = rows.filter((r) => !r.spun);
+  const spunCount = rows.length - controlled.length;
+  const bestHold = controlled.reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
   const tf = trackFactorFor(medianCornerRadiusM(model.session.track), O);
   const stretched = tf.angle !== 1 || tf.speed !== 1 ? ` This track's corners (median radius ${Math.round(tf.medianRadiusM)} m) stretch the scale ×${tf.angle.toFixed(2)}.` : '';
   const angleText = empty
     ? 'No drift, no angle: the component starts at zero and stays there.'
-    : `Duration-weighted held peak ${round(weightedHeldPeak(rows))}°; the best hold was ${round(bestHold?.heldPeakDeg ?? 0)}° on drift #${bestHold?.index ?? 1}${bestHold?.corner ? ` at ${cornerLabel(bestHold.corner)}` : ''}.`;
+    : controlled.length === 0
+      ? `Every slide that reached a real angle ended in a spin, so none of them lent anything to this component — ${spunCount} of ${rows.length} spun.`
+      : `Duration-weighted held peak ${round(weightedHeldPeak(rows))}° over the ${controlled.length} slide${controlled.length === 1 ? '' : 's'} you drove out${spunCount > 0 ? ` (the ${spunCount} you spun lend nothing)` : ''}; the best hold was ${round(bestHold?.heldPeakDeg ?? 0)}° on drift #${bestHold?.index ?? 1}${bestHold?.corner ? ` at ${cornerLabel(bestHold.corner)}` : ''}.`;
   const angleScaleText = `The scale pays ${curveText(O.angleCurve, '°', tf.angle)}.${stretched}`;
 
   // ---- consistency
@@ -288,7 +317,7 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
     consText = 'Nothing to compare: consistency needs at least one held slide.';
   } else if (b.crossLapConsistency !== null && worst) {
     const vals = worst.perLap.map((v, i) => `lap ${i + 1} ${Number.isFinite(v) ? `${round(v)}°` : 'skipped'}`);
-    consText = `${Math.round(O.crossLapWeight * 100)}% cross-lap, ${Math.round((1 - O.crossLapWeight) * 100)}% steadiness. Your least repeatable corner was ${cornerTag(worst.corner)} — ${vals.join(', ')}, entry moving ${round(worst.spreadM, 1)} m. Cross-lap ${round(b.crossLapConsistency, 0)} · steadiness ${round(b.steadiness, 0)}.`;
+    consText = `${Math.round(O.crossLapWeight * 100)}% cross-lap, ${Math.round((1 - O.crossLapWeight) * 100)}% steadiness. Your least repeatable corner was ${cornerTag(worst.corner)} — ${vals.join(', ')}, entry moving ${round(worst.spreadM, 1)} m. The scorer's cross-lap term reads ${round(b.crossLapConsistency, 0)} and steadiness ${round(b.steadiness, 0)}; the lap table below scores the same corners its own way, weighting them by how often you drifted them rather than by how big the angle was.`;
   } else {
     consText = `One lap, so cross-lap consistency could not be measured and counts as neutral; the rest is steadiness: ±${round(jitter, 2)}° RMS of wobble around the angle you were aiming for.`;
   }
@@ -325,9 +354,14 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
   // tally is a verdict drawn from the very angles the monitor refused to believe.
   const scaleOf = (text: string) => (model.trusted ? text : undefined);
   if (!model.trusted) {
+    // no spin talk here either: on this page spins are not counted, so they may not be cited
+    const peakOf = rows.reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
+    const angleRecorded = empty
+      ? 'Nothing was recorded as a slide.'
+      : `Longest hold in the recording ${round(peakOf?.heldPeakDeg ?? 0)}° on drift #${peakOf?.index ?? 1}${peakOf?.corner ? ` at ${cornerLabel(peakOf.corner)}` : ''} — an angle the monitor could not vouch for.`;
     const worstUn = worst ? `${cornerTag(worst.corner)} came out ${worst.perLap.map((v) => (Number.isFinite(v) ? `${round(v)}°` : 'not at all')).join(' then ')}` : 'the corners came out differently lap to lap';
     return [
-      { key: 'angle', label: 'Angle', score: NaN, weight: w.angle, color: colors.muted, explain: angleText },
+      { key: 'angle', label: 'Angle', score: NaN, weight: w.angle, color: colors.muted, explain: angleRecorded },
       {
         key: 'consistency',
         label: 'Consistency',
@@ -342,7 +376,7 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
         score: NaN,
         weight: w.quality,
         color: colors.muted,
-        explain: `${Math.round(frac * 100)}% of the ${mmss(model.stats.driftTimeS)} of recorded sliding was past ${O.qualityAngleDeg}°. Exits and spins are not counted here.`,
+        explain: `${Math.round(recordedTimeAtAngleFraction(rows) * 100)}% of the ${mmss(model.stats.recordedDriftTimeS)} of recorded sliding was past ${O.qualityAngleDeg}°. Exits and spins are not counted here.`,
       },
       { key: 'speed', label: 'Speed', score: NaN, weight: w.speed, color: colors.muted, explain: speedText },
       { key: 'style', label: 'Style', score: NaN, weight: w.style, color: colors.muted, explain: 'Callouts are awards. A run the engine would not publish does not earn any.' },

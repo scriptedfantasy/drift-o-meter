@@ -24,7 +24,7 @@ export function idleFrame(t = 0): LiveFrame {
     phase: 'idle',
     live: null,
     completed: null,
-    score: { total: 0, delta: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, callouts: [] },
+    score: { total: 0, delta: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, counting: false, callouts: [] },
     calibration: IDENTITY_CALIBRATION,
     integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS' },
     lap: { count: 0, progress: NaN, completed: null },
