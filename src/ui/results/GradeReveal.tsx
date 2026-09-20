@@ -189,7 +189,7 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
 
 const styles = StyleSheet.create({
   root: { backgroundColor: colors.bg0, zIndex: 20 },
-  stage: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  stage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   burst: { position: 'absolute', left: '50%', top: '50%' },
   letter: {
     fontFamily: fontFamilies.display.extraboldItalic,

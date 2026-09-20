@@ -41,3 +41,10 @@ example
 # generated native folders
 /ios
 /android
+
+# Regenerable analysis output. Screenshots and the progress page stay tracked
+# because they are the record the critics judged; these are not.
+#   sessions:  npx tsx tools/analysis/run-pipeline.ts <track> <seed> <laps>
+#   raw runs:  npx tsx tools/analysis/dump-run.ts <track> <seed> <laps>
+artifacts/critic-*/
+artifacts/*.json

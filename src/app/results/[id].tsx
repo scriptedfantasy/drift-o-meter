@@ -55,7 +55,7 @@ function flatten(params: Record<string, string | string[] | undefined>): Record<
 }
 
 export default function ResultsScreen() {
-  const raw = useLocalSearchParams<Record<string, string | string[] | undefined>>();
+  const raw = useLocalSearchParams() as Record<string, string | string[] | undefined>;
   const params = useMemo(() => flatten(raw), [raw]);
   const id = params.id;
   const router = useRouter();
