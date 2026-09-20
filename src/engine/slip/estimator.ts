@@ -92,12 +92,14 @@ export interface SlipOptions {
   gyroBiasSigma0: number;
   /**
    * "Not sliding" prior: β ≈ 0 ± (priorSigmaDeg + priorSigmaDegPerAy · |a_y|) applied at priorHz
-   * once the car has been, for priorHoldS, either
-   *   - straight: |a_y| < straightAyMax (m/s²), |r| < straightYawMax (rad/s), |β̇| < priorBetaDotMax, or
-   *   - calm:     |β̇| < priorBetaDotMax (rad/s) and |β̂| < priorBetaMaxDeg (grip cornering).
-   * On a straight the prior is tight; in grip cornering it is weak (real cars run a degree or
-   * two of slip at 0.5 g) but still pins the heading-offset / slip split over time. The
-   * straight branch does not look at β̂, so a wrong β̂ can never lock itself in.
+   * once the car has been either
+   *   - calm for priorHoldS: |β̇| < priorBetaDotMax (rad/s) and |β̂| < priorBetaMaxDeg, or
+   *   - straight for straightHoldS: |a_y| < straightAyMax, |r| < straightYawMax, |β̇| small.
+   * The calm branch covers straights and grip cornering (weakly: real cars run a degree or two
+   * of slip at 0.5 g) and pins the heading-offset / slip split. The straight branch ignores β̂
+   * so a wrong β̂ can never lock itself in — but it needs a long hold, because a yaw reversal
+   * mid-drift passes through r ≈ 0, a_y ≈ 0 for up to a second with β far from zero.
+   * Prior innovations are gated like GPS ones (soft-rejected unless they persist).
    */
   priorSigmaDeg: number;
   priorSigmaDegPerAy: number;
@@ -107,6 +109,7 @@ export interface SlipOptions {
   priorHoldS: number;
   straightAyMax: number;
   straightYawMax: number;
+  straightHoldS: number;
   /** Standstill gyro-bias measurement 1σ (rad/s) per sample. */
   standstillGyroSigma: number;
   /** Position correction blend time constant (s): ~63 % applied after this, ~80 % after 0.5 s. */
@@ -148,7 +151,7 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   accelSigma: 0.25,
   speedAccelSigma: 0.12,
   accelScaleSigma: 0.02,
-  accelBiasWalk: 0.02,
+  accelBiasWalk: 0.05,
   accelBiasSigma0: 0.15,
   gyroSigma: 0.003,
   gyroBiasWalk: 0.0002,
@@ -161,6 +164,7 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   priorHoldS: 0.6,
   straightAyMax: 1.2,
   straightYawMax: 0.06,
+  straightHoldS: 2.5,
   standstillGyroSigma: 0.01,
   positionBlendS: 0.3,
   lowSpeedDecayS: 0.4,
@@ -255,6 +259,8 @@ export class SlipEstimator {
   private lastFixY = NaN;
   private lastFixT = NaN;
   private calmSince = NaN;
+  private straightSince = NaN;
+  private priorGateRun = 0;
   private betaDotFiltered = 0;
   private priorStride = 20;
   private stepCounter = 0;
@@ -346,6 +352,8 @@ export class SlipEstimator {
     this.lastFixY = NaN;
     this.lastFixT = NaN;
     this.calmSince = NaN;
+    this.straightSince = NaN;
+    this.priorGateRun = 0;
     this.betaDotFiltered = 0;
     this.stepCounter = 0;
     this.courseGateRun = 0;
@@ -539,14 +547,25 @@ export class SlipEstimator {
     const settled = moving && this.courseLocked && Math.abs(this.betaDotFiltered) < o.priorBetaDotMax;
     const straight = settled && Math.abs(ay) < o.straightAyMax && Math.abs(r - this.bias) < o.straightYawMax;
     const calm = settled && Math.abs(this.beta) < degToRad(o.priorBetaMaxDeg);
-    if (straight || calm) {
+    if (calm) {
       if (!Number.isFinite(this.calmSince)) this.calmSince = m.t;
-      if (m.t - this.calmSince >= o.priorHoldS && this.stepCounter % this.priorStride === 0) {
-        const sig = degToRad(o.priorSigmaDeg + o.priorSigmaDegPerAy * Math.abs(ay));
-        this.ekfUpdate(-this.beta, 1, 0, 0, sig * sig);
-      }
-    } else {
-      this.calmSince = NaN;
+    } else this.calmSince = NaN;
+    if (straight) {
+      if (!Number.isFinite(this.straightSince)) this.straightSince = m.t;
+    } else this.straightSince = NaN;
+    const calmReady = calm && m.t - this.calmSince >= o.priorHoldS;
+    const straightReady = straight && m.t - this.straightSince >= o.straightHoldS;
+    if ((calmReady || straightReady) && this.stepCounter % this.priorStride === 0) {
+      const sig = degToRad(o.priorSigmaDeg + o.priorSigmaDegPerAy * Math.abs(ay));
+      let R = sig * sig;
+      const nu = -this.beta;
+      const S = this.P[0] + R;
+      if (nu * nu > o.gateSigma ** 2 * S) {
+        // a β far from 0 that the filter is confident about: distrust the prior unless it persists
+        this.priorGateRun++;
+        if (this.priorGateRun < 3) R *= (nu * nu) / (o.gateSigma ** 2 * S);
+      } else this.priorGateRun = 0;
+      this.ekfUpdate(nu, 1, 0, 0, R);
     }
 
     // ── standstill: the gyro reads its bias ───────────────────────────

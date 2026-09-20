@@ -59,8 +59,20 @@ export interface MountOptions {
   forceTau: number;
   /** Inertial-up correction time constant at full trust, seconds. */
   upCorrectionTau: number;
-  /** Gyro bias estimator gain, 1/s. */
+  /** Gyro bias estimator gain while driving, 1/s (the bias is measured directly while parked). */
   upBiasGain: number;
+  /** Parked detection: |ω| (rad/s) and own acceleration (m/s²) below which the car is standing still. */
+  parkedRate: number;
+  parkedAccel: number;
+  /** Knock reference: the inertial up is compared with its own low-pass of this time constant, seconds. */
+  knockRefTau: number;
+  /** Gyro-invisible re-orientation cues: OS-gravity disagreement (deg, held s) and unexplained tilt (deg, held s). */
+  reseedGravityDeg: number;
+  reseedGravityHoldS: number;
+  reseedTiltDeg: number;
+  reseedTiltHoldS: number;
+  /** A gap between motion samples longer than this (seconds) re-seeds the inertial up from the OS gravity. */
+  gapS: number;
   /** Trust widths: acceleration (m/s²) and |f|−g (m/s²). */
   trustAccel: number;
   trustForce: number;
@@ -128,6 +140,14 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   forceTau: 0.25,
   upCorrectionTau: 2,
   upBiasGain: 0.05,
+  parkedRate: 0.02,
+  parkedAccel: 0.25,
+  knockRefTau: 1.0,
+  reseedGravityDeg: 25,
+  reseedGravityHoldS: 0.5,
+  reseedTiltDeg: 30,
+  reseedTiltHoldS: 2,
+  gapS: 0.5,
   trustAccel: 0.8,
   trustForce: 0.4,
   gravitySlowdownAccel: 3,
@@ -186,8 +206,12 @@ export interface MountDiagnostics {
   /** Combined sign score (−2..2); forward sign is its sign once |score| ≥ signAcceptScore. */
   signScore: number;
   forwardSign: 1 | -1;
-  /** Number of knocks (gravity jumps) detected since reset. */
+  /** Number of knocks (up-axis jumps) detected since reset. */
   knocks: number;
+  /** Number of inertial-up re-seeds (gyro-invisible re-orientation or sample gap) since reset. */
+  reseeds: number;
+  /** Seconds spent parked (used for direct gyro-bias measurement). */
+  parkedS: number;
   /** Number of challenger take-overs since reset. */
   innovations: number;
   /** Number of stale-line resets (sign votes uncorrelated with the line) since reset. */
@@ -233,6 +257,17 @@ export class MountCalibrator {
   private aosLp = 0; // low-passed |OS user acceleration|
   private trustSum = 0;
   private trustN = 0;
+  private wLpx = 0; // low-passed gyro (parked bias measurement)
+  private wLpy = 0;
+  private wLpz = 0;
+  private parkedSince = -1;
+  private parkedS = 0;
+  private reseeds = 0;
+  private gravDisSince = -1; // OS gravity vs inertial up disagreement start
+  private tiltSince = -1; // unexplained specific-force tilt start
+  private kx = 0; // knock reference: medium low-pass of the inertial up
+  private ky = 0;
+  private kz = 1;
   // ---- stage 2: body up = slow low-pass of the inertial up (unnormalised gs, unit u)
   private gsx = 0;
   private gsy = 0;
@@ -388,6 +423,8 @@ export class MountCalibrator {
       signScore: this.signScore,
       forwardSign: this.fwdSign,
       knocks: this.knocks,
+      reseeds: this.reseeds,
+      parkedS: this.parkedS,
       innovations: this.innovations,
       staleResets: this.staleResets,
       gpsVerified: this.gpsVerified,
@@ -413,6 +450,15 @@ export class MountCalibrator {
     this.aosLp = 0;
     this.trustSum = 0;
     this.trustN = 0;
+    this.wLpx = this.wLpy = this.wLpz = 0;
+    this.parkedSince = -1;
+    this.parkedS = 0;
+    this.reseeds = 0;
+    this.gravDisSince = -1;
+    this.tiltSince = -1;
+    this.kx = 0;
+    this.ky = 0;
+    this.kz = 1;
     this.gsx = 0;
     this.gsy = 0;
     this.gsz = 1;
@@ -481,9 +527,9 @@ export class MountCalibrator {
       this.iz = -this.flz / fn;
     }
     const before = this.angleBetween(this.gsx, this.gsy, this.gsz, this.ix, this.iy, this.iz);
-    this.gsx = this.ix;
-    this.gsy = this.iy;
-    this.gsz = this.iz;
+    this.gsx = this.kx = this.ix;
+    this.gsy = this.ky = this.iy;
+    this.gsz = this.kz = this.iz;
     this.updateUpFromSlow();
     this.devEma = 0;
     this.upAge = Math.max(this.upAge, 1.5);
@@ -561,10 +607,14 @@ export class MountCalibrator {
     const o = this.opts;
     const t = Number.isFinite(m.t) ? m.t : this.lastT;
     let dt = 0;
+    let gap = false;
     if (this.started) {
       dt = t - this.lastT;
       if (!(dt > 0)) dt = 0;
-      else if (dt > o.maxDt) dt = o.maxDt;
+      else if (dt > o.gapS) {
+        gap = true;
+        dt = o.maxDt;
+      } else if (dt > o.maxDt) dt = o.maxDt;
     }
     this.started = true;
     this.lastT = t;
@@ -604,6 +654,10 @@ export class MountCalibrator {
         this.gsy = this.iy;
         this.gsz = this.iz;
         this.updateUpFromSlow();
+      } else if (gap) {
+        // sample gap: the rotation during it is unknown — re-seed from the OS attitude filter
+        this.reseedUp(gMag > 1 ? gx : fx, gMag > 1 ? gy : fy, gMag > 1 ? gz : fz, fx, fy, fz);
+        this.hasPrevFix = false;
       } else if (dt > 0) {
         // gyro propagation of a fixed inertial vector in the rotating phone frame: u̇ = −ω × u
         const cx = wx - this.gbx;
@@ -679,6 +733,71 @@ export class MountCalibrator {
         this.iy = iy;
         this.iz = iz;
 
+        // ---- parked: measure the gyro bias directly (the session starts parked)
+        const wMag = Math.sqrt(wx * wx + wy * wy + wz * wz);
+        const kw = dt / (0.5 + dt);
+        this.wLpx += (wx - this.wLpx) * kw;
+        this.wLpy += (wy - this.wLpy) * kw;
+        this.wLpz += (wz - this.wLpz) * kw;
+        const amx0 = fx + G_ACC * ix;
+        const amy0 = fy + G_ACC * iy;
+        const amz0 = fz + G_ACC * iz;
+        const aMine = Math.sqrt(amx0 * amx0 + amy0 * amy0 + amz0 * amz0);
+        const still = wMag < o.parkedRate + 0.01 && aMine < o.parkedAccel && this.aosLp < o.parkedAccel && Math.abs(fn - G_ACC) < 0.3;
+        if (still) {
+          if (this.parkedSince < 0) this.parkedSince = t;
+          else if (t - this.parkedSince > 1) {
+            this.parkedS += dt;
+            const kb = dt / (2 + dt);
+            this.gbx = clamp(this.gbx + (this.wLpx - this.gbx) * kb, -0.05, 0.05);
+            this.gby = clamp(this.gby + (this.wLpy - this.gby) * kb, -0.05, 0.05);
+            this.gbz = clamp(this.gbz + (this.wLpz - this.gbz) * kb, -0.05, 0.05);
+          }
+        } else {
+          this.parkedSince = -1;
+        }
+
+        // ---- gyro-invisible re-orientation cues (re-mount while samples were lost, unphysical jumps)
+        let reseeded = false;
+        if (gMag > 1) {
+          const dis = this.angleBetween(-gx, -gy, -gz, ix, iy, iz);
+          if (dis > (o.reseedGravityDeg * Math.PI) / 180) {
+            if (this.gravDisSince < 0) this.gravDisSince = t;
+            else if (t - this.gravDisSince >= o.reseedGravityHoldS) {
+              this.reseedUp(gx, gy, gz, fx, fy, fz);
+              reseeded = true;
+            }
+          } else {
+            this.gravDisSince = -1;
+          }
+        }
+        if (!reseeded && fn > 1) {
+          // tilt of −f̂ against û that the expected acceleration cannot explain
+          const tilt = this.angleBetween(-this.flx, -this.fly, -this.flz, ix, iy, iz);
+          const v = t - this.gpsSpeedT < 3 ? Math.max(this.gpsSpeed, 3) : o.assumedSpeed;
+          let aExp = v * Math.abs((wx - this.gbx) * ix + (wy - this.gby) * iy + (wz - this.gbz) * iz);
+          if (t - this.gpsAccelT < 2.5 && this.gpsAccel > aExp) aExp = this.gpsAccel;
+          const explained = Math.atan2(aExp + 1.5, G_ACC);
+          if (tilt > (o.reseedTiltDeg * Math.PI) / 180 && tilt > explained) {
+            if (this.tiltSince < 0) this.tiltSince = t;
+            else if (t - this.tiltSince >= o.reseedTiltHoldS) {
+              this.reseedUp(gMag > 1 ? gx : this.flx, gMag > 1 ? gy : this.fly, gMag > 1 ? gz : this.flz, fx, fy, fz);
+              reseeded = true;
+            }
+          } else {
+            this.tiltSince = -1;
+          }
+        }
+        ix = this.ix;
+        iy = this.iy;
+        iz = this.iz;
+
+        // ---- knock reference: medium low-pass of the inertial up (a knock is a step, banking a ramp)
+        const kk = dt / (o.knockRefTau + dt);
+        this.kx += (ix - this.kx) * kk;
+        this.ky += (iy - this.ky) * kk;
+        this.kz += (iz - this.kz) * kk;
+
         // ---- stage 2: body up = slow low-pass of the inertial up
         const tau = t < this.stationaryUntil ? 0.3 : o.gravityTau;
         // hard acceleration = body roll/pitch: slow the filter down rather than chase it
@@ -692,12 +811,13 @@ export class MountCalibrator {
         this.gsz += (iz - this.gsz) * ks;
         this.updateUpFromSlow();
         this.upAge += dt;
-        // steadiness + knock detection: inertial vs body up disagreement
+        // steadiness (inertial vs body up) + knock detection (inertial vs its 1 s reference)
         const dev = this.angleBetween(this.gsx, this.gsy, this.gsz, ix, iy, iz);
         this.devEma += (dev - this.devEma) * (dt / (1 + dt));
-        if (dev > (o.gravityJumpDeg * Math.PI) / 180) {
+        const jump = this.angleBetween(this.kx, this.ky, this.kz, ix, iy, iz);
+        if (jump > (o.gravityJumpDeg * Math.PI) / 180 || reseeded) {
           if (this.jumpSince < 0) this.jumpSince = t;
-          else if (t - this.jumpSince >= o.gravityJumpHoldS) this.knock(dev);
+          if (t - this.jumpSince >= o.gravityJumpHoldS || reseeded) this.knock(dev);
         } else {
           this.jumpSince = -1;
         }
@@ -811,9 +931,9 @@ export class MountCalibrator {
       ax: R[0] * ax + R[1] * ay + R[2] * az,
       ay: R[3] * ax + R[4] * ay + R[5] * az,
       az: R[6] * ax + R[7] * ay + R[8] * az,
-      yawRate: R[6] * wx + R[7] * wy + R[8] * wz,
-      rollRate: R[0] * wx + R[1] * wy + R[2] * wz,
-      pitchRate: R[3] * wx + R[4] * wy + R[5] * wz,
+      yawRate: R[6] * (wx - this.gbx) + R[7] * (wy - this.gby) + R[8] * (wz - this.gbz),
+      rollRate: R[0] * (wx - this.gbx) + R[1] * (wy - this.gby) + R[2] * (wz - this.gbz),
+      pitchRate: R[3] * (wx - this.gbx) + R[4] * (wy - this.gby) + R[5] * (wz - this.gbz),
       calibrationQuality: this.quality,
     };
   }
@@ -998,14 +1118,30 @@ export class MountCalibrator {
   /** The phone was knocked: gravity direction jumped. Snap up, discard forward. */
   private knock(dev: number): void {
     this.knocks++;
-    this.gsx = this.ix;
-    this.gsy = this.iy;
-    this.gsz = this.iz;
+    this.gsx = this.kx = this.ix;
+    this.gsy = this.ky = this.iy;
+    this.gsz = this.kz = this.iz;
     this.updateUpFromSlow();
     this.devEma = dev;
     this.upAge = 0;
     this.jumpSince = -1;
     this.resetForward();
+  }
+
+  /** Re-seed the inertial up from a (gravity-like) vector and reset the force low-pass. */
+  private reseedUp(gx: number, gy: number, gz: number, fx: number, fy: number, fz: number): void {
+    const n = Math.sqrt(gx * gx + gy * gy + gz * gz);
+    if (n > EPS) {
+      this.ix = -gx / n;
+      this.iy = -gy / n;
+      this.iz = -gz / n;
+    }
+    this.flx = fx;
+    this.fly = fy;
+    this.flz = fz;
+    this.gravDisSince = -1;
+    this.tiltSince = -1;
+    this.reseeds++;
   }
 
   private updateUpFromSlow(): void {
