@@ -425,9 +425,14 @@ describe('IntegrityMonitor — GPS', () => {
       mon.pushMotion(m, toVehicle(m, run.mount));
       mon.pushState(truthState(run.truth[i]));
       const s = mon.state;
-      // age is exact: time since the newest fix was received (or since the first motion sample)
-      const expectedAge = Number.isFinite(lastFixT) ? Math.max(0, m.t - lastFixT) : m.t - firstT;
-      expect(Math.abs(s.gpsAgeS - expectedAge)).toBeLessThan(1e-6);
+      // Age is exact: time since the newest fix was received (or since the first motion sample),
+      // measured against the newest timestamp actually pushed. Sample timestamps carry OS jitter
+      // (σ 2 ms) and the streams are not on a shared grid — the motion sample is stamped by the
+      // sensor and the state by the estimator — so the clock is `max` over the streams, never
+      // i × dt. Asserting against the real timestamps keeps this exact to the microsecond.
+      const nowT = Math.max(m.t, run.truth[i].t);
+      const expectedAge = Number.isFinite(lastFixT) ? Math.max(0, nowT - lastFixT) : nowT - firstT;
+      expect(Math.abs(s.gpsAgeS - expectedAge)).toBeLessThan(1e-9);
       if (Number.isFinite(lastFixT)) {
         expect(s.gps).toBe(expectedAge > 3 ? 'none' : 'good');
         expect(s.hAcc).toBeLessThan(15);
@@ -557,7 +562,6 @@ describe('IntegrityMonitor — messages, robustness, reset', () => {
   it('prints the metrics table', () => {
     expect(rows.length).toBeGreaterThanOrEqual(14);
     const table = '\nIntegrity metrics (after first 3 s unless noted; RMS cues in rad/s, m/s²)\n' + rows.join('\n') + '\n';
-    console.log(table);
     // vitest 5 defaults to `silent: 'passed-only'`, which hides console.log from passing tests;
     // a direct stdout write is not captured, so the table is visible under the default config.
     process.stdout.write(table);

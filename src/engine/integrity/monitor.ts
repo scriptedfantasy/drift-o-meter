@@ -37,10 +37,12 @@
  *    mount not 'loose', physics 'ok', and — while a slide is claimed (|β| > 8°) — that the
  *    lateral g agrees with the kinematics. Rotating the body-frame accel into the velocity
  *    frame gives the centripetal acceleration a_n = ay·cosβ − ax·sinβ, which must equal
- *    v·(r + β̇) (course rate times speed). We demand |a_n| ≥ 1 m/s² (a slide with no lateral
- *    g is not a slide), the sign of a_n to match the course direction, and the magnitudes
- *    to agree within a generous tolerance. Violations charge a timer (0.5 s continuous
- *    budget, so transitions through zero lateral g are tolerated) with hysteresis.
+ *    v·(r + β̇) (course rate times speed). BOTH sides are smoothed with the same 1 Hz filter,
+ *    so the lag β̇ needs cannot masquerade as a disagreement. We demand |a_n| ≥ 1 m/s² unless
+ *    the nose is swinging faster than `slideSwingRateRadS` (mid-transition the lateral g
+ *    honestly crosses zero), the signs to match when both are meaningfully non-zero, and the
+ *    magnitudes to agree within a generous tolerance. Violations charge a timer (0.5 s
+ *    continuous budget, so transitions through zero lateral g are tolerated) with hysteresis.
  *    A parked car being waved about fails the speed gate, so it can never count.
  *
  * All outputs are always defined and finite. See `IntegrityMetrics` for the raw cues.
@@ -98,7 +100,10 @@ export interface IntegrityMetrics {
   physicsReason: number;
   /** Seconds of accumulated slip-consistency violation (0.5 s trips 'inconsistent-slip'). */
   slipViolationS: number;
-  /** Centripetal acceleration measured (ay·cosβ − ax·sinβ) and predicted (v·(r + β̇)), m/s². */
+  /**
+   * Centripetal acceleration measured (ay·cosβ − ax·sinβ) and predicted (v·(r + β̇)), m/s².
+   * Both are smoothed with the same 1 Hz filter, so they are directly comparable.
+   */
   lateralMeasured: number;
   lateralPredicted: number;
   /** Filtered slip-angle rate, rad/s. */
@@ -115,7 +120,13 @@ export interface IntegrityOptions {
   /** Band in which mount motion is looked for, Hz. */
   bandLowHz: number;
   bandHighHz: number;
-  /** Cue normalisation: this much RMS gravity-direction rate (rad/s) scores 1.0. */
+  /**
+   * Cue normalisation: this much RMS gravity-direction rate (rad/s) scores 1.0, i.e. "as loose
+   * as a phone held in a hand". Measured against the simulator: a rigid mount never exceeds
+   * 0.07 rad/s (0.09 rad/s on the off-yaw cue) on any track, mount, vibration level, sample
+   * rate or calibration error, a rattling cradle (looseness 0.25) sits at 0.37–0.53 and a
+   * hand-held phone at 1.4–2.2 — so 1.0 puts a cradle mid-band and a hand at the ceiling.
+   */
   gravityRateRef: number;
   /** This much RMS roll+pitch rate (rad/s) scores 1.0. */
   offYawRateRef: number;
@@ -148,6 +159,11 @@ export interface IntegrityOptions {
   minDriftSpeed: number;
   minGpsSpeed: number;
   minLateralAccel: number;
+  /**
+   * While the nose is swinging this fast (rad/s) the lateral g genuinely passes through zero —
+   * an initiation or a transition between linked corners — so `minLateralAccel` is not applied.
+   */
+  slideSwingRateRadS: number;
   lateralSignMin: number;
   lateralTolAbs: number;
   lateralTolRel: number;
@@ -160,15 +176,15 @@ export const DEFAULT_INTEGRITY_OPTIONS: Readonly<IntegrityOptions> = Object.free
   windowS: 2,
   bandLowHz: 0.3,
   bandHighHz: 3,
-  gravityRateRef: 0.8,
-  offYawRateRef: 0.8,
+  gravityRateRef: 1.0,
+  offYawRateRef: 1.0,
   azAllowBase: 0.5,
   azAllowPerMs: 0.03,
   azExcessRef: 1.5,
-  suspectEnter: 0.35,
-  suspectExit: 0.2,
-  looseEnter: 0.65,
-  looseExit: 0.45,
+  suspectEnter: 0.3,
+  suspectExit: 0.18,
+  looseEnter: 0.72,
+  looseExit: 0.5,
   mountDwellS: 0.5,
   handheldSwingRad: 0.17,
   handheldRateRadS: 1.2,
@@ -184,6 +200,7 @@ export const DEFAULT_INTEGRITY_OPTIONS: Readonly<IntegrityOptions> = Object.free
   minDriftSpeed: 5,
   minGpsSpeed: 2.5,
   minLateralAccel: 1,
+  slideSwingRateRadS: 0.5,
   lateralSignMin: 2,
   lateralTolAbs: 4,
   lateralTolRel: 0.6,
@@ -269,6 +286,9 @@ export class IntegrityMonitor {
   private prevBeta = 0;
   private betaDotLp: Lp1;
   private betaDot = 0;
+  /** Both sides of the lateral-g comparison, smoothed with the SAME filter (see pushState). */
+  private lateralMeasLp: Lp1;
+  private lateralPredLp: Lp1;
   private lateralMeasured = 0;
   private lateralPredicted = 0;
   private slipViolationS = 0;
@@ -299,7 +319,10 @@ export class IntegrityMonitor {
     this.yawRms = new ExpRms(o.windowS);
     this.azBp = new BandPass(o.bandLowHz, o.bandHighHz);
     this.azRms = new ExpRms(o.windowS);
-    this.betaDotLp = new Lp1(1 / (2 * Math.PI * o.betaDotFilterHz));
+    const tauLat = 1 / (2 * Math.PI * o.betaDotFilterHz);
+    this.betaDotLp = new Lp1(tauLat);
+    this.lateralMeasLp = new Lp1(tauLat);
+    this.lateralPredLp = new Lp1(tauLat);
     this.recompute();
   }
 
@@ -341,6 +364,8 @@ export class IntegrityMonitor {
     this.slideClaimed = false;
     this.prevBeta = 0;
     this.betaDotLp.reset();
+    this.lateralMeasLp.reset();
+    this.lateralPredLp.reset();
     this.betaDot = 0;
     this.lateralMeasured = this.lateralPredicted = 0;
     this.slipViolationS = 0;
@@ -430,8 +455,12 @@ export class IntegrityMonitor {
     const o = this.opts;
     const cosB = Math.cos(beta);
     const sinB = Math.sin(beta);
-    this.lateralMeasured = ay * cosB - ax * sinB; // centripetal accel from the accelerometer
-    this.lateralPredicted = speed * (r + this.betaDot); // v · course rate
+    // β̇ has to be smoothed to be usable, and smoothing lags. Run BOTH sides of the comparison
+    // through the SAME filter, so the lag cancels and only a real disagreement is left: during
+    // an initiation or a transition β̇ swings by radians per second, and comparing a smoothed
+    // prediction against an unsmoothed measurement would flag every one of them.
+    this.lateralMeasured = this.lateralMeasLp.step(ay * cosB - ax * sinB, dt); // from the accelerometer
+    this.lateralPredicted = this.lateralPredLp.step(speed * (r + rawBetaDot), dt); // v · course rate
     this.slideClaimed = Math.abs(beta) > o.slipClaimRad;
     this.speedOk = speed > o.minDriftSpeed;
 
@@ -439,8 +468,12 @@ export class IntegrityMonitor {
     if (this.slideClaimed) {
       const m = this.lateralMeasured;
       const p = this.lateralPredicted;
-      if (Math.abs(m) < o.minLateralAccel) violated = true; // sliding with no lateral g
-      else if (Math.abs(p) > o.lateralSignMin && Math.sign(m) !== Math.sign(p)) violated = true; // wrong way
+      // a car mid-swing really does pass through zero lateral g; a car that is not rotating
+      // and claims a slide with no lateral g at all is not sliding
+      const swinging = Math.abs(this.betaDot) > o.slideSwingRateRadS;
+      const small = o.lateralSignMin;
+      if (Math.abs(m) < o.minLateralAccel && !swinging) violated = true; // sliding with no lateral g
+      else if (Math.abs(p) > small && Math.abs(m) > small && Math.sign(m) !== Math.sign(p)) violated = true; // wrong way
       else if (Math.abs(m - p) > Math.max(o.lateralTolAbs, o.lateralTolRel * Math.max(Math.abs(m), Math.abs(p)))) violated = true;
     }
     // charge while violated (capped so recovery never takes longer than ~½ s), discharge twice as fast

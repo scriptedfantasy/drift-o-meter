@@ -432,7 +432,7 @@ export class DriftDetector {
       this.exc.endT = t;
     } else if (b >= o.feintAngle) {
       const c = crossing(prev, r, o.feintAngle);
-      this.exc = { startT: Math.max(c.t, this.floorT), startIdx: c.idx, sign, peak: b, endT: t };
+      this.exc = { startT: c.t, startIdx: c.idx, sign, peak: b, endT: t };
     }
 
     const sigmaMargin = o.entrySigmaK > 0 && Number.isFinite(s.betaSigma) ? o.entrySigmaK * Math.max(0, s.betaSigma) : 0;
@@ -811,7 +811,11 @@ export class DriftDetector {
       case 'entry': {
         phase = 'entry';
         const c = this.cand!;
-        const startT = Math.max(this.onsetT ?? c.startT, c.startT - this.opts.onsetMaxLookbackS, this.floorT);
+        let startT = Math.max(this.onsetT ?? c.startT, c.startT - this.opts.onsetMaxLookbackS, this.floorT);
+        // preview the same feint backdating confirmEntry will apply, so the HUD's live start
+        // does not jump when the entry is confirmed
+        const f = this.feintBefore(c.sign, startT);
+        if (f) startT = Math.max(f.startT, c.startT - this.opts.feintLookbackS, this.floorT, this.lastEventEndT);
         const p = this.pending;
         const id = p ? (startT - p.endT < this.opts.mergeGapS ? p.id : this.events.length + 2) : this.events.length + 1;
         live = live ?? {
