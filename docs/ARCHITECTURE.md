@@ -104,6 +104,26 @@ recordings knows what to look for rather than re-tuning on a hunch.
   absence of fixes but a stream of *bad* ones — large `hAcc`, plausible-looking wrong courses —
   which the simulator does not produce, so the 8 s figure is fitted to a clean model. Watch for
   scores accruing through canyon sections with `hAcc` in the tens of metres.
+* **What a run survives.** Nothing in the app observes `AppState`, so a run has no idea it was
+  ever interrupted. A phone call, a notification the driver taps, a passenger switching apps, or
+  the screen locking all put the app in the background mid-recording, and what happens then is
+  guessed rather than known. `app.json` declares `UIBackgroundModes: ["location"]` and
+  `isIosBackgroundLocationEnabled: true`, and `NSLocationAlwaysAndWhenInUseUsageDescription`
+  promises the driver that "a locked screen does not end the session" — but
+  `deviceSensorSource.ts` only ever calls `requestForegroundPermissionsAsync()`. It never asks
+  for the background permission the entitlement is there to use. That is a code fact, not a
+  device unknown, and it is a defect: the app promises the driver something in a system prompt
+  that it never requests the right to do.
+  What only a phone can settle is the rest of it. CoreMotion keeps delivering in the background
+  only while the process stays awake, which on iOS is a side effect of continuous location
+  updates rather than a guarantee — so the motion stream may stop, may continue, or may resume
+  with a jump, and the three are indistinguishable from here. **Symptom: a recording whose
+  sample timestamps jump by seconds, or whose `dtEma` spikes, with no integrity note against it
+  — the monitor currently has no concept of "the app was not running", so a hole in a run looks
+  like a phone that was merely held badly.** The thing to measure on a real device is what
+  arrives, in order, across a 30-second phone call taken mid-lap: whether motion samples
+  continue, whether their timestamps stay on the same clock, and whether the GPS stream survives
+  a locked screen at all.
 * **Haptics.** Never exercised — the web harness has no haptic engine, so every callout's feel
   is unverified. Symptom: buzzing on every frame, or nothing at all.
 * **Drift durations.** The detector's linked-drift cap (`maxDurationS + chainBonusS × n`) is set
