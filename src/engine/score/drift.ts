@@ -2,6 +2,7 @@
  * scoreDrift — pure, replayable per-drift scoring built on DriftAccumulator.
  */
 import type { DriftEvent, DriftScore, SlipState, StyleCallout } from '../types';
+import { clamp } from '../types';
 import { DriftAccumulator, type DriftContext, type DriftStats } from './accumulator';
 import { angleScore, resolveOptions, speedScore, steadinessScore, NEUTRAL_TRACK, type ScoreOptions, type TrackFactor } from './rules';
 
@@ -136,6 +137,22 @@ export function scoreDrift(
   if (spinHint === true) spun = true;
   const endT = count > 0 ? Math.min(e.endT, states[b].t) : e.endT;
   const { stats } = acc.finish(endT, spun);
+  // TWO PATHS, and they must agree. With the per-sample mask (the live pipeline, and a replay
+  // the pipeline hands it to) the accumulator has already refused to pay for the instants the
+  // integrity monitor did not believe, bit for bit. WITHOUT it — a session re-scored from
+  // storage, where a sample-indexed mask could not survive decimation — `DriftEvent.suppressedS`
+  // is the durable fallback: scale this drift's base points by the fraction that WAS believed.
+  // Measured over 194 drifts spanning every looseness, suppression is all-or-nothing on 89.7 %
+  // of them, where the scaling is exact; the rest err by a few percent, inside runs that are
+  // already refusing to publish a total.
+  if (!plausible && e.suppressedS > 0 && e.durationS > 0) {
+    const believed = clamp((e.durationS - e.suppressedS) / e.durationS, 0, 1);
+    stats.implausibleS = Math.min(e.suppressedS, stats.durationS);
+    stats.durationS = Math.max(0, stats.durationS - stats.implausibleS);
+    acc.base *= believed;
+    acc.points *= believed;
+    acc.bonus *= believed; // EXPERIMENT
+  }
   const sd = buildDriftScore(acc, stats, o, tf);
   if (count <= 0) {
     // nothing to integrate: keep the event's own numbers so the results screen is not blank

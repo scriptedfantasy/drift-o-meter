@@ -299,6 +299,12 @@ class StateStore {
     return this.objectMode;
   }
 
+  /** Timestamp of sample `i`, without materialising the whole history. */
+  timeAt(i: number): number {
+    if (i < 0 || i >= this.n) return NaN;
+    return this.objectMode ? this.objs[i].t : this.t[i];
+  }
+
   get bytes(): number {
     return this.t.byteLength + this.v.byteLength + this.ok.byteLength + this.objs.length * 304;
   }
@@ -551,7 +557,7 @@ export class DriftPipeline implements DriftPipelineApi {
     const callouts = tick.callouts.length ? this.guardCallouts(tick.callouts) : EMPTY_CALLOUTS;
     let completed = det.completed;
     if (completed) {
-      completed = this.guardEvent(completed);
+      completed = this.stampSuppressed(this.guardEvent(completed));
       this._drifts.push(completed);
       const id = this.idRemap.get(completed.id) ?? completed.id;
       this.idRemap.delete(completed.id);
@@ -703,7 +709,7 @@ export class DriftPipeline implements DriftPipelineApi {
   finish(meta: Record<string, string | number | boolean> = {}): Session {
     const closing = this.detector.finish();
     if (closing) {
-      const e = this.guardEvent(closing);
+      const e = this.stampSuppressed(this.guardEvent(closing));
       this._drifts.push(e);
       const id = this.idRemap.get(e.id) ?? e.id;
       this.idRemap.delete(e.id);
@@ -893,6 +899,30 @@ export class DriftPipeline implements DriftPipelineApi {
     return out;
   }
 
+  /**
+   * Seconds of this drift the integrity monitor refused to believe, read off the per-sample
+   * mask and written onto the event so it SURVIVES STORAGE. The mask itself is not part of a
+   * stored `Session` — it is indexed by sample, so it could not survive decimation without
+   * silently misaligning — and this number is what lets a re-score, and a results screen,
+   * know that part of the slide did not count. Once per drift, not per sample.
+   */
+  private stampSuppressed(e: DriftEvent): DriftEvent {
+    const store = this.stateStore;
+    const n = store.length;
+    if (n === 0) return e;
+    const a = Math.max(0, Math.min(n - 1, e.sampleStart | 0));
+    const b = Math.max(a, Math.min(n - 1, e.sampleEnd | 0));
+    const maxDt = this.scorer.options.maxDtS;
+    let suppressed = 0;
+    for (let i = a + 1; i <= b; i++) {
+      if (this.plausibleMask.get(i)) continue;
+      const dt = store.timeAt(i) - store.timeAt(i - 1);
+      if (dt > 0 && dt <= maxDt) suppressed += dt;
+    }
+    if (!(suppressed > 0)) return e.suppressedS === 0 ? e : { ...e, suppressedS: 0 };
+    return { ...e, suppressedS: Math.round(suppressed * 1000) / 1000 };
+  }
+
   /** Hard NaN guard on the callouts of one frame (rare path: a few per drift). */
   private guardCallouts(cs: StyleCallout[]): StyleCallout[] {
     for (const c of cs) {
@@ -979,6 +1009,12 @@ class BitMask {
   }
   get length(): number {
     return this.n;
+  }
+  /** True when sample `i` was believed (samples past the end count as believed). */
+  get(i: number): boolean {
+    if (i < 0) return true;
+    if (i >= this.n) return true;
+    return ((this.words[i >>> 5] >>> (i & 31)) & 1) === 1;
   }
   /** Dense 0/1 bytes for the first `len` samples (missing tail = believed). */
   toArray(len = this.n): Uint8Array {

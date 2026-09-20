@@ -13,7 +13,7 @@ import { DriftDetector } from '../detect';
 import { SPIN_ANGLE_DEG } from '../detect/options';
 import { DriftPipeline } from '../pipeline';
 import { simulateRun, type SimulatedRun, type TrackId } from '../../sim';
-import { degToRad, radToDeg, type Grade, type SlipState } from '../types';
+import { degToRad, radToDeg, type Grade, type Session, type SlipState } from '../types';
 import { scoreSession, countTransitions, steadinessScore, angleScore, DEFAULT_SCORE_OPTIONS, LiveScorer } from './index';
 
 // ── helpers ────────────────────────────────────────────────────────────────────────────────
@@ -223,6 +223,62 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
     const diag = pipe.diagnostics;
     expect(diag.calibrationForwardResolved || diag.calibrationQuality < 0.3).toBe(true);
     expect(pipe.breakdown!.integrity.scoreTrusted).toBe(false);
+  }, 120_000);
+});
+
+// ── the durable fallback: a session re-scored from storage, with no per-sample mask ────────
+
+describe('a stored session re-scores without the per-sample mask', () => {
+  /** Exactly what a results screen does with a session loaded from disk. */
+  const reScore = (stored: Session) =>
+    scoreSession(stored.drifts, stored.states, stored.track, undefined, {
+      integrity: { mount: stored.integrity.mount, physics: stored.integrity.physics, gps: stored.integrity.gps, message: stored.integrity.message },
+    });
+
+  it('lands within a few percent of the live total on a partially-suppressed run', () => {
+    // looseness 0.2: the monitor doubts part of several slides and all of one, and still
+    // trusts the run overall — the case where the number actually gets published
+    const pipe = drivePipe('harbor', { seed: 1, laps: 2, aggression: 0.8, consistency: 0.7, looseness: 0.2 });
+    const live = pipe.finish();
+    const stored = JSON.parse(JSON.stringify(live)) as Session;
+
+    // the fallback is on the event and survived JSON
+    for (const d of stored.drifts) expect(Number.isFinite(d.suppressedS), `drift ${d.id}`).toBe(true);
+    const partial = stored.drifts.filter((d) => d.suppressedS > 0.01 && d.suppressedS < d.durationS - 0.01);
+    expect(partial.length, 'this run is meant to exercise PARTIAL suppression').toBeGreaterThan(0);
+    expect(stored.integrity.suppressedS).toBeGreaterThan(1);
+    expect(live.score.trusted).toBe(true);
+
+    const re = reScore(stored);
+    const err = Math.abs(re.total - live.score.total) / Math.max(1, live.score.total);
+    process.stdout.write(
+      `\nRE-SCORE FROM STORAGE: live ${live.score.total} → ${re.total} (${(100 * err).toFixed(1)} %), ` +
+        `${partial.length} partially and ${stored.drifts.filter((d) => d.suppressedS >= d.durationS - 0.01).length} fully suppressed slides of ${stored.drifts.length}\n`,
+    );
+    expect(err, `re-score drifted ${(100 * err).toFixed(1)} % from the live total`).toBeLessThan(0.08);
+    // and it reproduces the VERDICT exactly, which is the part a screen must obey
+    expect(re.integrity.scoreTrusted).toBe(live.score.trusted);
+    expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
+  }, 120_000);
+
+  it('reproduces the refusal exactly on a run the monitor did not believe', () => {
+    // a fully-suppressed run: the points cannot be reconstructed from a per-drift duration —
+    // the live pass also stopped the multiplier growing and stopped time-based callouts firing —
+    // but the REFUSAL must survive storage, because that is what forbids showing them
+    const live = drivePipe('harbor', { seed: 1, laps: 2, aggression: 0.8, consistency: 0.7, looseness: 0.4 }).finish();
+    const stored = JSON.parse(JSON.stringify(live)) as Session;
+    expect(live.score.trusted).toBe(false);
+    const re = reScore(stored);
+    expect(re.integrity.scoreTrusted).toBe(false);
+    expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
+    expect(re.integrity.suppressedS).toBeGreaterThan(0.5 * live.integrity.suppressedS);
+  }, 120_000);
+
+  it('a clean run round-trips to the same total', () => {
+    const live = drivePipe('touge', { seed: 1, laps: 2, aggression: 0.8, consistency: 0.7 }).finish();
+    const stored = JSON.parse(JSON.stringify(live)) as Session;
+    expect(stored.drifts.every((d) => d.suppressedS === 0)).toBe(true);
+    expect(reScore(stored).total).toBe(live.score.total);
   }, 120_000);
 });
 

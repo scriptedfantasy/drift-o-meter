@@ -163,21 +163,23 @@ export const defaultRoutes = [
   // The scene comes from `src/engine/replay` and is drawn in Skia by `src/ui/replay/scene.ts`.
   // `/replay/<id>` plays a STORED session; `/replay/demo` (or `?fixture=`) rebuilds the same
   // deterministic fixture the results screen uses, so every frame below reproduces exactly.
-  // `play=0` freezes a moment, `ui=1` pins the transport, `cam=` picks the camera — the full
+  // `play=0` freezes a moment, `ui=1` pins the transport and `ui=0` hides it (which is what the
+  // app itself does a few seconds into playback, so those frames are the watching state), `cam=`
+  // picks the camera — the full
   // parameter table is in tools/harness/README.md. Times are for the `good` fixture and MOVE
   // when the detector or the scorer is retuned.
   // LIVE, from the top, chase camera: this is the one to record video of (the callout slam, the
   // shake, the smoke and the camera cut only exist in motion).
   { name: 'replay', path: '/replay/demo?cam=chase&t=93', waitMs: 3000, expectCanvas: true, minEmber: 1500 },
   // TRACK CAM at the half-way point: the whole circuit, the played line only, drift peaks blooming.
-  { name: 'replay-overview', path: '/replay/demo?cam=overview&t=60&play=0&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
+  { name: 'replay-overview', path: '/replay/demo?cam=overview&t=60&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
   // CHASE at the peak of the 3-link chain in lap 2: 54 deg, ember ribbon, smoke, slip arc.
   { name: 'replay-chase', path: '/replay/demo?cam=chase&t=95.9&play=0&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 2000 },
   // CINEMATIC 120 ms after TRANSITION x3 fired: the magenta chip, the callout mid-hold.
-  { name: 'replay-cinematic', path: '/replay/demo?cam=cinematic&t=39.14&play=0&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 800 },
+  { name: 'replay-cinematic', path: '/replay/demo?cam=cinematic&t=39.14&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 800 },
   // The best-lap ghost, far enough off the line to be a car rather than a badge (the `rough`
   // fixture is the REAL pipeline, so its two laps genuinely differ).
-  { name: 'replay-ghost', path: '/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=1', waitMs: 3600, expectCanvas: true, minEmber: 800 },
+  { name: 'replay-ghost', path: '/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 800 },
   // A highlight jump: the transport lands on the best moment of the run and names it.
   { name: 'replay-highlight', path: '/replay/demo?hl=1&play=0&cam=chase&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 1200 },
   // The scrubber MID-DRAG: a real pointer sequence on the touch target, released nowhere, so the
@@ -190,10 +192,10 @@ export const defaultRoutes = [
     actions: [{ type: 'eval', js: dragScrubber('replay-scrubber', 0.36) }, { type: 'wait', ms: 700 }],
   },
   // A hand-held recording: it still replays, and it must not present points or a grade.
-  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=1', waitMs: 4200, expectCanvas: true, minEmber: 800 },
+  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true, minEmber: 800 },
   // Bad data: `gaps=6` blanks six seconds of recorded position (a tunnel), so buildReplay's own
   // warnings fire and the dead-reckoned stretch is dashed instead of glowing.
-  { name: 'replay-warnings', path: '/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=1', waitMs: 3600, expectCanvas: true, minEmber: 1200 },
+  { name: 'replay-warnings', path: '/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 1200 },
   // The warnings plate opened: the sentences behind the red plate.
   {
     name: 'replay-warnings-open',
@@ -203,8 +205,8 @@ export const defaultRoutes = [
     actions: [{ type: 'tap', testId: 'replay-warn-toggle' }, { type: 'wait', ms: 500 }],
   },
   // The last frame: the grade lands only once the run is over.
-  { name: 'replay-end', path: '/replay/demo?cam=overview&t=999&play=0&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
+  { name: 'replay-end', path: '/replay/demo?cam=overview&t=999&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
   // A point-to-point stage: no laps, so no lap ticks and no ghost — STAGE, not LAP 1/2.
-  { name: 'replay-touge', path: '/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=1', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
+  { name: 'replay-touge', path: '/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
   { name: 'settings', path: '/settings', waitMs: 900 },
 ];

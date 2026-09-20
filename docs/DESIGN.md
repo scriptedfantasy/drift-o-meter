@@ -36,6 +36,27 @@ that matters at a time, and drama exactly at the moments a drift has drama.
   damped; the trail glows additively; smoke puffs drift and fade.
 * Respect reduce-motion: keep state changes, drop shakes/particles.
 
+## The whole app is four steps
+
+This is the product, and anything that does not serve it is in the way:
+
+1. **Calibrate, only if necessary.** Not a step. The engine needs no gesture: it finds the
+   vertical from gravity and the forward axis from the first hard acceleration, while driving.
+   So calibration is a background process that the drive screen reports on, and the calibration
+   SCREEN exists only for when something is actually wrong — a phone lying flat, a loose cradle,
+   an axis that will not resolve. A driver who never opens it should never be worse off.
+2. **Before the run, one button.** Tapping DRIVE starts recording. There is no second
+   confirmation, no arming step, no countdown. If a permission is missing, that is the moment to
+   ask for it; if the mount is not yet understood, the display says so while already recording,
+   because the calibration finishes during the first corners anyway.
+3. **Drive.** The display is read at a glance. One control on it: STOP.
+4. **After the run, the verdict.** Stopping saves the session and goes straight to the results.
+   No save dialog, no naming step, no confirmation.
+
+Everything else in the app — the replay, the session list, the personal bests, the settings — is
+reached from those four, never inserted between them. When a feature and this flow disagree, the
+flow wins.
+
 ## Screens
 ### Drive HUD (`/drive`)
 Portrait: status row (session clock, lap, integrity pill, GPS pill) → the angle gauge: a
