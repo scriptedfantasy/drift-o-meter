@@ -19,11 +19,13 @@ export interface BestDriftCardProps {
   width: number;
   run: boolean;
   reduceMotion?: boolean;
+  /** The run was not trusted: no points, no multiplier, no "best" — just the biggest slide. */
+  unscored?: boolean;
   onWatch(): void;
   testID?: string;
 }
 
-export function BestDriftCard({ drift, width, run, reduceMotion = false, onWatch, testID }: BestDriftCardProps) {
+export function BestDriftCard({ drift, width, run, reduceMotion = false, unscored = false, onWatch, testID }: BestDriftCardProps) {
   const enter = useEnter(140, run, reduceMotion);
   const inner = width - space[4] * 2 - 2;
   const dir = drift.direction === 1 ? 'RIGHT-HAND' : 'LEFT-HAND';
@@ -35,7 +37,7 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, onWatch
         <View style={styles.top}>
           <View style={styles.topLeft}>
             <AppText variant="micro" color="muted">
-              Peak angle · drift #{drift.index}
+              Peak angle · drift #{drift.index}{unscored ? ' · as recorded' : ''}
             </AppText>
             <View style={styles.peakRow}>
               <AppText variant="display" color={accent} numeric style={styles.peak}>
@@ -49,17 +51,31 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, onWatch
               </View>
             </View>
           </View>
-          <View style={styles.points}>
-            <AppText variant="micro" color="muted">
-              Points
-            </AppText>
-            <AppText variant="telemetry" color="ember" numeric style={styles.pointsValue}>
-              {formatScore(drift.points)}
-            </AppText>
-            <AppText variant="micro" color="magenta" numeric>
-              ×{drift.multiplier.toFixed(2)} multiplier
-            </AppText>
-          </View>
+          {unscored ? (
+            <View style={styles.points}>
+              <AppText variant="micro" color="muted">
+                Points
+              </AppText>
+              <AppText variant="telemetry" color="muted" style={styles.pointsValue}>
+                --
+              </AppText>
+              <AppText variant="micro" color="muted">
+                not scored
+              </AppText>
+            </View>
+          ) : (
+            <View style={styles.points}>
+              <AppText variant="micro" color="muted">
+                Points
+              </AppText>
+              <AppText variant="telemetry" color="ember" numeric style={styles.pointsValue}>
+                {formatScore(drift.points)}
+              </AppText>
+              <AppText variant="micro" color="magenta" numeric>
+                ×{drift.multiplier.toFixed(2)} multiplier
+              </AppText>
+            </View>
+          )}
         </View>
 
         <Sparkline
@@ -87,7 +103,7 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, onWatch
           <Stat label="Exit" value={drift.spun ? 'SPUN' : drift.cleanExit ? 'CLEAN' : 'SNATCHED'} color={drift.spun ? colors.red : drift.cleanExit ? colors.green : colors.gold} size={20} />
         </View>
 
-        <Button label="Replay this drift" variant="secondary" size="md" onPress={onWatch} style={styles.cta} testID="cta-watch-best" />
+        <Button label={unscored ? 'Watch this moment' : 'Replay this drift'} variant="secondary" size="md" onPress={onWatch} style={styles.cta} testID="cta-watch-best" />
       </View>
     </Animated.View>
   );

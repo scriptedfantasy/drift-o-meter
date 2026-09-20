@@ -110,8 +110,9 @@ export default function ResultsScreen() {
 
   const [revealed, setRevealed] = useState(reveal === 'off');
   const onRevealDone = useCallback(() => setRevealed(true), []);
-  // a frozen reveal covers the page, but the page underneath is in its settled state
-  const pageRun = revealed || frozen;
+  // a frozen reveal covers the page, but the page underneath is in its settled state; an
+  // untrusted run never gets a reveal, so its page starts straight away
+  const pageRun = revealed || frozen || (model !== null && !model.trusted);
   // ...and a tap dismisses even a frozen one, which is how the harness proves the skip works
 
   const loading = spec ? fixtureSession === null : stored.loading;
@@ -151,8 +152,9 @@ export default function ResultsScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
         <ResultsPage model={model} width={width} run={pageRun} reduceMotion={reduceMotion} onReplay={openReplay} onGarage={() => router.replace('/')} onDrive={() => router.replace('/drive')} />
       </SafeAreaView>
-      {/* unmounted once it has played: a finished overlay must not keep eating taps */}
-      {reveal === 'off' || revealed ? null : (
+      {/* No grade reveal for a run the engine will not vouch for: there is no grade to slam in.
+          And once it has played it is unmounted, so a finished overlay never keeps eating taps. */}
+      {reveal === 'off' || revealed || !model.trusted ? null : (
         <GradeReveal
           grade={model.grade}
           color={model.gradeColor}
@@ -199,9 +201,12 @@ function ResultsPage({
   const content = Math.min(width, 620) - gutter * 2;
   const letter = Math.min(168, content * 0.44);
   const hasDrifts = model.drifts.length > 0;
+  /** The engine refused to publish a score: no grade, no points presented as an achievement. */
+  const untrusted = !model.trusted;
 
   const share = useCallback(async () => {
-    if (Platform.OS === 'web') return;
+    // an untrusted run has no score to publish — see the contract on SessionIntegrity.scoreTrusted
+    if (Platform.OS === 'web' || !model.trusted) return;
     try {
       const [fs, sharing] = await Promise.all([import('expo-file-system'), import('expo-sharing')]);
       if (!(await sharing.isAvailableAsync())) {
@@ -238,7 +243,8 @@ function ResultsPage({
       {/* ---- hero ------------------------------------------------------------------ */}
       <View style={styles.hero}>
         <LinearGradient
-          colors={[alpha(model.gradeColor, 0.2), alpha(model.gradeColor, 0.04), 'transparent']}
+          // no grade, no grade colour: an unpublished run gets the warning wash, not a laurel
+          colors={[alpha(untrusted ? colors.red : model.gradeColor, untrusted ? 0.16 : 0.2), alpha(untrusted ? colors.red : model.gradeColor, 0.04), 'transparent']}
           locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -246,74 +252,118 @@ function ResultsPage({
           pointerEvents="none"
         />
         <View style={styles.heroTop}>
-          <View style={styles.gradeBox}>
-            <AppText variant="micro" color="muted" style={styles.gradeLabel}>
-              Grade
-            </AppText>
-            <AppText
-              variant="hero"
-              color={model.gradeColor}
-              accessibilityRole="header"
-              style={[styles.grade, { fontSize: letter, lineHeight: letter * 0.98, textShadowColor: model.gradeColor }]}>
-              {model.grade}
-            </AppText>
-          </View>
-          <View style={styles.heroRight}>
-            <AppText variant="micro" color="muted">
-              Session score
-            </AppText>
-            <Odometer value={model.total} run={run} reduceMotion={reduceMotion} fontSize={Math.min(56, content * 0.15)} color={colors.ember} testID="score-odometer" />
-            <View style={styles.ratingRow}>
-              <AppText variant="subheading" color={model.gradeColor}>
-                {GRADE_WORDS[model.grade]}
+          {untrusted ? (
+            <View style={styles.gradeBox}>
+              <AppText variant="micro" color="muted" style={styles.gradeLabel}>
+                Verdict
               </AppText>
-              <AppText variant="micro" color="muted" numeric>
-                {ratingText(model.rating)} / 100
+              <View style={styles.voidPlate} testID="not-scored">
+                <AppText variant="display" color="red" accessibilityRole="header" style={styles.voidWord}>
+                  NOT
+                </AppText>
+                <AppText variant="display" color="red" style={styles.voidWord}>
+                  SCORED
+                </AppText>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.gradeBox}>
+              <AppText variant="micro" color="muted" style={styles.gradeLabel}>
+                Grade
+              </AppText>
+              <AppText
+                variant="hero"
+                color={model.gradeColor}
+                accessibilityRole="header"
+                style={[styles.grade, { fontSize: letter, lineHeight: letter * 0.98, textShadowColor: model.gradeColor }]}>
+                {model.grade}
               </AppText>
             </View>
+          )}
+          <View style={styles.heroRight}>
+            <AppText variant="micro" color="muted">
+              {untrusted ? 'Points logged' : 'Session score'}
+            </AppText>
+            <Odometer
+              value={model.total}
+              run={run}
+              reduceMotion={reduceMotion}
+              fontSize={Math.min(untrusted ? 40 : 56, content * (untrusted ? 0.11 : 0.15))}
+              color={untrusted ? colors.muted : colors.ember}
+              testID="score-odometer"
+            />
+            {untrusted ? (
+              <AppText variant="micro" color="red" style={styles.floorNote}>
+                A floor, not a measurement
+              </AppText>
+            ) : (
+              <View style={styles.ratingRow}>
+                <AppText variant="subheading" color={model.gradeColor}>
+                  {GRADE_WORDS[model.grade]}
+                </AppText>
+                <AppText variant="micro" color="muted" numeric>
+                  {ratingText(model.rating)} / 100
+                </AppText>
+              </View>
+            )}
             <AppText variant="micro" color="muted" numberOfLines={1}>
               {sessionTrack(model)}
             </AppText>
           </View>
         </View>
 
-        <GradeScale rating={model.rating} grade={model.grade} color={model.gradeColor} run={run} reduceMotion={reduceMotion} testID="grade-scale" />
+        {untrusted ? null : <GradeScale rating={model.rating} grade={model.grade} color={model.gradeColor} run={run} reduceMotion={reduceMotion} testID="grade-scale" />}
 
-        <View style={[styles.verdict, { borderLeftColor: model.gradeColor }]}>
-          <AppText variant="bodyStrong" style={styles.verdictText} testID="verdict">
+        <View style={[styles.verdict, { borderLeftColor: untrusted ? colors.red : model.gradeColor }]}>
+          <AppText variant="bodyStrong" color={untrusted ? 'red' : 'text'} style={styles.verdictText} testID="verdict">
             {model.verdict}
           </AppText>
+          {untrusted ? (
+            <AppText variant="small" color="muted" style={styles.verdictSub}>
+              The recording is still here to watch — only the judgement is void.
+            </AppText>
+          ) : null}
         </View>
 
         <View style={styles.statStrip}>
-          <Stat label="Slides" value={String(model.drifts.length)} size={26} />
-          <Stat label="Peak angle" value={`${Math.round(model.stats.peakDeg)}°`} color={model.stats.peakDeg > 0 ? colors.ember : colors.muted} size={26} />
-          <Stat label="Sideways" value={formatDuration(model.stats.driftTimeS)} size={26} />
-          <Stat label="Best chain" value={formatScore(model.stats.longestChainPoints)} color={model.stats.longestChainPoints > 0 ? colors.magenta : colors.muted} size={26} />
+          <Stat label={untrusted ? 'Slides recorded' : 'Slides'} value={String(model.drifts.length)} color={untrusted ? colors.muted : colors.text} size={26} />
+          <Stat label="Peak angle" value={`${Math.round(model.stats.peakDeg)}°`} color={untrusted || model.stats.peakDeg === 0 ? colors.muted : colors.ember} size={26} />
+          <Stat label="Sideways" value={formatDuration(model.stats.driftTimeS)} color={untrusted ? colors.muted : colors.text} size={26} />
+          {untrusted ? (
+            <Stat label="Mount" value="LOOSE" color={colors.red} size={20} />
+          ) : (
+            <Stat label="Best chain" value={formatScore(model.stats.longestChainPoints)} color={model.stats.longestChainPoints > 0 ? colors.magenta : colors.muted} size={26} />
+          )}
         </View>
+        {untrusted ? (
+          <AppText variant="micro" color="muted">
+            As recorded, not as judged
+          </AppText>
+        ) : null}
 
         <View style={styles.tags}>
+          {untrusted ? <Tag label="SCORE WITHHELD" color={colors.red} filled /> : null}
           {model.stats.spins > 0 ? <Tag label={`${model.stats.spins} SPIN${model.stats.spins === 1 ? '' : 'S'}`} color={colors.red} filled /> : null}
-          {model.stats.cleanLaps > 0 ? <Tag label={`${model.stats.cleanLaps} CLEAN LAP${model.stats.cleanLaps === 1 ? '' : 'S'}`} color={colors.green} /> : null}
+          {!untrusted && model.stats.cleanLaps > 0 ? <Tag label={`${model.stats.cleanLaps} CLEAN LAP${model.stats.cleanLaps === 1 ? '' : 'S'}`} color={colors.green} /> : null}
           {model.lapCount > 0 ? <Tag label={`${model.lapCount} LAPS`} color={colors.muted} /> : <Tag label="POINT TO POINT" color={colors.muted} />}
           {model.simulated ? <Tag label={model.session.meta?.engine === 'pipeline' ? 'SIM · FULL PIPELINE' : 'SIM · FIXTURE'} color={colors.muted} /> : null}
         </View>
       </View>
 
       {/* ---- components ------------------------------------------------------------ */}
-      <SectionHead title="Score breakdown" right={`${ratingText(model.rating)} / 100`} />
-      <ComponentBars rows={model.components} run={run} reduceMotion={reduceMotion} testID="component-bars" />
+      <SectionHead title="Score breakdown" right={untrusted ? 'not published' : `${ratingText(model.rating)} / 100`} accent={untrusted ? colors.red : colors.ember} />
+      <ComponentBars rows={model.components} run={run} reduceMotion={reduceMotion} unmeasured={untrusted} testID="component-bars" />
 
       {/* ---- best drift ------------------------------------------------------------ */}
       {model.best ? (
         <>
-          <SectionHead title="Best drift" right={`#${model.best.index} of ${model.drifts.length}`} />
-          <BestDriftCard drift={model.best} width={content} run={run} reduceMotion={reduceMotion} onWatch={() => onReplay(model.best ?? undefined)} testID="best-drift" />
+          <SectionHead title={untrusted ? 'Biggest slide' : 'Best drift'} right={`#${model.best.index} of ${model.drifts.length}`} accent={untrusted ? colors.muted : colors.ember} />
+          <BestDriftCard drift={model.best} width={content} run={run} reduceMotion={reduceMotion} unscored={untrusted} onWatch={() => onReplay(model.best ?? undefined)} testID="best-drift" />
         </>
       ) : null}
 
       {/* ---- callouts -------------------------------------------------------------- */}
-      {hasDrifts ? (
+      {hasDrifts && !untrusted ? (
         <>
           <SectionHead title="Callouts earned" right={`+${formatScore(model.calloutPoints)}`} />
           <CalloutReel callouts={model.callouts} points={model.calloutPoints} lostPoints={model.lostPoints} run={run} reduceMotion={reduceMotion} testID="callout-reel" />
@@ -323,8 +373,8 @@ function ResultsPage({
       {/* ---- every slide ----------------------------------------------------------- */}
       {hasDrifts ? (
         <>
-          <SectionHead title="Every slide" right={`${model.drifts.length} · tap to replay`} />
-          <DriftList rows={model.drifts} sparkWidth={Math.max(80, content - 190)} run={run} reduceMotion={reduceMotion} onSeek={onReplay} testID="drift-list" />
+          <SectionHead title={untrusted ? 'What the recording contains' : 'Every slide'} right={`${model.drifts.length} · tap to replay`} accent={untrusted ? colors.muted : colors.ember} />
+          <DriftList rows={model.drifts} sparkWidth={Math.max(80, content - 190)} run={run} reduceMotion={reduceMotion} unscored={untrusted} onSeek={onReplay} testID="drift-list" />
         </>
       ) : (
         <>
@@ -341,7 +391,8 @@ function ResultsPage({
       )}
 
       {/* ---- lap consistency ------------------------------------------------------- */}
-      {model.laps ? (
+      {/* repeatability is a judgement of driving: an unpublished run does not get one */}
+      {model.laps && !untrusted ? (
         <>
           <SectionHead title="Lap consistency" right={`${model.laps.lapsCompared} laps`} />
           <LapTable laps={model.laps} corners={model.corners} width={content} run={run} reduceMotion={reduceMotion} testID="lap-table" />
@@ -354,13 +405,13 @@ function ResultsPage({
 
       {/* ---- actions --------------------------------------------------------------- */}
       <View style={styles.actions}>
-        <Button label="Watch replay" size="lg" onPress={() => onReplay()} testID="cta-replay" style={styles.wide} />
+        <Button label={untrusted ? 'Watch the recording' : 'Watch replay'} size="lg" onPress={() => onReplay()} testID="cta-replay" style={styles.wide} />
         <View style={styles.actionRow}>
           <Button
             label="Share"
             variant="secondary"
             onPress={share}
-            disabled={Platform.OS === 'web'}
+            disabled={Platform.OS === 'web' || untrusted}
             testID="cta-share"
             style={styles.half}
           />
@@ -371,7 +422,11 @@ function ResultsPage({
             {shareNote}
           </AppText>
         ) : null}
-        {Platform.OS === 'web' ? (
+        {untrusted ? (
+          <AppText variant="micro" color="red">
+            There is nothing to share: the engine would not publish a score for this run.
+          </AppText>
+        ) : Platform.OS === 'web' ? (
           <AppText variant="micro" color="muted">
             Sharing needs the iOS share sheet; the browser build cannot open it.
           </AppText>
@@ -380,7 +435,7 @@ function ResultsPage({
 
       <AppText variant="micro" color="muted" style={styles.footer}>
         {model.simulated
-          ? `Simulated session · ${String(model.session.meta?.fixtureQuery ?? model.session.meta?.trackId ?? '')} · scored by the same engine as a real run`
+          ? `Simulated session · ${String(model.session.meta?.fixtureQuery ?? model.session.meta?.trackId ?? '')} · ${untrusted ? 'judged by the same engine as a real run, and refused for the same reasons' : 'scored by the same engine as a real run'}`
           : `Session ${model.session.id} · ${model.session.states.length.toLocaleString('en-US')} estimator samples · ${model.gps.fixes} GPS fixes`}
       </AppText>
     </ScrollView>
@@ -458,7 +513,11 @@ const styles = StyleSheet.create({
   },
   heroRight: { flex: 1, alignItems: 'flex-end', gap: 2, paddingTop: space[2] },
   ratingRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
-  verdict: { borderLeftWidth: 3, paddingLeft: space[4], paddingVertical: space[1] },
+  verdict: { borderLeftWidth: 3, paddingLeft: space[4], paddingVertical: space[1], gap: space[2] },
+  verdictSub: {},
+  voidPlate: { borderWidth: 2, borderColor: colors.red, paddingHorizontal: space[3], paddingVertical: space[2], alignSelf: 'flex-start', marginTop: space[2] },
+  voidWord: { fontSize: 40, lineHeight: 38, letterSpacing: -1 },
+  floorNote: { marginTop: 2 },
   verdictText: { fontSize: 18, lineHeight: 25 },
   statStrip: { flexDirection: 'row', justifyContent: 'space-between', gap: space[2], flexWrap: 'wrap' },
   tags: { flexDirection: 'row', gap: space[2], flexWrap: 'wrap' },

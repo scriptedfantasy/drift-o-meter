@@ -27,8 +27,12 @@ export interface FixtureSpec {
   spins: number;
   /** Drive it on grip: |β| stays under 5°, so there is honestly nothing to detect. */
   noDrifts: boolean;
-  /** Rattling cradle + GPS dropouts, so the integrity notes have something true to report. */
-  rough: boolean;
+  /**
+   * How badly the phone moves relative to the car: 0 rigid, 0.7 a rattling cradle, 1 hand-held.
+   * Anything above 0 also turns on GPS dropouts and rough vibration, so the integrity notes have
+   * something true to report. At 1 the pipeline's monitor refuses to trust the score at all.
+   */
+  looseness: number;
   /**
    * `sim` fills the session from simulator ground truth (fast, ~200 ms).
    * `pipeline` pushes the simulated sensors through the REAL engine pipeline — mount
@@ -49,7 +53,7 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
   consistency: 0.7,
   spins: 0,
   noDrifts: false,
-  rough: false,
+  looseness: 0,
 };
 
 /**
@@ -67,8 +71,10 @@ export const FIXTURES: Record<string, FixtureSpec> = {
   spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spins: 1, blurb: 'Spun it · chain lost' },
   /** Nothing slid: a clean lap with no drift events at all. */
   clean: { ...BASE, name: 'clean', seed: 2, aggression: 0.2, consistency: 0.9, noDrifts: true, blurb: 'Clean lap · no slides' },
-  /** Bad data: phone loose in the cradle, GPS dropping out. */
-  rough: { ...BASE, name: 'rough', source: 'pipeline', seed: 6, aggression: 0.9, consistency: 0.55, rough: true, blurb: 'Loose mount · poor GPS' },
+  /** Bad data: phone loose in the cradle, GPS dropping out — scored, but with warnings. */
+  rough: { ...BASE, name: 'rough', source: 'pipeline', seed: 6, aggression: 0.9, consistency: 0.55, looseness: 0.2, blurb: 'Unsteady mount · poor GPS' },
+  /** Worse: the phone was in someone's hand. The engine refuses to publish a score at all. */
+  handheld: { ...BASE, name: 'handheld', source: 'pipeline', seed: 4, aggression: 0.9, consistency: 0.7, looseness: 1, blurb: 'Hand-held · not scored' },
   /** Point-to-point mountain road: no laps, so the lap table is correctly absent. */
   touge: { ...BASE, name: 'touge', track: 'touge', seed: 3, laps: 1, aggression: 1, consistency: 0.85, blurb: 'Touge run · one way' },
 };
@@ -108,7 +114,8 @@ export function resolveFixture(id: string | undefined, params: Record<string, st
   const base = FIXTURES[key] ?? FIXTURES[DEFAULT_FIXTURE];
   const spinParam = params.spin === undefined ? null : Number.isFinite(Number(params.spin)) && params.spin.trim() !== '' ? Math.max(0, Math.min(8, Math.round(Number(params.spin)))) : bool(params.spin) === true ? 1 : 0;
   const noDrifts = params.drifts === 'none' || params.drifts === '0';
-  const rough = bool(params.rough);
+  const looseParam = params.loose === undefined ? null : Math.max(0, Math.min(1, Number(params.loose) || 0));
+  const roughFlag = bool(params.rough);
   const track = params.track === 'touge' || params.track === 'harbor' ? params.track : base.track;
   const source = params.source === 'pipeline' ? 'pipeline' : params.source === 'sim' ? 'sim' : base.source;
   return {
@@ -122,7 +129,7 @@ export function resolveFixture(id: string | undefined, params: Record<string, st
     consistency: num(params.cons, base.consistency, 0, 1),
     spins: spinParam === null ? base.spins : spinParam,
     noDrifts: noDrifts || base.noDrifts,
-    rough: rough === null ? base.rough : rough,
+    looseness: looseParam !== null ? looseParam : roughFlag === null ? base.looseness : roughFlag ? 0.7 : 0,
   };
 }
 
@@ -137,6 +144,7 @@ export function fixtureQuery(spec: FixtureSpec): string {
   if (spec.consistency !== base.consistency) q.set('cons', String(spec.consistency));
   if (spec.spins !== base.spins) q.set('spin', String(spec.spins));
   if (spec.noDrifts) q.set('drifts', 'none');
+  if (spec.looseness !== base.looseness) q.set('loose', String(spec.looseness));
   if (spec.source !== base.source) q.set('source', spec.source);
   return q.toString();
 }
@@ -284,17 +292,17 @@ export function buildFixtureSession(spec: FixtureSpec): Session {
     laps: spec.laps,
     aggression: spec.aggression,
     consistency: spec.consistency,
-    looseness: spec.rough ? 0.7 : 0,
-    vibration: spec.rough ? 2 : 1,
-    gpsDropouts: spec.rough,
-    mount: spec.rough ? 'flat-console' : 'portrait-vent',
+    looseness: spec.looseness,
+    vibration: spec.looseness > 0 ? 2 : 1,
+    gpsDropouts: spec.looseness > 0,
+    mount: spec.looseness > 0 ? 'flat-console' : 'portrait-vent',
   });
   const name = `${TRACK_TITLES[spec.track]} · ${spec.blurb}`;
   const session = spec.source === 'pipeline' ? throughPipeline(run, spec, name) : sessionFromSimulation(run, { name });
   if (spec.noDrifts) gripLap(session);
   const spun = new Set<number>();
   for (let i = 0; i < spec.spins; i++) injectSpin(session, spun);
-  if (spec.rough && spec.source === 'sim') degradeCalibration(session);
+  if (spec.looseness > 0 && spec.source === 'sim') degradeCalibration(session);
   session.id = `fixture-${spec.name}`;
   session.startedAt = Date.UTC(2026, 8, 19, 21, 44) + spec.seed * 60_000;
   session.meta = {

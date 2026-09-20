@@ -213,11 +213,17 @@ export function verdictFor(model: ResultsBase): string {
   const praise = praiseFor(model);
   const sloppy = b.grade === 'D' || b.spins >= 2 || (b.consistency < 45 && b.quality < 50);
 
-  // When the data itself is not trustworthy, say that first: praising or blaming the driving on
-  // top of a mount that was never calibrated would be a verdict on the cradle, not the driver.
+  // When the engine refuses to publish the score, its own words ARE the verdict: the screen has
+  // nothing to judge but the recording.
+  if (!model.trusted) {
+    return model.judged.message || 'Too much of this run could not be believed for its score to mean anything.';
+  }
+
+  // Short of a refusal, a mount that never calibrated still comes first: praising or blaming the
+  // driving on top of it would be a verdict on the cradle, not the driver.
   const cal = model.session.calibration;
   const calPct = Math.round((cal?.quality ?? 0) * 100);
-  if (!b.integrity.scoreTrusted || !cal || cal.quality < 0.4) {
+  if (!cal || cal.quality < 0.4) {
     const rest = flaws[0] ?? `${b.drifts} ${plural(b.drifts, 'slide')} were logged for ${model.total.toLocaleString('en-US')} points`;
     return `Judge the data before the driving — the mount calibration never got past ${calPct}%, and on that footing ${rest}.`;
   }

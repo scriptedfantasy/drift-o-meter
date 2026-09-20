@@ -15,29 +15,39 @@ export interface ComponentBarsProps {
   /** Start the fill. */
   run: boolean;
   reduceMotion?: boolean;
+  /**
+   * The engine refused to publish this run's score: the bars stay empty and the numbers read
+   * "--". The descriptions stay, because they describe the recording, not the judgement.
+   */
+  unmeasured?: boolean;
   testID?: string;
 }
 
-export function ComponentBars({ rows, run, reduceMotion = false, testID }: ComponentBarsProps) {
+export function ComponentBars({ rows, run, reduceMotion = false, unmeasured = false, testID }: ComponentBarsProps) {
   return (
     <View style={styles.list} testID={testID}>
+      {unmeasured ? (
+        <AppText variant="small" color="red">
+          Not published. The engine could not believe enough of this run to score it, so these five components have no number — only what the recording contains.
+        </AppText>
+      ) : null}
       {rows.map((row, i) => (
-        <Bar key={row.key} row={row} index={i} run={run} reduceMotion={reduceMotion} />
+        <Bar key={row.key} row={row} index={i} run={run} reduceMotion={reduceMotion} unmeasured={unmeasured} />
       ))}
     </View>
   );
 }
 
-function Bar({ row, index, run, reduceMotion }: { row: ComponentRow; index: number; run: boolean; reduceMotion: boolean }) {
+function Bar({ row, index, run, reduceMotion, unmeasured }: { row: ComponentRow; index: number; run: boolean; reduceMotion: boolean; unmeasured: boolean }) {
   const enter = useEnter(120 + index * 70, run, reduceMotion);
-  const fill = useFill(row.score / 100, 220 + index * 90, run, reduceMotion);
-  const known = Number.isFinite(row.score);
+  const fill = useFill(unmeasured ? 0 : row.score / 100, 220 + index * 90, run, reduceMotion);
+  const known = Number.isFinite(row.score) && !unmeasured;
   const score = known ? Math.round(row.score) : null;
 
   return (
     <Animated.View style={[styles.row, enter]} testID={`component-${row.key}`}>
       <View style={styles.headRow}>
-        <AppText variant="subheading" color="text" style={styles.label} numberOfLines={1}>
+        <AppText variant="subheading" color={unmeasured ? 'muted' : 'text'} style={styles.label} numberOfLines={1}>
           {row.label}
         </AppText>
         <AppText variant="micro" color="muted" numeric style={styles.weight}>

@@ -146,7 +146,8 @@ same URL → same session → same pixels. The numbers on screen always come fro
 | `sloppy` | harbor, seed 1, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **D** 33.0, 2 spins, ~2 900 points thrown away |
 | `spin`   | harbor, seed 4, one slide forced past the spin threshold | **B** 74.1, 1 spin, a chain lost |
 | `clean`  | harbor, driven on grip (slip angle under 5°) | **D** 0/100, no drifts at all |
-| `rough`  | harbor through the REAL pipeline with a rattling cradle and GPS dropouts | **B** 60.7, calibration 8 %, phantom spins |
+| `rough`  | harbor through the REAL pipeline with an unsteady cradle and GPS dropouts | **A** 75.1, scored but with two warnings |
+| `handheld` | harbor through the REAL pipeline with the phone in someone's hand (`loose=1`) | **no score at all** — the engine refuses to publish one |
 | `touge`  | the point-to-point mountain road, one lap | **A** 79.5, no laps → no lap table |
 
 The grades above are what the scorer says, not what the fixture asks for: they move whenever the
@@ -156,7 +157,16 @@ from simulated driving at all — the ceiling across every seed, track and skill
 Overrides (all optional, all clamped): `track=harbor|touge`, `seed=<int>`, `laps=1..6`,
 `agg=0..2` (above 1 is a hero lap the driver model cannot normally produce), `cons=0..1`,
 `spin=<n>` (force the n biggest slides past the spin threshold), `drifts=none` (grip lap),
-`rough=1|0`, `source=sim|pipeline`.
+`loose=0..1` (0 rigid, 0.7 rattling cradle, 1 hand-held; `rough=1` is a 0.7 alias),
+`source=sim|pipeline`.
+
+**The refusal state.** When `Session.integrity.scoreTrusted` (mirrored on `SessionScore.trusted`)
+is false, the results screen must not present the run as an achievement, and does not: no grade
+letter (a red NOT SCORED plate takes its place), no grade rail, no reveal, component bars empty
+with "--" instead of numbers, no callout points, no lap-consistency table, the drift list without
+its points column, the total labelled "points logged · a floor, not a measurement", SHARE
+disabled, and the primary action reading WATCH THE RECORDING. `?fixture=handheld` photographs it
+(`results-untrusted.png`, `results-untrusted-foot.png`).
 
 * `source=sim` (default) fills the session from simulator ground truth — about 200 ms.
 * `source=pipeline` pushes the simulated sensors through the **real** engine pipeline (mount

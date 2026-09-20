@@ -7,7 +7,7 @@
  */
 import { driftSamples, scoreSession, type ScoredDrift, type SessionBreakdown, type SessionContext } from '../../engine/score';
 import { lapConsistency, type LapConsistency } from '../../engine/track';
-import type { DriftEvent, Grade, Session, StyleCalloutKind, TrackCorner } from '../../engine/types';
+import type { DriftEvent, Grade, Session, SessionIntegrity, StyleCalloutKind, TrackCorner } from '../../engine/types';
 import { radToDeg } from '../../engine/types';
 import { colors, gradeColors } from '../theme';
 import { cornerAt, cornerLabel } from './corners';
@@ -88,6 +88,17 @@ export interface GpsQuality {
 export interface ResultsBase {
   session: Session;
   breakdown: SessionBreakdown;
+  /**
+   * What the integrity monitor made of the run — the authoritative copy, taken from the session
+   * when the pipeline recorded one and from the re-score otherwise.
+   */
+  judged: SessionIntegrity;
+  /**
+   * False when the engine refuses to publish this run's total and grade (see the contract on
+   * `SessionIntegrity.scoreTrusted`). The screen must then show NO grade letter and must not
+   * present the total as an achievement — it offers the recording instead.
+   */
+  trusted: boolean;
   grade: Grade;
   gradeColor: string;
   /** 0..100 rating behind the grade. */
@@ -185,6 +196,12 @@ export function gpsQuality(session: Session): GpsQuality {
  * session: calibration quality, GPS accuracy and gaps, how long the estimator held a lock, and
  * whether anything in the trace is physically impossible.
  */
+/** The monitor's messages are written for a HUD pill and carry no full stop. */
+function endSentence(text: string): string {
+  const t = text.trim();
+  return /[.!?]$/.test(t) ? t : `${t}.`;
+}
+
 export function integrityNotes(session: Session, gps: GpsQuality, judged?: SessionBreakdown['integrity']): IntegrityNote[] {
   const notes: IntegrityNote[] = [];
 
@@ -193,13 +210,13 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
     notes.push({
       level: 'bad',
       title: 'The engine will not vouch for this score',
-      body: `${judged.message || 'Too much of the run could not be believed.'} ${Math.round(judged.implausibleDriftFraction * 100)}% of your drifting time earned nothing (${judged.suppressedS.toFixed(1)} s), so the total above is a floor, not a measurement.`,
+      body: `${endSentence(judged.message || 'Too much of the run could not be believed')} ${Math.round(judged.implausibleDriftFraction * 100)}% of your drifting time earned nothing (${judged.suppressedS.toFixed(1)} s), so the number above is a floor, not a measurement.`,
     });
   } else if (judged && judged.implausibleDriftFraction > 0.02) {
     notes.push({
       level: 'warn',
       title: 'Some of the run was not believed',
-      body: `${judged.suppressedS.toFixed(1)} s of drifting (${Math.round(judged.implausibleDriftFraction * 100)}%) scored nothing because the monitor could not square it with the physics.${judged.message ? ` ${judged.message}` : ''}`,
+      body: `${judged.suppressedS.toFixed(1)} s of drifting (${Math.round(judged.implausibleDriftFraction * 100)}%) scored nothing because the monitor could not square it with the physics.${judged.message ? ` ${endSentence(judged.message)}` : ''}`,
     });
   }
   const meta = session.meta ?? {};
@@ -370,6 +387,9 @@ function tallyCallouts(rows: DriftRow[]): { callouts: CalloutTally[]; points: nu
  * only repeat the monitor's end-of-run judgement — it cannot re-derive which samples it doubted.
  */
 function sessionContext(session: Session): SessionContext | undefined {
+  const i = session.integrity;
+  if (i) return { integrity: { mount: i.mount, physics: i.physics, gps: i.gps, message: i.message } };
+  // sessions written before `Session.integrity` existed left the monitor's verdict in `meta`
   const m = session.meta ?? {};
   const mount = m.mount === 'loose' || m.mount === 'suspect' || m.mount === 'rigid' ? m.mount : null;
   const physics = m.physics === 'implausible' || m.physics === 'ok' ? m.physics : null;
@@ -398,9 +418,15 @@ export function buildResultsModel(session: Session): ResultsModel {
     if (v > sessionPeak) sessionPeak = v;
   }
 
+  // The run's own verdict wins where it exists; a re-score may only take trust away, never add it.
+  const judged: SessionIntegrity = session.integrity ?? breakdown.integrity;
+  const trusted = judged.scoreTrusted && breakdown.integrity.scoreTrusted && (session.score?.trusted ?? true);
+
   const base: ResultsBase = {
     session,
     breakdown,
+    judged,
+    trusted,
     grade: breakdown.grade,
     gradeColor: gradeColors[breakdown.grade] ?? colors.muted,
     rating: breakdown.combined,
@@ -413,7 +439,7 @@ export function buildResultsModel(session: Session): ResultsModel {
     laps: laps && laps.available ? laps : null,
     lapCount: session.track?.laps.length ?? 0,
     corners: session.track?.corners ?? [],
-    integrity: integrityNotes(session, gps),
+    integrity: integrityNotes(session, gps, judged),
     gps,
     stats: {
       sessionPeakDeg: sessionPeak,

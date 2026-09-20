@@ -32,7 +32,9 @@ export interface LapTableProps {
 // lap 1 ember, lap 2 white: two laps have to be told apart, but not with two new accents
 const LAP_COLORS = [colors.ember, colors.text, colors.cyan, colors.magenta, colors.gold];
 
-function verdict(score: number): { label: string; color: string } {
+function verdict(score: number, skipped: number): { label: string; color: string } {
+  // a corner the driver only drifted on some laps is not "close", it is missing
+  if (skipped > 0) return { label: 'SKIPPED', color: colors.gold };
   if (score >= 0.75) return { label: 'LOCKED IN', color: colors.green };
   if (score >= 0.5) return { label: 'CLOSE', color: colors.cyan };
   if (score >= 0.25) return { label: 'WANDERING', color: colors.gold };
@@ -69,9 +71,9 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
       </View>
 
       {rows.map(({ c, corner }, i) => {
-        const v = verdict(c.score);
         const vals = c.laps.map((l) => (l ? l.peakAngleDeg : NaN));
         const seen = vals.filter((x) => Number.isFinite(x));
+        const v = verdict(c.score, vals.length - seen.length);
         const spread = seen.length >= 2 ? Math.max(...seen) - Math.min(...seen) : 0;
         return (
           <View key={c.cornerId} style={[styles.row, i === 0 && rows.length > 1 && c.score < 0.6 ? styles.worst : null]}>
@@ -83,7 +85,7 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
                 {cornerShape(corner)}
               </AppText>
               <AppText variant="micro" color="muted" numeric numberOfLines={1}>
-                {seen.length < vals.length ? `skipped ${vals.length - seen.length}× · ` : ''}entry ±{c.entrySpreadM.toFixed(1)} m
+                {seen.length < vals.length ? `${vals.length - seen.length} lap skipped` : `entry ±${c.entrySpreadM.toFixed(1)} m`}
               </AppText>
             </View>
 

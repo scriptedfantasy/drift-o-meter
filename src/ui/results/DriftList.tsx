@@ -19,11 +19,13 @@ export interface DriftListProps {
   sparkWidth: number;
   run: boolean;
   reduceMotion?: boolean;
+  /** The run was not trusted: show what was recorded, never the points it would have paid. */
+  unscored?: boolean;
   onSeek(row: DriftRow): void;
   testID?: string;
 }
 
-export function DriftList({ rows, sparkWidth, run, reduceMotion = false, onSeek, testID }: DriftListProps) {
+export function DriftList({ rows, sparkWidth, run, reduceMotion = false, unscored = false, onSeek, testID }: DriftListProps) {
   // One y-scale for every row so they compare. It follows the 90th-percentile peak, not the
   // maximum: one 118° spin would otherwise flatten every honest 40° slide into a hairline. A row
   // above the scale clips, and its number column still prints the true peak.
@@ -38,11 +40,11 @@ export function DriftList({ rows, sparkWidth, run, reduceMotion = false, onSeek,
           |β| per slide · axis 0–{maxDeg}°{rows.some((r) => r.peakDeg > maxDeg) ? ' (clipped)' : ''}
         </AppText>
         <AppText variant="micro" color="muted">
-          peak · time · points
+          peak · time{unscored ? '' : ' · points'}
         </AppText>
       </View>
       {rows.map((row, i) => (
-        <Row key={row.id} row={row} index={i} maxDeg={maxDeg} sparkWidth={sparkWidth} run={run} reduceMotion={reduceMotion} onSeek={onSeek} />
+        <Row key={row.id} row={row} index={i} maxDeg={maxDeg} sparkWidth={sparkWidth} run={run} reduceMotion={reduceMotion} unscored={unscored} onSeek={onSeek} />
       ))}
     </View>
   );
@@ -55,6 +57,7 @@ function Row({
   sparkWidth,
   run,
   reduceMotion,
+  unscored,
   onSeek,
 }: {
   row: DriftRow;
@@ -63,6 +66,7 @@ function Row({
   sparkWidth: number;
   run: boolean;
   reduceMotion: boolean;
+  unscored: boolean;
   onSeek(row: DriftRow): void;
 }) {
   const enter = useEnter(60 + Math.min(index, 8) * 50, run, reduceMotion);
@@ -73,7 +77,7 @@ function Row({
       <Pressable
         onPress={() => onSeek(row)}
         accessibilityRole="button"
-        accessibilityLabel={`Drift ${row.index}, peak ${Math.round(row.peakDeg)} degrees, ${row.points} points. Open in the replay.`}
+        accessibilityLabel={`Drift ${row.index}, peak ${Math.round(row.peakDeg)} degrees${unscored ? '' : `, ${row.points} points`}. Open in the replay.`}
         testID={`drift-row-${row.index}`}
         style={({ pressed }) => [styles.row, { borderLeftColor: alpha(accent, row.lost ? 0.4 : 0.9) }, pressed && styles.pressed]}>
         <View style={styles.idCol}>
@@ -102,9 +106,11 @@ function Row({
           <AppText variant="micro" color="muted" numeric>
             {row.durationS.toFixed(1)} s · {Math.round(row.entryKmh)} km/h
           </AppText>
-          <AppText variant="bodyStrong" color={row.lost ? colors.muted : colors.ember} numeric style={row.lost ? styles.struck : undefined}>
-            {formatScore(row.points)}
-          </AppText>
+          {unscored ? null : (
+            <AppText variant="bodyStrong" color={row.lost ? colors.muted : colors.ember} numeric style={row.lost ? styles.struck : undefined}>
+              {formatScore(row.points)}
+            </AppText>
+          )}
         </View>
       </Pressable>
     </Animated.View>
