@@ -35,8 +35,14 @@ export interface ReplayLayout {
   bottomBar: number;
   /** The scrubber band: the touch target AND the drawn ribbon. */
   scrub: Rect;
-  /** The world band between the bars — what the camera viewport should frame. */
+  /** The world band between the bars. */
   stage: Rect;
+  /**
+   * What the CAMERA frames: the stage minus anything that floats over it. The world is still
+   * drawn full-bleed behind the bars, but the car is centred here, so it never ends up behind the
+   * transport controls.
+   */
+  action: Rect;
   /** Where the floating transport controls are laid out (React overlay). */
   controls: Rect;
   /** The hero |β| numeral: left-aligned at `x`, sitting on `baseline`. */
@@ -77,5 +83,6 @@ export function replayLayout(w: number, h: number, insets: Insets, controlsRows 
   // bottom bar belongs to the transport.
   const info = landscape ? { x: left, y: insets.top + 52, right } : { x: left, y: h - bottomBar + 26, right };
   const chrome = { y: insets.top + (landscape ? 24 : 30), left, right };
-  return { w, h, landscape, insets, gutter, topBar, bottomBar, scrub, stage, controls, hero, readout, info, chrome };
+  const action: Rect = landscape ? { ...stage } : { x: 0, y: stage.y, w, h: Math.max(120, controls.y - stage.y) };
+  return { w, h, landscape, insets, gutter, topBar, bottomBar, scrub, stage, action, controls, hero, readout, info, chrome };
 }

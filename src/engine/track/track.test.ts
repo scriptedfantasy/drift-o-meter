@@ -140,6 +140,7 @@ function syntheticDrifts(run: SimulatedRun): DriftEvent[] {
         peakLateralAccel: peakAy,
         initialDirection: seg[0].beta >= 0 ? 1 : -1,
         spin: false,
+        suppressedS: 0,
         sampleStart: i,
         sampleEnd: j - 1,
       });
@@ -251,8 +252,12 @@ const rows: Metrics[] = [];
 /** Every signed lap-boundary error in the suite, for the "no systematic bias" assertion. */
 const LAP_ERRORS: number[] = [];
 
+/**
+ * A dash, never "NaN": an open road legitimately has no lap error and no cross-lap consistency,
+ * and a NaN printed for "not applicable" is how a real one hides in a metrics table later.
+ */
 function fmt(v: number, d = 2): string {
-  return Number.isFinite(v) ? v.toFixed(d) : String(v);
+  return Number.isFinite(v) ? v.toFixed(d) : '—';
 }
 
 function printTable(): void {

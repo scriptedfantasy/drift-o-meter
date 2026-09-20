@@ -777,6 +777,8 @@ export class DriftDetector {
       peakLateralAccel: s.peakAy,
       initialDirection: d.initialDirection,
       spin: d.spin,
+      // The detector sees no integrity verdict; the pipeline stamps the real figure.
+      suppressedS: 0,
       sampleStart: d.startIdx,
       sampleEnd: d.endIdx,
     };

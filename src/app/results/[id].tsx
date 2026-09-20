@@ -60,7 +60,7 @@ export default function ResultsScreen() {
   const params = useMemo(() => flatten(raw), [raw]);
   const id = params.id;
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   const spec = useMemo(() => resolveFixture(id, params), [id, params]);
   const specKey = spec ? JSON.stringify(spec) : null;
@@ -161,7 +161,16 @@ export default function ResultsScreen() {
   return (
     <View style={styles.root} testID="screen-results">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-        <ResultsPage model={model} width={width} run={pageRun} reduceMotion={reduceMotion} onReplay={openReplay} onGarage={() => router.replace('/')} onDrive={() => router.replace('/drive')} />
+        <ResultsPage
+          model={model}
+          width={width}
+          height={height}
+          run={pageRun}
+          reduceMotion={reduceMotion}
+          onReplay={openReplay}
+          onGarage={() => router.replace('/')}
+          onDrive={() => router.replace('/drive')}
+        />
       </SafeAreaView>
       {/* No grade reveal for a run the engine will not vouch for: there is no grade to slam in.
           And once it has played it is unmounted, so a finished overlay never keeps eating taps. */}
@@ -195,6 +204,7 @@ function sessionTrack(model: ResultsModel): string {
 function ResultsPage({
   model,
   width,
+  height,
   run,
   reduceMotion,
   onReplay,
@@ -203,6 +213,7 @@ function ResultsPage({
 }: {
   model: ResultsModel;
   width: number;
+  height: number;
   run: boolean;
   reduceMotion: boolean;
   onReplay(at?: DriftRow): void;
@@ -214,6 +225,9 @@ function ResultsPage({
   // the page is a centred column; the wash still belongs to the whole screen, or its hard edges
   // read as a stray card in landscape
   const washInset = gutter + Math.max(0, (width - Math.min(width, 620)) / 2);
+  // and it stops well short of the bottom of a short (landscape) viewport, or it tints the
+  // corner pixels the harness checks and, worse, washes the whole screen
+  const washHeight = Math.min(440, height * 0.5);
   const letter = Math.min(168, content * 0.44);
   const hasDrifts = model.drifts.length > 0;
   /** The engine refused to publish a score: no grade, no points presented as an achievement. */
@@ -263,7 +277,7 @@ function ResultsPage({
           locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.heroWash, { left: -washInset, right: -washInset }]}
+          style={[styles.heroWash, { left: -washInset, right: -washInset, height: washHeight }]}
           pointerEvents="none"
         />
         <View style={styles.heroTop}>
@@ -516,7 +530,7 @@ const styles = StyleSheet.create({
   hero: { gap: space[4] },
   // stops short of the very top of the viewport on purpose: the harness checks that the
   // page's corner pixels are still bg0
-  heroWash: { position: 'absolute', top: 0, bottom: -space[6] },
+  heroWash: { position: 'absolute', top: 0 },
   gradeLabel: { marginBottom: -space[2] },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   gradeBox: { justifyContent: 'flex-start' },

@@ -274,8 +274,20 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   // The top of the scale must not be reachable by anyone who gets sideways once: it used to
   // pay 100 at 43°, so a 43° driver and a 60° driver were indistinguishable on the component
   // that carries the most weight. It now keeps climbing to 60° — beyond which 75° is a SPIN,
-  // not a better drift — with the returns flattening above 44°, which is where holding more
-  // angle stops being a bigger drift and starts being a smaller margin.
+  // not a better drift — with the returns flattening above 44°.
+  //
+  // ── CALIBRATED AGAINST A DRIVER MODEL, NOT AGAINST DRIFTING ──────────────────────────────
+  // These knots are fitted to what the SIMULATOR's driver produces: held peaks run 27–41°
+  // across the whole skill grid, with individual drifts reaching about 50°. The 44–60° band is
+  // deliberately compressed (97 → 100) because the model rarely gets there, and stretching it
+  // to where real competition angles live would put the top grade out of reach of every driver
+  // we can currently measure.
+  //
+  // Real drifting routinely sits at 45–60°, so on real recordings that compressed band is
+  // where a lot of genuine skill will live, and good and great drivers will pile up against
+  // the ceiling. THIS IS THE FIRST THING TO RE-DERIVE once real recordings exist. The symptom
+  // that it needs re-deriving is real drivers clustering above 95 on the angle component.
+  // See docs/ARCHITECTURE.md § "What only a phone can settle".
   angleCurve: [
     [24, 0],
     [29, 30],

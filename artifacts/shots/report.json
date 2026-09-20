@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T21:09:57.993Z",
+  "startedAt": "2026-09-20T21:15:00.025Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,31 +9,28 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive-start",
-      "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:45333/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "name": "replay-overview",
+      "path": "/replay/demo?cam=overview&t=60&play=0&ui=1",
+      "url": "http://127.0.0.1:45845/replay/demo?cam=overview&t=60&play=0&ui=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-start.png",
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-overview.png",
       "video": null,
-      "ms": 4718,
+      "ms": 4576,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 90,
-        "bodyTextNodes": 27,
+        "displayTextNodes": 17,
+        "bodyTextNodes": 16,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 2,
+        "canvases": 1,
         "webgl": true,
         "canvasKit": true
       },
@@ -42,60 +39,58 @@
         "height": 2556,
         "corners": {
           "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 6888,
-        "cyanPixels": 20360,
-        "textPixels": 2568,
-        "nonBgFraction": 0.1385
+        "emberPixels": 75680,
+        "cyanPixels": 1512,
+        "textPixels": 28048,
+        "nonBgFraction": 0.9732
       }
     },
     {
-      "name": "drive-lost",
-      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:45333/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "name": "replay-cinematic",
+      "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=1",
+      "url": "http://127.0.0.1:45845/replay/demo?cam=cinematic&t=39.14&play=0&ui=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-lost.png",
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cinematic.png",
       "video": null,
-      "ms": 4603,
+      "ms": 7800,
       "fonts": {
         "status": "loaded",
         "families": [
           "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 99,
-        "bodyTextNodes": 29,
+        "displayTextNodes": 29,
+        "bodyTextNodes": 15,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 2,
+        "canvases": 1,
         "webgl": true,
         "canvasKit": true
       },
@@ -104,60 +99,57 @@
         "height": 2556,
         "corners": {
           "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 59364,
-        "cyanPixels": 20064,
-        "textPixels": 4864,
-        "nonBgFraction": 0.3369
+        "emberPixels": 66136,
+        "cyanPixels": 6252,
+        "textPixels": 58116,
+        "nonBgFraction": 0.9776
       }
     },
     {
-      "name": "drive-gps",
-      "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:45333/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "name": "replay-ghost",
+      "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=1",
+      "url": "http://127.0.0.1:45845/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-gps.png",
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-ghost.png",
       "video": null,
-      "ms": 4235,
+      "ms": 7429,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
-        "bodyTextNodes": 28,
+        "displayTextNodes": 17,
+        "bodyTextNodes": 16,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 2,
+        "canvases": 1,
         "webgl": true,
         "canvasKit": true
       },
@@ -166,35 +158,94 @@
         "height": 2556,
         "corners": {
           "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           },
           "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
+            "r": 0,
+            "g": 0,
+            "b": 0
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 30024,
-        "cyanPixels": 17860,
-        "textPixels": 3424,
-        "nonBgFraction": 0.2597
+        "emberPixels": 55312,
+        "cyanPixels": 5348,
+        "textPixels": 31380,
+        "nonBgFraction": 0.9772
+      }
+    },
+    {
+      "name": "replay-highlight",
+      "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "url": "http://127.0.0.1:45845/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-highlight.png",
+      "video": null,
+      "ms": 14612,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 17,
+        "bodyTextNodes": 16,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 51016,
+        "cyanPixels": 1524,
+        "textPixels": 27900,
+        "nonBgFraction": 0.9717
       }
     }
   ],
-  "finishedAt": "2026-09-20T21:10:11.635Z",
+  "finishedAt": "2026-09-20T21:15:34.515Z",
   "failed": 0
 }

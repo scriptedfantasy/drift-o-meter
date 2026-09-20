@@ -627,6 +627,9 @@ describe('simulator-derived sessions', () => {
   });
   it('prints the component table for the critic', () => {
     const rows: string[] = [];
+    // `—` in the xlap column = an open road with no second lap to be consistent with. Never
+    // print NaN in a metrics table: a real NaN would then be indistinguishable from a legitimate
+    // "not applicable", which is exactly how one hides.
     rows.push('scenario                | seed | total  | grade | comb | angle | cons (xlap/steady) | qual (steady/t15/exitF/spinF) | speed | style | drifts | tr | callout kinds');
     const scen = [
       ['good harbor .8/.85', 'harbor', 0.8, 0.85],
@@ -645,7 +648,7 @@ describe('simulator-derived sessions', () => {
         const kinds = new Set<string>();
         for (const d of Object.values(ss.perDrift)) for (const c of d.callouts) kinds.add(c.kind);
         rows.push(
-          `${name.padEnd(23)} | ${seed}    | ${String(ss.total).padStart(6)} | ${ss.grade}     | ${ss.combined.toFixed(1).padStart(4)} | ${ss.angle.toFixed(0).padStart(5)} | ${ss.consistency.toFixed(0).padStart(4)} (${(ss.crossLapConsistency ?? NaN).toFixed(0).padStart(3)}/${ss.steadiness.toFixed(0).padStart(3)}) | ${ss.quality.toFixed(0).padStart(4)} (${q.steadiness.toFixed(0).padStart(3)}/${q.timeAtAngle.toFixed(0).padStart(3)}/${q.exitFactor.toFixed(2)}/${q.spinFactor.toFixed(2)}) | ${ss.speed.toFixed(0).padStart(5)} | ${ss.style.toFixed(0).padStart(5)} | ${String(ss.drifts).padStart(6)} | ${String(ss.transitions).padStart(2)} | ${[...kinds].join(',')}`,
+          `${name.padEnd(23)} | ${seed}    | ${String(ss.total).padStart(6)} | ${ss.grade}     | ${ss.combined.toFixed(1).padStart(4)} | ${ss.angle.toFixed(0).padStart(5)} | ${ss.consistency.toFixed(0).padStart(4)} (${(ss.crossLapConsistency === null ? '—' : ss.crossLapConsistency.toFixed(0)).padStart(3)}/${ss.steadiness.toFixed(0).padStart(3)}) | ${ss.quality.toFixed(0).padStart(4)} (${q.steadiness.toFixed(0).padStart(3)}/${q.timeAtAngle.toFixed(0).padStart(3)}/${q.exitFactor.toFixed(2)}/${q.spinFactor.toFixed(2)}) | ${ss.speed.toFixed(0).padStart(5)} | ${ss.style.toFixed(0).padStart(5)} | ${String(ss.drifts).padStart(6)} | ${String(ss.transitions).padStart(2)} | ${[...kinds].join(',')}`,
         );
       }
     }

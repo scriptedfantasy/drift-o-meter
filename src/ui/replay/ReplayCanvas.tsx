@@ -97,6 +97,15 @@ function makeFonts(bc800: SkTypeface | null, bcItalic: SkTypeface | null, bc700:
   };
 }
 
+/**
+ * What the camera frames. The follow cameras keep the car above the floating transport; the
+ * track camera uses the whole stage, because there the car is a marker on a map the viewer
+ * already knows and the shape of the circuit is the subject.
+ */
+function actionRect(layout: ReplayLayout, mode: CameraMode) {
+  return mode === 'overview' ? layout.stage : layout.action;
+}
+
 export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, onSnapshotReady, testID }: ReplayCanvasProps) {
   const canvasRef = useCanvasRef();
   const res = useMemo(() => createSceneResources(), []);
@@ -106,7 +115,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   const tfLabel = useTypeface(BC_700);
   const tfClock = useTypeface(ORBITRON_700);
   const fontBook = useMemo(() => makeFonts(tfHero, tfItalic, tfLabel, tfClock), [tfHero, tfItalic, tfLabel, tfClock]);
-  const camera = useMemo(() => new ReplayCamera(mode, { w: layout.w, h: layout.h }), [replay]); // eslint-disable-line react-hooks/exhaustive-deps
+  const camera = useMemo(() => new ReplayCamera(mode, actionRect(layout, mode)), [replay]); // eslint-disable-line react-hooks/exhaustive-deps
   const empty = useMemo(() => createPicture(() => {}, { x: 0, y: 0, width: 1, height: 1 }), []);
   const picture = useSharedValue<SkPicture>(empty);
 
@@ -124,14 +133,15 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   useEffect(() => () => fontBook.dispose(), [fontBook]);
   useEffect(() => () => empty.dispose(), [empty]);
   useEffect(() => {
-    camera.setViewport({ w: layout.w, h: layout.h });
+    camera.setViewport(actionRect(layout, mode));
     markDirty();
-  }, [camera, layout.w, layout.h]);
+  }, [camera, layout, mode]);
   // A mode switch is a CUT with a 120 ms cross-fade, which is the engine's own film language.
   useEffect(() => {
     camera.setMode(mode);
+    camera.setViewport(actionRect(layout, mode));
     markDirty(600);
-  }, [camera, mode]);
+  }, [camera, layout, mode]);
   useEffect(() => markDirty(600), [fontBook, geo, view, focusDriftId]);
 
   useEffect(() => {
@@ -204,6 +214,13 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       // wall-clock keeps its 120 ms honest whether the run is playing or not.
       const cutFade = clamp(1 - (now - cutWall) / 1000 / CAMERA_LIMITS.cutFadeS, 0, 1);
 
+      // The camera frames the ACTION rectangle, which in portrait stops above the floating
+      // transport. `worldToScreen` puts the centre at (w/2, h/2), so hand the renderer a state
+      // whose half-extents ARE that rectangle's centre on screen: the mapping stays exact and the
+      // engine's camera never has to know about the chrome.
+      const act = actionRect(s.layout, camera.getMode());
+      const camScreen: CameraState = { ...cam, w: 2 * (act.x + act.w / 2), h: 2 * (act.y + act.h / 2) };
+
       const chipNow = s.chip.current;
       // A paused frame is a poster frame: the chip that names the moment stays up until the run
       // is playing again, and only then fades.
@@ -224,7 +241,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
             res,
             t,
             mode: camera.getMode(),
-            cam,
+            cam: camScreen,
             pose: poseAt(s.replay, t),
             ghost: ghostPoseAt(s.replay, t),
             events: activeEvents(s.replay, t),

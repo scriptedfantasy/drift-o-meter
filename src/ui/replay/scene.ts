@@ -1207,13 +1207,15 @@ export function drawReplayFrame(canvas: SkCanvas, input: SceneInput): void {
   const s = Math.sin(cam.rotation);
   const z = cam.zoom;
   canvas.save();
+  // cam.w / cam.h are the ACTION rectangle expressed so that (w/2, h/2) is its centre on screen
+  // (see ReplayCanvas): the world is centred on what the viewer can actually see.
   canvas.concat([
     z * c,
     -z * s,
-    lay.w / 2 + shx - z * c * cam.cx + z * s * cam.cy,
+    cam.w / 2 + shx - z * c * cam.cx + z * s * cam.cy,
     -z * s,
     -z * c,
-    lay.h / 2 + shy + z * s * cam.cx + z * c * cam.cy,
+    cam.h / 2 + shy + z * s * cam.cx + z * c * cam.cy,
     0,
     0,
     1,

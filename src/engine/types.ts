@@ -157,6 +157,23 @@ export interface DriftEvent {
   /** +1 when the drift starts as a right-hand drift (β>0), −1 for left. */
   initialDirection: 1 | -1;
   /**
+   * Seconds of this drift the integrity monitor refused to believe, which therefore earned
+   * nothing. 0 on a clean run.
+   *
+   * REQUIRED, for the same reason as `spin`. A stored session re-scored later cannot see the
+   * live per-sample verdict — the mask that carries it is meaningful only against `states` at
+   * exactly the rate they were recorded, and `motion` is already decimated for storage, so the
+   * day anyone decimates `states` a mask would silently suppress the WRONG samples while still
+   * looking plausible. A duration cannot misalign. Measured over 194 drifts spanning every
+   * looseness, suppression is all-or-nothing on 89.7 % of them, so scaling by the believed
+   * fraction reproduces the live points exactly there and errs by a few percent on the rest —
+   * all of which are already refusing to publish a score.
+   *
+   * It is also the only form a driver can be shown: "6.1 s of this slide did not count,
+   * because the phone was moving in its mount."
+   */
+  suppressedS: number;
+  /**
    * True when the drift ended in a spin rather than a controlled exit. REQUIRED, and
    * required for a reason: a spin must reach the scorer and the results screen, or the
    * HUD says "CHAIN LOST" while the results screen congratulates the driver on a clean

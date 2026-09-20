@@ -46,6 +46,42 @@ convention (CCW from east), slip angle β = course − heading (β>0 = right-han
   kinematic identity β̇ ≈ a_y / v − r (lateral accel over speed minus yaw rate) propagates β
   at 100 Hz. Gyro bias and heading offset are estimated while driving straight.
 
+## What only a phone can settle
+
+Everything below is calibrated against the simulator, because that is the only ground truth
+this box has. Each item names the symptom that says it needs re-deriving, so whoever gets real
+recordings knows what to look for rather than re-tuning on a hunch.
+
+* **The angle curve's top end** (`score/rules.ts`, `angleCurve`). The knots are fitted to the
+  simulator's driver model, whose duration-weighted held peaks run **27–41°** (individual
+  drifts reach ~50°). The 44–60° band is deliberately compressed — 97 at 44°, 100 at 60° —
+  because the model rarely reaches it and stretching the scale to real competition angles would
+  put grade S out of reach of every driver we can measure. Real drifting routinely sits at
+  45–60°, so on real recordings that compressed band is where much of the genuine skill will
+  live. **This is the first thing to re-derive from real data. The symptom is real drivers
+  clustering above 95 on the angle component.**
+* **CoreMotion units and timing.** The adapter assumes `rotationRate` in deg/s, `rotation` in
+  radians, and that `setUpdateInterval(10)` really delivers ~100 Hz with monotonic timestamps.
+  Symptom: yaw rates off by 57×, or a `dtEma` that settles anywhere but ~10 ms.
+* **GPS latency in the field.** The estimator and the mount calibrator are seeded with
+  `gpsLatencyS` ≈ 0.45 s, measured from the simulator's model, not from a phone on a road.
+  Symptom: a standing slip-angle bias that flips sign with direction of travel, or lap
+  boundaries biased one way (the metrics table in `track.test.ts` prints signed lap error —
+  every row the same sign is the tell).
+* **Loose-mount thresholds against a real hand.** `integrity/monitor.ts` is tuned on the
+  simulator's sway signature; the independent veto (calibration quality + `forwardResolved`) is
+  what currently catches a mid-loose mount the sway cues miss. Nobody has waved a real phone at
+  it. Symptom: a rigid phone flagged loose, or a genuinely shaking one still scoring — check
+  `looseScore` and `calibrationQuality` together against a run you have watched.
+  Known residual: at simulator looseness ≤ 0.2 the sway inflates the measured angle by roughly
+  15–18 % and nothing flags it.
+* **Haptics.** Never exercised — the web harness has no haptic engine, so every callout's feel
+  is unverified. Symptom: buzzing on every frame, or nothing at all.
+* **Drift durations.** The detector's linked-drift cap (`maxDurationS + chainBonusS × n`) is set
+  to the tightest bound that cuts nothing the simulator's commanded plan calls a single drift
+  (14 + 12 n). A real driver's longest genuine linked run is unknown. Symptom: real drifts being
+  cut in half, or a whole section of road coming back as one drift.
+
 ## Working agreement for sub-agents
 * Own only the files listed in your brief. Never edit `src/engine/types.ts` without
   reporting the exact change (other agents depend on it).

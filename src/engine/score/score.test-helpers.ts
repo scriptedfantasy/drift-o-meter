@@ -76,6 +76,7 @@ export function eventFromRange(id: number, states: SlipState[], a0: number, b0: 
     peakLateralAccel: seg.reduce((x, s) => Math.max(x, Math.abs(s.ay)), 0),
     initialDirection: beta(Math.min(seg.length - 1, 30)) >= 0 ? 1 : -1,
     spin: false,
+    suppressedS: 0,
     sampleStart: a0,
     sampleEnd: b0,
   };

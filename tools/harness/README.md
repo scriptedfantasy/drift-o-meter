@@ -61,6 +61,111 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
 
 `testID` props in the app map to `data-testid` on web, which is what `testId` targets.
 
+## Garage: seeding the session list (`/?demo=...`)
+
+The garage draws whatever is in storage, and every browser context the harness opens starts
+with storage empty — so `/` on its own **is** the empty-garage state. `?demo=<set>` fills it
+first, with real runs rather than mock rows:
+
+```
+/?demo=night     six runs across two tracks, one of them NOT SCORED   (the default demo)
+/?demo=harbor    four scored runs on one track — every personal best filled in
+/?demo=first     one run
+/?demo=none      wipe the garage (also `clear`, `empty`, `0`)
+```
+
+Each run is built by the results screen's own fixture builder (`buildFixtureSession` — the
+simulator, and the REAL engine pipeline for the hand-held one), scored by the REAL scorer
+(`buildResultsModel`), and the score written back into `Session.score` before it is stored, so
+the grade on a row is the grade the results screen shows when you tap it. Building a set costs
+1–3 s and the screen says so while it works (`data-testid="garage-seeding"`), which is why the
+garage routes carry `waitMs: 6000`–`8000`.
+
+Two economies make this possible and are worth knowing before changing the sets
+(`src/ui/garage/demo.ts`):
+
+* **bodies are stored trimmed** — no `motion`, `gps`, `states` or `truth`. A full fixture
+  session is ~10 MB of JSON, and six of them are twice a browser's whole localStorage quota;
+  trimmed they are ~85 KB each. Everything the garage reads (score, drifts, integrity,
+  calibration, meta) survives.
+* **every id is `fixture-<name>`**, which is exactly what `/results/fixture-<name>` rebuilds
+  from the simulator — so tapping a row still opens the full run, samples and all. That is also
+  why the demo sets may only use names that exist in `FIXTURES`: an unknown `fixture-<x>` id
+  falls back to the DEFAULT fixture on the results screen, and the row would then open a
+  different run from the one it describes. Seed overrides travel in `Session.meta.fixtureQuery`
+  and the garage passes them through when it opens a row.
+
+The seeds are chosen so no two runs share a minute: the fixture builder dates a run
+`19 Sep 2026, 21:44 + <seed> minutes`, and the list is sorted newest first.
+
+| route | what it is evidence of |
+| --- | --- |
+| `home` | the empty garage — it has to be inviting, not apologetic |
+| `garage` | six runs: DRIVE dominant, the big last-run card, the start of the bests board |
+| `garage-bests` | personal bests per track: best grade, most points, biggest angle, longest chain |
+| `garage-runs` | the run list, including the NOT SCORED row for the hand-held recording |
+| `garage-bests-harbor` | one track, four scored runs: no dashed-out records |
+| `garage-simbay` | the demo bay: simulated source, mount looseness and GPS dropouts selectable |
+| `garage-delete` | the confirmation a delete asks for (`Alert` is a no-op on web, so it is the app's own) |
+
+**A run with no grade.** A row may not print a grade letter until it knows whether the engine
+vouched for the run, and `SessionIndexEntry` does not carry that (`trusted`), nor the best angle
+or the longest chain. Those three are read out of the session body, newest first, and a row is a
+skeleton until its own read lands — see `src/ui/garage/facts.ts`. If `summarizeSession` ever
+grows those fields the whole read disappears.
+
+## Calibrate: freezing a moment of the calibration (`/calibrate?...`)
+
+The calibration screen runs the real `MountCalibrator` and the real `IntegrityMonitor` over the
+same recordings the HUD plays, so its states arrive on the recording's clock. Two parameters
+(`src/ui/calibrate/params.ts`) stop it wherever a screenshot needs it, and one changes where the
+phone is sitting:
+
+| param | effect |
+| --- | --- |
+| `at=<seconds>` | feed the calibrator every sample up to that instant of the recording at once |
+| `hold=1` | stop there. The frame is then deterministic: same URL, same pixels |
+| `mount=portrait-vent\|landscape-dash\|flat-console` | REGENERATE the recording with the phone sitting that way. Not a presentational override — the simulator really puts the phone on the console, and the screen reads it back out of the gravity vector like any other mount |
+
+The usual `sim=` / `rate=` / `seed=` / `laps=` / `looseness=` / `dropouts=` still pick the
+recording, which is how the loose-mount state is photographed from a genuinely hand-held drive
+rather than a flag.
+
+On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below follow from it
+(they move when the calibrator is retuned — re-derive them by pushing the recording through
+`MountCalibrator` and printing `calibration.quality` / `forwardResolved`):
+
+| t | what has happened |
+| --- | --- |
+| 0.5 s | gravity seen, up-axis quality 0.50, nothing resolved |
+| 1.5 s | the vertical has settled (up-axis 0.90) |
+| 5.31 s | the forward axis resolves — `forwardBlockS` is 4 s, then one hard pull is enough |
+| 12 s+ | confidence plateaus at **0.74** |
+
+| route | moment |
+| --- | --- |
+| `calibrate` | at rest, half a second in: nothing worked out yet |
+| `calibrate-level` | the vertical settled, the forward axis still unresolved — the state the screen exists for |
+| `calibrate-ready` | calibrated: past the bar, both axes resolved |
+| `calibrate-loose` | a real hand-held recording (`looseness=1&dropouts=1`): the monitor's own words |
+| `calibrate-flat` | the phone lying flat on the console, detected from gravity |
+
+**Why the screen's bar is not `docs/DESIGN.md`'s 0.8.** The calibrator's confidence is
+`upQuality × (0.4 + 0.6·min(lineQuality, signQuality))`, and `upQuality` is capped by the
+accelerometer fit — which road vibration limits. On the simulator's default vibration (`1`, "a
+typical dash mount on a track") the ceiling across seeds and mounts is **0.74**; only at
+`vibration: 0` does it reach 0.801. A DONE gate at 0.8 would therefore almost never light up in
+a car. The screen instead uses the bar the ENGINE uses before it will believe a slide —
+`IntegrityMonitor`'s `calibrationOk`: `quality >= minCalibrationQuality` (0.3) with the forward
+axis resolved — and marks 0.75 as the second, softer tick, because that is where the results
+screen stops qualifying a score for its mount. Both ticks are drawn on the dial.
+
+**Mount warm-up.** Every mount cue in the integrity monitor is an exponential RMS over
+`windowS`, so for the first two windows a perfectly bolted phone reads `suspect` — on the
+simulator's own rigid mount, from 0.2 s to 4.1 s. The calibration screen reports the mount as
+"Listening" until `2 × windowS` of data has gone in (`MOUNT_WARMUP_S`), rather than accusing a
+driver who has done nothing wrong.
+
 ## Drive HUD: seeking and freezing a moment (`/drive?...`)
 
 The HUD is only interesting while the car is sideways, so the harness does not photograph it at
@@ -93,30 +198,19 @@ Default drive routes, and what each one is evidence of:
 | route | moment |
 | --- | --- |
 | `drive-idle` | armed, before the run: gauge at rest, GO, nothing claimed |
-| `drive` | LIVE mid-drift with callouts on screen (video: `npm run shoot -- --video --only drive`) |
-| `drive-peak` | held at 48° right, ×4.5, three callouts stacked (EXTREME ANGLE / MANJI / TRANSITION ×3) |
-| `drive-transition` | held 110 ms after TRANSITION ×2, mid-swing through zero, chevron flipped to L |
-| `drive-bank` | held just after a 10 000-point chain banked: BANKED ticker, chain bar drained, LINK ×3 |
-| `drive-warn` | the same frame as `drive-peak` with a loose mount: the banner has to be impossible to miss while the run is going well |
+| `drive-start` | the first seconds of EVERY run — forward axis not resolved yet, so a calm cyan FINDING FORWARD, muted gauge, no score. This state used to open every run with a red alarm |
+| `drive` | LIVE through the MANJI flick at 42.4 s (video: `npm run shoot -- --video --only drive`) |
+| `drive-peak` | held at 48° right, ×4.5, 22,675 points, 7,927 at risk, three callouts stacked |
+| `drive-transition` | held 190 ms after TRANSITION ×2, mid-swing through zero, chevron flipped to L |
+| `drive-bank` | held just after a 10,528-point chain banked: BANKED ticker, chain bar drained, LINK ×3 |
+| `drive-loose` | a REAL hand-held run (`looseness=1`): muted gauge, no bloom, grey score, "these points may not stand" |
+| `drive-lost` | the same run 0.2 s after the slide spun: CHAIN LOST |
+| `drive-gps` | a REAL GPS dropout (`dropouts=1`) 1.2 s into the gap: GPS LOST is severe because a fix had been held |
 
-The `at` values are tied to when the ENGINE fires callouts, so they move whenever the detector
-or the scorer is retuned. Re-derive them by pushing the same recording through the pipeline and
-printing the events — about 20 lines of node:
-
-```js
-import { simulateRun } from './src/sim';
-import { DriftPipeline } from './src/engine/pipeline';
-const run = simulateRun('harbor', { seed: 1, laps: 2 });
-const pipe = new DriftPipeline({ id: 'probe', name: 'probe' });
-const t0 = run.motion[0].t;               // `at` is measured from the first MOTION sample
-let im = 0, ig = 0;
-while (im < run.motion.length) {
-  while (ig < run.gps.length && run.gps[ig].t <= run.motion[im].t) pipe.pushGps(run.gps[ig++]);
-  const f = pipe.pushMotion(run.motion[im++]);
-  for (const c of f.score.callouts) console.log((f.t - t0).toFixed(2), c.label);
-  if (f.score.banked) console.log((f.t - t0).toFixed(2), 'BANKED');
-}
-```
+`looseness` and `dropouts` go through the SIMULATOR (`src/platform/simParams.ts`), so those three
+routes exercise the estimator, the detector and the integrity monitor on genuinely bad data. The
+`integrity=` override stays for one narrow job — proving the banner's own rendering — and should
+not be used as evidence that the app notices anything.
 
 Frames from the video (the bundled ffmpeg's filter parser is unusable — use `-r`, not `-vf fps=`):
 
@@ -139,20 +233,30 @@ same URL → same session → same pixels. The numbers on screen always come fro
 /results/<storedId>                        a real session from storage (no fixture)
 ```
 
-| `?fixture=` | what it is | what the scorer returned on 20 Sep |
+| `?fixture=` | what it is | what the scorer returned when this table was regenerated |
 | --- | --- | --- |
-| `hero`   | harbor, seed 3, aggression 1.3, consistency 1 (the best the driver model reaches) | **A** 85.2, 14 slides, 2 clean laps |
-| `good`   | harbor, seed 7, aggression 0.9, consistency 0.8 | **A** 76.1, 15 slides |
-| `sloppy` | harbor, seed 1, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **D** 33.0, 2 spins, ~2 900 points thrown away |
-| `spin`   | harbor, seed 4, one slide forced past the spin threshold | **B** 74.1, 1 spin, a chain lost |
-| `clean`  | harbor, driven on grip (slip angle under 5°) | **D** 0/100, no drifts at all |
-| `rough`  | harbor through the REAL pipeline with an unsteady cradle and GPS dropouts | **A** 75.1, scored but with two warnings |
+| `hero`   | harbor through the REAL pipeline, aggression 1.3, consistency 1 — the best the driver model reaches | **S** 92.5 · 8 slides · 2 clean laps |
+| `good`   | harbor through the REAL pipeline, aggression 0.9, consistency 0.8 | **A** 86.1 · 8 slides |
+| `sloppy` | harbor, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **D** 26.3 · 11 slides · 3 spins |
+| `spin`   | harbor, one slide forced past the spin threshold | **B** 74.7 · 1 spin, a chain lost |
+| `clean`  | harbor, driven on grip (slip angle under 5°) | **D** 0/100 · no drifts at all |
+| `rough`  | harbor through the REAL pipeline with an unsteady cradle and GPS dropouts | **B** 74.1 · scored, with warnings |
 | `handheld` | harbor through the REAL pipeline with the phone in someone's hand (`loose=1`) | **no score at all** — the engine refuses to publish one |
-| `touge`  | the point-to-point mountain road, one lap | **A** 79.5, no laps → no lap table |
+| `touge`  | the point-to-point mountain road, one lap | **A** 88.4 · no laps → no lap table |
 
-The grades above are what the scorer says, not what the fixture asks for: they move whenever the
-scorer is retuned, and that is the point of shooting them. As of this writing S is not reachable
-from simulated driving at all — the ceiling across every seed, track and skill setting is ≈ 85.
+The showcase scenarios (`hero`, `good`, `rough`, `handheld`) run through the **real pipeline** on
+purpose. Ground truth replays the same lap plan every lap, so cross-lap spreads come out at
+exactly 0.0 m and the screen would be publishing a simulator artifact as the driver's
+repeatability; through the pipeline the estimator's own noise is in the numbers.
+
+The grades move whenever the scorer is retuned — that is the point of shooting them. Regenerate
+this table with:
+
+```
+npx tsx -e "import{buildFixtureSession,FIXTURES}from'./src/ui/results/fixture';import{buildResultsModel}from'./src/ui/results/model';\
+for(const k of Object.keys(FIXTURES)){const m=buildResultsModel(buildFixtureSession(FIXTURES[k]));\
+console.log(k,m.trusted?m.grade:'no score',m.rating,m.drifts.length+' slides',m.stats.spins+' spins');}"
+```
 
 Overrides (all optional, all clamped): `track=harbor|touge`, `seed=<int>`, `laps=1..6`,
 `agg=0..2` (above 1 is a hero lap the driver model cannot normally produce), `cons=0..1`,

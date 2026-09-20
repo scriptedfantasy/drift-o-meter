@@ -245,6 +245,7 @@ function makeDrift(id: number, truth: TruthSample[], a: number, b: number, opt: 
     peakLateralAccel: peakAy,
     initialDirection: initial === -1 ? -1 : 1,
     spin: false,
+    suppressedS: 0,
     sampleStart: a,
     sampleEnd: b,
   };

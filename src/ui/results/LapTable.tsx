@@ -107,13 +107,13 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
               </AppText>
               <AppText variant="micro" color="muted" numeric numberOfLines={1}>
                 {spun
-                  ? 'past the spin threshold'
+                  ? 'spun here'
                   : exact
-                    ? 'single trajectory'
+                    ? 'no spread'
                     : seen.length < vals.length
-                      ? `${vals.length - seen.length} lap skipped`
+                      ? `skipped ${vals.length - seen.length} lap`
                       : c.entrySpreadM < 0.05
-                        ? 'entry spread n/a'
+                        ? 'entry unknown'
                         : `entry ±${c.entrySpreadM.toFixed(1)} m`}
               </AppText>
             </View>

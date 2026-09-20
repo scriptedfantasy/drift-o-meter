@@ -1,6 +1,8 @@
 
-===== drive-start  http://127.0.0.1:45333/drive?sim=harbor&rate=1&at=2.2&hold=1
+===== replay-overview  http://127.0.0.1:45845/replay/demo?cam=overview&t=60&play=0&ui=1
 
-===== drive-lost  http://127.0.0.1:45333/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1
+===== replay-cinematic  http://127.0.0.1:45845/replay/demo?cam=cinematic&t=39.14&play=0&ui=1
 
-===== drive-gps  http://127.0.0.1:45333/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1
+===== replay-ghost  http://127.0.0.1:45845/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=1
+
+===== replay-highlight  http://127.0.0.1:45845/replay/demo?hl=1&play=0&cam=chase&ui=1

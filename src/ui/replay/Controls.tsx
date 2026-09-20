@@ -147,27 +147,25 @@ export function ReplayControls({ layout, player, highlightCount, onShare, shareL
           testID="replay-play"
         />
         <Chips options={RATE_OPTIONS} value={player.rate} onChange={player.setRate} color={colors.cyan} testID="replay-rate" />
-        {highlightCount > 0 ? (
-          <View style={styles.group}>
-            <Pressable onPress={player.prevHighlight} style={({ pressed }) => [styles.step, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Previous highlight" testID="replay-prev">
-              <AppText variant="subheading" color="muted" style={styles.stepLabel}>
-                {'‹'}
-              </AppText>
-            </Pressable>
-            <Pressable onPress={player.nextHighlight} style={({ pressed }) => [styles.step, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Next highlight" testID="replay-next">
-              <AppText variant="subheading" color="muted" style={styles.stepLabel}>
-                {'›'}
-              </AppText>
-            </Pressable>
-          </View>
-        ) : null}
+        <Button label={shareLabel} size="sm" variant="ghost" onPress={onShare} disabled={shareDisabled} style={styles.share} testID="replay-share" />
       </View>
       <View style={styles.group}>
         <Chips options={CAM_OPTIONS} value={player.mode} onChange={player.setMode} color={colors.ember} testID="replay-cam" />
         {highlightCount > 0 ? (
-          <Button label="Best bits" size="sm" variant="ghost" onPress={player.nextHighlight} style={styles.best} testID="replay-highlight" />
+          <>
+            <Button label="Best bits" size="sm" variant="ghost" onPress={player.nextHighlight} style={styles.best} testID="replay-highlight" />
+            <Pressable onPress={player.prevHighlight} style={({ pressed }) => [styles.step, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Previous highlight" testID="replay-prev">
+              <AppText variant="subheading" color="muted" style={styles.stepLabel}>
+                {'\u2039'}
+              </AppText>
+            </Pressable>
+            <Pressable onPress={player.nextHighlight} style={({ pressed }) => [styles.step, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Next highlight" testID="replay-next">
+              <AppText variant="subheading" color="muted" style={styles.stepLabel}>
+                {'\u203A'}
+              </AppText>
+            </Pressable>
+          </>
         ) : null}
-        <Button label={shareLabel} size="sm" variant="ghost" onPress={onShare} disabled={shareDisabled} style={styles.share} testID="replay-share" />
       </View>
     </View>
   );
@@ -224,9 +222,9 @@ const styles = StyleSheet.create({
   },
   chipLabel: { fontSize: 14, lineHeight: 17, letterSpacing: 0.4 },
   pressed: { opacity: 0.7 },
-  play: { minWidth: 80 },
-  best: { minWidth: 92 },
-  share: { minWidth: 78 },
+  play: { width: 78, paddingHorizontal: 0 },
+  best: { width: 88, paddingHorizontal: 0 },
+  share: { width: 86, paddingHorizontal: 0 },
   step: {
     width: 32,
     height: 38,

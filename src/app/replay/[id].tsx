@@ -182,7 +182,7 @@ export default function ReplayScreen() {
     );
   }
 
-  const shareLabel = shareState === 'copied' ? (Platform.OS === 'web' ? 'Link copied' : 'Shared') : shareState === 'failed' ? 'Copy failed' : Platform.OS === 'web' ? 'Copy link' : 'Share';
+  const shareLabel = shareState === 'copied' ? 'Copied' : shareState === 'failed' ? 'Failed' : 'Share';
 
   return (
     <View style={styles.root} testID="screen-replay">
