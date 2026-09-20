@@ -188,10 +188,18 @@ export interface DetectOptions {
   /**
    * A linked drift may run `maxDurationS + chainBonusS × transitions` before it is cut in two.
    * A linked sequence is ONE drift because the transitions hold it together, so the allowance
-   * scales with how many there are: a two-transition manji may legitimately run 26 s and a
-   * three-transition chain 34 s, while a 35 s slide on a single flick is a section of road, not
-   * a drift, and gets cut. The cut is taken mid-lobe — never within `minLobeCutS` of a
-   * transition — so it can never sever the flick that is the best part of the sequence.
+   * scales with how many there are, rather than being unbounded on the first one: a 30 s slide
+   * on a single flick is a section of road, not a drift, and gets cut, while a two-transition
+   * manji may run 38 s. The cut is taken mid-lobe — never within `minLobeCutS` of a transition,
+   * and only while the car is still past `entryAngle` — so it can never sever the flick that is
+   * the best part of the sequence, and both halves stand on their own as drifts.
+   *
+   * CALIBRATION: 14 + 12 n is the tightest bound that cuts NOTHING an independent judge (the
+   * simulator's commanded plan, which never looks at β) calls a single drift. Measured over 39
+   * events on both tracks the longest commanded drifts are 8.1 s at 0 transitions, 23.1 s at 1,
+   * 34.9 s at 2, 34.2 s at 3 and 56.8 s at 4. A tighter 10 + 8 n cuts 6 of those 39 and takes
+   * detector precision against that judge from 100 % to 92 % (touge s1: 60 %), so it would be a
+   * decision to disbelieve the fixture, not a bug fix. See the report.
    */
   maxDurationS: number;
   chainBonusS: number;
@@ -238,8 +246,8 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   feintReverseGapS: 0.35,
   feintLookbackS: 1.0,
   minDurationS: 0.7,
-  maxDurationS: 10,
-  chainBonusS: 8,
+  maxDurationS: 14,
+  chainBonusS: 12,
   minLobeCutS: 1.0,
   spinAngle: degToRad(SPIN_ANGLE_DEG),
   spinMinAngle: degToRad(30),

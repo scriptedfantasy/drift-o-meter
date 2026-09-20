@@ -442,7 +442,6 @@ export function scoreSession(
   // used to leave a 57 s slide with 4 transitions out of the average and judge the whole run on
   // one 0.62 s window of a 7 s drift, which graded the sloppier driver S and the tidier one C.
   const steadiness = n ? wmean(scored.map((d) => ({ w: w(d), v: steadinessScore(d.stats.jitterDeg / (tf.jitter || 1), o, d.stats.plateauS) }))) : 0;
-  const jitter = wmean(scored.map((d) => ({ w: w(d), v: d.stats.jitterDeg })));
   const cross = n ? crossLapConsistency(states, track, o) : null;
   // Unproven cross-lap consistency is NEUTRAL, not absent: removing the term meant one lap
   // (nothing to compare) scored the same driver higher than two laps. A road that is not a
@@ -540,6 +539,7 @@ export function scoreSession(
   return {
     total: Math.round(total),
     grade,
+    trusted: integrity.scoreTrusted,
     angle: round1(angle),
     consistency: round1(consistency),
     quality: round1(quality),

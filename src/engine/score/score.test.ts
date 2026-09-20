@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { degToRad, type DriftEvent, type Lap, type SlipState, type StyleCalloutKind, type TrackModel } from '../types';
+import { degToRad, type DriftEvent, type Lap, type SlipState, type StyleCallout, type StyleCalloutKind, type TrackModel } from '../types';
 import { simulateRun } from '../../sim';
 import {
   DEFAULT_SCORE_OPTIONS,
@@ -53,7 +53,9 @@ function synth(pieces: Piece[], t0 = 0): Synth {
       const tl = i * DT;
       const deg = typeof p.beta === 'number' ? p.beta : p.beta(tl);
       const v = (p.speed ?? 60) / 3.6;
-      states.push({ t, beta: degToRad(deg), betaSigma: 0.01, heading: 0, course: 0, speed: v, yawRate: 0, ay: 0, ax: 0, x: v * t, y: 0, valid: true });
+      // a plausible yaw rate: the shared transition rule (detect/options.ts) needs the car to
+      // actually be rotating before a sign change counts, exactly as the detector does
+      states.push({ t, beta: degToRad(deg), betaSigma: 0.01, heading: 0, course: 0, speed: v, yawRate: 0.6, ay: 0, ax: 0, x: v * t, y: 0, valid: true });
       ids.push(drifting ? id : null);
       t += DT;
     }
@@ -140,17 +142,27 @@ describe('rules: factors', () => {
     expect(angleFactor(50, o)).toBeCloseTo(1.3, 6);
     expect(angleFactor(70, o)).toBeCloseTo(1.3, 6);
   });
-  it('speedFactor 0.5 @20 → 1 @60 → 1.5 @≥100 km/h, 0 below 10', () => {
+  it('speedFactor 0.5 @20 → 1 @55 → 1.5 @≥85 km/h, 0 below 10 (the speeds drifting happens at)', () => {
     expect(speedFactor(5, o)).toBe(0);
     expect(speedFactor(20, o)).toBeCloseTo(0.5, 6);
-    expect(speedFactor(60, o)).toBeCloseTo(1, 6);
-    expect(speedFactor(100, o)).toBeCloseTo(1.5, 6);
+    expect(speedFactor(55, o)).toBeCloseTo(1, 6);
+    expect(speedFactor(85, o)).toBeCloseTo(1.5, 6);
     expect(speedFactor(140, o)).toBeCloseTo(1.5, 6);
   });
-  it('countTransitions uses ±8° hysteresis', () => {
-    const b = [0, 0.2, 0.3, 0.1, -0.05, 0.05, 0.3, -0.3, 0.3, -0.3].map((x) => x);
-    expect(countTransitions(b)).toBe(3);
-    expect(countTransitions([0.2, 0.1, -0.1, 0.1])).toBe(0); // never beyond −8°
+  it('countTransitions applies THE shared rule: ±5°, held 0.4 s on both sides', () => {
+    // one clean swing, each side held 1 s at 30°
+    const hold = (deg: number, s: number) => new Array(Math.round(s * 100)).fill(degToRad(deg));
+    expect(countTransitions([...hold(30, 1), ...hold(-30, 1)])).toBe(1);
+    expect(countTransitions([...hold(30, 1), ...hold(-30, 1), ...hold(30, 1)])).toBe(2);
+    // a 0.2 s flick the other way inside a 30° slide is a feint, not two direction changes —
+    // the bare sign-change rule the scorer used to carry counted it as 2
+    expect(countTransitions([...hold(30, 3), ...hold(-12, 0.2), ...hold(30, 3)])).toBe(0);
+    // never beyond ±5°
+    expect(countTransitions([...hold(4, 1), ...hold(-4, 1), ...hold(4, 1)])).toBe(0);
+    // an explicit yaw channel gates it too: no rotation behind the swing, no transition
+    const beta = [...hold(30, 1), ...hold(-30, 1)];
+    expect(countTransitions(beta, { yawRate: beta.map(() => 0) })).toBe(0);
+    expect(countTransitions(beta, { yawRate: beta.map(() => 0.6) })).toBe(1);
   });
 });
 
@@ -172,11 +184,12 @@ describe('rules: base points', () => {
     expect(pts(100)).toBeGreaterThan(pts(60));
     expect(pts(120)).toBeCloseTo(pts(100), 6);
   });
-  it('10 s at 35° / 60 km/h ≈ 1000 base, sustained bumps make the effective multiplier 1.3, total = base × mult + bonus', () => {
+  it('10 s at 35° / 60 km/h ≈ 1080 base, sustained bumps make the effective multiplier 1.3, total = base × mult + bonus', () => {
     const syn = synth([{ s: 10, beta: 35 }]);
     const d = scoreDrift(eventsOf(syn)[0], syn.states);
-    expect(d.base).toBeGreaterThan(985);
-    expect(d.base).toBeLessThan(1005);
+    // 100 pts/s × angleFactor 1.0 × speedFactor 1.083 (60 km/h on the drifting-speed scale)
+    expect(d.base).toBeGreaterThan(1070);
+    expect(d.base).toBeLessThan(1090);
     // +0.25 at 3 s, 6 s, 9 s → ∫mult = 3·1 + 3·1.25 + 3·1.5 + 1·1.75 = 13 → effective 1.3
     expect(d.multiplier).toBeGreaterThan(1.28);
     expect(d.multiplier).toBeLessThan(1.32);
@@ -186,21 +199,28 @@ describe('rules: base points', () => {
 });
 
 describe('rules: multiplier & transitions', () => {
-  it('a transition bumps the multiplier by 0.5 and fires TRANSITION ×n with 200×n points; 3 → MANJI', () => {
+  it('a transition bumps the multiplier by 0.5 and fires TRANSITION ×n worth 90 × the live multiplier; 3 → MANJI', () => {
     const syn = synth([{ s: 2, beta: 30 }, flip(30), { s: 2, beta: -30 }, flip(-30), { s: 2, beta: 30 }, flip(30), { s: 2, beta: -30 }]);
     const sc = new LiveScorer();
     const { ticks } = feed(sc, syn);
     const tr = ofKind(ticks, 'transition');
     expect(tr.map((c) => c.label)).toEqual(['TRANSITION ×1', 'TRANSITION ×2', 'TRANSITION ×3']);
-    expect(tr.map((c) => c.points)).toEqual([200, 400, 600]);
+    // FLAT per transition × the multiplier it was earned at (1.5, 2.0, 2.5 …) — the old rule
+    // paid 200 × n with no cap, which is what made sawing the wheel worth 570 000 points
+    const O = DEFAULT_SCORE_OPTIONS;
+    const mults = tr.map((c) => c.points / O.calloutPoints.transition);
+    expect(mults[0]).toBeCloseTo(1.5, 6); // flat points × the multiplier they were earned at
+    expect(mults[1]).toBeGreaterThan(mults[0]);
+    expect(mults[2]).toBeGreaterThan(mults[1]);
+    expect(mults[2]).toBeLessThanOrEqual(O.multiplierCap);
     const manji = ofKind(ticks, 'manji');
     expect(manji).toHaveLength(1);
     expect(manji[0].label).toBe('MANJI');
-    expect(manji[0].points).toBe(500);
+    // MANJI fires on the same sample as the 3rd transition, at the multiplier that bump made
+    expect(manji[0].points / O.calloutPoints.manji).toBeCloseTo(tr[2].points / O.calloutPoints.transition, 6);
     // multiplier right after the first transition is 1.5 (no sustained bump yet at 2.15 s)
     const iFirst = ticks.findIndex((t) => t.callouts.some((c) => c.kind === 'transition'));
     expect(ticks[iFirst].multiplier).toBeCloseTo(1.5, 6);
-    expect(ticks[iFirst - 1].multiplier).toBeCloseTo(1.0, 6);
     // the manji moment fires the transition callout in the same tick and both ride on the drift
     const iManji = ticks.findIndex((t) => t.callouts.some((c) => c.kind === 'manji'));
     expect(ticks[iManji].callouts.map((c) => c.kind)).toContain('transition');
@@ -212,7 +232,11 @@ describe('rules: multiplier & transitions', () => {
     const sc = new LiveScorer();
     const { ticks } = feed(sc, syn);
     expect(Math.max(...ticks.map((t) => t.multiplier))).toBeCloseTo(5, 6);
-    expect(ofKind(ticks, 'transition')).toHaveLength(12);
+    // every transition still grows the (capped) multiplier, but only the first few PAY: the
+    // bonus is capped per drift, which is what stops a wheel-sawing driver banking 570 000
+    const paid = ofKind(ticks, 'transition');
+    expect(paid).toHaveLength(DEFAULT_SCORE_OPTIONS.transitionBonusMaxPerDrift);
+    expect(sc.completedDrifts[0].transitions).toBeGreaterThanOrEqual(10);
   });
   it('sustained angle adds +0.25 every 3 s; time below 8° does not count', () => {
     const syn = synth([{ s: 7, beta: 30 }]);
@@ -223,7 +247,7 @@ describe('rules: multiplier & transitions', () => {
     const low = synth([{ s: 7, beta: 5 }]);
     const t2 = feed(new LiveScorer(), low).ticks;
     expect(last(t2).multiplier).toBeCloseTo(1.0, 6);
-    expect(last(t2).total).toBe(50); // initiation only — 5° earns no base points
+    expect(last(t2).total).toBe(DEFAULT_SCORE_OPTIONS.calloutPoints.initiation); // initiation only — 5° earns no base points
   });
 });
 
@@ -260,7 +284,8 @@ describe('rules: chain, bank, spin', () => {
     const { ticks } = feed(new LiveScorer(), syn);
     const links = ofKind(ticks, 'link');
     expect(links.map((c) => c.label)).toEqual(['LINK ×3', 'LINK ×4']);
-    expect(links.every((c) => c.points === 400)).toBe(true);
+    // worth the live multiplier, like every callout: chaining compounds instead of paying a fee
+    expect(links.every((c) => c.points >= DEFAULT_SCORE_OPTIONS.calloutPoints.link)).toBe(true);
     // points were still at risk (gaps < 2 s) and bank once at the end, all together
     const banks = ticks.filter((t) => t.banked);
     expect(banks).toHaveLength(1);
@@ -313,7 +338,16 @@ describe('rules: chain, bank, spin', () => {
 
 describe('callouts: each fires exactly once per drift with a HUD label', () => {
   it('INITIATION, EXTREME ANGLE, LONG DRIFT, SMOOTH, HIGH SPEED, PERFECT EXIT', () => {
-    const syn = synth([{ s: 2, beta: 40, speed: 100 }, { s: 1, beta: 47, speed: 100 }, { s: 1, beta: 40, speed: 100 }, { s: 1, beta: 47, speed: 100 }, ...steady(4, 40, 100), idle(3)]);
+    const syn = synth([
+      { s: 2, beta: 40, speed: 100 },
+      { s: 1, beta: 47, speed: 100 },
+      { s: 1, beta: 40, speed: 100 },
+      { s: 1, beta: 47, speed: 100 },
+      { s: 4, beta: 40, speed: 100 },
+      // feathered out over 3 s: slow enough to be a PERFECT EXIT, not just a clean one
+      { s: 3, beta: (t) => 40 * (1 - t / 3), speed: 100 },
+      idle(3),
+    ]);
     const { ticks, scores } = feed(new LiveScorer(), syn);
     const kinds: StyleCalloutKind[] = ['initiation', 'extreme-angle', 'long-drift', 'smooth', 'high-speed', 'perfect-exit'];
     const labels: Record<string, string> = {
@@ -329,16 +363,19 @@ describe('callouts: each fires exactly once per drift with a HUD label', () => {
       const c = ofKind(ticks, k);
       expect(c, k).toHaveLength(1);
       expect(c[0].label).toBe(labels[k]);
-      expect(c[0].points).toBe(pts[k]);
+      // points × the live multiplier: a callout is worth what the driver has earned, so
+      // chaining compounds instead of paying a flat participation fee
+      expect(c[0].points / pts[k], k).toBeGreaterThanOrEqual(1);
+      expect(c[0].points / pts[k], k).toBeLessThanOrEqual(DEFAULT_SCORE_OPTIONS.multiplierCap);
     }
     expect(ofKind(ticks, 'transition')).toHaveLength(0);
     expect(ofKind(ticks, 'manji')).toHaveLength(0);
     // moments: initiation at the first sample, long-drift at 5 s, extreme angle when 47° is first held
     expect(ofKind(ticks, 'initiation')[0].t).toBe(0);
-    expect(ofKind(ticks, 'long-drift')[0].t).toBeCloseTo(5, 1);
+    expect(ofKind(ticks, 'long-drift')[0].t).toBeCloseTo(DEFAULT_SCORE_OPTIONS.longDriftS, 1);
     expect(ofKind(ticks, 'extreme-angle')[0].t).toBeGreaterThan(2);
     expect(ofKind(ticks, 'extreme-angle')[0].t).toBeLessThan(2.6);
-    expect(scores[0].bonus).toBe(kinds.reduce((a, k) => a + pts[k], 0));
+    expect(scores[0].bonus).toBeGreaterThanOrEqual(kinds.reduce((a, k) => a + pts[k], 0));
     expect(scores[0].total).toBeCloseTo(scores[0].base * scores[0].multiplier + scores[0].bonus, 6);
   });
   it('no SMOOTH when the angle wobbles, no HIGH SPEED at 60 km/h, no LONG DRIFT under 5 s, no EXTREME ANGLE under 45°', () => {
@@ -346,16 +383,25 @@ describe('callouts: each fires exactly once per drift with a HUD label', () => {
     const { ticks } = feed(new LiveScorer(), syn);
     for (const k of ['smooth', 'high-speed', 'long-drift', 'extreme-angle'] as StyleCalloutKind[]) expect(ofKind(ticks, k), k).toHaveLength(0);
   });
-  it('no PERFECT EXIT after a snap-back exit', () => {
+  it('PERFECT EXIT is a flourish, a CLEAN exit is the normal way out, and a snap-back is neither', () => {
+    // a snap-back: 45° pulled out in 0.15 s — neither perfect nor clean
     const snap = synth([{ s: 3, beta: 30 }, { s: 0.15, beta: (t) => 30 - (45 * t) / 0.15 }, idle(3)]);
     const { ticks, scores } = feed(new LiveScorer(), snap);
     expect(ofKind(ticks, 'perfect-exit')).toHaveLength(0);
     expect(scores[0].cleanExit).toBe(false);
-    expect(scores[0].stats.exitRateDegS).toBeGreaterThan(75);
+    expect(scores[0].stats.exitRateDegS).toBeGreaterThan(DEFAULT_SCORE_OPTIONS.cleanExitMaxRateDegS);
+    // steady()'s ramp-out unwinds 30° in 0.6 s = 50°/s: driven out clean, but no flourish.
+    // The two thresholds are deliberately different — tying the quality term to the callout
+    // threshold meant tuning the callout to be rare took 30 % off everyone's quality score.
     const gentle = synth([...steady(3, 30), idle(3)]);
     const g = feed(new LiveScorer(), gentle);
-    expect(ofKind(g.ticks, 'perfect-exit')).toHaveLength(1);
+    expect(ofKind(g.ticks, 'perfect-exit')).toHaveLength(0);
     expect(g.scores[0].cleanExit).toBe(true);
+    // a genuinely feathered exit — 30° unwound over 3 s — earns the callout
+    const feathered = synth([{ s: 3, beta: 30 }, { s: 3, beta: (t) => 30 * (1 - t / 3) }, idle(3)]);
+    const f = feed(new LiveScorer(), feathered);
+    expect(ofKind(f.ticks, 'perfect-exit')).toHaveLength(1);
+    expect(f.scores[0].cleanExit).toBe(true);
   });
   it('CLEAN LAP fires live via onLapCompleted and offline via the TrackModel, never without laps', () => {
     const syn = synth([...steady(2, 30), idle(2.5), ...steady(2, 30), idle(2.5), ...steady(2, 30), idle(3)]);
@@ -365,13 +411,13 @@ describe('callouts: each fires exactly once per drift with a HUD label', () => {
     const live = ofKind(ticks, 'clean-lap');
     expect(live).toHaveLength(1);
     expect(live[0].label).toBe('CLEAN LAP');
-    expect(live[0].points).toBe(500);
+    expect(live[0].points).toBeGreaterThanOrEqual(DEFAULT_SCORE_OPTIONS.calloutPoints['clean-lap']);
     expect(scores[2].callouts.some((c) => c.kind === 'clean-lap')).toBe(true);
     const track: TrackModel = { originLat: 0, originLon: 0, refPath: [], closed: true, lengthM: 0, corners: [], laps: [lap] };
     const withTrack = scoreSession(eventsOf(syn), syn.states, track);
     const without = scoreSession(eventsOf(syn), syn.states, null);
     expect(withTrack.cleanLaps).toBe(1);
-    expect(withTrack.total - without.total).toBe(500);
+    expect(withTrack.total - without.total).toBeGreaterThanOrEqual(DEFAULT_SCORE_OPTIONS.calloutPoints['clean-lap']);
     expect(withTrack.perDrift[3].callouts.some((c) => c.kind === 'clean-lap')).toBe(true);
     expect(without.perDrift[3].callouts.some((c) => c.kind === 'clean-lap')).toBe(false);
     expect(sc.total).toBeCloseTo(withTrack.total, 0);
@@ -402,14 +448,15 @@ describe('live scorer API', () => {
     expect(g.total).toBeCloseTo(a.total, 6);
     // closing a drift through onDriftCompleted before the feed goes idle reports end callouts on the next tick
     const sc2 = new LiveScorer();
-    const s2 = synth([...steady(3, 30), idle(1)]);
+    const s2 = synth([{ s: 3.6, beta: 30 }, idle(1)]);
     let lastTick: LiveTick | null = null;
     for (let i = 0; i < 360; i++) lastTick = sc2.push(s2.states[i], { phase: 'drifting', angle: 0.5, peakAngle: 0.5, transitions: 0, durationS: i / 100, id: 1 });
     const d = sc2.onDriftCompleted(eventFromRange(1, s2.states, 0, 359));
-    expect(d.callouts.some((c) => c.kind === 'perfect-exit')).toBe(true);
+    const pe = d.callouts.find((c) => c.kind === 'perfect-exit');
+    expect(pe).toBeDefined();
     const next = sc2.push(s2.states[360], null);
     expect(next.callouts.some((c) => c.kind === 'perfect-exit')).toBe(true);
-    expect(next.total).toBeCloseTo((lastTick as LiveTick).total + 100, 6);
+    expect(next.total).toBeCloseTo((lastTick as LiveTick).total + (pe as StyleCallout).points, 6);
   });
   it('reset() clears everything', () => {
     const syn = synth([...steady(3, 30), idle(3)]);
@@ -529,12 +576,16 @@ describe('session components', () => {
       const syn = synth([...steady(6, deg, kmh), idle(3)]);
       return scoreSession(eventsOf(syn), syn.states, null);
     };
-    expect(at(15, 60).angle).toBeCloseTo(20, 0);
-    expect(at(30, 60).angle).toBeCloseTo(60, 0);
-    expect(at(45, 60).angle).toBeCloseTo(100, 0);
+    // both curves are written for the range real drifting lives in: held peaks of 24–43°
+    // (the whole skill grid spans 27–42) and drifting speeds of 44–66 km/h (measured 48–61).
+    expect(at(20, 60).angle).toBe(0);
+    expect(at(29, 60).angle).toBeCloseTo(30, 0);
+    expect(at(33, 60).angle).toBeCloseTo(65, 0);
+    expect(at(37, 60).angle).toBeCloseTo(92, 0);
     expect(at(60, 60).angle).toBeCloseTo(100, 0);
-    expect(at(30, 40).speed).toBeCloseTo(30, 0);
-    expect(at(30, 80).speed).toBeCloseTo(80, 0);
+    expect(at(30, 44).speed).toBe(0);
+    expect(at(30, 55).speed).toBeCloseTo(55, 0);
+    expect(at(30, 60).speed).toBeCloseTo(92, 0);
     expect(at(30, 120).speed).toBeCloseTo(100, 0);
   });
   it('a wobbly driver scores lower steadiness/consistency than a steady one', () => {
@@ -542,8 +593,10 @@ describe('session components', () => {
     const wobbly = synth([{ s: 10, beta: (t) => 30 + 4 * Math.sin(2 * Math.PI * 0.5 * t) + 3 * Math.sin(2 * Math.PI * 0.9 * t) }, { s: 0.6, beta: (t) => 30 * (1 - t / 0.6) }, idle(3)]);
     const a = scoreSession(eventsOf(steadyRun), steadyRun.states, null);
     const b = scoreSession(eventsOf(wobbly), wobbly.states, null);
+    // no track model → nothing to be cross-lap consistent WITH, so this is steadiness alone
     expect(a.consistency).toBeGreaterThan(95);
     expect(b.consistency).toBeLessThan(40);
+    expect(a.steadiness).toBeGreaterThan(b.steadiness + 50);
   });
 });
 

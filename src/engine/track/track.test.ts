@@ -234,6 +234,7 @@ function projectionJumps(run: SimulatedRun, builder: TrackBuilder, model: TrackM
 interface Metrics {
   name: string;
   laps: number;
+  /** SIGNED worst lap-boundary error: a bias shows up as one sign in every row. */
   maxLapErrS: number;
   lenErrPct: number;
   cornersTrue: number;
@@ -247,13 +248,15 @@ interface Metrics {
 }
 
 const rows: Metrics[] = [];
+/** Every signed lap-boundary error in the suite, for the "no systematic bias" assertion. */
+const LAP_ERRORS: number[] = [];
 
 function fmt(v: number, d = 2): string {
   return Number.isFinite(v) ? v.toFixed(d) : String(v);
 }
 
 function printTable(): void {
-  const head = ['run', 'laps', 'lapErr(s)', 'lenErr(%)', 'cTrue', 'cFound', 'match', 'uncov', 'apexErr(m)', 'projJump(m)', 'consist', 'ms'];
+  const head = ['run', 'laps', 'lapErr(s)±', 'lenErr(%)', 'cTrue', 'cFound', 'match', 'uncov', 'apexErr(m)', 'projJump(m)', 'consist', 'ms'];
   const lines = rows.map((r) => [
     r.name,
     String(r.laps),
@@ -299,16 +302,29 @@ function checkHarbor(seed: number, mode: NoiseMode): void {
   expect(Math.abs(crossings[1] - run.lapTimes[2])).toBeLessThan(0.02);
   const trueBoundaries = [run.lapTimes[0], ...crossings];
   let maxLapErr = 0;
+  let worstSigned = 0;
+  const signed: number[] = [];
   laps.forEach((lap, k) => {
     expect(lap.index).toBe(k);
-    maxLapErr = Math.max(maxLapErr, Math.abs(lap.startT - trueBoundaries[k]), Math.abs(lap.endT - trueBoundaries[k + 1]));
+    signed.push(lap.startT - trueBoundaries[k], lap.endT - trueBoundaries[k + 1]);
+    for (const e of [lap.startT - trueBoundaries[k], lap.endT - trueBoundaries[k + 1]]) {
+      if (Math.abs(e) > maxLapErr) {
+        maxLapErr = Math.abs(e);
+        worstSigned = e;
+      }
+    }
     expect(Math.abs(lap.durationS - (lap.endT - lap.startT))).toBeLessThan(1e-9);
     expect(lap.sampleEnd).toBeGreaterThan(lap.sampleStart);
     expect(states[lap.sampleStart].t).toBeLessThanOrEqual(lap.startT + 0.02);
     expect(states[lap.sampleEnd].t).toBeLessThanOrEqual(lap.endT);
     if (k > 0) expect(lap.sampleStart).toBe(laps[k - 1].sampleEnd + 1);
   });
-  expect(maxLapErr).toBeLessThan(1.0);
+  // Lap boundaries used to be 0.28–0.31 s late in EVERY row of this table — the time a car
+  // takes to reach the 1 m/s "started" threshold from rest, charged to lap 1's start. What is
+  // left is the position wander this noise model injects, which has no preferred sign.
+  expect(Math.abs(signed[0]), 'run start').toBeLessThan(0.1);
+  expect(maxLapErr).toBeLessThan(0.15);
+  LAP_ERRORS.push(...signed);
   // the crossing time must not be snapped to a 10 ms sample boundary in every lap
   expect(laps.some((l) => Math.abs(l.endT * 100 - Math.round(l.endT * 100)) > 1e-3)).toBe(true);
 
@@ -397,7 +413,7 @@ function checkHarbor(seed: number, mode: NoiseMode): void {
   rows.push({
     name: `harbor s${seed} ${mode}`,
     laps: laps.length,
-    maxLapErrS: maxLapErr,
+    maxLapErrS: worstSigned,
     lenErrPct,
     cornersTrue: run.corners.length,
     cornersFound: model!.corners.length,
@@ -518,5 +534,18 @@ describe('track model — mountain pass (point-to-point)', () => {
       wallMs,
     });
     printTable();
+  });
+
+  it('lap times carry no systematic bias: both signs, and the mean error is near zero', () => {
+    // every row of the metrics table used to read 0.28–0.31 s, always positive
+    expect(LAP_ERRORS.length).toBeGreaterThan(6);
+    const mean = LAP_ERRORS.reduce((a, b) => a + b, 0) / LAP_ERRORS.length;
+    const worst = Math.max(...LAP_ERRORS.map(Math.abs));
+    process.stdout.write(`\nLAP BOUNDARY ERROR over ${LAP_ERRORS.length} boundaries: mean ${mean.toFixed(3)} s, worst |err| ${worst.toFixed(3)} s, ` +
+      `${LAP_ERRORS.filter((e) => e > 0).length} late / ${LAP_ERRORS.filter((e) => e < 0).length} early\n`);
+    expect(LAP_ERRORS.some((e) => e > 0), 'no lap boundary is ever late').toBe(true);
+    expect(LAP_ERRORS.some((e) => e < 0), 'no lap boundary is ever early — that is a bias').toBe(true);
+    expect(Math.abs(mean), 'mean signed error').toBeLessThan(0.06);
+    expect(worst).toBeLessThan(0.15);
   });
 });

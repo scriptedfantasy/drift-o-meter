@@ -356,7 +356,7 @@ export class DriftAccumulator {
 
     // ---- spin ---------------------------------------------------------------------------
     // ONE threshold with the detector (SPIN_ANGLE_DEG), and the detector's own verdict wins
-    if (absDeg >= o.spinAngleDeg || this.ctxSpin === true) {
+    if (absDeg > o.spinAngleDeg || this.ctxSpin === true) {
       this.spun = true;
       return res;
     }

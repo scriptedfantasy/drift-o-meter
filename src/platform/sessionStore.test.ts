@@ -16,9 +16,10 @@ function fakeSession(id: string, startedAt: number, total: number, grade: Sessio
     gps: [],
     states: [],
     drifts: [],
-    score: { total, grade, angle: 50, consistency: 50, quality: 50, speed: 50, style: 50, bestDriftId: null, longestChainPoints: 0, perDrift: {} },
+    score: { total, grade, angle: 50, consistency: 50, quality: 50, speed: 50, style: 50, bestDriftId: null, longestChainPoints: 0, perDrift: {}, trusted: true },
     track: null,
     calibration: { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 0, forwardResolved: false, t: 0 },
+    integrity: { mount: 'rigid', physics: 'ok', gps: 'good', implausibleDriftFraction: 0, suppressedS: 0, scoreTrusted: true, message: '' },
     meta: { track: 'Harbor' },
   };
 }

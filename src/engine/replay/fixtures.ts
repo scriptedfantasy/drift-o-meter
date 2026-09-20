@@ -13,6 +13,7 @@ import {
   type Grade,
   type Lap,
   type MountCalibration,
+  type SessionIntegrity,
   type Session,
   type SessionScore,
   type SlipState,
@@ -408,11 +409,24 @@ export function sessionFromSimulation(run: SimulatedRun, partial: Partial<Fixtur
     bestDriftId: bestId,
     longestChainPoints: longest,
     perDrift,
+    trusted: true,
   };
   const calibration: MountCalibration = { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 1, forwardResolved: true, t: 0 };
+  // A fixture is a synthetic recording with a perfect mount, so nothing is in doubt. Real
+  // sessions get this from the integrity monitor via the scorer.
+  const integrity: SessionIntegrity = {
+    mount: 'rigid',
+    physics: 'ok',
+    gps: 'good',
+    implausibleDriftFraction: 0,
+    suppressedS: 0,
+    scoreTrusted: true,
+    message: '',
+  };
   const trackName = typeof run.meta.track === 'string' ? run.meta.track : run.trackId;
   return {
     version: 1,
+    integrity,
     id: `sim-${run.trackId}-${String(run.meta.seed ?? 0)}`,
     name: opt.name ?? `${trackName} (sim)`,
     startedAt: Date.UTC(2026, 0, 1),

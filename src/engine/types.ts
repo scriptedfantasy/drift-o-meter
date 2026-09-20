@@ -209,6 +209,35 @@ export interface DriftScore {
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D';
 
+/**
+ * How much of a run the integrity monitor was willing to believe.
+ *
+ * This exists because a run can be perfectly well FORMED and still be meaningless: a phone
+ * waved in a parked car produces large angles, high yaw rates and a rising score. The monitor
+ * knows; before this block existed it had no way to say so, and a hand-held run published a
+ * grade like any other.
+ */
+export interface SessionIntegrity {
+  mount: 'rigid' | 'suspect' | 'loose';
+  physics: 'ok' | 'implausible';
+  gps: 'good' | 'poor' | 'none';
+  /** Fraction (0..1) of drifting time the monitor refused to believe. */
+  implausibleDriftFraction: number;
+  /** Drifting seconds that earned nothing because they were not believed. */
+  suppressedS: number;
+  /**
+   * False when too much of the run was not believed for its total and grade to mean anything.
+   *
+   * A consumer MUST NOT present the total or the grade as an achievement when this is false:
+   * no grade letter, no leaderboard entry, no share card. Show `message` instead and offer the
+   * run as a recording. `SessionScore.trusted` carries the same flag so a scored object is
+   * never separated from the verdict on whether it may be shown.
+   */
+  scoreTrusted: boolean;
+  /** Driver-facing reason, in plain words. Empty when trusted. */
+  message: string;
+}
+
 export interface SessionScore {
   total: number;
   grade: Grade;
@@ -221,6 +250,12 @@ export interface SessionScore {
   bestDriftId: number | null;
   longestChainPoints: number;
   perDrift: Record<number, DriftScore>;
+  /**
+   * Mirrors `SessionIntegrity.scoreTrusted`. Required, not optional: every producer of a score
+   * has to answer whether it may be shown, and every consumer has to look. See the doc on
+   * `SessionIntegrity.scoreTrusted` for what false obliges.
+   */
+  trusted: boolean;
 }
 
 /** A corner found on the track, in local ENU metres. */
@@ -282,6 +317,8 @@ export interface Session {
   score: SessionScore;
   track: TrackModel | null;
   calibration: MountCalibration;
+  /** What the integrity monitor made of the run, and whether its score may be published. */
+  integrity: SessionIntegrity;
   /** Optional simulator ground truth, present only for simulated runs. */
   truth?: TruthSample[];
   /** Free-form: sim track id, phone model, app version… */

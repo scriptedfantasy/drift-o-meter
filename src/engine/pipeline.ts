@@ -731,6 +731,7 @@ export class DriftPipeline implements DriftPipelineApi {
       // ScoredDrift is a DriftScore plus per-drift stats the results screen wants; it is plain
       // JSON, so the on-disk format stays a superset of the declared one.
       perDrift: b.perDrift,
+      trusted: b.integrity.scoreTrusted,
     };
     const startedAt = this.startedAt || this.opts.startedAt || Date.now();
     const durationS = Number.isFinite(this.firstT) ? fin(this.lastT - this.firstT) : 0;
@@ -747,6 +748,7 @@ export class DriftPipeline implements DriftPipelineApi {
       drifts: this._drifts,
       score,
       track,
+      integrity: b.integrity,
       calibration: this.calibrator.calibration,
       // the pipeline's own provenance first, the caller's keys last: an app that knows better
       // (the track id, the driver, the phone model) wins over anything derived here
