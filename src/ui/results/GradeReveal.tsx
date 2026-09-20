@@ -173,7 +173,7 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
               {GRADE_WORDS[grade]}
             </AppText>
             <AppText variant="telemetry" color="text" numeric style={styles.rating}>
-              {rating.toFixed(1)}
+              {Number.isFinite(rating) ? rating.toFixed(1) : '--'}
               <AppText variant="label" color="muted">
                 {'  '}/ 100
               </AppText>

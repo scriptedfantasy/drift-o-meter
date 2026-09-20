@@ -20,7 +20,7 @@
  * trailing window is a typed-array ring buffer.
  */
 import type { SlipState, StyleCallout, StyleCalloutKind } from '../types';
-import { degToRad, radToDeg } from '../types';
+import { radToDeg } from '../types';
 import { TransitionCounter, type TransitionRule } from '../detect/options';
 import { angleFactor, calloutLabel, KMH, speedFactor, type ScoreOptions } from './rules';
 
@@ -32,6 +32,11 @@ export interface DriftContext {
   chainDrifts?: number;
   /** Force the spin flag (e.g. from a detector that knows better — `DriftEvent.spin`). */
   spin?: boolean;
+  /**
+   * 1 where the integrity monitor believed the slide, 0 where it did not, indexed like the
+   * `states` array `scoreDrift` is given. Absent = believe everything.
+   */
+  plausible?: Uint8Array | null;
 }
 
 /** Everything `finish()` knows about a drift. */
@@ -377,7 +382,7 @@ export class DriftAccumulator {
     const pts = rate * this.multiplier * dt;
     this.points += pts;
     res.points = pts;
-    res.rate = dt > 0 ? rate * this.multiplier : 0;
+    res.rate = plausible ? rate * this.multiplier : 0;
     this.lastRate = res.rate;
 
     // ---- time bookkeeping --------------------------------------------------------------
@@ -648,5 +653,3 @@ export class DriftAccumulator {
     return { jitterDeg: cnt > 0 ? Math.sqrt(sq / cnt) : 0, plateauS };
   }
 }
-
-export { degToRad };

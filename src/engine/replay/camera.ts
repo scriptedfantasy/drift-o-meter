@@ -146,7 +146,12 @@ export class ReplayCamera {
   private pz = new Spring(false); // ln(zoom)
   private pr = new Spring(true);
   private state: CameraState | null = null;
-  private lastRotationTarget = 0;
+  /**
+   * The rotation the chase/cinematic camera is heading for. NaN until the first target is
+   * computed, so a parked car on the very first frame seeds it from its HEADING instead of
+   * silently keeping 0 rad and whipping a quarter turn as soon as it moves.
+   */
+  private lastRotationTarget = NaN;
   private pendingCut = false;
   private cutAt = -Infinity;
   private lastT = 0;
@@ -184,6 +189,7 @@ export class ReplayCamera {
     this.state = null;
     this.cutAt = -Infinity;
     this.pendingCut = false;
+    this.lastRotationTarget = NaN;
   }
 
   getState(): CameraState | null {
@@ -302,6 +308,9 @@ export class ReplayCamera {
     let cx = (Number.isFinite(pose.x) ? pose.x : 0) + look * cc;
     let cy = (Number.isFinite(pose.y) ? pose.y : 0) + look * sc;
     let zoom = Math.min(w, h) / span;
+    // While moving, point the travel direction up. While stopped, hold the last target — but on
+    // the FIRST frame there is no last target, so seed it from the car's heading: a replay that
+    // opens on a stationary car must still open pointing the right way.
     if (speed > 1) this.lastRotationTarget = Math.PI / 2 - course;
     else if (!Number.isFinite(this.lastRotationTarget)) this.lastRotationTarget = Math.PI / 2 - (Number.isFinite(pose.heading) ? pose.heading : 0);
     let rotation = this.lastRotationTarget;

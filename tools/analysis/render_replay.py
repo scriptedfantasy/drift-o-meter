@@ -33,6 +33,7 @@ SHOTS = [
     ("spin70", "peak", "chase", ["--beta=70"]),
     ("spin95", "peak", "cinematic", ["--beta=95"]),
     ("nodrift", "mid", "chase", ["--aggression=0.0", "--consistency=1.0"]),
+    ("fixture-s", "peak", "cinematic", ["--fixture", "--aggression=1.0", "--consistency=1.0"]),
     ("cut", "peak", "chase", ["--cut"]),
 ]
 

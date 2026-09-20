@@ -105,7 +105,10 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
       if (low && dipStart < 0) dipStart = i;
       if (!low && dipStart >= 0) {
         const dipS = truth[i - 1].t - truth[dipStart].t;
-        if (dipS >= opt.settleS && dipStart > segStart) {
+        // a dip that FLICKS through zero to the other side is a transition, not an exit, however
+        // long it lingers near zero — only a settle that resumes the same direction ends a drift
+        const flick = Math.sign(truth[dipStart === a ? a : dipStart - 1].beta) * Math.sign(truth[i].beta) < 0;
+        if (dipS >= opt.settleS && dipStart > segStart && !flick) {
           split.push([segStart, dipStart]);
           segStart = i - 1;
         }
@@ -115,8 +118,17 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
     const tail = dipStart >= 0 && truth[b].t - truth[dipStart].t >= opt.settleS ? dipStart : b;
     if (tail > segStart) split.push([segStart, tail]);
   }
-  // anything still too long is cut at its deepest interior |β| minimum
+  // Anything still too long is cut at its deepest interior |β| minimum — but NEVER at a
+  // direction change. In a linked sequence the deepest interior minimum IS the transition (the
+  // zero crossing where the car flicks the other way), so a naive cutter severs precisely the
+  // moment that owns its own colour, callout, flash, shake and haptic. A switchback therefore
+  // stays one drift with its transition intact; only genuinely long same-direction slides split.
   const out: Array<[number, number]> = [];
+  const meanSign = (a: number, b: number): number => {
+    let acc = 0;
+    for (let i = a; i <= b; i++) acc += truth[i].beta;
+    return Math.sign(acc);
+  };
   const cut = (a: number, b: number, depth: number): void => {
     if (truth[b].t - truth[a].t <= opt.maxDurationS || depth > 4) {
       out.push([a, b]);
@@ -127,10 +139,11 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
     let bestV = Infinity;
     for (let i = a + guard; i <= b - guard; i++) {
       const v = Math.abs(truth[i].beta);
-      if (v < bestV) {
-        bestV = v;
-        best = i;
-      }
+      if (v >= bestV) continue;
+      // reject a candidate that separates two lobes of OPPOSITE sign: that is a transition
+      if (meanSign(a, i) * meanSign(i, b) < 0) continue;
+      bestV = v;
+      best = i;
     }
     if (best < 0) {
       out.push([a, b]);
@@ -257,12 +270,22 @@ function scoreDrift(d: DriftEvent, truth: TruthSample[], opt: FixtureOptions): D
   };
 }
 
-function gradeFor(total: number, drifts: number): Grade {
-  const per = drifts > 0 ? total / drifts : 0;
-  if (per >= 4000) return 'S';
-  if (per >= 2500) return 'A';
-  if (per >= 1500) return 'B';
-  if (per >= 700) return 'C';
+/**
+ * Grade on scoring RATE — points per second of the whole session — not points per drift.
+ *
+ * Points per drift is split-dependent: when the drift splitter turned one 28 s slide into seven
+ * 2–8 s ones, the same driving collapsed every grade to C. Rate is invariant to how a run is cut
+ * up, and across the driver-skill range the simulator produces (aggression 0.15 → 1.0) it moves
+ * monotonically from ~98 to ~169 pts/s, so the whole S–D scale is reachable.
+ */
+export const GRADE_RATE_THRESHOLDS = { S: 164, A: 148, B: 128, C: 106 } as const;
+
+function gradeFor(total: number, durationS: number): Grade {
+  const rate = durationS > 1 ? total / durationS : 0;
+  if (rate >= GRADE_RATE_THRESHOLDS.S) return 'S';
+  if (rate >= GRADE_RATE_THRESHOLDS.A) return 'A';
+  if (rate >= GRADE_RATE_THRESHOLDS.B) return 'B';
+  if (rate >= GRADE_RATE_THRESHOLDS.C) return 'C';
   return 'D';
 }
 
@@ -348,7 +371,7 @@ export function sessionFromSimulation(run: SimulatedRun, partial: Partial<Fixtur
   const n = Math.max(1, drifts.length);
   const score: SessionScore = {
     total,
-    grade: gradeFor(total, drifts.length),
+    grade: gradeFor(total, truth.length ? truth[truth.length - 1].t - truth[0].t : 0),
     angle: angle / n,
     consistency: consistency / n,
     quality: clamp((angle + consistency) / (2 * n), 0, 100),

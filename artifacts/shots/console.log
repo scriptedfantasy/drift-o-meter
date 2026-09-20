@@ -1,10 +1,24 @@
 
-===== drive-idle  http://127.0.0.1:43413/drive?sim=harbor&rate=1
+===== drive-idle-landscape  http://127.0.0.1:35729/drive?sim=harbor&rate=1
 
-===== drive  http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=99.5
+===== drive-peak-landscape  http://127.0.0.1:35729/drive?sim=harbor&rate=1&at=100.85&hold=1
+[drive-peak-landscape] console.warning: [hud] run failed to start TypeError: Cannot read properties of undefined (reading 'angleRad')
+    at r.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1473:1000)
+    at u.step (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1476:4271)
+    at e.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1475:1836)
+    at c.pushMotion (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1464:5005)
+    at Object.onMotion (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1455:3156)
+    at s.drainTo (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1489:1786)
+    at s.warpTo (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1489:761)
+    at http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1455:4448
 
-===== drive-transition  http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=85.05&hold=1
-
-===== drive-bank  http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=50.75&hold=1
-
-===== drive-warn  http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose
+===== drive-transition-landscape  http://127.0.0.1:35729/drive?sim=harbor&rate=1&at=85.05&hold=1
+[drive-transition-landscape] console.warning: [hud] run failed to start TypeError: Cannot read properties of undefined (reading 'angleRad')
+    at r.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1473:1000)
+    at u.step (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1476:4271)
+    at e.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1475:1836)
+    at c.pushMotion (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1464:5005)
+    at Object.onMotion (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1455:3156)
+    at s.drainTo (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1489:1786)
+    at s.warpTo (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1489:761)
+    at http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1455:4448

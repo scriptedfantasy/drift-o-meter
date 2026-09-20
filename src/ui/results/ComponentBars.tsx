@@ -31,7 +31,8 @@ export function ComponentBars({ rows, run, reduceMotion = false, testID }: Compo
 function Bar({ row, index, run, reduceMotion }: { row: ComponentRow; index: number; run: boolean; reduceMotion: boolean }) {
   const enter = useEnter(120 + index * 70, run, reduceMotion);
   const fill = useFill(row.score / 100, 220 + index * 90, run, reduceMotion);
-  const score = Math.round(row.score);
+  const known = Number.isFinite(row.score);
+  const score = known ? Math.round(row.score) : null;
 
   return (
     <Animated.View style={[styles.row, enter]} testID={`component-${row.key}`}>
@@ -43,8 +44,8 @@ function Bar({ row, index, run, reduceMotion }: { row: ComponentRow; index: numb
           ×{row.weight.toFixed(2)}
         </AppText>
         <View style={styles.spacer} />
-        <AppText variant="telemetry" color={score === 0 ? colors.muted : row.color} numeric style={styles.score}>
-          {score}
+        <AppText variant="telemetry" color={score === 0 || score === null ? colors.muted : row.color} numeric style={styles.score}>
+          {score ?? '--'}
         </AppText>
         <AppText variant="micro" color="muted" style={styles.outOf}>
           /100

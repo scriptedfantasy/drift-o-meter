@@ -506,9 +506,6 @@ export class MountCalibrator {
   private fx = 1;
   private fy = 0;
   private fz = 0;
-  private lx = 0;
-  private ly = 1;
-  private lz = 0;
   private r: [number, number, number, number, number, number, number, number, number] = [1, 0, 0, 0, 1, 0, 0, 0, 1];
   private quality = 0;
   private upQuality = 0;
@@ -661,9 +658,6 @@ export class MountCalibrator {
     this.fx = 1;
     this.fy = 0;
     this.fz = 0;
-    this.lx = 0;
-    this.ly = 1;
-    this.lz = 0;
     this.r[0] = 1; this.r[1] = 0; this.r[2] = 0;
     this.r[3] = 0; this.r[4] = 1; this.r[5] = 0;
     this.r[6] = 0; this.r[7] = 0; this.r[8] = 1;
@@ -1721,9 +1715,6 @@ export class MountCalibrator {
     this.fx = fx;
     this.fy = fy;
     this.fz = fz;
-    this.lx = lx;
-    this.ly = ly;
-    this.lz = lz;
     const R = this.r;
     R[0] = fx; R[1] = fy; R[2] = fz;
     R[3] = lx; R[4] = ly; R[5] = lz;

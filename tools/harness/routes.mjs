@@ -21,18 +21,19 @@ export const defaultRoutes = [
   // ---- drive: the live HUD at the moments that matter -----------------------------------
   // Armed, before the run: the gauge at rest, the GO control, nothing claimed yet.
   { name: 'drive-idle', path: '/drive?sim=harbor&rate=1', waitMs: 1800, expectCanvas: true, minEmber: 1500 },
-  // LIVE (this is the one to record video of): warped to just before the third transition, then
-  // left running — MANJI at 100.0 s, EXTREME ANGLE at 100.6 s, a 60° hold after that.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=99.5', waitMs: 3200, expectCanvas: true, minEmber: 2000 },
+  // LIVE (this is the one to record video of): warped to 96.3 s and left running, so the shot
+  // lands ~4.5 s later on the MANJI transition at 100.0 s and EXTREME ANGLE at 100.6 s, and the
+  // video covers the whole flick and the 60° hold that follows.
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=96.3', waitMs: 3200, expectCanvas: true, minEmber: 2000 },
   // HELD 0.25 s after EXTREME ANGLE: 59° right, ×4.5, 20 800 points, three callouts stacked.
-  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2400, expectCanvas: true, minEmber: 2000 },
+  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 2000 },
   // HELD 110 ms after TRANSITION ×2, mid-swing through zero: the magenta moment.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.05&hold=1', waitMs: 2400, expectCanvas: true, minEmber: 800 },
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.05&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 800 },
   // HELD just after a 10 570-point chain banked and the next drift (LINK ×3) started.
-  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2400, expectCanvas: true, minEmber: 1200 },
+  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
   // HELD on the same frame as drive-peak with the mount verdict overridden: the warning has to
   // be impossible to miss even while the run is going well.
-  { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose', waitMs: 2400, expectCanvas: true, minEmber: 1500 },
+  { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose', waitMs: 2800, expectCanvas: true, minEmber: 1500 },
 
   // ---- results: the verdict screen ------------------------------------------------------
   // `?fixture=<name>` (or the id `fixture-<name>`) rebuilds a deterministic session from the

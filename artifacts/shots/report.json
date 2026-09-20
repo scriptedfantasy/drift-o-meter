@@ -1,23 +1,23 @@
 {
-  "startedAt": "2026-09-20T19:19:52.980Z",
+  "startedAt": "2026-09-20T19:22:46.837Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive-idle",
+      "name": "drive-idle-landscape",
       "path": "/drive?sim=harbor&rate=1",
-      "url": "http://127.0.0.1:43413/drive?sim=harbor&rate=1",
+      "url": "http://127.0.0.1:35729/drive?sim=harbor&rate=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-idle.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-idle-landscape.png",
       "video": null,
-      "ms": 3554,
+      "ms": 3374,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -37,8 +37,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -63,44 +63,45 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 214628,
+        "emberPixels": 280184,
         "cyanPixels": 0,
         "textPixels": 33180,
-        "nonBgFraction": 0.1964
+        "nonBgFraction": 0.2115
       }
     },
     {
-      "name": "drive",
-      "path": "/drive?sim=harbor&rate=1&at=99.5",
-      "url": "http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=99.5",
+      "name": "drive-peak-landscape",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:35729/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive.png",
+      "warnings": [
+        "[hud] run failed to start TypeError: Cannot read properties of undefined (reading 'angleRad')\n    at r.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1473:1000)\n    at u.step (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0"
+      ],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak-landscape.png",
       "video": null,
-      "ms": 6857,
+      "ms": 4522,
       "fonts": {
         "status": "loaded",
         "families": [
           "BarlowCondensed_600SemiBold",
           "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 81,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 11,
+        "bodyTextNodes": 9,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 2,
+        "canvases": 1,
         "webgl": true,
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -125,44 +126,45 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 105868,
-        "cyanPixels": 20176,
-        "textPixels": 7280,
-        "nonBgFraction": 0.3359
+        "emberPixels": 101288,
+        "cyanPixels": 24,
+        "textPixels": 3184,
+        "nonBgFraction": 0.3067
       }
     },
     {
-      "name": "drive-transition",
+      "name": "drive-transition-landscape",
       "path": "/drive?sim=harbor&rate=1&at=85.05&hold=1",
-      "url": "http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=85.05&hold=1",
+      "url": "http://127.0.0.1:35729/drive?sim=harbor&rate=1&at=85.05&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-transition.png",
+      "warnings": [
+        "[hud] run failed to start TypeError: Cannot read properties of undefined (reading 'angleRad')\n    at r.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1473:1000)\n    at u.step (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0"
+      ],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-transition-landscape.png",
       "video": null,
-      "ms": 4387,
+      "ms": 4480,
       "fonts": {
         "status": "loaded",
         "families": [
           "BarlowCondensed_600SemiBold",
           "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 87,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 11,
+        "bodyTextNodes": 9,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 2,
+        "canvases": 1,
         "webgl": true,
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -187,137 +189,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 138672,
-        "cyanPixels": 19312,
-        "textPixels": 6012,
-        "nonBgFraction": 0.4728
-      }
-    },
-    {
-      "name": "drive-bank",
-      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-bank.png",
-      "video": null,
-      "ms": 4313,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 88,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 128388,
-        "cyanPixels": 36644,
-        "textPixels": 6004,
-        "nonBgFraction": 0.3609
-      }
-    },
-    {
-      "name": "drive-warn",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose",
-      "url": "http://127.0.0.1:43413/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=loose",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-warn.png",
-      "video": null,
-      "ms": 4147,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 88,
-        "bodyTextNodes": 21,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 173292,
-        "cyanPixels": 16204,
-        "textPixels": 12864,
-        "nonBgFraction": 0.6917
+        "emberPixels": 101288,
+        "cyanPixels": 24,
+        "textPixels": 3184,
+        "nonBgFraction": 0.3067
       }
     }
   ],
-  "finishedAt": "2026-09-20T19:20:16.306Z",
+  "finishedAt": "2026-09-20T19:22:59.296Z",
   "failed": 0
 }

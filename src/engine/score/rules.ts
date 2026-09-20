@@ -4,7 +4,8 @@
  * See index.ts for the human-readable rule set.
  */
 import type { StyleCalloutKind, Grade } from '../types';
-import { clamp } from '../types';
+import { clamp, radToDeg } from '../types';
+import { SPIN_ANGLE_DEG, TRANSITION_RULE, type TransitionRule } from '../detect/options';
 
 /** A piecewise-linear curve: sorted [x, y] knots, flat (clamped) outside the knots. */
 export type Curve = Array<[number, number]>;
@@ -31,8 +32,19 @@ export interface ScoreOptions {
   /** +`multiplierPerSustained` every `sustainedStepS` seconds of |β| ≥ angleFloorDeg inside a drift. */
   multiplierPerSustained: number;
   sustainedStepS: number;
-  /** A transition = β sign change where |β| exceeded this (deg) on both sides. */
+  /**
+   * The ONE transition rule (shared with the detector): a sign change through `angleRad` that
+   * is held `minDwellS` on BOTH sides, swung inside `maxSwingS`, with `yawRate` behind it.
+   * The scorer used to count a bare ±8° sign change with no dwell and no yaw gate, which paid
+   * a driver sawing the wheel at 2.5 Hz 75 transitions in 30 s.
+   */
+  transitionRule: TransitionRule;
+  /** Display mirror of `transitionRule.angleRad` in degrees. Informational only. */
   transitionHysteresisDeg: number;
+  /** At most this many transitions per drift PAY a bonus; beyond it they only grow the multiplier. */
+  transitionBonusMaxPerDrift: number;
+  /** Callout bonuses are worth the live multiplier (chaining compounds) instead of a flat fee. */
+  calloutsUseMultiplier: boolean;
 
   // ---- chain -----------------------------------------------------------------------------
   /** Consecutive drifts that start within this many seconds of the previous clean exit share the multiplier. */
@@ -71,11 +83,17 @@ export interface ScoreOptions {
   jitterErodeS: number;
   /** Subtract the measured sensor-noise floor from the jitter (true) or report it raw (false). */
   jitterNoiseCorrection: boolean;
+  /** The noise floor may never remove more than this fraction of the measured jitter (bounded subtraction). */
+  noiseCorrectionMaxFraction: number;
+  /** Erode at most this fraction of the longest hold from each end before jitter is measured. */
+  jitterErodeFraction: number;
   /** A ≥ this (deg) move of the 1 s-averaged angle across `levelChangeSpanS` is an intended target change, not wobble (0 = off). */
   levelChangeDeg: number;
   levelChangeSpanS: number;
   /** Samples further apart than this (s) are treated as a gap: no points for the missing time. */
   maxDtS: number;
+  /** Seconds of SlipStates the LiveScorer keeps, to replay a drift it never saw live. */
+  ringKeepS: number;
 
   // ---- session components (0–100) ----------------------------------------------------------
   /** Peak |β| (deg) → angle score. */
@@ -84,6 +102,13 @@ export interface ScoreOptions {
   speedScoreCurve: Curve;
   /** Jitter RMS (deg) → steadiness score. */
   jitterCurve: Curve;
+  /**
+   * Plateau seconds the jitter was measured on → the HIGHEST steadiness that measurement may
+   * claim. A drift whose angle never settles has no plateau, and "never settles" IS unsteady:
+   * it is capped low instead of being dropped from the average, and near-zero jitter over a
+   * 0.6 s window can no longer mean 100.
+   */
+  plateauCapCurve: Curve;
   /** Cross-lap: cornerScore = 100 × (1 − cvScale × CV(peak angle per lap)). */
   cvScale: number;
   /** Cross-lap: initiation-point score = 100 × (1 − sd(initiation arc-length per lap) / initiationSdFullM). */
@@ -92,8 +117,20 @@ export interface ScoreOptions {
   crossLapAngleWeight: number;
   /** Initiation is looked for from this many metres before a corner (the transition point in a linked section). */
   initiationLookbackM: number;
-  /** Blend of cross-lap corner consistency vs within-drift steadiness when laps are available. */
+  /** Blend of cross-lap corner consistency vs within-drift steadiness. */
   crossLapWeight: number;
+  /**
+   * Score for cross-lap consistency that could not be MEASURED (one lap, no corners, no track).
+   * Neutral, not removed: dropping the term let the same driver grade S over one lap and A over
+   * two, i.e. driving less raised the grade.
+   */
+  crossLapNeutral: number;
+  /**
+   * A corner only counts towards cross-lap consistency when the reference path actually fits a
+   * circular arc through it to within this many metres RMS. A mis-placed apex puts the corner
+   * window on a different piece of road in every lap, which is noise, not inconsistency.
+   */
+  cornerFitMaxResidualM: number;
   /** Corner windows start this many metres BEFORE the corner (drivers initiate early) ... */
   cornerLeadMarginM: number;
   /** ... and end this many metres after it (a small trail so the next corner's entry is not caught). */
@@ -112,15 +149,34 @@ export interface ScoreOptions {
   styleVarietyTarget: number;
   /** Style: transitions per drift needed for full transition credit. */
   styleTransitionsPerDrift: number;
-  /** Style: non-initiation callouts per drift needed for full "flair" credit. */
-  styleCalloutsPerDrift: number;
-  /** style = variety × w.variety + transitions × w.transitions + flair × w.flair (normalised). */
-  styleWeights: { variety: number; transitions: number; flair: number };
+  /** Style: drifts in the longest chain needed for full chaining credit. */
+  styleChainTarget: number;
+  /** Style: seconds of the run spent sideways needed for full commitment credit. */
+  styleDriftTimeS: number;
+  /** style = variety × w.variety + transitions × w.transitions + chain × w.chain + commitment × w.commitment. */
+  styleWeights: { variety: number; transitions: number; chain: number; commitment: number };
   /** Component weights for the combined score. */
   weights: { angle: number; consistency: number; quality: number; speed: number; style: number };
   gradeThresholds: { S: number; A: number; B: number; C: number };
   /** Drifts shorter than this (s) get proportionally less weight in duration-weighted means (never zero). */
   minWeightS: number;
+  /**
+   * Track normalisation. A tight harbour circuit and an open touge road do not offer the same
+   * angles or the same speeds, so the same driving scored 48.7–77.6 on one and 42.5–95.4 on the
+   * other: two letters on one track, five on the other. The angle and speed expectations are
+   * scaled by the track's own geometry (median corner radius), so a grade means the same thing
+   * on both. `referenceRadiusM` is the radius those curves are written for.
+   */
+  trackNormalise: boolean;
+  referenceRadiusM: number;
+  /** Corner radius (m) → factor the angle/speed curves are stretched by. */
+  radiusAngleCurve: Curve;
+  radiusSpeedCurve: Curve;
+  /**
+   * A run whose mount was loose / implausible for more than this fraction of its drifting time
+   * does not get a published total or grade (`SessionBreakdown.integrity.scoreTrusted`).
+   */
+  integrityMaxImplausibleFraction: number;
 }
 
 export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
@@ -131,8 +187,8 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   angleCapFactor: 1.3,
   speedCurve: [
     [20, 0.5],
-    [60, 1.0],
-    [100, 1.5],
+    [55, 1.0],
+    [85, 1.5],
   ],
   speedZeroKmh: 10,
 
@@ -141,33 +197,36 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   multiplierCap: 5.0,
   multiplierPerSustained: 0.25,
   sustainedStepS: 3,
-  transitionHysteresisDeg: 8,
+  transitionRule: TRANSITION_RULE,
+  transitionHysteresisDeg: radToDeg(TRANSITION_RULE.angleRad),
+  transitionBonusMaxPerDrift: 4,
+  calloutsUseMultiplier: true,
 
   chainGapS: 3,
   bankDelayS: 2,
-  spinAngleDeg: 85,
+  spinAngleDeg: SPIN_ANGLE_DEG,
 
   calloutPoints: {
-    initiation: 50,
-    transition: 200,
-    'extreme-angle': 300,
-    'long-drift': 250,
-    smooth: 200,
-    'high-speed': 300,
-    manji: 500,
-    link: 400,
-    'perfect-exit': 100,
-    'clean-lap': 500,
+    initiation: 20,
+    transition: 90,
+    'extreme-angle': 150,
+    'long-drift': 110,
+    smooth: 120,
+    'high-speed': 150,
+    manji: 220,
+    link: 180,
+    'perfect-exit': 45,
+    'clean-lap': 300,
   },
   extremeAngleDeg: 45,
-  longDriftS: 5,
-  smoothWindowS: 3,
-  smoothMaxStdDevDeg: 3,
-  highSpeedKmh: 90,
+  longDriftS: 9,
+  smoothWindowS: 4,
+  smoothMaxStdDevDeg: 1.1,
+  highSpeedKmh: 68,
   highSpeedMinS: 1.5,
   manjiTransitions: 3,
   linkDrifts: 3,
-  perfectExitMaxRateDegS: 75,
+  perfectExitMaxRateDegS: 22,
   exitWindowS: 0.5,
   cleanLapMinDrifts: 3,
 
@@ -177,20 +236,26 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   jitterWindowS: 4.0,
   jitterErodeS: 2.0,
   jitterNoiseCorrection: true,
+  noiseCorrectionMaxFraction: 0.5,
+  jitterErodeFraction: 0.3,
   levelChangeDeg: 8,
   levelChangeSpanS: 3,
   maxDtS: 0.1,
+  ringKeepS: 120,
 
   angleCurve: [
-    [15, 20],
-    [30, 60],
-    [45, 100],
+    [12, 0],
+    [22, 30],
+    [33, 65],
+    [45, 95],
+    [55, 100],
   ],
   speedScoreCurve: [
-    [16, 0],
-    [40, 30],
-    [80, 80],
-    [100, 100],
+    [25, 0],
+    [40, 25],
+    [55, 55],
+    [70, 85],
+    [85, 100],
   ],
   jitterCurve: [
     [0.15, 100],
@@ -202,11 +267,18 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
     [2.4, 5],
     [3.0, 0],
   ],
+  plateauCapCurve: [
+    [0, 35],
+    [0.6, 60],
+    [2, 100],
+  ],
   cvScale: 3,
   initiationSdFullM: 10,
   crossLapAngleWeight: 0.6,
   initiationLookbackM: 40,
-  crossLapWeight: 0.5,
+  crossLapWeight: 0.4,
+  crossLapNeutral: 55,
+  cornerFitMaxResidualM: 4,
   cornerLeadMarginM: 15,
   cornerTrailMarginM: 5,
   qualityAngleDeg: 15,
@@ -219,11 +291,25 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   spinPenalty: 1.5,
   styleVarietyTarget: 6,
   styleTransitionsPerDrift: 1.0,
-  styleCalloutsPerDrift: 4,
-  styleWeights: { variety: 0.4, transitions: 0.3, flair: 0.3 },
-  weights: { angle: 0.3, consistency: 0.25, quality: 0.25, speed: 0.1, style: 0.1 },
+  styleChainTarget: 4,
+  styleDriftTimeS: 90,
+  styleWeights: { variety: 0.3, transitions: 0.25, chain: 0.25, commitment: 0.2 },
+  weights: { angle: 0.26, consistency: 0.24, quality: 0.24, speed: 0.13, style: 0.13 },
   gradeThresholds: { S: 90, A: 75, B: 60, C: 45 },
   minWeightS: 1.0,
+  trackNormalise: true,
+  referenceRadiusM: 45,
+  radiusAngleCurve: [
+    [20, 0.78],
+    [45, 1.0],
+    [90, 1.12],
+  ],
+  radiusSpeedCurve: [
+    [20, 0.72],
+    [45, 1.0],
+    [90, 1.25],
+  ],
+  integrityMaxImplausibleFraction: 0.25,
 };
 
 export function resolveOptions(opts?: Partial<ScoreOptions>): ScoreOptions {
@@ -232,6 +318,7 @@ export function resolveOptions(opts?: Partial<ScoreOptions>): ScoreOptions {
     ...DEFAULT_SCORE_OPTIONS,
     ...opts,
     calloutPoints: { ...DEFAULT_SCORE_OPTIONS.calloutPoints, ...(opts.calloutPoints ?? {}) },
+    transitionRule: { ...DEFAULT_SCORE_OPTIONS.transitionRule, ...(opts.transitionRule ?? {}) },
     qualityWeights: { ...DEFAULT_SCORE_OPTIONS.qualityWeights, ...(opts.qualityWeights ?? {}) },
     styleWeights: { ...DEFAULT_SCORE_OPTIONS.styleWeights, ...(opts.styleWeights ?? {}) },
     weights: { ...DEFAULT_SCORE_OPTIONS.weights, ...(opts.weights ?? {}) },
@@ -278,16 +365,42 @@ export function speedFactor(speedKmh: number, o: ScoreOptions): number {
   return curve(o.speedCurve, speedKmh);
 }
 
-export function angleScore(peakDeg: number, o: ScoreOptions): number {
-  return clamp(curve(o.angleCurve, peakDeg), 0, 100);
+/**
+ * How hard the track makes big angles and high speeds, from its own geometry. 1.0 = the track
+ * the curves are written for; < 1 = tighter (expect less), > 1 = more open (expect more).
+ * `medianRadiusM` ≤ 0 (no track model) means "no opinion": both factors are 1.
+ */
+export interface TrackFactor {
+  angle: number;
+  speed: number;
+  medianRadiusM: number;
 }
 
-export function speedScore(meanKmh: number, o: ScoreOptions): number {
-  return clamp(curve(o.speedScoreCurve, meanKmh), 0, 100);
+export const NEUTRAL_TRACK: TrackFactor = { angle: 1, speed: 1, medianRadiusM: 0 };
+
+export function trackFactorFor(medianRadiusM: number, o: ScoreOptions): TrackFactor {
+  if (!o.trackNormalise || !(medianRadiusM > 0)) return NEUTRAL_TRACK;
+  return { angle: curve(o.radiusAngleCurve, medianRadiusM), speed: curve(o.radiusSpeedCurve, medianRadiusM), medianRadiusM };
 }
 
-export function steadinessScore(jitterDeg: number, o: ScoreOptions): number {
-  return clamp(curve(o.jitterCurve, jitterDeg), 0, 100);
+/** Peak |β| → 0..100, with the track's own expectation applied. */
+export function angleScore(peakDeg: number, o: ScoreOptions, tf: TrackFactor = NEUTRAL_TRACK): number {
+  return clamp(curve(o.angleCurve, peakDeg / (tf.angle || 1)), 0, 100);
+}
+
+/** Mean drifting speed (km/h) → 0..100, with the track's own expectation applied. */
+export function speedScore(meanKmh: number, o: ScoreOptions, tf: TrackFactor = NEUTRAL_TRACK): number {
+  return clamp(curve(o.speedScoreCurve, meanKmh / (tf.speed || 1)), 0, 100);
+}
+
+/**
+ * Jitter RMS (deg) over `plateauS` seconds of settled angle → 0..100. The plateau length caps
+ * the claim: 0 s of settled angle cannot mean "steady", however quiet the residual looks.
+ */
+export function steadinessScore(jitterDeg: number, o: ScoreOptions, plateauS = Infinity): number {
+  const raw = clamp(curve(o.jitterCurve, jitterDeg), 0, 100);
+  const cap = Number.isFinite(plateauS) ? clamp(curve(o.plateauCapCurve, plateauS), 0, 100) : 100;
+  return Math.min(raw, cap);
 }
 
 export function gradeFor(combined: number, o: ScoreOptions): Grade {

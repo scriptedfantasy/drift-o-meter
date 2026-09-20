@@ -81,13 +81,19 @@ function valueAtTau(arr: Float64Array, tau: number, hz: number): number {
  * Where the ghost is at replay time t.
  *
  * The ghost is ALWAYS a different lap from the one being watched (`ReplayLap.ghostRef`), so it
- * can never be numerically identical to the car. It is time-synchronised to the current lap: at
- * the same elapsed time since the line, this is where the reference lap's car was.
+ * can never be numerically identical to the car.
  *
- * Gaps: `gapS` is a true time gap (how much earlier the car reached this point than the ghost
- * did, by inverting the ghost's distance→time curve) — it does not flicker with instantaneous
- * speed. `gapPoints` compares the score at the same point of the lap, which is what the
- * points-chosen reference lap actually means. Returns null outside laps or with no ghost.
+ * It is synchronised by DISTANCE, not by time: the ghost sits at the point of the reference lap
+ * where that lap had covered the same distance into the lap. Time-syncing put it 60–100 m away
+ * for 88 % of the lap — an off-screen badge rather than a car — whereas distance-syncing keeps
+ * it on screen essentially always and makes the comparison the useful one for a drift app: the
+ * same corner, the reference line and angle against yours. The ahead/behind information is not
+ * lost, it moves into the labels:
+ *   `gapS`      how much earlier (+) or later (−) the car reached this point than the reference
+ *               lap did — a true time gap from the distance→time curve, so it does not flicker
+ *   `gapPoints` the score delta at the same point of the lap
+ *   `gapM`      how far the car is off the reference line here, metres
+ * Returns null outside laps or when the replay has no ghost.
  */
 export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
   if (!replay.ghost || replay.laps.length === 0) return null;
@@ -97,27 +103,18 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
   if (!ref) return null;
   const trail = replay.trail;
   const tau = t - lap.startT;
-  const inLap = tau <= ref.durationS;
-  const tg = clamp(ref.startT + tau, 0, replay.durationS);
-  const gx = trailValueAt(trail, trail.x, tg);
-  const gy = trailValueAt(trail, trail.y, tg);
-  const fi = trailIndexOf(trail, tg);
-  const i0 = Math.floor(fi);
-  const i1 = Math.min(i0 + 1, trail.n - 1);
-  const f = fi - i0;
+  const carX = trailValueAt(trail, trail.x, clamp(t, 0, replay.durationS));
+  const carY = trailValueAt(trail, trail.y, clamp(t, 0, replay.durationS));
   const refD0 = trailValueAt(trail, trail.dist, ref.startT);
   const refP0 = trailValueAt(trail, trail.score, ref.startT);
-  const ghostDist = trailValueAt(trail, trail.dist, tg) - refD0;
-  const ghostPoints = trailValueAt(trail, trail.score, tg) - refP0;
   const carDist = trailValueAt(trail, trail.dist, clamp(t, 0, replay.durationS)) - trailValueAt(trail, trail.dist, lap.startT);
   const carPoints = trailValueAt(trail, trail.score, clamp(t, 0, replay.durationS)) - trailValueAt(trail, trail.score, lap.startT);
-  // true time gap: when did the ghost reach the car's distance?
+  // when did the reference lap reach this distance?
   const g = replay.ghost;
-  let gapS = 0;
+  let refTau: number;
   if (ref.index === g.lapIndex) {
-    gapS = tauAtDistance(g.dist, g.tau, carDist) - tau;
+    refTau = tauAtDistance(g.dist, g.tau, carDist);
   } else {
-    // reference lap is not the sampled ghost lap: walk the trail inside that lap
     const n = Math.max(2, Math.round(ref.durationS * trail.hz) + 1);
     let lo = 0;
     let hi = n - 1;
@@ -127,8 +124,18 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
       if (d <= carDist) lo = mid;
       else hi = mid;
     }
-    gapS = lo / trail.hz - tau;
+    refTau = lo / trail.hz;
   }
+  const inLap = refTau < ref.durationS - 1e-6;
+  const tg = clamp(ref.startT + Math.min(refTau, ref.durationS), 0, replay.durationS);
+  const fi = trailIndexOf(trail, tg);
+  const i0 = Math.floor(fi);
+  const i1 = Math.min(i0 + 1, trail.n - 1);
+  const f = fi - i0;
+  const gx = trailValueAt(trail, trail.x, tg);
+  const gy = trailValueAt(trail, trail.y, tg);
+  const ghostPoints = trailValueAt(trail, trail.score, tg) - refP0;
+  const gapS = refTau - tau;
   return {
     x: gx,
     y: gy,
@@ -136,9 +143,9 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
     course: lerpAngle(trail.course[i0], trail.course[i1], f),
     beta: lerpAngle(trail.beta[i0], trail.beta[i1], f),
     speed: trailValueAt(trail, trail.speed, tg),
-    tau,
+    tau: refTau,
     lapIndex: ref.index,
-    gapM: carDist - ghostDist,
+    gapM: Math.hypot(carX - gx, carY - gy),
     gapS: Number.isFinite(gapS) ? gapS : 0,
     gapPoints: carPoints - ghostPoints,
     inLap,

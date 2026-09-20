@@ -76,7 +76,15 @@ export class LiveScorer {
   private completed = new Map<number, ScoredDrift>();
   private completedOrder: number[] = [];
   private log: CompletedDrift[] = [];
+  /**
+   * Trailing `ringKeepS` of states, for replaying a drift the scorer never saw live. A HEAD
+   * INDEX with amortised compaction, not `slice()` on every push: re-slicing a full 12 000-
+   * element window at 100 Hz cost 70 µs and ~100 KB of garbage PER SAMPLE — ten times the rest
+   * of the engine put together — and only after the run passed two minutes, which is why no
+   * test ever saw it.
+   */
   private ring: SlipState[] = [];
+  private ringHead = 0;
   private pending: { callouts: StyleCallout[]; lost: boolean; lostPoints: number } | null = null;
   private lastT = -Infinity;
   /** Ids of completed drifts whose points are still at risk. */
@@ -126,13 +134,20 @@ export class LiveScorer {
     this.completedOrder = [];
     this.log = [];
     this.ring = [];
+    this.ringHead = 0;
     this.pending = null;
     this.lastT = -Infinity;
     this.unbankedIds = [];
     this.deadId = null;
   }
 
-  push(s: SlipState, live: LiveDriftInfo | null): LiveTick {
+  /**
+   * One sample. `plausible` is the integrity monitor's verdict for this instant (default true):
+   * while it is false the slide earns nothing, exactly as a `valid:false` sample does in the
+   * detector. Without it a phone rattling in a cradle scored 40 % MORE than the same drive with
+   * the phone bolted down, because the rattle inflates the angle it is fed.
+   */
+  push(s: SlipState, live: LiveDriftInfo | null, plausible = true): LiveTick {
     const o = this.o;
     const tick: LiveTick = {
       total: 0,
@@ -167,7 +182,7 @@ export class LiveScorer {
     if (active && !this.acc) this.startDrift((live as LiveDriftInfo).id, s.t);
 
     if (this.acc) {
-      const res = this.acc.step(s);
+      const res = this.acc.step(s, plausible);
       this.chainPoints += res.points + res.bonus;
       tick.callouts.push(...res.callouts);
       tick.rate = res.rate;
@@ -200,7 +215,7 @@ export class LiveScorer {
    */
   onDriftCompleted(e: DriftEvent): ScoredDrift {
     if (this.acc && this.acc.id === e.id) {
-      const spin = (e as { spin?: boolean }).spin === true || this.acc.spun;
+      const spin = e.spin === true || this.acc.spun;
       const tick = { callouts: [] as StyleCallout[], lost: false, lostPoints: 0 };
       const endT = Math.min(e.endT, Math.max(this.lastT, this.acc.startT));
       this.endDrift(endT, spin, tick);
@@ -209,7 +224,7 @@ export class LiveScorer {
     const known = this.completed.get(e.id);
     if (known) return known;
     // never seen live (scorer started mid-run?): replay from the ring buffer
-    const sd = scoreDrift(e, this.ring, this.o, { multiplier: this.o.multiplierStart, chainDrifts: 0 });
+    const sd = scoreDrift(e, this.ringStates(), this.o, { multiplier: this.o.multiplierStart, chainDrifts: 0, spin: e.spin });
     this.completed.set(e.id, sd);
     this.completedOrder.push(e.id);
     return sd;
@@ -311,12 +326,19 @@ export class LiveScorer {
 
   private remember(s: SlipState): void {
     this.ring.push(s);
-    const keepS = 120;
-    if (this.ring.length > 2048 && this.ring[0].t < s.t - keepS) {
-      let cut = 0;
-      while (cut < this.ring.length && this.ring[cut].t < s.t - keepS) cut++;
-      this.ring = this.ring.slice(cut);
+    const cutoff = s.t - this.o.ringKeepS;
+    // O(1) amortised: drop expired samples by moving a head index, and only compact the array
+    // when the dead prefix is at least half of it (so the O(n) copy happens once per n pushes)
+    while (this.ringHead < this.ring.length && this.ring[this.ringHead].t < cutoff) this.ringHead++;
+    if (this.ringHead > 4096 && this.ringHead * 2 >= this.ring.length) {
+      this.ring = this.ring.slice(this.ringHead);
+      this.ringHead = 0;
     }
+  }
+
+  /** The live states still in the window, as a dense array (only built when something replays). */
+  private ringStates(): SlipState[] {
+    return this.ringHead === 0 ? this.ring : this.ring.slice(this.ringHead);
   }
 }
 

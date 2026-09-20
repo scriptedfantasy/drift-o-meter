@@ -10,9 +10,11 @@
  *   --beta=DEG  force a synthetic slide of DEG degrees (to check escalation past the sim's ceiling)
  * Convert with tools/analysis/render_replay.py (SVG → PNG at 1170×2532).
  */
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { simulateRun, type TrackId } from '../../src/sim';
 import { sessionFromSimulation } from '../../src/engine/replay/fixtures';
+import type { Session } from '../../src/engine/types';
 import {
   activeEvents,
   buildReplay,
@@ -400,13 +402,25 @@ function drawSmoke(f: Frame): string {
   for (const p of live) {
     const st = smokeAt(p, f.t);
     if (!st || !inView(f, st.x, st.y)) continue;
-    // a squashed, rotated puff reads as smoke; a circle reads as a dot
-    const rx = st.radius * 1.5 * (1 + 0.35 * (st.seed - 0.5));
-    const ry = st.radius * 1.5 * (0.72 + 0.3 * st.seed);
+    // Two or three offset lobes per puff, each rotated, so a cloud reads as distinct volumes
+    // rather than one soft blob. Everything is derived from the particle's `seed`, so the Skia
+    // renderer draws the identical cloud.
+    const rx = st.radius * 1.15 * (1 + 0.35 * (st.seed - 0.5));
+    const ry = st.radius * 1.15 * (0.72 + 0.3 * st.seed);
     const rot = (st.rotation * 180) / Math.PI;
+    const lobes = st.seed > 0.45 ? 3 : 2;
     s += `<g transform="translate(${f2(st.x)} ${f2(st.y)}) rotate(${f2(rot)})">`;
-    s += `<ellipse rx="${f2(rx)}" ry="${f2(ry)}" fill="url(#smoke)" opacity="${f3(Math.min(1, st.opacity * 1.55))}"/>`;
-    if (st.heat > 0.05) s += `<ellipse rx="${f2(rx * 0.5)}" ry="${f2(ry * 0.5)}" fill="url(#smokeHot)" opacity="${f3(st.opacity * st.heat)}"/>`;
+    for (let i = 0; i < lobes; i++) {
+      const a = st.seed * 6.283 + (i * 2.4) + st.age * 1.1;
+      const d = st.radius * (0.18 + 0.42 * st.age) * (i === 0 ? 0.25 : 1);
+      const k = i === 0 ? 1 : 0.62 + 0.26 * ((st.seed * (i + 3)) % 1);
+      s += `<ellipse cx="${f2(Math.cos(a) * d)}" cy="${f2(Math.sin(a) * d * 0.7)}" rx="${f2(rx * k)}" ry="${f2(ry * k)}" fill="url(#smoke)" opacity="${f3(Math.min(1, st.opacity * 1.15))}"/>`;
+    }
+    // temperature gradient: fresh rubber burns white-hot at the contact patch, then cools
+    if (st.heat > 0.04) {
+      s += `<ellipse rx="${f2(rx * 0.46)}" ry="${f2(ry * 0.46)}" fill="url(#smokeHot)" opacity="${f3(st.opacity * st.heat)}"/>`;
+      s += `<ellipse rx="${f2(rx * 0.8)}" ry="${f2(ry * 0.8)}" fill="${mix('#B9C0CB', '#FFC9A2', st.heat)}" opacity="${f3(st.opacity * st.heat * 0.22)}"/>`;
+    }
     s += '</g>';
   }
   return s + '</g>';
@@ -488,14 +502,15 @@ function drawGhost(f: Frame): string {
     tail.push([gp.x, gp.y]);
   }
   if (tail.length > 1) {
-    s += `<polyline points="${pointsAttr(tail)}" fill="none" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.5, 1.1))}" stroke-linecap="round" opacity="0.4" stroke-dasharray="1.1 1.1"/>`;
+    s += `<polyline points="${pointsAttr(tail)}" fill="none" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.45, 1.4))}" stroke-linecap="round" opacity="0.5" stroke-dasharray="${f2(mOrPx(f, 1.1, 3))} ${f2(mOrPx(f, 1.1, 3))}"/>`;
   }
-  const tooClose = Math.hypot(gs.x - toS(f, f.pose.x, f.pose.y).x, gs.y - toS(f, f.pose.x, f.pose.y).y) < 26;
+  const carS = toS(f, f.pose.x, f.pose.y);
+  const tooClose = Math.hypot(gs.x - carS.x, gs.y - carS.y) < 12;
   if (ghostOnScreen && !tooClose) {
-    const cs = carScale(f) * 0.9;
-    s += `<g transform="translate(${f2(g.x)} ${f2(g.y)}) rotate(${f2(deg(g.heading))}) scale(${f3(cs)})" opacity="0.85">`;
-    s += `<path d="${carPath()}" fill="${GREEN}" fill-opacity="0.1" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.25, 0.9) / cs)}" stroke-linejoin="round"/>`;
-    s += `<polygon points="-0.6,-0.5 0.5,0 -0.6,0.5 -0.3,0" fill="${GREEN}" opacity="0.75"/>`;
+    const cs = carScale(f) * 0.92;
+    s += `<g transform="translate(${f2(g.x)} ${f2(g.y)}) rotate(${f2(deg(g.heading))}) scale(${f3(cs)})" opacity="0.8">`;
+    s += `<path d="${carPath()}" fill="${BG}" fill-opacity="0.45" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.22, 0.9) / cs)}" stroke-linejoin="round" stroke-dasharray="${f2(0.9 / cs)} ${f2(0.45 / cs)}"/>`;
+    s += `<polygon points="-0.55,-0.45 0.5,0 -0.55,0.45 -0.25,0" fill="${GREEN}" opacity="0.6"/>`;
     s += '</g>';
   }
   return s + '</g>';
@@ -826,8 +841,12 @@ function bottomHud(f: Frame): string {
   s += `<circle cx="${f2(xp)}" cy="${f2(yA(Math.abs(f.pose.beta)))}" r="2.6" fill="${heatColor(f.pose.beta)}" stroke="${BG}" stroke-width="1"/>`;
   // --- one info line, colour-coded, no legend
   const ly = barTop + 26;
+  // Before lap 1 starts we are on the out-lap (clamp to LAP 1); after the last lap ends the run
+  // is over (FINISH). Falling back to `laps.length` printed "LAP 2/2" at t=0, which is worse than
+  // printing a visible null.
   const lap = lapAt(r, f.t);
-  const lapStr = r.laps.length > 0 ? `LAP ${lap ? lap.index + 1 : r.laps.length}/${r.laps.length}` : 'STAGE';
+  const last = r.laps[r.laps.length - 1];
+  const lapStr = r.laps.length === 0 ? 'STAGE' : lap ? `LAP ${lap.index + 1}/${r.laps.length}` : last && f.t > last.endT ? 'FINISH' : `LAP 1/${r.laps.length}`;
   s += text(18, ly, lapStr, { size: T_LABEL, spacing: 1.6, fill: WHITE, weight: 800 });
   s += text(18 + lapStr.length * T_LABEL * 0.52 + 14, ly, r.info.name.toUpperCase().replace(' (SIM)', ''), { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
   // live totals only: TOTAL is the running score, the grade lands on the final frame
@@ -918,8 +937,8 @@ function renderFrame(f: Frame): string {
   svg += drawTrail(f);
   svg += drawMarkers(f);
   svg += drawSmoke(f);
+  svg += drawGhost(f); // under the car: distance-synced, they sit side by side
   svg += drawCar(f);
-  svg += drawGhost(f);
   svg += '</g>';
   svg += speedStreaks(f);
   svg += `<rect width="${W}" height="${H}" fill="url(#vignette)"/>`;
@@ -1048,15 +1067,36 @@ function amplifyBeta(replay: Replay, betaDeg: number): number {
   return seg.peakT;
 }
 
+/**
+ * Where the Session comes from.
+ *
+ * By default these frames render the REAL pipeline output (`artifacts/session-<track>.json`,
+ * produced by the estimator → detector → scorer → track modules), so what the critic sees is
+ * what the app actually scores. The simulator fixture stays available — and is used
+ * automatically whenever the run is shaped (`--aggression`/`--consistency`/`--laps`) or forced
+ * with `--fixture` — because synthetic and edge-case sessions have no recorded pipeline output.
+ */
+export function loadSession(track: TrackId, seed: number, simOpts: { laps?: number; consistency?: number; aggression?: number; fixture?: boolean } = {}): { session: Session; source: 'pipeline' | 'fixture' } {
+  const shaped = simOpts.fixture || simOpts.aggression !== undefined || simOpts.consistency !== undefined || simOpts.laps !== undefined;
+  if (!shaped) {
+    const file = join(process.cwd(), 'artifacts', `session-${track}.json`);
+    if (existsSync(file)) {
+      const session = JSON.parse(readFileSync(file, 'utf8')) as Session;
+      if (session?.states?.length > 1) return { session, source: 'pipeline' };
+    }
+  }
+  const run = simulateRun(track, { seed, laps: simOpts.laps ?? 2, consistency: simOpts.consistency, aggression: simOpts.aggression });
+  return { session: sessionFromSimulation(run), source: 'fixture' };
+}
+
 export function renderReplayFrame(
   track: TrackId,
   seed: number,
   timeSpec: string,
   mode: CameraMode,
-  simOpts: { laps?: number; consistency?: number; aggression?: number; betaDeg?: number; cut?: boolean } = {},
-): { svg: string; t: number; replay: Replay } {
-  const run = simulateRun(track, { seed, laps: simOpts.laps ?? 2, consistency: simOpts.consistency, aggression: simOpts.aggression });
-  const session = sessionFromSimulation(run);
+  simOpts: { laps?: number; consistency?: number; aggression?: number; betaDeg?: number; cut?: boolean; fixture?: boolean } = {},
+): { svg: string; t: number; replay: Replay; source: 'pipeline' | 'fixture' } {
+  const { session, source } = loadSession(track, seed, simOpts);
   const replay = buildReplay(session);
   let t = resolveTime(replay, timeSpec);
   if (simOpts.betaDeg) t = amplifyBeta(replay, simOpts.betaDeg);
@@ -1093,7 +1133,7 @@ export function renderReplayFrame(
     track,
     seed,
   };
-  return { svg: renderFrame(frame), t, replay };
+  return { svg: renderFrame(frame), t, replay, source };
 }
 
 function main(): void {
@@ -1108,18 +1148,19 @@ function main(): void {
   const [track = 'harbor', seedS = '1', timeSpec = 'mid', modeS = 'chase', out = 'artifacts/replay.svg'] = pos;
   const mode = modeS as CameraMode;
   if (!['overview', 'chase', 'cinematic'].includes(mode)) throw new Error(`mode must be overview|chase|cinematic, got ${modeS}`);
-  const { svg, t, replay } = renderReplayFrame(track as TrackId, Number(seedS), timeSpec, mode, {
+  const { svg, t, replay, source } = renderReplayFrame(track as TrackId, Number(seedS), timeSpec, mode, {
     laps: flags.laps ? Number(flags.laps) : undefined,
     consistency: flags.consistency ? Number(flags.consistency) : undefined,
     aggression: flags.aggression ? Number(flags.aggression) : undefined,
     betaDeg: flags.beta ? Number(flags.beta) : undefined,
     cut: !!flags.cut,
+    fixture: !!flags.fixture,
   });
   writeFileSync(out, svg);
   const p = poseAt(replay, t);
   const g = ghostPoseAt(replay, t);
   process.stderr.write(
-    `wrote ${out}  t=${t.toFixed(2)}s mode=${mode} ${p.phase} β=${deg(p.beta).toFixed(1)}° (${p.severity}) v=${kmh(p.speed)} km/h pts=${Math.round(p.points)} smoke=${liveSmoke(replay.smoke, t).length} ghost=${g ? `lap ${g.lapIndex + 1} ${g.gapPoints >= 0 ? '+' : ''}${Math.round(g.gapPoints)} pts / ${g.gapS.toFixed(1)} s` : 'none'}${replay.warnings.length ? ` warnings=${replay.warnings.length}` : ''}\n`,
+    `wrote ${out}  [${source}] t=${t.toFixed(2)}s mode=${mode} ${p.phase} β=${deg(p.beta).toFixed(1)}° (${p.severity}) v=${kmh(p.speed)} km/h pts=${Math.round(p.points)} smoke=${liveSmoke(replay.smoke, t).length} ghost=${g ? `lap ${g.lapIndex + 1} ${g.gapPoints >= 0 ? '+' : ''}${Math.round(g.gapPoints)} pts / ${g.gapS.toFixed(1)} s` : 'none'}${replay.warnings.length ? ` warnings=${replay.warnings.length}` : ''}\n`,
   );
 }
 

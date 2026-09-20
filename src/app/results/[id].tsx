@@ -168,6 +168,11 @@ export default function ResultsScreen() {
   );
 }
 
+/** A 0–100 rating the scorer could not compute must read "--", never "NaN". */
+function ratingText(rating: number): string {
+  return Number.isFinite(rating) ? rating.toFixed(1) : '--';
+}
+
 function sessionTrack(model: ResultsModel): string {
   const t = model.session.meta?.track;
   return typeof t === 'string' ? t : model.session.name;
@@ -263,7 +268,7 @@ function ResultsPage({
                 {GRADE_WORDS[model.grade]}
               </AppText>
               <AppText variant="micro" color="muted" numeric>
-                {model.rating.toFixed(1)} / 100
+                {ratingText(model.rating)} / 100
               </AppText>
             </View>
             <AppText variant="micro" color="muted" numberOfLines={1}>
@@ -296,7 +301,7 @@ function ResultsPage({
       </View>
 
       {/* ---- components ------------------------------------------------------------ */}
-      <SectionHead title="Score breakdown" right={`${model.rating.toFixed(1)} / 100`} />
+      <SectionHead title="Score breakdown" right={`${ratingText(model.rating)} / 100`} />
       <ComponentBars rows={model.components} run={run} reduceMotion={reduceMotion} testID="component-bars" />
 
       {/* ---- best drift ------------------------------------------------------------ */}

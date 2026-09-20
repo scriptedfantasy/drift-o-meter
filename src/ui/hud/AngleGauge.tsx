@@ -48,7 +48,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const baselineY = numeralMidY + numeralSize * 0.35;
 
   const font = useFont(NUMERAL_FONT, numeralSize);
-  const degFont = useFont(NUMERAL_FONT, numeralSize * 0.38);
+  const degFont = useFont(NUMERAL_FONT, numeralSize * 0.46);
   const labelFont = useFont(LABEL_FONT, Math.max(12, Math.round(numeralSize * 0.26)));
 
   /**

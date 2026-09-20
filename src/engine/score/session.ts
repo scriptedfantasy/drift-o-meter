@@ -2,10 +2,53 @@
  * scoreSession — replays the chain rules over a whole run and aggregates the
  * 0–100 components + grade. See index.ts for the rule set.
  */
-import type { DriftEvent, SessionScore, SlipState, StyleCalloutKind, TrackModel } from '../types';
+import type { DriftEvent, SessionScore, SlipState, StyleCalloutKind, TrackCorner, TrackModel } from '../types';
 import { clamp, radToDeg } from '../types';
 import { scoreDrift, type ScoredDrift } from './drift';
-import { angleScore, calloutLabel, curve, gradeFor, resolveOptions, speedScore, steadinessScore, type ScoreOptions } from './rules';
+import {
+  angleScore,
+  calloutLabel,
+  curve,
+  gradeFor,
+  resolveOptions,
+  speedScore,
+  steadinessScore,
+  trackFactorFor,
+  NEUTRAL_TRACK,
+  type ScoreOptions,
+  type TrackFactor,
+} from './rules';
+
+/**
+ * How much of the run the integrity monitor was willing to believe, and whether the score may
+ * be published at all. The monitor has always known this; nothing used to ask it, so a phone
+ * held in the hand scored 40 % MORE than the same drive with the phone bolted down.
+ */
+export interface SessionIntegrity {
+  mount: 'rigid' | 'suspect' | 'loose';
+  physics: 'ok' | 'implausible';
+  gps: 'good' | 'poor' | 'none';
+  /** Fraction (0..1) of drifting time the monitor refused to believe. */
+  implausibleDriftFraction: number;
+  /** Drifting seconds that earned nothing because they were not believed. */
+  suppressedS: number;
+  /** False when too much of the drifting time was not believed to publish a total or a grade. */
+  scoreTrusted: boolean;
+  /** Driver-facing reason, '' when the run is trusted. */
+  message: string;
+}
+
+/** Per-sample side channel `scoreSession` needs to reproduce what the live run scored. */
+export interface SessionContext {
+  /**
+   * 1 where the integrity monitor believed the slide, 0 where it did not, indexed exactly like
+   * `states`. Absent = believe everything (a replay of a session recorded before the monitor
+   * was wired in).
+   */
+  plausible?: Uint8Array | null;
+  /** End-of-run verdicts from the integrity monitor. */
+  integrity?: { mount: 'rigid' | 'suspect' | 'loose'; physics: 'ok' | 'implausible'; gps: 'good' | 'poor' | 'none'; message: string } | null;
+}
 
 export interface SessionBreakdown extends SessionScore {
   perDrift: Record<number, ScoredDrift>;
@@ -17,13 +60,23 @@ export interface SessionBreakdown extends SessionScore {
   /** Quality ingredients, 0..100 / factors 0..1. */
   qualityParts: { steadiness: number; timeAtAngle: number; cleanExitFraction: number; exitFactor: number; spinFactor: number };
   /** Style ingredients, 0..100. */
-  styleParts: { variety: number; transitions: number; flair: number };
+  styleParts: { variety: number; transitions: number; chain: number; commitment: number };
   drifts: number;
   spins: number;
   transitions: number;
   cleanLaps: number;
   /** Total drifting seconds. */
   driftTimeS: number;
+  /** What the integrity monitor made of the run, and whether the score may be published. */
+  integrity: SessionIntegrity;
+  /** How the track's own geometry scaled the angle and speed expectations. */
+  trackFactor: TrackFactor;
+  /** Points of the biggest single drift ÷ points of all kept drifts (1.0 = one corner was the run). */
+  bestShare: number;
+  /** Median kept-drift points, so a results screen can say "best vs typical" instead of only "best". */
+  medianDriftPoints: number;
+  /** Total ÷ drifting seconds: the rate a driver kept up, independent of how long they drove. */
+  pointsPerDriftSecond: number;
 }
 
 export interface ChainSummary {
@@ -40,7 +93,13 @@ export interface ChainSummary {
  *  - a drift that starts ≥ bankDelayS after the previous exit finds those points already banked;
  *  - a spin loses every un-banked drift of the chain (marked `lost`).
  */
-export function replayChains(drifts: DriftEvent[], states: SlipState[], o: ScoreOptions): { scored: ScoredDrift[]; chains: ChainSummary[] } {
+export function replayChains(
+  drifts: DriftEvent[],
+  states: SlipState[],
+  o: ScoreOptions,
+  ctx?: SessionContext,
+  tf: TrackFactor = NEUTRAL_TRACK,
+): { scored: ScoredDrift[]; chains: ChainSummary[] } {
   const sorted = drifts.slice().sort((a, b) => a.startT - b.startT || a.id - b.id);
   const scored: ScoredDrift[] = [];
   const chains: ChainSummary[] = [];
@@ -64,7 +123,9 @@ export function replayChains(drifts: DriftEvent[], states: SlipState[], o: Score
       for (const d of unbanked) chain!.banked += d.total;
       unbanked = [];
     }
-    const sd = scoreDrift(e, states, o, { multiplier: mult, chainDrifts });
+    // `e.spin` is the detector's verdict and it is REQUIRED on a DriftEvent: a spin that the
+    // HUD announced as CHAIN LOST must not reach the results screen as a clean exit.
+    const sd = scoreDrift(e, states, o, { multiplier: mult, chainDrifts, spin: e.spin, plausible: ctx?.plausible ?? null }, tf);
     scored.push(sd);
     chain!.drifts.push(sd.id);
     chainDrifts++;
@@ -220,6 +281,9 @@ export function crossLapConsistency(states: SlipState[], track: TrackModel | nul
   let sw = 0;
   let sv = 0;
   for (let c = 0; c < track.corners.length; c++) {
+    // a corner the path does not actually fit is a corner whose window sits on the wrong piece
+    // of road: comparing laps through it measures the model's error, not the driver's
+    if (cornerFitResidualM(track, track.corners[c]) > o.cornerFitMaxResidualM) continue;
     const vals = per.map((row) => (Number.isNaN(row.peaks[c]) ? 0 : row.peaks[c]));
     if (!vals.some((v) => v >= o.angleFloorDeg)) continue;
     const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -238,11 +302,90 @@ export function crossLapConsistency(states: SlipState[], track: TrackModel | nul
   return sv / sw;
 }
 
+/**
+ * RMS distance (m) from the reference path over a corner's span to the best-fit circle through
+ * it — how much the corner in the model IS a corner. An algebraic (Kåsa) fit: exact for a clean
+ * arc, and large for a span that wandered onto a straight or swallowed two separate bends.
+ */
+export function cornerFitResidualM(track: TrackModel, corner: TrackCorner): number {
+  const ref = track.refPath;
+  const n = ref.length;
+  if (n < 8) return Infinity;
+  const L = track.lengthM || ref[n - 1].s;
+  const span = corner.endS - corner.startS;
+  if (!(span > 0) || !(L > 0)) return Infinity;
+  const step = L / n;
+  const i0 = Math.round(corner.startS / step);
+  const count = Math.max(4, Math.round(span / step));
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let k = 0; k <= count; k++) {
+    const i = track.closed ? ((i0 + k) % n + n) % n : i0 + k;
+    if (i < 0 || i >= n) continue;
+    xs.push(ref[i].x);
+    ys.push(ref[i].y);
+  }
+  const m = xs.length;
+  if (m < 4) return Infinity;
+  let mx = 0;
+  let my = 0;
+  for (let i = 0; i < m; i++) {
+    mx += xs[i];
+    my += ys[i];
+  }
+  mx /= m;
+  my /= m;
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  let sxz = 0;
+  let syz = 0;
+  for (let i = 0; i < m; i++) {
+    const x = xs[i] - mx;
+    const y = ys[i] - my;
+    const z = x * x + y * y;
+    sxx += x * x;
+    syy += y * y;
+    sxy += x * y;
+    sxz += x * z;
+    syz += y * z;
+  }
+  const det = 2 * (sxx * syy - sxy * sxy);
+  if (Math.abs(det) < 1e-9) return Infinity;
+  const cx = (syy * sxz - sxy * syz) / det;
+  const cy = (sxx * syz - sxy * sxz) / det;
+  let r = 0;
+  for (let i = 0; i < m; i++) r += Math.hypot(xs[i] - mx - cx, ys[i] - my - cy);
+  r /= m;
+  let sq = 0;
+  for (let i = 0; i < m; i++) {
+    const d = Math.hypot(xs[i] - mx - cx, ys[i] - my - cy) - r;
+    sq += d * d;
+  }
+  return Math.sqrt(sq / m);
+}
+
+/** Median corner radius of the model (m), 0 when the model has no usable corners. */
+export function medianCornerRadiusM(track: TrackModel | null): number {
+  if (!track) return 0;
+  const rs = track.corners.map((c) => c.radiusM).filter((r) => Number.isFinite(r) && r > 0).sort((a, b) => a - b);
+  if (!rs.length) return 0;
+  const mid = rs.length >> 1;
+  return rs.length % 2 ? rs[mid] : 0.5 * (rs[mid - 1] + rs[mid]);
+}
+
 // ---------------------------------------------------------------------------------------
 
-export function scoreSession(drifts: DriftEvent[], states: SlipState[], track: TrackModel | null, opts?: Partial<ScoreOptions>): SessionBreakdown {
+export function scoreSession(
+  drifts: DriftEvent[],
+  states: SlipState[],
+  track: TrackModel | null,
+  opts?: Partial<ScoreOptions>,
+  ctx?: SessionContext,
+): SessionBreakdown {
   const o = resolveOptions(opts);
-  const { scored, chains } = replayChains(drifts, states, o);
+  const tf = trackFactorFor(medianCornerRadiusM(track), o);
+  const { scored, chains } = replayChains(drifts, states, o, ctx, tf);
   const perDrift: Record<number, ScoredDrift> = {};
   for (const d of scored) perDrift[d.id] = d;
 
@@ -254,7 +397,7 @@ export function scoreSession(drifts: DriftEvent[], states: SlipState[], track: T
       if (inLap.length >= o.cleanLapMinDrifts && !inLap.some((d) => d.spun)) {
         cleanLaps++;
         const last = inLap[inLap.length - 1];
-        const pts = o.calloutPoints['clean-lap'];
+        const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, last.stats.multiplierEnd) : 1);
         last.callouts.push({ t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts });
         last.bonus += pts;
         last.total += pts;
@@ -269,14 +412,20 @@ export function scoreSession(drifts: DriftEvent[], states: SlipState[], track: T
   // ---- components ---------------------------------------------------------------------
   const w = (d: ScoredDrift) => Math.max(o.minWeightS, d.stats.durationS);
   const peakDeg = wmean(scored.map((d) => ({ w: w(d), v: d.stats.heldPeakDeg })));
-  const angle = n ? angleScore(peakDeg, o) : 0;
+  const angle = n ? angleScore(peakDeg, o, tf) : 0;
 
-  // steadiness is weighted by the plateau seconds it was measured on; drifts too short to judge do not count
-  const judged = scored.filter((d) => d.stats.plateauS > 0);
-  const jitter = judged.length ? wmean(judged.map((d) => ({ w: d.stats.plateauS, v: d.stats.jitterDeg }))) : wmean(scored.map((d) => ({ w: w(d), v: d.stats.jitterDeg })));
-  const steadiness = n ? steadinessScore(jitter, o) : 0;
+  // Steadiness is the DURATION-weighted mean of the per-drift steadiness, over EVERY drift.
+  // Nothing is dropped: a drift whose angle never settled has no plateau, and "never settled"
+  // is exactly what unsteady means — `steadinessScore` caps what an unmeasurable plateau may
+  // claim (plateauCapCurve) instead of the average quietly excluding it. Dropping those drifts
+  // used to leave a 57 s slide with 4 transitions out of the average and judge the whole run on
+  // one 0.62 s window of a 7 s drift, which graded the sloppier driver S and the tidier one C.
+  const steadiness = n ? wmean(scored.map((d) => ({ w: w(d), v: steadinessScore(d.stats.jitterDeg, o, d.stats.plateauS) }))) : 0;
+  const jitter = wmean(scored.map((d) => ({ w: w(d), v: d.stats.jitterDeg })));
   const cross = n ? crossLapConsistency(states, track, o) : null;
-  const consistency = cross === null ? steadiness : o.crossLapWeight * cross + (1 - o.crossLapWeight) * steadiness;
+  // Unproven cross-lap consistency is NEUTRAL, not absent: removing the term meant one lap
+  // (nothing to compare) scored the same driver higher than two laps.
+  const consistency = n ? o.crossLapWeight * (cross === null ? o.crossLapNeutral : cross) + (1 - o.crossLapWeight) * steadiness : 0;
 
   const spins = scored.filter((d) => d.spun).length;
   const driftTimeS = scored.reduce((a, d) => a + d.stats.durationS, 0);
@@ -297,26 +446,31 @@ export function scoreSession(drifts: DriftEvent[], states: SlipState[], track: T
     : 0;
 
   const meanSpeed = wmean(scored.map((d) => ({ w: w(d), v: d.stats.meanSpeedKmh })));
-  const speed = n ? speedScore(meanSpeed, o) : 0;
+  const speed = n ? speedScore(meanSpeed, o, tf) : 0;
 
+  // Style is built on things that VARY with the driving: how many kinds of callout the run
+  // earned, direction changes per drift, how deep the chains ran, and how much of the run was
+  // actually spent sideways. The old "flair" term counted callouts per drift, and since
+  // INITIATION, PERFECT EXIT and SMOOTH fired on nearly every drift it scored 74–100 for
+  // everyone — 20 % of the weight carrying 2 % of the discrimination.
   const kinds = new Set<StyleCalloutKind>();
   let transitions = 0;
-  let flairCallouts = 0;
   for (const d of scored) {
     transitions += d.transitions;
-    for (const c of d.callouts)
-      if (c.kind !== 'initiation') {
-        kinds.add(c.kind);
-        flairCallouts++;
-      }
+    for (const c of d.callouts) if (c.kind !== 'initiation') kinds.add(c.kind);
   }
+  const longestChain = chains.reduce((a, c) => Math.max(a, c.drifts.length), 0);
   const sw = o.styleWeights;
   const styleParts = {
     variety: 100 * Math.min(1, kinds.size / o.styleVarietyTarget),
     transitions: n ? 100 * Math.min(1, transitions / n / o.styleTransitionsPerDrift) : 0,
-    flair: n ? 100 * Math.min(1, flairCallouts / n / o.styleCalloutsPerDrift) : 0,
+    chain: n ? 100 * Math.min(1, longestChain / o.styleChainTarget) : 0,
+    commitment: n ? 100 * Math.min(1, driftTimeS / o.styleDriftTimeS) : 0,
   };
-  const style = n ? (sw.variety * styleParts.variety + sw.transitions * styleParts.transitions + sw.flair * styleParts.flair) / (sw.variety + sw.transitions + sw.flair) : 0;
+  const swSum = sw.variety + sw.transitions + sw.chain + sw.commitment;
+  const style = n
+    ? (sw.variety * styleParts.variety + sw.transitions * styleParts.transitions + sw.chain * styleParts.chain + sw.commitment * styleParts.commitment) / swSum
+    : 0;
 
   const W = o.weights;
   const combined = n ? W.angle * angle + W.consistency * consistency + W.quality * quality + W.speed * speed + W.style * style : 0;
@@ -325,6 +479,35 @@ export function scoreSession(drifts: DriftEvent[], states: SlipState[], track: T
   let best: ScoredDrift | null = null;
   for (const d of kept) if (!best || d.total > best.total) best = d;
   const longestChainPoints = chains.reduce((a, c) => Math.max(a, c.banked), 0);
+
+  // ---- how much of the run was ONE corner, and what the driver kept up per second ----------
+  const keptTotals = kept.map((d) => d.total).sort((a, b) => a - b);
+  const bestShare = total > 0 && keptTotals.length ? keptTotals[keptTotals.length - 1] / total : 0;
+  const medianDriftPoints = keptTotals.length
+    ? keptTotals.length % 2
+      ? keptTotals[keptTotals.length >> 1]
+      : 0.5 * (keptTotals[(keptTotals.length >> 1) - 1] + keptTotals[keptTotals.length >> 1])
+    : 0;
+  const pointsPerDriftSecond = driftTimeS > 0 ? total / driftTimeS : 0;
+
+  // ---- integrity: may this run publish a score at all? -------------------------------------
+  const suppressedS = scored.reduce((a, d) => a + d.stats.implausibleS, 0);
+  const observedDriftS = driftTimeS + suppressedS;
+  const implausibleDriftFraction = observedDriftS > 0 ? suppressedS / observedDriftS : 0;
+  const iv = ctx?.integrity ?? null;
+  const trusted = implausibleDriftFraction <= o.integrityMaxImplausibleFraction;
+  const integrity: SessionIntegrity = {
+    mount: iv?.mount ?? 'rigid',
+    physics: iv?.physics ?? 'ok',
+    gps: iv?.gps ?? 'good',
+    implausibleDriftFraction: round1(implausibleDriftFraction * 100) / 100,
+    suppressedS: Math.round(suppressedS * 100) / 100,
+    scoreTrusted: n === 0 || trusted,
+    message: trusted
+      ? ''
+      : `${Math.round(implausibleDriftFraction * 100)}% of this run's sliding could not be trusted` +
+        `${iv?.message ? ` — ${iv.message}` : ' — check the phone is rigidly mounted'}`,
+  };
 
   return {
     total: Math.round(total),
@@ -347,6 +530,11 @@ export function scoreSession(drifts: DriftEvent[], states: SlipState[], track: T
     transitions,
     cleanLaps,
     driftTimeS,
+    integrity,
+    trackFactor: tf,
+    bestShare: round1(bestShare * 100) / 100,
+    medianDriftPoints: Math.round(medianDriftPoints),
+    pointsPerDriftSecond: Math.round(pointsPerDriftSecond),
   };
 }
 

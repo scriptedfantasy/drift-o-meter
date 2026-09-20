@@ -337,21 +337,21 @@ export interface GhostPose {
   course: number;
   beta: number;
   speed: number;
-  /** Lap-relative time, s. */
+  /** The reference lap's own elapsed time at this point of the lap, s. */
   tau: number;
   /** Which lap the ghost is replaying. Never the lap being watched. */
   lapIndex: number;
-  /** Metres the CAR is ahead (+) or behind (−) the ghost along the lap. */
+  /** How far the car is off the reference line here, metres (the ghost is distance-synced). */
   gapM: number;
   /**
    * TRUE time gap in seconds: how much earlier (+, car ahead) or later (−) the car reached
-   * this point than the ghost did. Computed by inverting the ghost's distance→time curve,
-   * so it does not flicker with instantaneous speed.
+   * this point than the reference lap did. Computed by inverting that lap's distance→time
+   * curve, so it does not flicker with instantaneous speed.
    */
   gapS: number;
   /** Points the car is ahead (+) / behind (−) the ghost at the same point of the lap. */
   gapPoints: number;
-  /** True while the ghost is still inside its reference lap. */
+  /** True while the car is still within the reference lap's distance. */
   inLap: boolean;
 }
 

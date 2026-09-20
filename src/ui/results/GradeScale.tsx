@@ -26,7 +26,8 @@ export function GradeScale({
   reduceMotion?: boolean;
   testID?: string;
 }) {
-  const fill = useFill(rating / 100, 260, run, reduceMotion);
+  const shown = Number.isFinite(rating) ? Math.max(0, Math.min(100, rating)) : 0;
+  const fill = useFill(shown / 100, 260, run, reduceMotion);
   return (
     <View style={styles.wrap} testID={testID}>
       <View style={styles.track}>
@@ -34,7 +35,7 @@ export function GradeScale({
         {GRADE_SCALE.slice(1).map((b) => (
           <View key={b.grade} style={[styles.divider, { left: `${b.min}%` }]} />
         ))}
-        <View style={[styles.marker, { left: `${Math.max(0, Math.min(100, rating))}%`, backgroundColor: colors.text }]} />
+        <View style={[styles.marker, { left: `${shown}%`, backgroundColor: colors.text }]} />
       </View>
       <View style={styles.labels}>
         {GRADE_SCALE.map((b, i) => {

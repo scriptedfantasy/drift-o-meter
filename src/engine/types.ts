@@ -65,12 +65,33 @@ export interface GpsSample {
   alt?: number;
 }
 
-/** Motion resolved into the VEHICLE frame by the mount calibrator. */
+/**
+ * Motion resolved into the VEHICLE frame by the mount calibrator.
+ *
+ * LEVER ARM — read before changing anything here. The phone sits at a point d ahead of
+ * (and above) the centre of gravity, so it genuinely measures a_y(CG) + ṙ·d_x, and the GPS
+ * antenna inside it reports the PHONE's course, not the car's. Exactly one module may
+ * remove that, or it gets removed twice and the estimate is worse than doing nothing.
+ *
+ * The owner is the slip estimator, for two reasons: its propagation is exact when run at
+ * the phone, so no lever term appears in it at all; and it is the only module that also
+ * sees the GPS course offset and the zero-slip prior, which need d_x too and which the
+ * calibrator cannot reach.
+ *
+ * Therefore ax/ay/az here are AT THE PHONE, as measured. The calibrator estimates its own
+ * d̂_x to keep the lever arm from rotating its axis estimate, and exposes it as a
+ * diagnostic, but must not subtract it from this output.
+ *
+ * MIGRATION IN PROGRESS: `MountOptions.leverCompensation` still defaults to true, so the
+ * calibrator currently removes the lever arm as well and the pipeline compensates twice.
+ * The calibrator and its tests are being moved to this contract; until they are, this
+ * comment states the target, not the code.
+ */
 export interface VehicleMotionSample {
   t: number;
-  /** Longitudinal acceleration, m/s² (+ = accelerating forward). */
+  /** Longitudinal acceleration AT THE PHONE, m/s² (+ = accelerating forward). */
   ax: number;
-  /** Lateral acceleration, m/s² (+ = to the LEFT, i.e. a left turn pushes + ). */
+  /** Lateral acceleration AT THE PHONE, m/s² (+ = to the LEFT, i.e. a left turn pushes + ). */
   ay: number;
   /** Vertical acceleration (gravity removed), m/s². */
   az: number;
