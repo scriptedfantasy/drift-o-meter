@@ -45,7 +45,7 @@ export default function DriveScreen() {
   const gaugeW = landscape ? Math.min(stageW * 0.52, height * 1.3) : width;
   const gauge = { w: gaugeW, h: Math.min(gaugeW * 0.56, height * (landscape ? 0.62 : 0.32)) };
 
-  const map = landscape ? { w: 168, h: 116 } : { w: 150, h: 150 };
+  const map = landscape ? { w: 168, h: 116 } : { w: 146, h: 150 };
 
   return (
     <View style={styles.root} testID="screen-drive">
@@ -98,18 +98,20 @@ export default function DriveScreen() {
                     and where it is happening (map). Nothing here is decoration. */}
                 <View style={styles.stage}>
                   {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
-                  <CalloutStack events={run.events} size={26} testID="hud-callouts" />
+                  <View style={styles.stageRow}>
+                    <View style={styles.stageCallouts}>
+                      <CalloutStack events={run.events} size={24} testID="hud-callouts" />
+                    </View>
+                    {live ? (
+                      <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
+                    ) : null}
+                  </View>
                 </View>
 
                 {/* Nothing below the gauge claims a number until the run is actually armed. */}
                 {live ? (
                   <>
-                    <View style={styles.stageRow}>
-                      <View style={styles.stageCallouts}>
-                        <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={68} vertical testID="hud-telemetry" />
-                      </View>
-                      <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
-                    </View>
+                    <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={68} testID="hud-telemetry" />
 
                     <View style={styles.scoreBlock}>
                       <ScoreBanner banner={run.banner} size={28} />
@@ -195,12 +197,14 @@ function SavingOverlay() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   fill: { flex: 1 },
-  frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
+  // Bands, not a stack with a hole in it: whatever height is left over after the gauge, the
+  // callout band and the numbers is shared between the gaps, so nothing pools in one place.
+  frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3], justifyContent: 'space-between' },
   frameLandscape: { paddingTop: space[2], paddingBottom: space[2] },
 
-  stage: { flex: 1, alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2], paddingTop: space[1] },
-  stageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
-  stageCallouts: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-end' },
+  stage: { alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2] },
+  stageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
+  stageCallouts: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start' },
   scoreBlock: { alignSelf: 'stretch', gap: space[1] },
   bleed: { marginHorizontal: -gutter },
 

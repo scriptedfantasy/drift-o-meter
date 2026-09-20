@@ -81,11 +81,6 @@ export interface GpsSample {
  * Therefore ax/ay/az here are AT THE PHONE, as measured. The calibrator estimates its own
  * d̂_x to keep the lever arm from rotating its axis estimate, and exposes it as a
  * diagnostic, but must not subtract it from this output.
- *
- * MIGRATION IN PROGRESS: `MountOptions.leverCompensation` still defaults to true, so the
- * calibrator currently removes the lever arm as well and the pipeline compensates twice.
- * The calibrator and its tests are being moved to this contract; until they are, this
- * comment states the target, not the code.
  */
 export interface VehicleMotionSample {
   t: number;

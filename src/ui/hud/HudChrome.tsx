@@ -25,7 +25,7 @@ const TRANSPARENT = 'rgba(255,90,31,0)';
 
 export const EdgeBloom = memo(function EdgeBloom({ signals }: { signals: HudSignals }) {
   const bloom = useAnimatedStyle(() => ({ opacity: 0.06 + 0.94 * signals.intensity.value }));
-  const flash = useAnimatedStyle(() => ({ opacity: 0.22 * signals.flash.value }));
+  const flash = useAnimatedStyle(() => ({ opacity: 0.18 * signals.flash.value }));
   return (
     <View style={styles.bloomClip} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, bloom]}>

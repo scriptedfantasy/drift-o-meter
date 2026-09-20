@@ -65,8 +65,16 @@ export interface ScoreOptions {
   highSpeedMinS: number;
   manjiTransitions: number;
   linkDrifts: number;
-  /** Max |dβ/dt| (deg/s) over the last `exitWindowS` of a drift for a `perfect-exit`. */
+  /** Max |dβ/dt| (deg/s) over the last `exitWindowS` of a drift for the PERFECT EXIT callout. */
   perfectExitMaxRateDegS: number;
+  /**
+   * Max |dβ/dt| (deg/s) over the same window for the exit to count as DRIVEN OUT CLEAN — the
+   * quality term and the results screen's "N of M exits clean". Deliberately looser than the
+   * callout: PERFECT EXIT is a rare flourish, a clean exit is the normal way to finish a drift,
+   * and using one number for both meant tuning the callout to fire on a quarter of drifts
+   * silently took 30 % off every driver's quality score.
+   */
+  cleanExitMaxRateDegS: number;
   exitWindowS: number;
   cleanLapMinDrifts: number;
 
@@ -151,10 +159,14 @@ export interface ScoreOptions {
   styleTransitionsPerDrift: number;
   /** Style: drifts in the longest chain needed for full chaining credit. */
   styleChainTarget: number;
-  /** Style: seconds of the run spent sideways needed for full commitment credit. */
-  styleDriftTimeS: number;
-  /** style = variety × w.variety + transitions × w.transitions + chain × w.chain + commitment × w.commitment. */
-  styleWeights: { variety: number; transitions: number; chain: number; commitment: number };
+  /**
+   * Style: RARE callouts per drift needed for full flair credit — EXTREME ANGLE, MANJI, HIGH
+   * SPEED, LINK, CLEAN LAP. The old "flair" term counted every callout per drift, and since
+   * three of them fired on nearly every drift it scored 74–100 for everybody.
+   */
+  styleRarePerDrift: number;
+  /** style = variety × w.variety + transitions × w.transitions + chain × w.chain + flair × w.flair. */
+  styleWeights: { variety: number; transitions: number; chain: number; flair: number };
   /** Component weights for the combined score. */
   weights: { angle: number; consistency: number; quality: number; speed: number; style: number };
   gradeThresholds: { S: number; A: number; B: number; C: number };
@@ -221,12 +233,13 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   extremeAngleDeg: 45,
   longDriftS: 9,
   smoothWindowS: 4,
-  smoothMaxStdDevDeg: 1.1,
-  highSpeedKmh: 68,
+  smoothMaxStdDevDeg: 0.9,
+  highSpeedKmh: 72,
   highSpeedMinS: 1.5,
   manjiTransitions: 3,
   linkDrifts: 3,
-  perfectExitMaxRateDegS: 22,
+  perfectExitMaxRateDegS: 12,
+  cleanExitMaxRateDegS: 75,
   exitWindowS: 0.5,
   cleanLapMinDrifts: 3,
 
@@ -244,36 +257,35 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   ringKeepS: 120,
 
   angleCurve: [
-    [12, 0],
-    [22, 30],
-    [33, 65],
-    [45, 95],
-    [55, 100],
+    [23, 0],
+    [28, 25],
+    [34, 60],
+    [39, 90],
+    [46, 100],
   ],
   speedScoreCurve: [
-    [25, 0],
-    [40, 25],
-    [55, 55],
-    [70, 85],
-    [85, 100],
+    [35, 0],
+    [46, 25],
+    [54, 55],
+    [62, 92],
+    [70, 100],
   ],
   jitterCurve: [
-    [0.15, 100],
-    [0.4, 90],
-    [0.7, 75],
-    [1.0, 55],
-    [1.4, 30],
-    [1.8, 15],
-    [2.4, 5],
-    [3.0, 0],
+    [0.3, 100],
+    [0.6, 92],
+    [0.9, 70],
+    [1.15, 45],
+    [1.45, 22],
+    [1.9, 5],
+    [2.5, 0],
   ],
   plateauCapCurve: [
     [0, 35],
     [0.6, 60],
     [2, 100],
   ],
-  cvScale: 3,
-  initiationSdFullM: 10,
+  cvScale: 2.6,
+  initiationSdFullM: 12,
   crossLapAngleWeight: 0.6,
   initiationLookbackM: 40,
   crossLapWeight: 0.4,
@@ -283,17 +295,19 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   cornerTrailMarginM: 5,
   qualityAngleDeg: 15,
   timeAtAngleCurve: [
-    [0.4, 0],
-    [0.85, 100],
+    [0.55, 0],
+    [0.75, 45],
+    [0.88, 90],
+    [0.95, 100],
   ],
   qualityWeights: { steadiness: 0.55, timeAtAngle: 0.45 },
   exitPenalty: 0.4,
   spinPenalty: 1.5,
   styleVarietyTarget: 6,
-  styleTransitionsPerDrift: 1.0,
+  styleTransitionsPerDrift: 1.3,
   styleChainTarget: 4,
-  styleDriftTimeS: 90,
-  styleWeights: { variety: 0.3, transitions: 0.25, chain: 0.25, commitment: 0.2 },
+  styleRarePerDrift: 0.7,
+  styleWeights: { variety: 0.25, transitions: 0.3, chain: 0.2, flair: 0.25 },
   weights: { angle: 0.26, consistency: 0.24, quality: 0.24, speed: 0.13, style: 0.13 },
   gradeThresholds: { S: 90, A: 75, B: 60, C: 45 },
   minWeightS: 1.0,

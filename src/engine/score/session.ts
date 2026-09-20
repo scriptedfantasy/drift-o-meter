@@ -60,7 +60,7 @@ export interface SessionBreakdown extends SessionScore {
   /** Quality ingredients, 0..100 / factors 0..1. */
   qualityParts: { steadiness: number; timeAtAngle: number; cleanExitFraction: number; exitFactor: number; spinFactor: number };
   /** Style ingredients, 0..100. */
-  styleParts: { variety: number; transitions: number; chain: number; commitment: number };
+  styleParts: { variety: number; transitions: number; chain: number; flair: number };
   drifts: number;
   spins: number;
   transitions: number;
@@ -149,6 +149,9 @@ export function replayChains(
   if (chain) for (const d of unbanked) chain.banked += d.total;
   return { scored, chains };
 }
+
+/** Callouts a driver has to go and EARN: the ones style's flair term counts. */
+const RARE_KINDS = new Set<StyleCalloutKind>(['extreme-angle', 'manji', 'high-speed', 'link', 'clean-lap']);
 
 /** Duration-weighted mean (weights floored at minWeightS so a blip still counts a little). */
 function wmean(items: Array<{ w: number; v: number }>): number {
@@ -455,9 +458,13 @@ export function scoreSession(
   // everyone — 20 % of the weight carrying 2 % of the discrimination.
   const kinds = new Set<StyleCalloutKind>();
   let transitions = 0;
+  let rare = 0;
   for (const d of scored) {
     transitions += d.transitions;
-    for (const c of d.callouts) if (c.kind !== 'initiation') kinds.add(c.kind);
+    for (const c of d.callouts) {
+      if (c.kind !== 'initiation') kinds.add(c.kind);
+      if (RARE_KINDS.has(c.kind)) rare++;
+    }
   }
   const longestChain = chains.reduce((a, c) => Math.max(a, c.drifts.length), 0);
   const sw = o.styleWeights;
@@ -465,11 +472,11 @@ export function scoreSession(
     variety: 100 * Math.min(1, kinds.size / o.styleVarietyTarget),
     transitions: n ? 100 * Math.min(1, transitions / n / o.styleTransitionsPerDrift) : 0,
     chain: n ? 100 * Math.min(1, longestChain / o.styleChainTarget) : 0,
-    commitment: n ? 100 * Math.min(1, driftTimeS / o.styleDriftTimeS) : 0,
+    flair: n ? 100 * Math.min(1, rare / n / o.styleRarePerDrift) : 0,
   };
-  const swSum = sw.variety + sw.transitions + sw.chain + sw.commitment;
+  const swSum = sw.variety + sw.transitions + sw.chain + sw.flair;
   const style = n
-    ? (sw.variety * styleParts.variety + sw.transitions * styleParts.transitions + sw.chain * styleParts.chain + sw.commitment * styleParts.commitment) / swSum
+    ? (sw.variety * styleParts.variety + sw.transitions * styleParts.transitions + sw.chain * styleParts.chain + sw.flair * styleParts.flair) / swSum
     : 0;
 
   const W = o.weights;

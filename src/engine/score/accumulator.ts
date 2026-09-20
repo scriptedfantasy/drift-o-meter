@@ -443,9 +443,10 @@ export class DriftAccumulator {
     const n = this.betaTrace.length;
     const exitRate = this.exitRate();
     const jit = this.jitter();
-    const cleanExit = !this.spun && exitRate <= o.perfectExitMaxRateDegS && n > 1;
+    const cleanExit = !this.spun && exitRate <= o.cleanExitMaxRateDegS && n > 1;
+    const perfect = !this.spun && exitRate <= o.perfectExitMaxRateDegS && n > 1;
     const before = this.callouts.length;
-    if (cleanExit && !this.fired.has('perfect-exit')) {
+    if (perfect && !this.fired.has('perfect-exit')) {
       if (this.res.callouts !== NO_CALLOUTS) this.res.callouts = NO_CALLOUTS;
       this.fire('perfect-exit', endT);
     }

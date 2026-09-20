@@ -75,19 +75,25 @@ same URL → same session → same pixels. The numbers on screen always come fro
 /results/<storedId>                        a real session from storage (no fixture)
 ```
 
-| `?fixture=` | what it is | what the scorer says |
+| `?fixture=` | what it is | what the scorer returned on 20 Sep |
 | --- | --- | --- |
-| `hero`   | harbor, seed 3, aggression 1.8, consistency 0.96 | **S**, 90.4/100, 16 slides, 2 clean laps |
-| `good`   | harbor, seed 7, aggression 0.9, consistency 0.8   | **A**, 76.9/100, 18 slides |
-| `sloppy` | harbor, seed 5, aggression 0, consistency 0        | **D**, 38.7/100, wandering corners |
-| `spin`   | harbor, seed 4, the biggest slide pushed past 85°  | **B**, one spin, a chain thrown away |
-| `clean`  | harbor, driven on grip (slip angle under 5°)       | **D**, 0/100, no drifts at all |
-| `rough`  | harbor with a rattling cradle and GPS dropouts     | **B**, two integrity warnings |
-| `touge`  | the point-to-point mountain road, one lap          | **A**, no laps → no lap table |
+| `hero`   | harbor, seed 3, aggression 1.3, consistency 1 (the best the driver model reaches) | **A** 83.8, 14 slides, 2 clean laps |
+| `good`   | harbor, seed 7, aggression 0.9, consistency 0.8 | **A** 78.9, 15 slides |
+| `sloppy` | harbor, seed 1, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **C** 45.1, 2 spins, ~3 000 points thrown away |
+| `spin`   | harbor, seed 4, one slide forced past the spin threshold | **B** 73.0, 1 spin, a chain lost |
+| `clean`  | harbor, driven on grip (slip angle under 5°) | **D** 0/100, no drifts at all |
+| `rough`  | harbor through the REAL pipeline with a rattling cradle and GPS dropouts | **B** 60.3, calibration 8 %, phantom spins |
+| `touge`  | the point-to-point mountain road, one lap | **A** 79.5, no laps → no lap table |
+
+The grades above are what the scorer says, not what the fixture asks for: they move when the
+scorer is retuned, and that is the point of shooting them. As of this writing no simulated
+driving reaches S (the ceiling across every seed and skill setting is ≈ 84) and nothing with
+drifts in it reaches D (the floor is ≈ 45); the only D on the board is the no-drift `clean` run.
 
 Overrides (all optional, all clamped): `track=harbor|touge`, `seed=<int>`, `laps=1..6`,
 `agg=0..2` (above 1 is a hero lap the driver model cannot normally produce), `cons=0..1`,
-`spin=1|0`, `drifts=none` (grip lap), `rough=1|0`, `source=sim|pipeline`.
+`spin=<n>` (force the n biggest slides past the spin threshold), `drifts=none` (grip lap),
+`rough=1|0`, `source=sim|pipeline`.
 
 * `source=sim` (default) fills the session from simulator ground truth — about 200 ms.
 * `source=pipeline` pushes the simulated sensors through the **real** engine pipeline (mount

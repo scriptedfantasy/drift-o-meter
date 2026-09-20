@@ -626,14 +626,21 @@ function speedStreaks(f: Frame): string {
  * Two-line ghost readout placed wherever it fits. The gap indicator is load-bearing, so if no
  * candidate is free it is drawn at the last one anyway rather than leaving a mute chevron.
  */
-function ghostLabel(col: LabelCollider, x: number, y: number, w: number, gapText: string, gapPoints: number, r = 12): string {
+function ghostLabel(col: LabelCollider, x: number, y: number, w: number, gapText: string, gapPoints: number, r = 12, away: { x: number; y: number } | null = null): string {
+  // the ghost is distance-synced, so it sits right beside the car: bias the label AWAY from
+  // the car first, and start well clear of both markers
+  const d = away ? Math.hypot(away.x, away.y) : 0;
+  const ux = d > 1e-3 ? away!.x / d : 1;
+  const uy = d > 1e-3 ? away!.y / d : 0;
+  const push = r + 26;
   const cands: Array<[number, number, 'start' | 'end' | 'middle']> = [
-    [r + 4, 6, 'start'],
-    [-(r + 4), 6, 'end'],
-    [0, -(r + 8), 'middle'],
-    [0, r + 30, 'middle'],
-    [r + 4, -(r + 8), 'start'],
-    [-(r + 4), r + 30, 'end'],
+    [ux * push, uy * push + 6, ux < 0 ? 'end' : 'start'],
+    [r + 12, 6, 'start'],
+    [-(r + 12), 6, 'end'],
+    [0, -(r + 16), 'middle'],
+    [0, r + 38, 'middle'],
+    [r + 12, -(r + 16), 'start'],
+    [-(r + 12), r + 38, 'end'],
   ];
   let pick = cands[cands.length - 1];
   for (const c of cands) {
@@ -709,7 +716,7 @@ function worldLabels(f: Frame): string {
     const gapPts = `${g.gapPoints >= 0 ? '+' : '−'}${pts(Math.abs(g.gapPoints))} PTS`;
     if (onScreen) {
       const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
-      s += ghostLabel(col, gp.x, gp.y, gw, gapPts, g.gapPoints);
+      s += ghostLabel(col, gp.x, gp.y, gw, gapPts, g.gapPoints, 12, { x: gp.x - carS.x, y: gp.y - carS.y });
     } else {
       const dx = gp.x - carS.x;
       const dy = gp.y - carS.y;
@@ -728,7 +735,7 @@ function worldLabels(f: Frame): string {
         s += `<g transform="rotate(${f2(ang)})"><polygon points="4,-6 11,0 4,6 6,0" fill="${GREEN}"/><path d="M -5,-4 L -1,0 L -5,4" fill="none" stroke="${GREEN}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/></g>`;
         s += '</g>';
         const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
-        s += ghostLabel(col, ex, ey, gw, gapPts, g.gapPoints, 18);
+        s += ghostLabel(col, ex, ey, gw, gapPts, g.gapPoints, 18, { x: ex - carS.x, y: ey - carS.y });
       }
     }
   }

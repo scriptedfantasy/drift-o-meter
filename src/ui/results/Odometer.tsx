@@ -20,7 +20,7 @@ import { alpha, colors, fontFamilies } from '../theme';
 export interface OdometerProps {
   /** Final value. */
   value: number;
-  /** Start the roll. While false the odometer sits at its final value (no animation). */
+  /** Start the roll. While false the odometer waits at zero — it must never flash the answer. */
   run?: boolean;
   durationMs?: number;
   fontSize: number;
@@ -38,10 +38,10 @@ const CELLS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 export function Odometer({ value, run = true, durationMs = 1300, fontSize, color = colors.ember, reduceMotion = false, rollPlaces = 2, style, testID }: OdometerProps) {
   const target = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
   const text = target.toLocaleString('en-US');
-  const v = useSharedValue(run ? 0 : target);
+  const v = useSharedValue(0);
   // 0 while the drums are turning, 1 once they have to sit still on the final digits: the carry
   // fraction is only correct mid-count, so it is eased out at the end
-  const settle = useSharedValue(run ? 0 : 1);
+  const settle = useSharedValue(0);
   const digitH = Math.round(fontSize * 0.98);
   const digitW = Math.round(fontSize * 0.52);
 
@@ -49,8 +49,9 @@ export function Odometer({ value, run = true, durationMs = 1300, fontSize, color
     cancelAnimation(v);
     cancelAnimation(settle);
     if (!run) {
-      v.value = target;
-      settle.value = 1;
+      // waiting behind the reveal: zero, never a glimpse of the total before it counts up
+      v.value = 0;
+      settle.value = 0;
       return;
     }
     const d = reduceMotion ? 320 : durationMs;

@@ -1198,7 +1198,8 @@ export class MountCalibrator {
     let vay = R[3] * ax + R[4] * ay + R[5] * az;
 
     // ---- lever arm: the phone is d̂ₓ metres ahead of the CG, so it reads a_y + ṙ·d̂ₓ and
-    // a_x − r²·d̂ₓ. That is real, but the consumers of VehicleMotionSample do CG kinematics.
+    // a_x − r²·d̂ₓ. That stays in the output (VehicleMotionSample is defined at the phone and the
+    // slip estimator removes it); d̂ₓ is estimated anyway and published as a diagnostic.
     if (dt > 0) {
       // two-pole smoothed derivative of the yaw rate (a raw one is 0.4 rad/s² of gyro noise)
       const kf = dt / (o.leverTau + dt);

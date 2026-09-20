@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T19:28:33.383Z",
+  "startedAt": "2026-09-20T19:31:39.046Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -11,13 +11,13 @@
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=96.3",
-      "url": "http://127.0.0.1:42411/drive?sim=harbor&rate=1&at=96.3",
+      "url": "http://127.0.0.1:40111/drive?sim=harbor&rate=1&at=96.3",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive.png",
-      "video": "../../../../../../home/user/drift-o-meter/artifacts/video/drive.webm",
-      "ms": 8205,
+      "video": null,
+      "ms": 9463,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -64,13 +64,137 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 141840,
-        "cyanPixels": 16136,
-        "textPixels": 7116,
-        "nonBgFraction": 0.5741
+        "emberPixels": 143956,
+        "cyanPixels": 16160,
+        "textPixels": 7036,
+        "nonBgFraction": 0.5595
+      }
+    },
+    {
+      "name": "drive-peak",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:40111/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak.png",
+      "video": null,
+      "ms": 5111,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 87,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 147920,
+        "cyanPixels": 15788,
+        "textPixels": 7588,
+        "nonBgFraction": 0.6211
+      }
+    },
+    {
+      "name": "drive-bank",
+      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:40111/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-bank.png",
+      "video": null,
+      "ms": 5163,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 88,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 115324,
+        "cyanPixels": 36212,
+        "textPixels": 6332,
+        "nonBgFraction": 0.3006
       }
     }
   ],
-  "finishedAt": "2026-09-20T19:28:41.666Z",
+  "finishedAt": "2026-09-20T19:31:58.916Z",
   "failed": 0
 }

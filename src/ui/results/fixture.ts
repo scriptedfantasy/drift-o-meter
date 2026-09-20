@@ -62,13 +62,13 @@ export const FIXTURES: Record<string, FixtureSpec> = {
   /** A/B: the default, a good but human run. */
   good: { ...BASE, name: 'good', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap · grade A' },
   /** The bad night: no angle, no repeatability, and the rear let go three times. */
-  sloppy: { ...BASE, name: 'sloppy', seed: 5, aggression: 0, consistency: 0, spins: 3, blurb: 'Bad night · spun three times' },
+  sloppy: { ...BASE, name: 'sloppy', seed: 1, aggression: 0, consistency: 0, spins: 3, blurb: 'Bad night · lost it twice' },
   /** The chain-ending spin: the biggest slide goes past the spin threshold and takes its chain. */
   spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spins: 1, blurb: 'Spun it · chain lost' },
   /** Nothing slid: a clean lap with no drift events at all. */
   clean: { ...BASE, name: 'clean', seed: 2, aggression: 0.2, consistency: 0.9, noDrifts: true, blurb: 'Clean lap · no slides' },
   /** Bad data: phone loose in the cradle, GPS dropping out. */
-  rough: { ...BASE, name: 'rough', seed: 6, aggression: 0.9, consistency: 0.55, rough: true, blurb: 'Loose mount · poor GPS' },
+  rough: { ...BASE, name: 'rough', source: 'pipeline', seed: 6, aggression: 0.9, consistency: 0.55, rough: true, blurb: 'Loose mount · poor GPS' },
   /** Point-to-point mountain road: no laps, so the lap table is correctly absent. */
   touge: { ...BASE, name: 'touge', track: 'touge', seed: 3, laps: 1, aggression: 1, consistency: 0.85, blurb: 'Touge run · one way' },
 };

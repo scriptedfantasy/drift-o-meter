@@ -61,7 +61,7 @@ export const defaultRoutes = [
   { name: 'results-laps', path: '/results/fixture-sloppy?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 4200 }, { type: 'wait', ms: 900 }] },
   { name: 'results-integrity', path: '/results/fixture-rough?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 5200 }, { type: 'wait', ms: 900 }] },
   // the same screen fed by the REAL engine pipeline (mount → slip → detector → scorer), not ground truth
-  { name: 'results-pipeline', path: '/results/fixture-good?reveal=off&source=pipeline', waitMs: 3200 },
+  { name: 'results-pipeline', path: '/results/fixture-good?reveal=off&source=pipeline', waitMs: 3600 },
   // reduce-motion: state changes keep, shake and embers go
   { name: 'results-reduced', path: '/results/fixture-hero?reveal=hold&motion=reduce', waitMs: 2000 },
   { name: 'results-missing', path: '/results/no-such-session', waitMs: 1200 },
