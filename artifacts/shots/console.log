@@ -1,2 +1,16 @@
 
-===== drive  http://127.0.0.1:36197/drive?sim=harbor&rate=1&at=39.2
+===== replay-landscape  http://127.0.0.1:40183/replay/demo?cam=chase&t=94.9
+
+===== replay-overview-landscape  http://127.0.0.1:40183/replay/demo?cam=overview&t=60&play=0&ui=0
+
+===== replay-chase-landscape  http://127.0.0.1:40183/replay/demo?cam=chase&t=95.9&play=0&ui=1
+
+===== replay-cinematic-landscape  http://127.0.0.1:40183/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+
+===== replay-ghost-landscape  http://127.0.0.1:40183/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+
+===== replay-highlight-landscape  http://127.0.0.1:40183/replay/demo?hl=1&play=0&cam=chase&ui=1
+
+===== replay-scrub-landscape  http://127.0.0.1:40183/replay/demo?cam=chase&scrub=0.36&ui=1
+
+===== replay-untrusted-landscape  http://127.0.0.1:40183/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
