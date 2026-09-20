@@ -57,8 +57,14 @@ export function isValidSessionId(id: unknown): id is string {
   return typeof id === 'string' && ID_RE.test(id);
 }
 
+/**
+ * The messages below are FRAGMENTS, because the only screen that shows them completes the
+ * sentence: the results screen writes "That session could not be read: <message>"
+ * (`src/app/results/[id].tsx`). The id goes in `detail`, where a log can have it and a driver
+ * cannot.
+ */
 function assertId(id: string): void {
-  if (!isValidSessionId(id)) throw new StorageError('invalid-id', `Invalid session id "${String(id)}".`);
+  if (!isValidSessionId(id)) throw new StorageError('invalid-id', 'that is not a valid run link.', undefined, `id ${String(id)}`);
 }
 
 /** `20260920-134201-k3f9`: sortable, file-name safe, unique enough. */
@@ -151,10 +157,10 @@ export function createSessionStore(backend: SessionBackend): SessionStore {
       try {
         session = JSON.parse(raw) as Session;
       } catch (err) {
-        throw new StorageError('corrupt', `Session "${id}" is not valid JSON.`, err);
+        throw new StorageError('corrupt', 'the file is damaged.', err, `session "${id}" is not valid JSON`);
       }
       if (!session || session.version !== 1 || session.id !== id) {
-        throw new StorageError('corrupt', `Session "${id}" has an unexpected shape.`);
+        throw new StorageError('corrupt', 'it was saved by a different version of the app.', undefined, `session "${id}" has an unexpected shape`);
       }
       return session;
     },

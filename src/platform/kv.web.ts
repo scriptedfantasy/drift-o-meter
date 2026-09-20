@@ -2,7 +2,7 @@
  * Web key/value store backed by localStorage, with an in-memory fallback for environments
  * where storage is blocked (private mode, sandboxed iframes, static rendering on Node).
  */
-import { isQuotaError, StorageError, type KeyValueStore } from './kvTypes';
+import { isQuotaError, sizeKb, StorageError, type KeyValueStore } from './kvTypes';
 
 const memory = new Map<string, string>();
 
@@ -35,9 +35,9 @@ export const kv: KeyValueStore = {
       s.setItem(key, value);
     } catch (err) {
       if (isQuotaError(err)) {
-        throw new StorageError('quota', `Browser storage is full (${Math.round(value.length / 1024)} KB would not fit). Delete old sessions to make room.`, err);
+        throw new StorageError('quota', `This browser is out of space — the last ${sizeKb(value)} KB would not fit.`, err, `setItem "${key}"`);
       }
-      throw new StorageError('io', `Could not write "${key}".`, err);
+      throw new StorageError('io', 'This browser would not let the app write to its storage.', err, `setItem "${key}"`);
     }
   },
   async removeItem(key) {

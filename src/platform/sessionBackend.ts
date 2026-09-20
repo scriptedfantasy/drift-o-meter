@@ -5,7 +5,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import { kv } from './kv';
-import { isQuotaError, StorageError } from './kvTypes';
+import { isQuotaError, sizeKb, StorageError } from './kvTypes';
 import type { SessionBackend } from './sessionStore';
 
 const INDEX_KEY = 'dom.sessions.index.v1';
@@ -28,7 +28,7 @@ export const backend: SessionBackend = {
       if (!f.exists) return null;
       return await f.text();
     } catch (err) {
-      throw new StorageError('io', `Could not read session "${id}".`, err);
+      throw new StorageError('io', 'That run is on this phone but could not be read back.', err, `readBody "${id}"`);
     }
   },
 
@@ -40,7 +40,9 @@ export const backend: SessionBackend = {
       if (!f.exists) f.create({ intermediates: true });
       f.write(json);
     } catch (err) {
-      throw new StorageError(isQuotaError(err) ? 'quota' : 'io', `Could not save session "${id}".`, err);
+      throw isQuotaError(err)
+        ? new StorageError('quota', `Your phone is out of space — this run needs ${sizeKb(json)} KB.`, err, `writeBody "${id}"`)
+        : new StorageError('io', 'Your phone would not let the app write this run to storage.', err, `writeBody "${id}"`);
     }
   },
 
@@ -49,7 +51,7 @@ export const backend: SessionBackend = {
       const f = fileFor(id);
       if (f.exists) f.delete();
     } catch (err) {
-      throw new StorageError('io', `Could not delete session "${id}".`, err);
+      throw new StorageError('io', 'That run could not be deleted — it is still on this phone.', err, `deleteBody "${id}"`);
     }
   },
 };
