@@ -53,15 +53,15 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 </style>
 <div class="wrap">
 <header>
-  <div><h1>Drift-<span>O</span>-Meter <span>Build Board</span></h1><div class="phase">Phase 1 — engine, simulator, app foundation</div></div>
-  <div class="updated">Updated 2026-09-20 13:36 UTC</div>
+  <div><h1>Drift-<span>O</span>-Meter <span>Build Board</span></h1><div class="phase">Phase 2 — engine tuning against the reworked simulator, app screens next</div></div>
+  <div class="updated">Updated 2026-09-20 18:19 UTC</div>
 </header>
-<p class="summary">Building an Expo/React Native iPhone app that judges real-world drifting from the gyroscope, accelerometer and GPS, with NFS / Tokyo Drift-grade presentation. Each piece is built by one agent and judged by a separate fresh-context critic against the running app, real sensor output and finished visualisations.</p>
+<p class="summary">An iPhone app (Expo SDK 57, TypeScript) that judges real drifting from the gyroscope, accelerometer and GPS and turns a run into a cinematic replay. Each piece is built by its own agent and judged by a separate fresh-context critic that re-runs the code and looks at the actual output, never the builder&#x27;s summary. The reference bar is Need for Speed and Tokyo Drift.</p>
 <div class="strip">
-  <div class="tile"><b>14</b><span>pieces</span></div>
-  <div class="tile pass"><b>0</b><span>passed critic</span></div>
-  <div class="tile crit"><b>1</b><span>in critique</span></div>
-  <div class="tile build"><b>8</b><span>building / fixing</span></div>
+  <div class="tile"><b>15</b><span>pieces</span></div>
+  <div class="tile pass"><b>2</b><span>passed critic</span></div>
+  <div class="tile crit"><b>3</b><span>in critique</span></div>
+  <div class="tile build"><b>5</b><span>building / fixing</span></div>
   <div class="tile"><b>5</b><span>queued</span></div>
 </div>
 <h2>Pieces</h2>
@@ -71,74 +71,82 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Sensor simulator</span><span class="note">Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip critique">In critique</span></td>
-      <td class="num">0</td>
-      <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td><span class="chip passed">Passed</span></td>
+      <td class="num">1</td>
+      <td class="num">5.5 → reworked</td>
+      <td class="verdict">Critic found the ground truth teleporting at both ends, a sign-flipped loose-mount gyro, bang-bang throttle and three-tone vibration. All rewritten; 14 physics tests now assert the kinematic identities themselves.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Mount calibration</span><span class="note">Phone frame → vehicle frame from gravity and forward acceleration</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip building">Fixing</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Rebuilt against the new sensor model: lever arm, leaning OS gravity, timestamp jitter. Test suite being written now.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Slip-angle estimator</span><span class="note">Kalman fusion of gyro heading, lateral-g kinematics and GPS course</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip building">Fixing</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Six targets marginally missed after the sensor rework; the lever arm and the receiver-filtered GPS course are being modelled explicitly.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Drift detection</span><span class="note">Entry / sustain / transition / exit state machine</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip building">Fixing</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Entry latency and transition counts regressed because the driver now feints before initiating and links corners; the feint is being handled as part of the initiation.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Scoring &amp; style</span><span class="note">Angle × duration × speed, multipliers, callouts, S–D grade, consistency</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip critique">In critique</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Complete: 33 tests green. Angle × duration × speed, multipliers, chains, callouts, S–D grade.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Track &amp; laps</span><span class="note">GPS → local map, lap gate, corners, lap-to-lap consistency</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip critique">In critique</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Complete: laps from a derived start gate, reference lap refined every lap, corners, cross-lap consistency.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Signal integrity</span><span class="note">Loose-mount detection, physics plausibility, GPS quality gating</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip building">Fixing</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Loose-mount cues being retuned against the new broadband vibration; rigid-vs-hand-held separation preserved.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Replay scene</span><span class="note">Session → timeline, glow trail, camera, ghost</span></td>
       <td><span class="layer">engine</span></td>
+      <td><span class="chip critique">In critique</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict">Complete: trail, smoke, markers, ghost, three camera modes, telemetry strip. Renders out for judging.</td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Engine pipeline</span><span class="note">One object the app talks to: sensors in, live frames and a scored session out</span></td>
+      <td><span class="layer">engine</span></td>
       <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Wiring every module into one object the app talks to, plus recorded sessions for the screens to load.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">App foundation</span><span class="note">Theme, fonts, navigation, Skia on web, sensor adapters, screenshot harness</span></td>
       <td><span class="layer">app</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip passed">Passed</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict"><span class="dim">no verdict yet</span></td>
+      <td class="verdict">Theme, Barlow Condensed type, navigation, Skia running on web, sensor adapters, and a Playwright harness that shoots the real app bundle.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Live drive HUD</span><span class="note">Angle, g-meter, speed, score combo, callouts, glow</span></td>
@@ -181,11 +189,16 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
       <td class="verdict"><span class="dim">no verdict yet</span></td>
     </tr></tbody></table></div>
 <h2>Latest critic verdicts</h2>
-<p class="dim">No critic rounds yet.</p>
+
+    <details class="verdict-card" open>
+      <summary><span class="chip failed">FAIL</span> <strong>Sensor simulator</strong> · round 1 · 14:00 <span class="score">5.5 / 10</span></summary>
+      <p>A fresh-context critic re-derived the simulator physics from its own output and failed it. Everything downstream is tuned against this ground truth, so a wrong simulator means a wrong app.</p>
+      <ol><li>Ground truth teleported 0 → 46 km/h in one 10 ms sample at the start and snapped 33° of heading at the end of every lap.</li><li>The hand-held sway fed the gyroscope with the wrong sign, so loose-mount data was physically impossible.</li><li>The advertised under-damped initiation flick was dead code; every drift began with a 1255°/s² kink no car can produce.</li><li>Linked corners were never actually linked, so the signature transition happened once per lap instead of throughout.</li><li>Vibration was three pure tones, which a downstream filter could trivially notch out instead of learning to be robust.</li><li>The track did not match its own description: the &quot;right-hand sweeper&quot; was a left, the chicane had no left-right.</li></ol>
+    </details>
 <h2>What the critics are looking at</h2>
 <div class="shots"><p class="dim">Screenshots appear here once the harness runs.</p></div>
 <h2>How things are verified</h2>
 <ul class="verif"><li>This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.</li><li>The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder&#x27;s summary.</li><li>What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off.</li></ul>
 <h2>Log</h2>
-<ol class="log"><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
+<ol class="log"><li><time>18:20</time><span>Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired.</span></li><li><time>17:40</time><span>Session limit paused four agents mid-tuning. Everything they had written was already on disk.</span></li><li><time>15:10</time><span>Simulator rewritten against the critic verdict: continuous start and roll-out, feint plus bounded yaw acceleration on initiation, linked corners, broadband vibration, phone lever arm, leaning OS gravity, per-seed GPS latency with a filtered course.</span></li><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
 </div>

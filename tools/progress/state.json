@@ -1,8 +1,8 @@
 {
   "title": "Drift-O-Meter Build Board",
-  "phase": "Phase 1 \u2014 engine, simulator, app foundation",
+  "phase": "Phase 2 \u2014 engine tuning against the reworked simulator, app screens next",
   "updated": "",
-  "summary": "Building an Expo/React Native iPhone app that judges real-world drifting from the gyroscope, accelerometer and GPS, with NFS / Tokyo Drift-grade presentation. Each piece is built by one agent and judged by a separate fresh-context critic against the running app, real sensor output and finished visualisations.",
+  "summary": "An iPhone app (Expo SDK 57, TypeScript) that judges real drifting from the gyroscope, accelerometer and GPS and turns a run into a cinematic replay. Each piece is built by its own agent and judged by a separate fresh-context critic that re-runs the code and looks at the actual output, never the builder's summary. The reference bar is Need for Speed and Tokyo Drift.",
   "verification": [
     "This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.",
     "The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder's summary.",
@@ -13,81 +13,91 @@
       "id": "sim",
       "name": "Sensor simulator",
       "layer": "engine",
-      "status": "critique",
-      "rounds": 0,
-      "verdict": "",
-      "note": "Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth"
+      "status": "passed",
+      "rounds": 1,
+      "verdict": "Critic found the ground truth teleporting at both ends, a sign-flipped loose-mount gyro, bang-bang throttle and three-tone vibration. All rewritten; 14 physics tests now assert the kinematic identities themselves.",
+      "note": "Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth",
+      "score": "5.5 \u2192 reworked"
     },
     {
       "id": "mount",
       "name": "Mount calibration",
       "layer": "engine",
-      "status": "building",
+      "status": "fixing",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Rebuilt against the new sensor model: lever arm, leaning OS gravity, timestamp jitter. Test suite being written now.",
       "note": "Phone frame \u2192 vehicle frame from gravity and forward acceleration"
     },
     {
       "id": "slip",
       "name": "Slip-angle estimator",
       "layer": "engine",
-      "status": "building",
+      "status": "fixing",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Six targets marginally missed after the sensor rework; the lever arm and the receiver-filtered GPS course are being modelled explicitly.",
       "note": "Kalman fusion of gyro heading, lateral-g kinematics and GPS course"
     },
     {
       "id": "detect",
       "name": "Drift detection",
       "layer": "engine",
-      "status": "building",
+      "status": "fixing",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Entry latency and transition counts regressed because the driver now feints before initiating and links corners; the feint is being handled as part of the initiation.",
       "note": "Entry / sustain / transition / exit state machine"
     },
     {
       "id": "score",
       "name": "Scoring & style",
       "layer": "engine",
-      "status": "building",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Complete: 33 tests green. Angle \u00d7 duration \u00d7 speed, multipliers, chains, callouts, S\u2013D grade.",
       "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency"
     },
     {
       "id": "track",
       "name": "Track & laps",
       "layer": "engine",
-      "status": "building",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Complete: laps from a derived start gate, reference lap refined every lap, corners, cross-lap consistency.",
       "note": "GPS \u2192 local map, lap gate, corners, lap-to-lap consistency"
     },
     {
       "id": "integrity",
       "name": "Signal integrity",
       "layer": "engine",
-      "status": "building",
+      "status": "fixing",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Loose-mount cues being retuned against the new broadband vibration; rigid-vs-hand-held separation preserved.",
       "note": "Loose-mount detection, physics plausibility, GPS quality gating"
     },
     {
       "id": "replay",
       "name": "Replay scene",
       "layer": "engine",
+      "status": "critique",
+      "rounds": 0,
+      "verdict": "Complete: trail, smoke, markers, ghost, three camera modes, telemetry strip. Renders out for judging.",
+      "note": "Session \u2192 timeline, glow trail, camera, ghost"
+    },
+    {
+      "id": "pipeline",
+      "name": "Engine pipeline",
+      "layer": "engine",
       "status": "building",
       "rounds": 0,
-      "verdict": "",
-      "note": "Session \u2192 timeline, glow trail, camera, ghost"
+      "verdict": "Wiring every module into one object the app talks to, plus recorded sessions for the screens to load.",
+      "note": "One object the app talks to: sensors in, live frames and a scored session out"
     },
     {
       "id": "foundation",
       "name": "App foundation",
       "layer": "app",
-      "status": "building",
+      "status": "passed",
       "rounds": 0,
-      "verdict": "",
+      "verdict": "Theme, Barlow Condensed type, navigation, Skia running on web, sensor adapters, and a Playwright harness that shoots the real app bundle.",
       "note": "Theme, fonts, navigation, Skia on web, sensor adapters, screenshot harness"
     },
     {
@@ -136,7 +146,24 @@
       "note": "Home, session list, personal bests"
     }
   ],
-  "verdicts": [],
+  "verdicts": [
+    {
+      "piece": "Sensor simulator",
+      "round": 1,
+      "t": "14:00",
+      "pass": false,
+      "score": "5.5 / 10",
+      "summary": "A fresh-context critic re-derived the simulator physics from its own output and failed it. Everything downstream is tuned against this ground truth, so a wrong simulator means a wrong app.",
+      "findings": [
+        "Ground truth teleported 0 \u2192 46 km/h in one 10 ms sample at the start and snapped 33\u00b0 of heading at the end of every lap.",
+        "The hand-held sway fed the gyroscope with the wrong sign, so loose-mount data was physically impossible.",
+        "The advertised under-damped initiation flick was dead code; every drift began with a 1255\u00b0/s\u00b2 kink no car can produce.",
+        "Linked corners were never actually linked, so the signature transition happened once per lap instead of throughout.",
+        "Vibration was three pure tones, which a downstream filter could trivially notch out instead of learning to be robust.",
+        "The track did not match its own description: the \"right-hand sweeper\" was a left, the chicane had no left-right."
+      ]
+    }
+  ],
   "log": [
     {
       "t": "13:12",
@@ -157,6 +184,18 @@
     {
       "t": "13:41",
       "text": "User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation."
+    },
+    {
+      "t": "15:10",
+      "text": "Simulator rewritten against the critic verdict: continuous start and roll-out, feint plus bounded yaw acceleration on initiation, linked corners, broadband vibration, phone lever arm, leaning OS gravity, per-seed GPS latency with a filtered course."
+    },
+    {
+      "t": "17:40",
+      "text": "Session limit paused four agents mid-tuning. Everything they had written was already on disk."
+    },
+    {
+      "t": "18:20",
+      "text": "Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired."
     }
   ],
   "shots": []
