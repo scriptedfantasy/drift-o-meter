@@ -14,14 +14,21 @@ describe('parseSimParams', () => {
   });
 
   it('parses track, rate, seed and laps with clamping', () => {
-    expect(parseSimParams('?sim=harbor&rate=1')).toEqual({ track: 'harbor', rate: 1, seed: 1, laps: 2 });
-    expect(parseSimParams('sim=touge&rate=4&seed=42&laps=3')).toEqual({ track: 'touge', rate: 4, seed: 42, laps: 3 });
+    expect(parseSimParams('?sim=harbor&rate=1')).toEqual(DEFAULT_SIM_PARAMS);
+    expect(parseSimParams('sim=touge&rate=4&seed=42&laps=3')).toEqual({ ...DEFAULT_SIM_PARAMS, track: 'touge', rate: 4, seed: 42, laps: 3 });
     expect(parseSimParams(new URLSearchParams('sim=1'))).toEqual(DEFAULT_SIM_PARAMS);
     expect(parseSimParams({ sim: 'true', rate: '100' })?.rate).toBe(32);
     expect(parseSimParams('?sim=harbor&rate=0')?.rate).toBe(0.1);
     expect(parseSimParams('?sim=harbor&laps=99')?.laps).toBe(10);
     expect(parseSimParams('?sim=harbor&seed=2.7')?.seed).toBe(3);
     expect(parseSimParams('?sim=harbor&rate=abc')?.rate).toBe(1);
+    // a shaking phone and GPS gaps are real recording options, not view-layer overrides
+    expect(parseSimParams('?sim=harbor&looseness=1')?.looseness).toBe(1);
+    expect(parseSimParams('?sim=harbor&looseness=9')?.looseness).toBe(1);
+    expect(parseSimParams('?sim=harbor&looseness=-4')?.looseness).toBe(0);
+    expect(parseSimParams('?sim=harbor&dropouts=yes')?.gpsDropouts).toBe(true);
+    expect(parseSimParams('?sim=harbor&dropouts=off')?.gpsDropouts).toBe(false);
+    expect(parseSimParams('?sim=harbor')?.gpsDropouts).toBe(false);
   });
 
   it('falls back to the default track for unknown names', () => {
@@ -30,14 +37,16 @@ describe('parseSimParams', () => {
   });
 
   it('round-trips through simParamsToQuery', () => {
-    const p = { track: 'touge' as const, rate: 2, seed: 9, laps: 4 };
+    const p = { track: 'touge' as const, rate: 2, seed: 9, laps: 4, looseness: 0.5, gpsDropouts: true };
     expect(parseSimParams(simParamsToQuery(p))).toEqual(p);
     expect(simParamsToQuery(DEFAULT_SIM_PARAMS)).toBe('sim=harbor');
   });
 
   it('describes params for the HUD', () => {
-    expect(describeSimParams({ track: 'harbor', rate: 1, seed: 1, laps: 2 })).toBe('SIM · HARBOR');
-    expect(describeSimParams({ track: 'touge', rate: 2, seed: 1, laps: 2 })).toBe('SIM · TOUGE · 2×');
+    expect(describeSimParams({ ...DEFAULT_SIM_PARAMS })).toBe('SIM · HARBOR');
+    expect(describeSimParams({ ...DEFAULT_SIM_PARAMS, track: 'touge', rate: 2 })).toBe('SIM · TOUGE · 2×');
+    expect(describeSimParams({ ...DEFAULT_SIM_PARAMS, looseness: 1 })).toBe('SIM · HARBOR · HAND-HELD');
+    expect(describeSimParams({ ...DEFAULT_SIM_PARAMS, gpsDropouts: true })).toBe('SIM · HARBOR · GPS GAPS');
   });
 });
 

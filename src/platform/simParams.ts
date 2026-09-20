@@ -11,11 +11,19 @@ export interface SimParams {
   rate: number;
   seed: number;
   laps: number;
+  /**
+   * How badly the phone moves in its cradle: 0 rigid, ~0.25 a rattling mount, 1 hand-held.
+   * Real rather than simulated in the view layer — a screen that only overrides the integrity
+   * banner proves the banner renders, not that the app notices a shaking phone.
+   */
+  looseness: number;
+  /** Drop GPS for a few seconds at a time, so the estimator's dropout path is actually exercised. */
+  gpsDropouts: boolean;
 }
 
 export const SIM_TRACKS: readonly TrackId[] = ['harbor', 'touge'];
 
-export const DEFAULT_SIM_PARAMS: SimParams = { track: 'harbor', rate: 1, seed: 1, laps: 2 };
+export const DEFAULT_SIM_PARAMS: SimParams = { track: 'harbor', rate: 1, seed: 1, laps: 2, looseness: 0, gpsDropouts: false };
 
 const OFF_WORDS = new Set(['0', 'false', 'off', 'none', 'no', 'device']);
 const ON_WORDS = new Set(['1', 'true', 'on', 'yes', 'sim']);
@@ -37,12 +45,20 @@ function num(v: string | null, fallback: number, lo: number, hi: number, integer
   return integer ? Math.round(c) : c;
 }
 
+function boolWord(v: string | null, fallback: boolean): boolean {
+  if (v === null || v.trim() === '') return fallback;
+  const w = v.trim().toLowerCase();
+  if (ON_WORDS.has(w)) return true;
+  if (OFF_WORDS.has(w)) return false;
+  return fallback;
+}
+
 export function isTrackId(v: string): v is TrackId {
   return (SIM_TRACKS as readonly string[]).includes(v);
 }
 
 /**
- * Parse `?sim=harbor&rate=2&seed=7&laps=3`. Returns `null` when the query does not ask for the
+ * Parse `?sim=harbor&rate=2&seed=7&laps=3&looseness=1&dropouts=1`. Returns `null` when the query does not ask for the
  * simulator (`sim` absent or one of 0/false/off/none/device). `sim=1|true|on` picks the default
  * track; an unknown track name also falls back to the default.
  */
@@ -59,6 +75,8 @@ export function parseSimParams(
     rate: num(p.get('rate'), defaults.rate, 0.1, 32),
     seed: num(p.get('seed'), defaults.seed, 0, 2 ** 31 - 1, true),
     laps: num(p.get('laps'), defaults.laps, 1, 10, true),
+    looseness: num(p.get('looseness'), defaults.looseness, 0, 1),
+    gpsDropouts: boolWord(p.get('dropouts'), defaults.gpsDropouts),
   };
 }
 
@@ -69,12 +87,16 @@ export function simParamsToQuery(p: SimParams): string {
   if (p.rate !== 1) q.set('rate', String(p.rate));
   if (p.seed !== DEFAULT_SIM_PARAMS.seed) q.set('seed', String(p.seed));
   if (p.laps !== DEFAULT_SIM_PARAMS.laps) q.set('laps', String(p.laps));
+  if (p.looseness !== DEFAULT_SIM_PARAMS.looseness) q.set('looseness', String(p.looseness));
+  if (p.gpsDropouts !== DEFAULT_SIM_PARAMS.gpsDropouts) q.set('dropouts', p.gpsDropouts ? '1' : '0');
   return q.toString();
 }
 
 export function describeSimParams(p: SimParams): string {
   const rate = p.rate === 1 ? '' : ` · ${Number(p.rate.toFixed(2))}×`;
-  return `SIM · ${p.track.toUpperCase()}${rate}`;
+  const loose = p.looseness >= 0.6 ? ' · HAND-HELD' : p.looseness > 0 ? ' · LOOSE' : '';
+  const drop = p.gpsDropouts ? ' · GPS GAPS' : '';
+  return `SIM · ${p.track.toUpperCase()}${rate}${loose}${drop}`;
 }
 
 export type SourcePlan = { kind: 'device' } | { kind: 'simulated'; params: SimParams; reason: 'query' | 'settings' | 'no-sensors' };
@@ -85,7 +107,14 @@ export type SourcePlan = { kind: 'device' } | { kind: 'simulated'; params: SimPa
  * settings flag unless a query explicitly asks for the simulator.
  */
 export function planSource(platform: string, search: string | null | undefined, settings: AppSettings): SourcePlan {
-  const fromSettings: SimParams = { track: settings.simTrack, rate: settings.simRate, seed: settings.simSeed, laps: settings.simLaps };
+  const fromSettings: SimParams = {
+    track: settings.simTrack,
+    rate: settings.simRate,
+    seed: settings.simSeed,
+    laps: settings.simLaps,
+    looseness: DEFAULT_SIM_PARAMS.looseness,
+    gpsDropouts: DEFAULT_SIM_PARAMS.gpsDropouts,
+  };
   const fromQuery = parseSimParams(search, fromSettings);
   if (fromQuery) return { kind: 'simulated', params: fromQuery, reason: 'query' };
   if (platform === 'web') return { kind: 'simulated', params: fromSettings, reason: 'no-sensors' };

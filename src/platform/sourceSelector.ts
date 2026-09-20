@@ -41,10 +41,15 @@ const runCache = new Map<string, SimulatedRun>();
 
 /** Generate (or reuse) the simulated run for these params. Synchronous and CPU-bound (~tens of ms). */
 export function getSimulatedRun(params: SimParams): SimulatedRun {
-  const key = `${params.track}|${params.seed}|${params.laps}`;
+  const key = `${params.track}|${params.seed}|${params.laps}|${params.looseness}|${params.gpsDropouts}`;
   const cached = runCache.get(key);
   if (cached) return cached;
-  const run = simulateRun(params.track, { seed: params.seed, laps: params.laps });
+  const run = simulateRun(params.track, {
+    seed: params.seed,
+    laps: params.laps,
+    looseness: params.looseness,
+    gpsDropouts: params.gpsDropouts,
+  });
   if (runCache.size >= 3) {
     const oldest = runCache.keys().next();
     if (!oldest.done) runCache.delete(oldest.value);

@@ -52,6 +52,8 @@ export class TransitionCounter {
   transitions = 0;
   /** A UI may show phase 'transition' until this time. */
   phaseUntil = -Infinity;
+  /** When the newest committed transition happened (-Infinity before the first). */
+  lastTransitionT = -Infinity;
   private sinceT: number;
   private lastT: number;
   private peakYaw: number;
@@ -70,6 +72,11 @@ export class TransitionCounter {
   }
 
   /** Re-seed after an initiation (the samples before it are never a direction change). */
+  /** When the side the car is on now began. */
+  get sideSinceT(): number {
+    return this.sinceT;
+  }
+
   restart(t: number, sinceT: number, side: 1 | -1, yaw: number): void {
     this.side = side;
     this.sinceT = sinceT;
@@ -113,6 +120,7 @@ export class TransitionCounter {
     const p = this.pending;
     if (p && this.lastT - p.at >= r.minDwellS) {
       this.transitions++;
+      this.lastTransitionT = p.at;
       this.pending = null;
       return true;
     }
@@ -177,6 +185,17 @@ export interface DetectOptions {
   feintLookbackS: number;
   /** Events shorter than this are twitches and dropped (spins are always kept). */
   minDurationS: number;
+  /**
+   * A linked drift may run `maxDurationS + chainBonusS × transitions` before it is cut in two.
+   * A linked sequence is ONE drift because the transitions hold it together, so the allowance
+   * scales with how many there are: a two-transition manji may legitimately run 26 s and a
+   * three-transition chain 34 s, while a 35 s slide on a single flick is a section of road, not
+   * a drift, and gets cut. The cut is taken mid-lobe — never within `minLobeCutS` of a
+   * transition — so it can never sever the flick that is the best part of the sequence.
+   */
+  maxDurationS: number;
+  chainBonusS: number;
+  minLobeCutS: number;
   /** |β| above which the car is spinning. */
   spinAngle: number;
   /** Speed collapsing below `exitSpeed` while |β| is above this is a spin too. */
@@ -219,6 +238,9 @@ export const DEFAULT_DETECT_OPTIONS: DetectOptions = {
   feintReverseGapS: 0.35,
   feintLookbackS: 1.0,
   minDurationS: 0.7,
+  maxDurationS: 10,
+  chainBonusS: 8,
+  minLobeCutS: 1.0,
   spinAngle: degToRad(SPIN_ANGLE_DEG),
   spinMinAngle: degToRad(30),
   invalidHoldS: 1.0,

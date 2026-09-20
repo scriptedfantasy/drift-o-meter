@@ -520,6 +520,26 @@ export class DriftDetector {
       case 'drifting':
       case 'exit': {
         const d = this.drift!;
+        // A linked drift is one drift because its transitions hold it together, so its
+        // allowance grows with them: maxDurationS + chainBonusS per transition. Past that it
+        // is a section of road, not a drift, and it is cut — mid-lobe, at least minLobeCutS
+        // clear of the last transition, so the cut can never sever the flick that links it.
+        const cap = o.maxDurationS + o.chainBonusS * d.transitions;
+        if (
+          !spinCond &&
+          t - d.startT > cap &&
+          b >= o.entryAngle &&
+          t - d.tc.lastTransitionT >= o.minLobeCutS &&
+          t - d.tc.sideSinceT >= o.minLobeCutS
+        ) {
+          d.add(r);
+          this.trackSide(d, r);
+          d.snap = null;
+          live = this.liveOf(d, t, b, speed);
+          completed = this.endDrift(t, idx, true) ?? completed;
+          phase = 'exit';
+          break;
+        }
         if (spinCond) {
           d.add(r);
           d.spin = true;
