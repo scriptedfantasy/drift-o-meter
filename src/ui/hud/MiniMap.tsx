@@ -72,7 +72,12 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
     { translateY: fit.oy - signals.carY.value * fit.scale },
     { rotate: -signals.carHeading.value },
   ]);
-  const carColor = useDerivedValue(() => (signals.active.value > 0.5 ? colors.ember : colors.cyan));
+  const carColor = useDerivedValue(() => (signals.trust.value <= 0 ? colors.muted : signals.active.value > 0.5 ? colors.ember : colors.cyan));
+  // "You were sideways here" is a reward statement. While the engine disowns the reading, the
+  // trail is drawn in the same grey as the dial rather than in ember.
+  const hotColor = useDerivedValue(() => (signals.trust.value <= 0 ? rgba(colors.muted, 0.75) : colors.ember));
+  const hotGlow = useDerivedValue(() => (signals.trust.value <= 0 ? rgba(colors.muted, 0.25) : rgba(colors.ember, 0.55)));
+  const coldColor = useDerivedValue(() => (signals.trust.value <= 0 ? rgba(colors.muted, 0.3) : rgba(colors.cyan, 0.42)));
   const carOpacity = useDerivedValue(() => (signals.valid.value > 0.5 ? 1 : 0.25));
 
   const car = useMemo(() => {
@@ -91,11 +96,11 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
   return (
     <Canvas style={{ width, height }} testID={testID}>
       <Group transform={worldTransform}>
-        <Path path={paths.cold} color={rgba(colors.cyan, 0.42)} style="stroke" strokeWidth={lineW} strokeCap="round" strokeJoin="round" />
-        <Path path={paths.hot} color={rgba(colors.ember, 0.55)} style="stroke" strokeWidth={lineW * 3.4} strokeCap="round" strokeJoin="round">
+        <Path path={paths.cold} color={coldColor} style="stroke" strokeWidth={lineW} strokeCap="round" strokeJoin="round" />
+        <Path path={paths.hot} color={hotGlow} style="stroke" strokeWidth={lineW * 3.4} strokeCap="round" strokeJoin="round">
           <BlurMask blur={lineW * 2.4} style="normal" />
         </Path>
-        <Path path={paths.hot} color={colors.ember} style="stroke" strokeWidth={lineW * 1.7} strokeCap="round" strokeJoin="round" />
+        <Path path={paths.hot} color={hotColor} style="stroke" strokeWidth={lineW * 1.7} strokeCap="round" strokeJoin="round" />
         {count > 1 ? <Circle cx={trail.x[0]} cy={trail.y[0]} r={lineW * 2} color={rgba(colors.text, 0.55)} /> : null}
       </Group>
 

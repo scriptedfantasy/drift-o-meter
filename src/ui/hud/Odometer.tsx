@@ -15,9 +15,9 @@
  *    `HudSignals.totalDisplay`.
  */
 import { LinearGradient } from 'expo-linear-gradient';
-import { Fragment, memo, useMemo } from 'react';
+import { Fragment, memo, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies } from '../theme';
@@ -25,7 +25,7 @@ import { alpha, colors, fontFamilies } from '../theme';
 export interface OdometerProps {
   /** Live value (points). */
   value: SharedValue<number>;
-  /** Number of digit columns; the value is shown zero-padded to this width. */
+  /** Most columns the field will ever hold (it uses only as many as the number needs). */
   columns?: number;
   size: number;
   color?: string;
@@ -43,14 +43,29 @@ function OdometerImpl({ value, columns = 6, size, color = colors.ember, backgrou
   const rowH = Math.round(size * 0.94);
   const colW = Math.round(size * 0.56);
 
-  const places = useMemo(() => Array.from({ length: columns }, (_, i) => columns - 1 - i), [columns]);
+  // Only as many columns as the number needs, so the digits start next to the SCORE label
+  // instead of floating half a screen away behind hidden leading zeros. The count follows the
+  // value from the UI thread, so it grows on the frame the score crosses a decade.
+  const [used, setUsed] = useState(1);
+  useAnimatedReaction(
+    () => {
+      const v = Math.max(1, Math.abs(value.value));
+      return Math.min(columns, Math.floor(Math.log10(v)) + 1);
+    },
+    (next, prev) => {
+      if (next !== prev) runOnJS(setUsed)(next);
+    },
+    [columns],
+  );
+  const shown = Math.max(1, Math.min(columns, used));
+  const places = useMemo(() => Array.from({ length: shown }, (_, i) => shown - 1 - i), [shown]);
 
   return (
     <View style={[styles.row, { height: rowH }]} testID={testID}>
       {places.map((place) => (
         <Fragment key={place}>
           <Column place={place} display={display} rowH={rowH} colW={colW} size={size} color={color} background={background} />
-          {place === 3 ? <Separator display={display} rowH={rowH} size={size} color={color} /> : null}
+          {place === 3 && shown > 3 ? <Separator display={display} rowH={rowH} size={size} color={color} /> : null}
         </Fragment>
       ))}
     </View>

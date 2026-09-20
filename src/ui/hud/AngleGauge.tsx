@@ -158,6 +158,9 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const needleTransform = useDerivedValue(() => [{ rotate: (clamped.value / MAX_BETA) * HALF_SWEEP * DEG }]);
   const peakTransform = useDerivedValue(() => [{ rotate: (Math.max(-MAX_BETA, Math.min(MAX_BETA, signals.peakDeg.value)) / MAX_BETA) * HALF_SWEEP * DEG }]);
   const peakOpacity = useDerivedValue(() => (Math.abs(signals.peakDeg.value) > 8 ? 0.9 : 0));
+  // The ghost tick is a reward marker; on a reading the engine will not stand behind it turns
+  // grey with the rest of the dial instead of being the one gold thing on screen.
+  const peakColor = useDerivedValue(() => (signals.trust.value <= 0 ? colors.muted : colors.gold));
   // Ember through 34°, shifting to gold from 40° and fully gold by 55° — the design's promise,
   // on the range a real slide actually uses. An untrusted reading is drawn in muted grey
   // instead: the engine is not scoring it, so the dial does not celebrate it.
@@ -199,7 +202,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
 
       {/* ghost tick: the peak of the drift in progress */}
       <Group origin={vec(cx, cy)} transform={peakTransform} opacity={peakOpacity}>
-        <Path path={ghost} color={colors.gold}>
+        <Path path={ghost} color={peakColor}>
           <BlurMask blur={4} style="solid" />
         </Path>
       </Group>
