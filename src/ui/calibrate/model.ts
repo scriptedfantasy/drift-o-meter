@@ -60,6 +60,38 @@ export interface CalibrationFault {
   retryable: boolean;
 }
 
+/**
+ * The four ways this screen cannot do its job. They are the whole reason it exists now, so they
+ * are named rather than reachable only by breaking a phone — `?fault=<kind>` shows one (see
+ * `params.ts`), the same way the drive display's `?integrity=` shows a warning state.
+ */
+export const FAULTS: Record<CalibrationFaultKind, CalibrationFault> = {
+  permission: {
+    kind: 'permission',
+    title: 'Motion access is off',
+    body: 'Calibration reads the accelerometer and gyroscope. Turn on Motion & Fitness (and Location, for the direction of travel) in Settings → Drift-O-Meter, then try again.',
+    retryable: true,
+  },
+  unsupported: {
+    kind: 'unsupported',
+    title: 'No motion sensors here',
+    body: 'This device has no usable gyroscope, so there is no mount to calibrate. Switch to the simulated source in Settings to see what the judge does with a run.',
+    retryable: false,
+  },
+  services: {
+    kind: 'services',
+    title: 'Location is off',
+    body: 'Gravity alone fixes which way is up. Which way the car POINTS needs the direction of travel, and that needs Location Services.',
+    retryable: true,
+  },
+  failed: {
+    kind: 'failed',
+    title: 'Sensors would not start',
+    body: 'The motion stream did not open. Close anything else reading the sensors, then try again.',
+    retryable: true,
+  },
+};
+
 export interface CalibrationReading {
   status: 'starting' | 'listening' | 'held' | 'ended' | 'error';
   fault: CalibrationFault | null;
@@ -82,6 +114,8 @@ export interface CalibrationReading {
   /** The engine's own verdict on whether this calibration may be believed. */
   calibrationOk: boolean;
   mount: MountState;
+  /** The monitor's own `handheld` flag: a loose mount that is swinging like a hand, not a cradle. */
+  handheld: boolean;
   looseScore: number;
   /** IntegrityMonitor's own sentence. Never rewritten here. */
   message: string;
@@ -114,6 +148,7 @@ export const IDLE_READING: CalibrationReading = {
   forwardResolved: false,
   calibrationOk: false,
   mount: 'rigid',
+  handheld: false,
   looseScore: 0,
   message: '',
   gps: 'none',
@@ -158,11 +193,18 @@ export type CalibrationPhase = 'failed' | 'blocked' | 'ready' | 'seeking' | 'lev
 
 export function phaseOf(r: CalibrationReading): CalibrationPhase {
   if (r.fault) return 'failed';
+  // NOTHING is claimed before there is evidence. `IntegrityMonitor` starts with
+  // `calibrationOk` true on purpose — a monitor that knows nothing must not veto a run — but
+  // that is the engine declining to object, not the engine asserting a good mount. Reading it
+  // as a verdict put CALIBRATED / "Ready to measure" on screen with zero samples, dashes for
+  // confidence and a red "No reading" light underneath. This check goes FIRST, and READY
+  // additionally requires the forward axis, because a calibration that cannot say which way
+  // the car points has not calibrated anything.
+  if (!r.has || r.samples === 0) return 'starting';
   // A phone that is moving against the car invalidates everything downstream of it, resolved
   // forward axis or not — the monitor will not believe a slide while this is true.
   if (mountVerdict(r) === 'loose') return 'blocked';
-  if (r.calibrationOk) return 'ready';
-  if (!r.has || r.samples === 0) return 'starting';
+  if (r.calibrationOk && r.forwardResolved) return 'ready';
   return isSettled(r) ? 'seeking' : 'levelling';
 }
 
@@ -211,9 +253,10 @@ export function headlineOf(r: CalibrationReading): Headline {
     case 'failed':
       return { kicker: 'Cannot calibrate', title: r.fault?.title ?? 'Sensors unavailable', because: r.fault?.body ?? '', color: 'red' };
     case 'blocked':
-      // The monitor's own sentence carries this one, in the banner directly underneath — saying
-      // it twice in two voices is how a screen stops being believed.
-      return { kicker: 'Mount', title: 'Hold on', because: '', color: 'red' };
+      // The biggest words on the loudest frame have to be the condition, not a noise. The name
+      // is the HUD's own heading for the same state, and the sentence under it is the
+      // monitor's, verbatim and once — there is no second banner repeating it.
+      return { kicker: 'Mount', title: r.handheld ? 'Hand-held' : 'Loose mount', because: r.message, color: 'red' };
     case 'ready':
       return {
         kicker: 'Calibrated',

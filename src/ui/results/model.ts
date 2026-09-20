@@ -7,7 +7,8 @@
  */
 import { driftSamples, scoreSession, type ScoredDrift, type SessionBreakdown, type SessionContext } from '../../engine/score';
 import { lapConsistency, type LapConsistency } from '../../engine/track';
-import type { DriftEvent, Grade, Session, SessionIntegrity, StyleCalloutKind, TrackCorner } from '../../engine/types';
+import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
+import type { DriftEvent, Grade, Session, SessionIntegrity, SessionScore, StyleCalloutKind, TrackCorner } from '../../engine/types';
 import { radToDeg } from '../../engine/types';
 import { colors, gradeColors } from '../theme';
 import { cornerAt, cornerLabel } from './corners';
@@ -89,7 +90,27 @@ export interface GpsQuality {
 /** Everything except the prose; `verdict.ts` turns this into sentences. */
 export interface ResultsBase {
   session: Session;
+  /**
+   * The re-score. It runs from the stored drifts and states WITHOUT the pipeline's per-sample
+   * plausibility mask, so it is the right source for everything explanatory — per-drift stats,
+   * corner citations, cross-lap ingredients, chains — and the WRONG source for a headline.
+   */
   breakdown: SessionBreakdown;
+  /**
+   * The score that may be published: the pipeline's own, because it scored the run with more
+   * information than anything downstream will ever have. Total, grade, the five components,
+   * `trusted`, the best drift and the longest chain all come from here, so the garage row, this
+   * screen and the replay cannot disagree about what the driver got.
+   */
+  score: SessionScore;
+  /** Whether the headline came from the session or (for a session with no stored score) the re-score. */
+  headlineSource: 'session' | 'rescore';
+  /**
+   * Largest gap between a published component and the same component re-derived here. Non-zero
+   * means the mask mattered; it is diagnostic, never displayed, and never resolved in favour of
+   * the re-score.
+   */
+  componentDrift: number;
   /**
    * What the integrity monitor made of the run — the authoritative copy, taken from the session
    * when the pipeline recorded one and from the re-score otherwise.
@@ -331,11 +352,14 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
 }
 
 /** Build the rows for every drift, in the order they happened. */
-function driftRows(session: Session, breakdown: SessionBreakdown): DriftRow[] {
+function driftRows(session: Session, breakdown: SessionBreakdown, published: SessionScore): DriftRow[] {
   const sorted = [...session.drifts].sort((a, b) => a.startT - b.startT || a.id - b.id);
   return sorted.map((event, i) => {
     const scored = breakdown.perDrift[event.id];
     const stats = scored?.stats;
+    // points and multiplier as PUBLISHED where the run recorded them, so the column adds up to
+    // the total in the hero; the shape of the drift still comes from the re-score's stats
+    const pub = published.perDrift?.[event.id];
     const { trace, peakAt } = traceOf(event, session);
     const mid = session.states[Math.min(session.states.length - 1, Math.max(0, Math.round((event.sampleStart + event.sampleEnd) / 2)))];
     const corner = mid ? cornerAt(session.track, mid.x, mid.y) : null;
@@ -354,8 +378,8 @@ function driftRows(session: Session, breakdown: SessionBreakdown): DriftRow[] {
       entryKmh: stats ? stats.entrySpeedKmh : event.entrySpeed * 3.6,
       meanKmh: stats ? stats.meanSpeedKmh : event.meanSpeed * 3.6,
       transitions: stats ? stats.transitions : event.transitions,
-      points: scored ? Math.round(scored.total) : 0,
-      multiplier: scored ? scored.multiplier : 1,
+      points: Math.round(pub?.total ?? scored?.total ?? 0),
+      multiplier: pub?.multiplier ?? scored?.multiplier ?? 1,
       spun: stats ? stats.spun : false,
       lost: scored ? scored.lost : false,
       cleanExit: stats ? stats.cleanExit : true,
@@ -413,8 +437,27 @@ function sessionContext(session: Session): SessionContext | undefined {
  */
 export function buildResultsModel(session: Session): ResultsModel {
   const breakdown = scoreSession(session.drifts, session.states, session.track, undefined, sessionContext(session));
-  const rows = driftRows(session, breakdown);
-  const best = breakdown.bestDriftId !== null ? (rows.find((r) => r.id === breakdown.bestDriftId) ?? null) : null;
+  // The pipeline scored the run with a per-sample plausibility mask that a stored session does
+  // not carry. Re-scoring reproduces it only to about a percent — enough to cross a grade
+  // boundary — so the published numbers are the pipeline's and the re-score is supporting detail.
+  const published: SessionScore = session.score ?? breakdown;
+  const headlineSource: 'session' | 'rescore' = session.score ? 'session' : 'rescore';
+  const componentDrift = Math.max(
+    Math.abs(published.angle - breakdown.angle),
+    Math.abs(published.consistency - breakdown.consistency),
+    Math.abs(published.quality - breakdown.quality),
+    Math.abs(published.speed - breakdown.speed),
+    Math.abs(published.style - breakdown.style),
+  );
+  // the same weighted sum the scorer used, over the PUBLISHED components, so the rating on screen
+  // cannot contradict the grade beside it
+  const W = DEFAULT_SCORE_OPTIONS.weights;
+  const rating =
+    Math.round(
+      (W.angle * published.angle + W.consistency * published.consistency + W.quality * published.quality + W.speed * published.speed + W.style * published.style) * 10,
+    ) / 10;
+  const rows = driftRows(session, breakdown, published);
+  const best = published.bestDriftId !== null ? (rows.find((r) => r.id === published.bestDriftId) ?? null) : (breakdown.bestDriftId !== null ? (rows.find((r) => r.id === breakdown.bestDriftId) ?? null) : null);
   const { callouts, points: calloutPoints } = tallyCallouts(rows);
   const lostPoints = rows.filter((r) => r.lost).reduce((a, r) => a + r.points, 0);
   const laps = session.track && session.track.laps.length >= 2 ? lapConsistency(session.track, session.drifts, session.states) : null;
@@ -426,19 +469,23 @@ export function buildResultsModel(session: Session): ResultsModel {
     if (v > sessionPeak) sessionPeak = v;
   }
 
-  // The run's own verdict wins where it exists; a re-score may only take trust away, never add it.
+  // The run's own verdict is the verdict. A re-score has less information than the run did, so it
+  // may not add trust — and, by the same argument, it may not remove it either.
   const judged: SessionIntegrity = session.integrity ?? breakdown.integrity;
-  const trusted = judged.scoreTrusted && breakdown.integrity.scoreTrusted && (session.score?.trusted ?? true);
+  const trusted = session.score ? published.trusted && judged.scoreTrusted : breakdown.integrity.scoreTrusted;
 
   const base: ResultsBase = {
     session,
     breakdown,
+    score: published,
+    headlineSource,
+    componentDrift,
     judged,
     trusted,
-    grade: breakdown.grade,
-    gradeColor: gradeColors[breakdown.grade] ?? colors.muted,
-    rating: breakdown.combined,
-    total: breakdown.total,
+    grade: published.grade,
+    gradeColor: gradeColors[published.grade] ?? colors.muted,
+    rating,
+    total: published.total,
     drifts: rows,
     best,
     callouts,
@@ -459,7 +506,7 @@ export function buildResultsModel(session: Session): ResultsModel {
       transitions: breakdown.transitions,
       spins: breakdown.spins,
       topDriftKmh: rows.reduce((m, r) => Math.max(m, r.entryKmh, r.meanKmh), 0),
-      longestChainPoints: breakdown.longestChainPoints,
+      longestChainPoints: published.longestChainPoints,
       cleanLaps: breakdown.cleanLaps,
     },
     simulated: session.meta?.source === 'simulation' || typeof session.meta?.fixture === 'string',

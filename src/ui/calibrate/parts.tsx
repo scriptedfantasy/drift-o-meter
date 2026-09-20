@@ -7,21 +7,31 @@ import type { Caution, Light, Step } from './model';
 
 const LIGHT_COLORS = { on: colors.green, working: colors.cyan, bad: colors.red } as const;
 
-/** Three states the driver can check at a glance: vertical, forward, mount. */
-export function Lights({ lights, style }: { lights: readonly Light[]; style?: StyleProp<ViewStyle> }) {
+/**
+ * Three states the driver can check at a glance: vertical, forward, mount. `compact` puts each
+ * on one line, for landscape, where 393 px of height has to hold the instructions as well.
+ */
+export function Lights({ lights, compact = false, style }: { lights: readonly Light[]; compact?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.lights, style]} testID="calibrate-lights">
       {lights.map((l) => {
         const color = LIGHT_COLORS[l.state];
         return (
-          <View key={l.key} style={[styles.light, { borderColor: alpha(color, l.state === 'on' ? 0.75 : 0.4) }]} testID={`light-${l.key}`}>
+          <View
+            key={l.key}
+            style={[styles.light, compact && styles.lightCompact, { borderColor: alpha(color, l.state === 'on' ? 0.75 : 0.4) }]}
+            testID={`light-${l.key}`}>
             <View style={styles.lightHead}>
               <View style={[styles.dot, { backgroundColor: color, opacity: l.state === 'working' ? 0.55 : 1 }]} />
               <Micro color={color} numberOfLines={1}>
                 {l.label}
               </Micro>
             </View>
-            <AppText variant="bodyStrong" color={l.state === 'on' ? colors.text : colors.muted} numberOfLines={2} style={styles.lightDetail}>
+            <AppText
+              variant="bodyStrong"
+              color={l.state === 'on' ? colors.text : colors.muted}
+              numberOfLines={compact ? 1 : 2}
+              style={[styles.lightDetail, compact && styles.lightDetailCompact]}>
               {l.detail}
             </AppText>
           </View>
@@ -32,7 +42,7 @@ export function Lights({ lights, style }: { lights: readonly Light[]; style?: St
 }
 
 /** The two things a driver actually has to do, with the reason in one clause. */
-export function Steps({ steps, style }: { steps: readonly Step[]; style?: StyleProp<ViewStyle> }) {
+export function Steps({ steps, compact = false, style }: { steps: readonly Step[]; compact?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.steps, style]} testID="calibrate-steps">
       {steps.map((s, i) => {
@@ -40,7 +50,7 @@ export function Steps({ steps, style }: { steps: readonly Step[]; style?: StyleP
         const active = s.state === 'active';
         const color = done ? colors.green : active ? colors.ember : colors.muted;
         return (
-          <View key={s.n} style={[styles.step, i > 0 && styles.stepBorder]} testID={`step-${s.n}`}>
+          <View key={s.n} style={[styles.step, compact && styles.stepCompact, i > 0 && styles.stepBorder]} testID={`step-${s.n}`}>
             <View style={styles.stepMark}>
               <AppText variant="heading" color={color} style={styles.stepNo}>
                 {done ? '✓' : s.n}
@@ -114,12 +124,15 @@ export function EngineStrip({ rows, testID }: { rows: Array<[string, string]>; t
 const styles = StyleSheet.create({
   lights: { flexDirection: 'row', gap: space[2] },
   light: { flex: 1, borderWidth: 1, borderRadius: radii.md, backgroundColor: colors.bg1, paddingHorizontal: space[3], paddingVertical: space[2], gap: 2, minWidth: 0 },
+  lightCompact: { paddingVertical: space[1] },
   lightHead: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   dot: { width: 7, height: 7, borderRadius: 4 },
   lightDetail: { fontSize: 14, lineHeight: 17 },
+  lightDetailCompact: { fontSize: 13, lineHeight: 16 },
 
   steps: { backgroundColor: colors.bg1, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.line, paddingHorizontal: space[4] },
   step: { flexDirection: 'row', gap: space[3], paddingVertical: space[4] },
+  stepCompact: { paddingVertical: space[3] },
   stepBorder: { borderTopWidth: 1, borderTopColor: colors.line },
   stepMark: { width: 32, alignItems: 'center' },
   stepNo: { fontStyle: 'italic', fontSize: 24, lineHeight: 26 },

@@ -67,6 +67,8 @@ export interface SceneUi {
   highlight: { index: number; total: number; label: string; alpha: number } | null;
   /** How far the warning plate has been expanded (0 = plate only, 1 = the full list). */
   warningsOpen: boolean;
+  /** The transport is on screen: in portrait it floats over the world and gets a scrim. */
+  controlsVisible: boolean;
   reduceMotion: boolean;
 }
 
@@ -98,6 +100,15 @@ interface Frame extends SceneInput {
   overview: boolean;
   /** Suppress every points/grade claim (untrusted recording). */
   noScore: boolean;
+}
+
+/**
+ * The heat ramp, unless the engine has said it does not believe this run's sliding: an untrusted
+ * recording plays, but its slip angles are not a measurement anyone should dress up. The points
+ * and the grade are already withheld; the ember goes with them.
+ */
+function heat(f: Frame, beta: number): string {
+  return f.noScore ? MUTED : heatColor(beta);
 }
 
 const BG = colors.bg0;
@@ -132,6 +143,23 @@ function strokePaint(f: Frame, hex: string, width: number, alpha = 1, cap: Strok
   p.setPathEffect(null);
   p.setStrokeCap(cap);
   p.setStrokeJoin(StrokeJoin.Round);
+  p.setStrokeWidth(Math.max(1e-4, width));
+  p.setColor(f.res.color(hex));
+  p.setAlphaf(clamp(alpha, 0, 1));
+  return p;
+}
+
+/**
+ * A stroke that actually blooms. The SVG reference had to fake its glow with layered translucent
+ * strokes because SVG cannot blur; this is a GPU, so the trail's halo is a real Gaussian one.
+ * `sigma` is in metres — the mask filter respects the CTM, so the bloom scales with the zoom.
+ */
+function glowStroke(f: Frame, hex: string, width: number, alpha: number, sigma: number): SkPaint {
+  const p = f.res.glowStroke;
+  f.res.setStrokeGlowBlur(Math.max(0.02, sigma));
+  p.setStyle(PaintStyle.Stroke);
+  p.setShader(null);
+  p.setPathEffect(null);
   p.setStrokeWidth(Math.max(1e-4, width));
   p.setColor(f.res.color(hex));
   p.setAlphaf(clamp(alpha, 0, 1));
@@ -235,15 +263,23 @@ function drawStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string, x: 
 }
 
 /**
- * A big glowing number: two translucent thick-stroked copies under the fill. This is the SVG
- * reference's construction rather than a real Gaussian blur, and deliberately so — a blurred
- * mask filter costs more than the whole rest of the frame in a software rasteriser, and this
- * reads the same.
+ * A big glowing number: a REAL blurred copy under a thin bloom stroke and the fill. The SVG
+ * reference stacked three translucent strokes because SVG has no blur; here the blur is one
+ * draw, and reduce-motion falls back to the stroke-only construction.
  */
 function drawGlowStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string, x: number, y: number, fillCol: string, glowCol: string, glowOpacity: number, anchor: Anchor = 'start', size = 40): number {
   if (!font || !s) return 0;
   const w = measure(f, font, s);
   const left = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
+  if (glowOpacity > 0.02) {
+    f.res.setGlowBlur(size * 0.2);
+    const g = f.res.glow;
+    g.setStyle(PaintStyle.Fill);
+    g.setShader(null);
+    g.setColor(f.res.color(glowCol));
+    g.setAlphaf(clamp(glowOpacity * 0.9, 0, 1));
+    canvas.drawText(s, left, y, g, font);
+  }
   const p = f.res.text;
   const stroke = (width: number, alpha: number) => {
     p.setStyle(PaintStyle.Stroke);
@@ -254,7 +290,6 @@ function drawGlowStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string,
     p.setAlphaf(clamp(alpha, 0, 1));
     canvas.drawText(s, left, y, p, font);
   };
-  stroke(size * 0.2, glowOpacity * 0.45);
   stroke(size * 0.08, glowOpacity);
   p.setStyle(PaintStyle.Fill);
   p.setColor(f.res.color(fillCol));
@@ -404,8 +439,10 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
     if (!path) continue;
     const w = severityWeight(seg.severity);
     const focus = f.ui.focusDriftId !== null && f.ui.focusDriftId === seg.driftId;
-    canvas.drawPath(path, strokePaint(f, sg.color, haloW * (0.7 + 0.6 * w), (0.07 + 0.11 * w) * boost));
-    canvas.drawPath(path, strokePaint(f, sg.color, glowW * (0.8 + 0.5 * w), (0.18 + 0.22 * w) * boost));
+    // the halo's heat is the peak SO FAR, never the peak this slide will reach
+    const col = heatColor(sg.peakTo[Math.max(0, Math.min(seg.endIndex, cur) - seg.startIndex)]);
+    canvas.drawPath(path, glowStroke(f, col, haloW * (0.7 + 0.6 * w), (0.07 + 0.11 * w) * boost, haloW * 0.45));
+    canvas.drawPath(path, strokePaint(f, col, glowW * (0.8 + 0.5 * w), (0.18 + 0.22 * w) * boost));
     if (focus) canvas.drawPath(path, strokePaint(f, WHITE, haloW * 1.1, 0.16));
     if (!done) path.dispose();
   }
@@ -597,7 +634,7 @@ function drawGhost(canvas: SkCanvas, f: Frame): void {
 function drawCar(canvas: SkCanvas, f: Frame): void {
   const p = f.pose;
   const cs = carScale(f);
-  const col = heatColor(p.beta);
+  const col = heat(f, p.beta);
   const slip = Math.abs(p.beta);
 
   canvas.save();
@@ -784,7 +821,7 @@ function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
       const sev = severityWeight(m.severity ?? 'none');
       if (f.overview && sev < 0.45) continue;
       label = m.label;
-      fill = heatColor(m.peakAngle ?? 0);
+      fill = heat(f, m.peakAngle ?? 0);
       if (sev >= 0.75) {
         font = f.fonts.peak;
         size = 16;
@@ -884,7 +921,10 @@ function drawMinimap(canvas: SkCanvas, f: Frame): void {
     const end = Math.min(seg.endIndex, f.cur);
     const sp: Array<{ x: number; y: number }> = [];
     for (let i = seg.startIndex; i <= end; i += 3) sp.push({ x: mx(r.trail.x[i]), y: my(r.trail.y[i]) });
-    if (sp.length > 1) canvas.drawPoints(PointMode.Polygon, sp, strokePaint(f, sg.color, 1.7, 0.95, StrokeCap.Round));
+    if (sp.length > 1) {
+      const col = heatColor(sg.peakTo[Math.max(0, end - seg.startIndex)]);
+      canvas.drawPoints(PointMode.Polygon, sp, strokePaint(f, col, 1.7, 0.95, StrokeCap.Round));
+    }
   }
   if (f.ghost) canvas.drawCircle(mx(f.ghost.x), my(f.ghost.y), 2, strokePaint(f, colors.green, 1));
   canvas.drawCircle(mx(f.pose.x), my(f.pose.y), 3, fillPaint(f, WHITE));
@@ -946,15 +986,17 @@ function drawTopHud(canvas: SkCanvas, f: Frame): void {
   // tier 1: the angle is the biggest thing on screen (DESIGN.md), coloured by severity
   const angle = Math.round(Math.abs(deg(p.beta)));
   const side = Math.abs(p.beta) > 0.05 ? (p.beta > 0 ? 'R' : 'L') : '';
-  const col = heatColor(p.beta);
-  const hot = p.severity !== 'none';
+  const col = heat(f, p.beta);
+  // an untrusted run's angle is still shown — it is what the recording contains — but it does
+  // not get to glow about it
+  const hot = p.severity !== 'none' && !f.noScore;
   const baseline = lay.hero.baseline;
   const text = `${angle}°`;
   let heroW = 0;
   if (hot) heroW = drawGlowStr(canvas, f, f.fonts.hero, text, lay.hero.x, baseline, WHITE, col, 0.4 + 0.6 * p.intensity, 'start', TYPE.hero);
   else heroW = drawStr(canvas, f, f.fonts.hero, text, lay.hero.x, baseline, { color: MUTED });
   if (side) drawStr(canvas, f, f.fonts.label, side, lay.hero.x + heroW + 6, baseline - TYPE.hero * 0.58, { color: col });
-  drawStr(canvas, f, f.fonts.label, 'SLIP ANGLE', lay.hero.x, baseline + 14, { color: MUTED, tracking: 2 });
+  drawStr(canvas, f, f.fonts.label, f.noScore ? 'SLIP ANGLE \u00B7 UNVERIFIED' : 'SLIP ANGLE', lay.hero.x, baseline + 14, { color: MUTED, tracking: 2 });
 
   // tier 2: speed and points, italic (things that move)
   const rx = lay.readout.x;
@@ -1006,11 +1048,19 @@ function drawBottomHud(canvas: SkCanvas, f: Frame): void {
 
   canvas.drawLine(s.x0, s.yBot, s.x1, s.yBot, strokePaint(f, '#1C2430', 1, 1, StrokeCap.Butt));
 
-  // the strip is MASKED to elapsed time: a replay must not open by showing its ending
+  // The whole |β| trace is drawn, not just the part already played: a scrubber you drag with
+  // your thumb has to be a MAP of the run, or dragging forward is blind. What is still to come
+  // is drawn flat and grey — the shape of it, never the heat — so the escalation is still
+  // something the replay reveals rather than something the timeline gives away.
   const playX = s.xAt(f.t);
+  const ribbonPaint = f.res.shaded;
+  canvas.save();
+  canvas.translate(s.x0, s.yTop);
+  canvas.scale(Math.max(1e-4, s.x1 - s.x0), Math.max(1e-4, s.yBot - s.yTop));
+  canvas.drawPath(f.geo.ribbon, fillPaint(f, MUTED, 0.22));
+  canvas.restore();
   canvas.save();
   canvas.clipRect({ x: s.x0, y: s.yTop - 2, width: Math.max(0, playX - s.x0), height: s.yBot - s.yTop + 2 }, ClipOp.Intersect, false);
-  const ribbonPaint = f.res.shaded;
   ribbonPaint.setStyle(PaintStyle.Fill);
   ribbonPaint.setShader(f.res.ribbon);
   ribbonPaint.setColor(f.res.color('#FFFFFF'));
@@ -1022,31 +1072,33 @@ function drawBottomHud(canvas: SkCanvas, f: Frame): void {
   canvas.restore();
   canvas.restore();
 
-  // drift windows as ticks under the baseline (only those already played)
+  // drift windows as ticks under the baseline: grey ahead of the playhead, heat behind it
   for (const seg of r.segments) {
-    if (seg.startT > f.t) continue;
     const a = s.xAt(seg.startT);
-    const b = s.xAt(Math.min(seg.endT, f.t));
-    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, b - a), height: 2.5 }, fillPaint(f, heatColor(seg.peakAngle), 0.85));
+    const b = s.xAt(seg.endT);
+    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, b - a), height: 2.5 }, fillPaint(f, MUTED, 0.45));
+    if (seg.startT > f.t) continue;
+    const played = s.xAt(Math.min(seg.endT, f.t));
+    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, played - a), height: 2.5 }, fillPaint(f, heat(f, seg.peakAngle), 0.85));
   }
   // a stretch with no GPS behind it, marked on the timeline as well as in the world
   for (const g of f.view.gaps) {
     const a = s.xAt(g.startT);
-    const b = s.xAt(Math.min(g.endT, f.t));
+    const b = s.xAt(g.endT);
     if (b <= a) continue;
     canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, b - a), height: 2.5 }, fillPaint(f, MUTED, 0.75));
   }
   for (const lap of r.laps) {
-    if (lap.index === 0 || lap.startT > f.t) continue;
-    canvas.drawLine(s.xAt(lap.startT), s.yTop - 2, s.xAt(lap.startT), s.yBot, dashPaint(f, MUTED, 0.8, 2, 2, 0.6));
+    if (lap.index === 0) continue;
+    canvas.drawLine(s.xAt(lap.startT), s.yTop - 2, s.xAt(lap.startT), s.yBot, dashPaint(f, MUTED, 0.8, 2, 2, lap.startT > f.t ? 0.3 : 0.6));
   }
   for (const m of r.markers) {
-    if (m.kind !== 'transition' || m.t > f.t) continue;
+    if (m.kind !== 'transition') continue;
     const x = s.xAt(m.t);
     canvas.save();
     canvas.translate(x, s.yTop);
     canvas.scale(2.6, 4);
-    canvas.drawPath(f.geo.diamond, fillPaint(f, colors.magenta, 0.85));
+    canvas.drawPath(f.geo.diamond, m.t > f.t ? fillPaint(f, MUTED, 0.5) : fillPaint(f, colors.magenta, 0.85));
     canvas.restore();
   }
   // the highlights the transport jumps between, as gold pips above the band
@@ -1058,7 +1110,7 @@ function drawBottomHud(canvas: SkCanvas, f: Frame): void {
   canvas.drawLine(playX, s.yBot, s.x1, s.yBot, strokePaint(f, '#2A3340', 1.5, 1, StrokeCap.Butt));
   const grabbed = f.ui.scrubbing;
   canvas.drawLine(playX, s.yTop - 6, playX, s.yBot + 6, strokePaint(f, WHITE, grabbed ? 2.5 : 1.5, 1, StrokeCap.Butt));
-  canvas.drawCircle(playX, s.yA(Math.abs(f.pose.beta)), grabbed ? 4 : 2.6, fillPaint(f, heatColor(f.pose.beta)));
+  canvas.drawCircle(playX, s.yA(Math.abs(f.pose.beta)), grabbed ? 4 : 2.6, fillPaint(f, heat(f, f.pose.beta)));
   canvas.drawCircle(playX, s.yA(Math.abs(f.pose.beta)), grabbed ? 4 : 2.6, strokePaint(f, BG, 1));
   if (grabbed) {
     // a video scrubber tells you where you are landing
@@ -1088,7 +1140,7 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   let x = lay.info.x + drawStr(canvas, f, f.fonts.label, lapStr, lay.info.x, ly, { tracking: 1.6 }) + 14;
   // the run's name gets whatever room the total leaves it, and an ellipsis when that is not enough
   const titleRoom = lay.info.right - x - (compact ? 150 : 84);
-  const title = f.fonts.label ? ellipsize(f, f.fonts.label, f.view.title, titleRoom, 1.4) : '';
+  const title = f.fonts.label ? fitTitle(f, f.fonts.label, f.view.title, titleRoom, 1.4) : '';
   x += drawStr(canvas, f, f.fonts.label, title, x, ly, { color: MUTED, tracking: 1.4 }) + 14;
 
   let best = 0;
@@ -1135,6 +1187,20 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
     const dw = drawStr(canvas, f, f.fonts.label, driftStr, lay.info.x, ly + 22, { color: MUTED, tracking: 1.4 });
     if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, lay.info.x + dw + 14, ly + 22, { color: heatColor(best), tracking: 1.4 });
   }
+}
+
+/**
+ * Fit a run's name to the room it has. A name is "HARBOR LOOP · UNSTEADY MOUNT · POOR GPS": drop
+ * whole trailing clauses first, which leaves a name that still reads, and only cut letters if
+ * even the first clause is too long.
+ */
+function fitTitle(f: Frame, font: SkFont, title: string, maxW: number, tracking: number): string {
+  const parts = title.split(' \u00B7 ');
+  for (let n = parts.length; n > 0; n--) {
+    const candidate = parts.slice(0, n).join(' \u00B7 ');
+    if (measure(f, font, candidate, tracking) <= maxW) return candidate;
+  }
+  return ellipsize(f, font, parts[0], maxW, tracking);
 }
 
 /** Cut a label to fit, with an ellipsis, rather than letting it run under the next thing. */
@@ -1302,6 +1368,12 @@ export function drawReplayFrame(canvas: SkCanvas, input: SceneInput): void {
     grain.setColor(f.res.color('#FFFFFF'));
     grain.setAlphaf(0.022);
     canvas.drawRect({ x: 0, y: 0, width: lay.w, height: lay.h }, grain);
+  }
+  // The transport floats over the bottom of the stage in portrait, and a label on a chip has to
+  // stay legible over whatever the scene puts behind it — including the bright trail ribbon.
+  if (f.ui.controlsVisible && !lay.landscape) {
+    const band = lay.controls;
+    shadeRect(canvas, f, f.res.bottomFade, 0, band.y - 26, lay.w, band.h + 26 + 10, 0.72);
   }
   drawGapNotice(canvas, f);
   drawWorldLabels(canvas, f);

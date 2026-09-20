@@ -43,7 +43,12 @@ export interface SegmentGeometry {
    *  or overlapping chunks blend into a lattice. */
   ribbon: SkPath;
   bounds: WorldBounds;
-  color: string;
+  /**
+   * Running maximum |β| from the segment's first sample, one entry per sample. The halo takes
+   * its colour from the peak SO FAR, never from the peak the slide will eventually reach: the
+   * final heat of a slide must not be on screen before the slide has built to it.
+   */
+  peakTo: Float32Array;
   chunks: TrailChunk[];
 }
 
@@ -303,7 +308,6 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
   for (const seg of replay.segments) {
     const parts: Pt[][] = [];
     let part: Pt[] = [];
-    let peak = 0;
     let count = 0;
     for (let i = seg.startIndex; i <= seg.endIndex; i++) {
       if (dead[i] === 1) {
@@ -313,17 +317,18 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
       }
       part.push([tr.x[i], tr.y[i]]);
       count++;
-      if (Math.abs(tr.beta[i]) > peak) peak = Math.abs(tr.beta[i]);
     }
     if (part.length > 1) parts.push(part);
     const pts: Pt[] = parts.flat();
     if (count < 2 || parts.length === 0) continue;
-    // The ribbon's width and colour follow |beta| sample by sample, which as separate strokes is
-    // a hundred draw calls a segment. Quantising the intensity into a few bands keeps the
-    // escalation visible (the bands are 25 % of the ramp apart) and collapses each band into one
-    // path: the same picture for a handful of calls.
+    // The ribbon's width and colour follow |β| sample by sample, which as separate strokes is a
+    // hundred draw calls a segment. Bands of 8° of SLIP ANGLE collapse each one into a single
+    // path while keeping the escalation: a band spans 8° of the ramp, and it is coloured and
+    // widthed from its OWN MEAN, so neither the colour nor the stroke can be pulled by one spike
+    // somewhere else in the slide.
     const chunks: TrailChunk[] = [];
-    const BANDS = 4;
+    const BAND_DEG = 8;
+    const BANDS = 14;
     for (const hot of [false, true]) {
       const bands: Array<{ parts: Pt[][]; part: Pt[]; inten: number; mag: number; n: number; from: number; to: number }> = [];
       for (let k = 0; k < BANDS; k++) bands.push({ parts: [], part: [], inten: 0, mag: 0, n: 0, from: -1, to: -1 });
@@ -336,13 +341,14 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         for (let i = a; i <= b; i++) {
           if (dead[i] === 1) continue;
           inten += tr.intensity[i];
-          mag = Math.max(mag, Math.abs(tr.beta[i]));
+          mag += Math.abs(tr.beta[i]);
           cp.push([tr.x[i], tr.y[i]]);
         }
         if (cp.length < 2) continue;
         inten /= cp.length;
+        mag /= cp.length;
         if (hot && inten < 0.1) continue;
-        const k = Math.min(BANDS - 1, Math.floor(inten * BANDS));
+        const k = Math.min(BANDS - 1, Math.max(0, Math.floor(((mag * 180) / Math.PI) / BAND_DEG)));
         const band = bands[k];
         // contours inside a band stay separate, so two distant stretches never join up
         if (band.part.length > 0 && band.to === a) band.part.push(...cp.slice(1));
@@ -353,7 +359,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         }
         band.to = b;
         band.inten += inten;
-        band.mag = Math.max(band.mag, mag);
+        band.mag += mag;
         band.n++;
       }
       for (let k = 0; k < BANDS; k++) {
@@ -361,9 +367,10 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         if (band.part.length > 1) band.parts.push(band.part);
         if (band.parts.length === 0) continue;
         const flat = band.parts.flat();
+        const meanAngle = band.mag / Math.max(1, band.n);
         chunks.push({
           path: keep(contours(band.parts)),
-          color: hot ? mix(HOT, heatColor(band.mag), 0.35) : heatColor(band.mag),
+          color: hot ? mix(HOT, heatColor(meanAngle), 0.35) : heatColor(meanAngle),
           intensity: band.inten / Math.max(1, band.n),
           hot,
           bounds: boundsOf(flat),
@@ -372,7 +379,13 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         });
       }
     }
-    segments.push({ seg, ribbon: keep(contours(parts)), bounds: boundsOf(pts), color: heatColor(peak), chunks });
+    const peakTo = new Float32Array(seg.endIndex - seg.startIndex + 1);
+    let running = 0;
+    for (let i = seg.startIndex; i <= seg.endIndex; i++) {
+      running = Math.max(running, Math.abs(tr.beta[i]));
+      peakTo[i - seg.startIndex] = running;
+    }
+    segments.push({ seg, ribbon: keep(contours(parts)), bounds: boundsOf(pts), peakTo, chunks });
   }
 
   const car = carShapes();

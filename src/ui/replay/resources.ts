@@ -22,6 +22,8 @@ export interface SceneResources {
   text: SkPaint;
   /** Fill paint carrying a blur mask, for glows. */
   glow: SkPaint;
+  /** Stroke paint carrying a blur mask: the trail's halo is a real bloom, not a fat line. */
+  glowStroke: SkPaint;
   smoke: SkShader;
   smokeHot: SkShader;
   pool: SkShader;
@@ -44,6 +46,7 @@ export interface SceneResources {
    */
   glyphs(font: SkFont, key: string, s: string, tracking: number): { ids: number[]; pos: SkPoint[]; width: number };
   setGlowBlur(sigma: number): void;
+  setStrokeGlowBlur(sigma: number): void;
   dispose(): void;
 }
 
@@ -105,6 +108,11 @@ export function createSceneResources(): SceneResources {
   text.setAntiAlias(true);
   const glow = Skia.Paint();
   glow.setAntiAlias(true);
+  const glowStroke = Skia.Paint();
+  glowStroke.setAntiAlias(true);
+  glowStroke.setStyle(PaintStyle.Stroke);
+  glowStroke.setStrokeCap(StrokeCap.Round);
+  glowStroke.setStrokeJoin(StrokeJoin.Round);
 
   const smoke = gradient(
     [
@@ -168,6 +176,7 @@ export function createSceneResources(): SceneResources {
   const widthCache = new Map<string, number>();
   const glyphCache = new Map<string, { ids: number[]; pos: SkPoint[]; width: number }>();
   let blurSigma = -1;
+  let strokeBlurSigma = -1;
 
   return {
     fill,
@@ -176,6 +185,7 @@ export function createSceneResources(): SceneResources {
     shaded,
     text,
     glow,
+    glowStroke,
     smoke,
     smokeHot,
     pool,
@@ -245,8 +255,14 @@ export function createSceneResources(): SceneResources {
       blurSigma = sigma;
       glow.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, sigma, true));
     },
+    /** Sigma is in LOCAL units (`respectCTM`), so inside the world transform it is metres. */
+    setStrokeGlowBlur(sigma: number): void {
+      if (Math.abs(sigma - strokeBlurSigma) < 1e-3) return;
+      strokeBlurSigma = sigma;
+      glowStroke.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(1e-3, sigma), true));
+    },
     dispose(): void {
-      for (const o of [fill, stroke, dashed, shaded, text, glow, smoke, smokeHot, pool, vignette, ribbon, topFade, bottomFade, grain]) {
+      for (const o of [fill, stroke, dashed, shaded, text, glow, glowStroke, smoke, smokeHot, pool, vignette, ribbon, topFade, bottomFade, grain]) {
         try {
           o.dispose();
         } catch {

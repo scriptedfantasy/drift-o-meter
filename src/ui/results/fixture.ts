@@ -10,6 +10,7 @@
  * Everything here is pure and seeded, so a given URL always produces the same pixels.
  */
 import { DriftPipeline } from '../../engine/pipeline';
+import { scoreSession } from '../../engine/score';
 import { sessionFromSimulation } from '../../engine/replay/fixtures';
 import { clamp, degToRad, radToDeg, type Session, type SlipState } from '../../engine/types';
 import { simulateRun, type TrackId } from '../../sim';
@@ -310,6 +311,29 @@ export function buildFixtureSession(spec: FixtureSpec): Session {
   const spun = new Set<number>();
   for (let i = 0; i < spec.spins; i++) injectSpin(session, spun);
   if (spec.looseness > 0 && spec.source === 'sim') degradeCalibration(session);
+  // A producer publishes an engine score. The ground-truth fixture writes a placeholder one, and
+  // the spin / grip-lap transforms edit the trace AFTER the pipeline scored it — in both cases the
+  // session must be re-scored here, or the screen would publish a headline for a different run.
+  const mutated = spec.spins > 0 || spec.noDrifts;
+  if (spec.source === 'sim' || mutated) {
+    const b = scoreSession(session.drifts, session.states, session.track, undefined, {
+      integrity: { mount: session.integrity.mount, physics: session.integrity.physics, gps: session.integrity.gps, message: session.integrity.message },
+    });
+    session.score = {
+      total: b.total,
+      grade: b.grade,
+      angle: b.angle,
+      consistency: b.consistency,
+      quality: b.quality,
+      speed: b.speed,
+      style: b.style,
+      bestDriftId: b.bestDriftId,
+      longestChainPoints: b.longestChainPoints,
+      perDrift: b.perDrift,
+      trusted: b.trusted,
+    };
+    session.integrity = b.integrity;
+  }
   session.id = `fixture-${spec.name}`;
   session.startedAt = Date.UTC(2026, 8, 19, 21, 44) + spec.seed * 60_000;
   session.meta = {

@@ -26,7 +26,7 @@ import {
 } from '../../platform';
 import { simulateRun } from '../../sim';
 import { SimPlayer } from '../hud/simPlayer';
-import { IDLE_READING, orientationOf, type CalibrationFault, type CalibrationReading } from './model';
+import { FAULTS, IDLE_READING, orientationOf, type CalibrationFault, type CalibrationReading } from './model';
 import { parseCalibrateParams, type CalibrateParams } from './params';
 
 /** UI refresh rate. Words, not motion — the glyph does not need 60 Hz to read as live. */
@@ -36,28 +36,14 @@ function faultFor(err: unknown): CalibrationFault {
   const code = err instanceof SensorSourceError ? err.code : null;
   switch (code) {
     case 'permission-denied':
-      return {
-        kind: 'permission',
-        title: 'Motion access is off',
-        body: 'Calibration reads the accelerometer and gyroscope. Turn on Motion & Fitness (and Location, for the direction of travel) in Settings → Drift-O-Meter, then try again.',
-        retryable: true,
-      };
+      return FAULTS.permission;
     case 'unsupported':
-      return {
-        kind: 'unsupported',
-        title: 'No motion sensors here',
-        body: 'This device has no usable gyroscope, so there is no mount to calibrate. Switch to the simulated source in Settings to see what the judge does with a run.',
-        retryable: false,
-      };
+      return FAULTS.unsupported;
     case 'services-disabled':
-      return {
-        kind: 'services',
-        title: 'Location is off',
-        body: 'Gravity alone fixes which way is up. Which way the car POINTS needs the direction of travel, and that needs Location Services.',
-        retryable: true,
-      };
+      return FAULTS.services;
     default:
-      return { kind: 'failed', title: 'Sensors would not start', body: describeSensorError(err), retryable: true };
+      // the real reason, when there is one, beats the generic sentence
+      return { ...FAULTS.failed, body: describeSensorError(err) };
   }
 }
 
@@ -80,6 +66,12 @@ export function useCalibration(): Calibration {
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   useEffect(() => {
+    // `?fault=` shows one of the four faults without touching the sensors. Presentation only:
+    // the states this screen exists for are otherwise unreachable outside a broken phone.
+    if (params.fault) {
+      setReading({ ...IDLE_READING, status: 'error', fault: FAULTS[params.fault] });
+      return;
+    }
     let alive = true;
     let ticker: ReturnType<typeof setInterval> | null = null;
     let selection: SourceSelection | null = null;
@@ -136,6 +128,7 @@ export function useCalibration(): Calibration {
         forwardResolved: cal.forwardResolved,
         calibrationOk: state.calibrationOk,
         mount: state.mount,
+        handheld: state.flags.includes('handheld'),
         looseScore: state.looseScore,
         message: state.message,
         gps: state.gps,
@@ -201,7 +194,7 @@ export function useCalibration(): Calibration {
       sourceRef.current?.stop();
       sourceRef.current = null;
     };
-  }, [attempt, params.at, params.hold, params.mount]);
+  }, [attempt, params.at, params.fault, params.hold, params.mount]);
 
   return { reading, params, retry };
 }

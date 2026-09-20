@@ -170,7 +170,14 @@ export const defaultRoutes = [
   // the refusal state: a hand-held recording the engine will not publish a score for
   { name: 'results-untrusted', path: '/results/fixture-handheld?reveal=off', waitMs: 3600 },
   { name: 'results-untrusted-foot', path: '/results/fixture-handheld?reveal=off', waitMs: 3600, actions: [{ type: 'scroll', y: 2600 }, { type: 'wait', ms: 900 }] },
-  { name: 'results-integrity', path: '/results/fixture-rough?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 5200 }, { type: 'wait', ms: 900 }] },
+  // the warned-but-scored run: its hero carries the PIPELINE's grade (B), which is what the
+  // garage row and the end of the replay show — a re-score from storage would have said A
+  {
+    name: 'results-integrity',
+    path: '/results/fixture-rough?reveal=off',
+    waitMs: 2000,
+    actions: [{ type: 'screenshot', name: 'results-warned' }, { type: 'scroll', y: 5200 }, { type: 'wait', ms: 900 }],
+  },
   // the same screen fed by the REAL engine pipeline (mount → slip → detector → scorer), not ground truth
   { name: 'results-pipeline', path: '/results/fixture-good?reveal=off&source=pipeline', waitMs: 3600 },
   // reduce-motion: state changes keep, shake and embers go

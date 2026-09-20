@@ -195,6 +195,7 @@ export default function ReplayScreen() {
         focusDriftId={player.focusDriftId}
         chip={player.chip}
         reduceMotion={reduceMotion}
+        controlsVisible={!hidden}
         testID="replay-canvas"
       />
       <Pressable
@@ -205,7 +206,8 @@ export default function ReplayScreen() {
         testID="replay-stage"
       />
       <Pressable
-        style={[styles.close, { left: layout.chrome.left - 6, top: layout.chrome.y - 21 }]}
+        style={[styles.close, { left: layout.chrome.left - 10, top: layout.chrome.y - 24 }]}
+        hitSlop={14}
         onPress={onClose}
         accessibilityRole="button"
         accessibilityLabel="Close the replay"
@@ -280,7 +282,7 @@ async function copyToClipboard(url: string): Promise<boolean> {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   stage: { position: 'absolute', left: 0, right: 0 },
-  close: { position: 'absolute', width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  close: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   closeLabel: { fontSize: 18, lineHeight: 20 },
   boot: { flex: 1, backgroundColor: colors.bg0, alignItems: 'center', justifyContent: 'center', gap: space[3], padding: space[6] },
   missingBody: { textAlign: 'center', maxWidth: 320 },

@@ -20,6 +20,7 @@ export {
   phaseOf,
   qualityBand,
   stepsOf,
+  FAULTS,
   FLAT_DEG,
   SETTLED_UP,
   SHARP_QUALITY,

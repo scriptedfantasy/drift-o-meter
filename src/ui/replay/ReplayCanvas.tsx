@@ -54,6 +54,8 @@ export interface ReplayCanvasProps {
   focusDriftId: number | null;
   chip: { current: HighlightChip | null };
   reduceMotion: boolean;
+  /** The transport is on screen (the canvas puts a scrim behind it). */
+  controlsVisible: boolean;
   testID?: string;
 }
 
@@ -99,7 +101,7 @@ function actionRect(layout: ReplayLayout, mode: CameraMode) {
   return mode === 'overview' ? layout.stage : layout.action;
 }
 
-export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, testID }: ReplayCanvasProps) {
+export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, controlsVisible, testID }: ReplayCanvasProps) {
   const res = useMemo(() => createSceneResources(), []);
   const geo = useMemo(() => buildSceneGeometry(replay, view.dead), [replay, view.dead]);
   const tfHero = useTypeface(BC_800);
@@ -112,8 +114,8 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   const picture = useSharedValue<SkPicture>(empty);
 
   // Everything the loop reads, refreshed on every render so the loop itself never restarts.
-  const stateRef = useRef({ replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, fonts: fontBook.fonts });
-  stateRef.current = { replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, fonts: fontBook.fonts };
+  const stateRef = useRef({ replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, fonts: fontBook.fonts });
+  stateRef.current = { replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, fonts: fontBook.fonts };
   /** Wall-clock ms until which the frame must keep being redrawn even when paused. */
   const dirtyUntil = useRef(0);
   const markDirty = (ms = 400) => {
@@ -136,7 +138,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   }, [camera, layout, mode]);
   useEffect(() => {
     markDirty(600);
-  }, [fontBook, geo, view, focusDriftId]);
+  }, [fontBook, geo, view, focusDriftId, controlsVisible]);
 
   useEffect(() => {
     let raf = 0;
@@ -231,7 +233,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       if (chipNow && sv.playing.value !== 1 && sv.scrubbing.value !== 1) chipNow.until = Math.max(chipNow.until, Date.now() + 200);
       const chipAlpha = chipNow ? clamp((chipNow.until - Date.now()) / 400, 0, 1) : 0;
       const moving = sv.playing.value === 1 || scrubbing || cutFade > 0 || chipAlpha > 0 || now < dirtyUntil.current;
-      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}`;
+      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.controlsVisible ? 1 : 0}`;
       if (!moving && t === lastDrawnT && inputs === lastInputs) return;
       lastDrawnT = t;
       lastInputs = inputs;
@@ -260,6 +262,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
               focusDriftId: s.focusDriftId,
               highlight: chipNow && chipAlpha > 0 ? { index: chipNow.index, total: chipNow.total, label: chipNow.label, alpha: chipAlpha } : null,
               warningsOpen: false,
+              controlsVisible: s.controlsVisible,
               reduceMotion: s.reduceMotion,
             },
           });

@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T22:57:15.971Z",
+  "startedAt": "2026-09-20T23:01:53.744Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,29 +9,31 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive-discarded",
-      "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:37757/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "name": "results-integrity",
+      "path": "/results/fixture-rough?reveal=off",
+      "url": "http://127.0.0.1:34441/results/fixture-rough?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/drive-discarded.png",
+      "screenshot": "artifacts/shots/results-integrity.png",
       "video": null,
-      "ms": 4862,
+      "ms": 5300,
       "fonts": {
         "status": "loaded",
         "families": [
+          "BarlowCondensed_600SemiBold",
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium"
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
         ],
-        "displayTextNodes": 32,
-        "bodyTextNodes": 29,
+        "displayTextNodes": 143,
+        "bodyTextNodes": 200,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 2,
+        "canvases": 0,
         "webgl": true,
         "canvasKit": true
       },
@@ -62,13 +64,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 45424,
-        "cyanPixels": 64,
-        "textPixels": 29156,
-        "nonBgFraction": 0.3617
+        "emberPixels": 243960,
+        "cyanPixels": 0,
+        "textPixels": 10700,
+        "nonBgFraction": 0.5307
       }
     }
   ],
-  "finishedAt": "2026-09-20T22:57:20.908Z",
+  "finishedAt": "2026-09-20T23:01:59.112Z",
   "failed": 0
 }

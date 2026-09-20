@@ -139,7 +139,7 @@ function spinWhere(model: ResultsBase): string {
 }
 
 function praiseFor(model: ResultsBase): string | null {
-  const b = model.breakdown;
+  const b = { ...model.breakdown, ...model.score };
   const best = model.best;
   const held = model.stats.heldPeakDeg;
   // the corner that produced the biggest HELD angle, which is not always the biggest scorer
@@ -204,7 +204,7 @@ function meanDriftKmh(model: ResultsBase): number {
 }
 
 function flawsFor(model: ResultsBase): string[] {
-  const b = model.breakdown;
+  const b = { ...model.breakdown, ...model.score };
   const out: string[] = [];
   if (b.spins > 0) {
     out.push(`you lost the rear ${times(b.spins)}${spinWhere(model)}${model.lostPoints > 0 ? `, and ${model.lostPoints.toLocaleString('en-US')} points went with it` : ''}`);
@@ -242,7 +242,7 @@ function flawsFor(model: ResultsBase): string[] {
 
 /** One sentence of judgement, earned from the numbers. */
 export function verdictFor(model: ResultsBase): string {
-  const b = model.breakdown;
+  const b = { ...model.breakdown, ...model.score };
   if (b.drifts === 0) {
     const peak = model.stats.sessionPeakDeg;
     return `No slides detected — ${mmss(model.session.durationS)} of driving and the rear never came past ${round(Math.max(peak, 0))}°, so there is nothing to judge but the lap itself.`;
@@ -292,6 +292,9 @@ const FLAIR_KINDS: StyleCalloutKind[] = ['transition', 'extreme-angle', 'long-dr
 /** The five component bars, each with one specific line about this session. */
 export function componentRows(model: ResultsBase): ComponentRow[] {
   const b = model.breakdown;
+  // numbers as published (the pipeline's), ingredients from the re-score (crossLapConsistency,
+  // steadiness, qualityParts…) — the two may differ by a fraction and the published one wins
+  const p = model.score;
   const w = O.weights;
   const rows = model.drifts;
   const empty = rows.length === 0;
@@ -383,10 +386,10 @@ export function componentRows(model: ResultsBase): ComponentRow[] {
     ];
   }
   return [
-    { key: 'angle', label: 'Angle', score: b.angle, weight: w.angle, color: scoreColor(b.angle), explain: angleText, scale: scaleOf(angleScaleText) },
-    { key: 'consistency', label: 'Consistency', score: b.consistency, weight: w.consistency, color: scoreColor(b.consistency), explain: consText, scale: scaleOf(consScaleText) },
-    { key: 'quality', label: 'Quality', score: b.quality, weight: w.quality, color: scoreColor(b.quality), explain: qualText, scale: scaleOf(`Quality is ${Math.round((O.qualityWeights.steadiness / (O.qualityWeights.steadiness + O.qualityWeights.timeAtAngle)) * 100)}% steadiness and the rest time past ${O.qualityAngleDeg}°, then cut by scrappy exits and spins.`) },
-    { key: 'speed', label: 'Speed', score: b.speed, weight: w.speed, color: scoreColor(b.speed), explain: speedText, scale: scaleOf(speedScaleText) },
-    { key: 'style', label: 'Style', score: b.style, weight: w.style, color: scoreColor(b.style), explain: styleText, scale: scaleOf(`Variety of callout kinds, transitions per slide, the longest chain and total time sideways.`) },
+    { key: 'angle', label: 'Angle', score: p.angle, weight: w.angle, color: scoreColor(p.angle), explain: angleText, scale: scaleOf(angleScaleText) },
+    { key: 'consistency', label: 'Consistency', score: p.consistency, weight: w.consistency, color: scoreColor(p.consistency), explain: consText, scale: scaleOf(consScaleText) },
+    { key: 'quality', label: 'Quality', score: p.quality, weight: w.quality, color: scoreColor(p.quality), explain: qualText, scale: scaleOf(`Quality is ${Math.round((O.qualityWeights.steadiness / (O.qualityWeights.steadiness + O.qualityWeights.timeAtAngle)) * 100)}% steadiness and the rest time past ${O.qualityAngleDeg}°, then cut by scrappy exits and spins.`) },
+    { key: 'speed', label: 'Speed', score: p.speed, weight: w.speed, color: scoreColor(p.speed), explain: speedText, scale: scaleOf(speedScaleText) },
+    { key: 'style', label: 'Style', score: p.style, weight: w.style, color: scoreColor(p.style), explain: styleText, scale: scaleOf(`Variety of callout kinds, transitions per slide, the longest chain and total time sideways.`) },
   ];
 }

@@ -16,11 +16,13 @@
  * Every one of these is a no-op on a device source — there is nothing to seek in live sensors.
  */
 import type { MountPreset } from '../../sim';
+import type { CalibrationFaultKind } from './model';
 
 /** Why the driver was sent here. Set by the garage when the last run left evidence. */
 export type CalibrateReason = 'rejected' | 'loose' | 'unresolved' | 'suspect';
 
 const REASONS: readonly CalibrateReason[] = ['rejected', 'loose', 'unresolved', 'suspect'];
+const FAULT_KINDS: readonly CalibrationFaultKind[] = ['permission', 'unsupported', 'services', 'failed'];
 
 export interface CalibrateParams {
   /** Recording seconds to warp to before drawing anything. NaN = play from the start. */
@@ -31,9 +33,11 @@ export interface CalibrateParams {
   mount: MountPreset | null;
   /** Why this screen was opened, when the garage sent the driver here. */
   why: CalibrateReason | null;
+  /** Presentation-only: show one of the four faults instead of starting the sensors. */
+  fault: CalibrationFaultKind | null;
 }
 
-export const DEFAULT_CALIBRATE_PARAMS: CalibrateParams = { at: NaN, hold: false, mount: null, why: null };
+export const DEFAULT_CALIBRATE_PARAMS: CalibrateParams = { at: NaN, hold: false, mount: null, why: null, fault: null };
 
 const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
 const MOUNTS: readonly MountPreset[] = ['portrait-vent', 'landscape-dash', 'flat-console', 'random'];
@@ -50,10 +54,12 @@ export function parseCalibrateParams(input: string | URLSearchParams | null | un
   const at = rawAt === null || rawAt.trim() === '' ? NaN : Number(rawAt);
   const mount = (p.get('mount') ?? '').trim().toLowerCase();
   const why = (p.get('why') ?? '').trim().toLowerCase();
+  const fault = (p.get('fault') ?? '').trim().toLowerCase();
   return {
     at: Number.isFinite(at) && at > 0 ? at : NaN,
     hold: TRUTHY.has((p.get('hold') ?? '').toLowerCase()),
     mount: (MOUNTS as readonly string[]).includes(mount) ? (mount as MountPreset) : null,
     why: (REASONS as readonly string[]).includes(why) ? (why as CalibrateReason) : null,
+    fault: (FAULT_KINDS as readonly string[]).includes(fault) ? (fault as CalibrationFaultKind) : null,
   };
 }
