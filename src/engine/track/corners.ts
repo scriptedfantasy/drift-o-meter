@@ -21,7 +21,7 @@ export const DEFAULT_CORNER_OPTIONS: CornerOptions = {
   kappaMin: 1 / 70,
   exitFactor: 0.6,
   minLengthM: 12,
-  mergeGapM: 6,
+  mergeGapM: 20,
   windowM: 6,
 };
 
