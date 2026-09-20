@@ -157,6 +157,7 @@ On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below 
 
 | route | moment |
 | --- | --- |
+| `calibrate-nothing` | ZERO samples (`hold=1` with no `at`): the screen with nothing to report |
 | `calibrate` | at rest, half a second in: nothing worked out yet |
 | `calibrate-level` | the vertical settled, the forward axis still unresolved — the state the screen exists for |
 | `calibrate-ready` | calibrated: past the bar, both axes resolved |
@@ -372,7 +373,8 @@ a deep link from a fixture result lands on the same run:
 | `hl=<n>` | jump to the nth-best highlight (1-based) and name it in a chip |
 | `cam=overview\|chase\|cinematic` | camera mode (`track` and `cine` also work) |
 | `play=0\|1` | freeze on the opening frame, or start playing (default: play) |
-| `rate=<n>` | playback speed. The transport offers x0.5 / x1 / x2; the URL may ask for any rate, which is how motion is captured (see below) |
+| `rate=<n>` | playback speed, 0.25 to 4. The transport offers x0.5 / x1 / x2; the URL may ask for the slower rates too, which is how motion is captured (see below) |
+| `cutTo=<mode>` + `cutAt=<seconds>` | switch the camera to that mode when the clock passes that replay time — the same cut the control fires, off the clock, so it can be recorded without a tap |
 | `scrub=<0..1>` | open with the playhead GRABBED at that fraction of the run: the same shared values a real drag writes, so the frame is the held state (fat playhead, time bubble, camera cut to the new moment) |
 | `ghost=time\|distance\|off` | how the best-lap ghost is placed, or no ghost at all |
 | `gaps=<seconds>` | blank the recorded positions (and the fixes behind them) for that long in the middle of the run — a tunnel. This damages the RECORDING, so `buildReplay`'s own warnings fire and the renderer has a real hole to be honest about |
@@ -404,14 +406,16 @@ error fails the whole shoot. `scrub=` exists for exactly this reason. A real dra
 | `replay-touge` | a point-to-point stage: STAGE rather than LAP 1/2, no lap ticks, no ghost |
 
 **Frame rate, and how to capture motion.** The harness renders WebGL through SwiftShader, in
-software. A full-bleed cinematic scene costs it about 170 ms a frame at `--scale 1` and 650 ms at
-the default `--scale 3` (measured: the same page with the scene switched off runs at 60 fps, and
-the drive HUD in this browser manages about 5 fps too). Nothing about that is the app on a phone,
-where the same picture is one GPU pass, but it does mean a 1x video of this screen is a
-slideshow: a 320 ms callout slam lands in one and a half frames.
+software. A full-bleed cinematic scene costs it roughly 250–400 ms a frame at `--scale 1` and
+1.5–2 s at the default `--scale 3`; the same page with the scene switched off runs at 60 fps, and
+the drive HUD in this browser manages about 5 fps too, so this is the rasteriser rather than the
+app (the JS half of a frame — every engine call plus recording the picture — measures 1.5–7 ms).
+The trail's halo is a real Gaussian blur, which is one GPU pass on a phone and about half the
+frame here; it is worth it, and it is why the live routes below sit within a second of their
+beats.
 
-So capture motion at quarter speed and at scale 1, which resolves every beat into frames without
-changing what the app does — the motion is the app's own, sampled finer:
+So capture motion at quarter speed and at scale 1, which resolves every beat into frames
+without changing what the app does — the motion is the app's own, sampled finer:
 
 ```
 npm run shoot -- --no-build --video --scale 1 --only replay-motion,replay-cut,replay-shake
@@ -420,15 +424,19 @@ npm run shoot -- --no-build --video --scale 1 --only replay-motion,replay-cut,re
 
 What those frames show, measured rather than asserted:
 
-* **the callout slam** — the magenta area of TRANSITION x3 falls 4086 -> 2516 -> 1850 -> 1431 ->
-  1242 px and then rises to 1385 and holds: scale 1.8 to 1.0 with the overshoot going *past* the
-  resting size and coming back, which is the engine's own `activeEvents` curve;
-* **the shake** — on the still TRACK CAM, a static road edge sits at y = 358.98 for every frame
-  before the exit beat, jumps to 360.22 on it, then 359.23, 358.53, 358.63, and settles at
-  358.99: a decaying oscillation about the resting position, 180 ms long;
-* **the camera cut** — mean frame luminance steps 17.4 (chase) -> 25.3 (the cross-fade frame,
-  still darkened) -> 36.2 (cinematic, at full brightness), which is the engine's 120 ms cross-fade
-  measured in replay time, so it slows down with the playback rate like everything else.
+* **the callout slam** — the magenta area of TRANSITION x3 falls 2913 -> 1641 -> 963 px and then
+  rises to 1013 and holds: scale 1.8 to 1.0 with the overshoot going *past* the resting size and
+  coming back, which is the engine's own `activeEvents` curve;
+* **the shake** — on the still TRACK CAM, a static road edge sits at y = 359.06 for every frame
+  before the exit beat, jumps to 360.30 on it, then 360.27, 360.25, 359.20, 358.81, 358.87 and
+  settles back at 359.05: a decaying oscillation about the resting position, inside the engine's
+  180 ms window;
+* **the camera cut** — mean frame luminance steps 14.6 (chase) -> 21.8 (the cross-fade frame,
+  still darkened) -> 32.1 -> 38.1 (cinematic, at full brightness), which is the engine's 120 ms
+  cross-fade measured in replay time, so it slows down with the playback rate like everything
+  else. `cutTo=`/`cutAt=` fire it off the clock instead of tapping the control, because a
+  synthetic tap on a control drawn over this canvas waits tens of seconds for the element to
+  "hold still" at a fraction of a frame a second.
 
 ## Gotchas this harness already handles (keep them in mind when extending it)
 
@@ -471,3 +479,11 @@ What those frames show, measured rather than asserted:
   the first second of a video does not.
 - **Running as root** works because playwright launches Chromium with `--no-sandbox` semantics by
   default (`chromiumSandbox: false`).
+
+## Why `artifacts/` is excluded from the typecheck
+
+`tsconfig.json` excludes `artifacts/`. Critics write throwaway probe scripts there, against
+whatever the engine's shape was on the day they ran, and those scripts are evidence rather
+than source: a critic must be free to leave its instruments behind without a later contract
+change turning `npm run typecheck` red for everyone. Anything that must keep compiling
+belongs in `tools/`.

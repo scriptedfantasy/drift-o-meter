@@ -78,6 +78,11 @@ export const defaultRoutes = [
   // stops there, so each state below is the same frame every run. The times come from the real
   // calibrator on `sim=harbor&seed=1`: the vertical settles at ~1.5 s, the forward axis resolves
   // at 5.31 s, and confidence plateaus at 0.74 (see tools/harness/README.md).
+  // ZERO samples — `hold=1` with no `at`, so the recording is armed and never fed. The screen
+  // has nothing to report and must say exactly that: this frame used to read CALIBRATED /
+  // "Ready to measure" over dashes and a red "No reading" light, because `IntegrityMonitor`
+  // starts with `calibrationOk` true so that it cannot veto a run it knows nothing about.
+  { name: 'calibrate-nothing', path: '/calibrate?sim=harbor&hold=1', waitMs: 2200, expectCanvas: true },
   // At rest, half a second in: gravity seen, nothing worked out yet.
   { name: 'calibrate', path: '/calibrate?sim=harbor&at=0.5&hold=1', waitMs: 2200, expectCanvas: true },
   // Vertical settled (up-axis 85 %), forward axis still unresolved — the state the screen exists for.
@@ -199,23 +204,26 @@ export const defaultRoutes = [
   // picks the camera — the full
   // parameter table is in tools/harness/README.md. Times are for the `good` fixture and MOVE
   // when the detector or the scorer is retuned.
-  // LIVE, from the top, chase camera: this is the one to record video of (the callout slam, the
-  // shake, the smoke and the camera cut only exist in motion).
-  { name: 'replay', path: '/replay/demo?cam=chase&t=93', waitMs: 3000, expectCanvas: true, minEmber: 1500 },
+  // LIVE, chase camera, a moment before TRANSITION x3 fires: this is the one to record video of
+  // (the callout slam, the shake, the smoke and the camera cut only exist in motion). The times
+  // sit close to their beats on purpose — this scene draws at a fraction of a frame a second in
+  // the harness's software rasteriser, so a live route advances about a second of replay in the
+  // few seconds it is watched.
+  { name: 'replay', path: '/replay/demo?cam=chase&t=94.9', waitMs: 3000, expectCanvas: true, minEmber: 1500 },
   // MOTION, at quarter speed: the frame the callout slams in on. Shoot this one with --video and
   // --scale 1 — the harness's software rasteriser (SwiftShader) draws this full-bleed scene at
   // about 6 fps at 1x and 1.5 fps at 3x, so a quarter-speed pass is what resolves a 320 ms slam
   // and a 180 ms shake into frames. The motion is the app's own, sampled finer.
-  { name: 'replay-motion', path: '/replay/demo?cam=chase&t=94.4&rate=0.15&ui=0', waitMs: 5000, expectCanvas: true, minEmber: 1200 },
+  { name: 'replay-motion', path: '/replay/demo?cam=chase&t=95&rate=0.25&ui=0', waitMs: 5000, expectCanvas: true, minEmber: 1200 },
   // A CAMERA CUT driven by the control, at quarter speed: chase, then CINE 1.2 s in. The engine
   // makes a mode switch a cut with a 120 ms cross-fade; the video shows it.
   // `cutTo`/`cutAt` fire the same mode switch the CINE control fires, off the replay clock: a
   // synthetic tap on a control drawn over this canvas waits tens of seconds for the element to
   // "hold still" at a few frames a second, which is a property of the rasteriser, not the app.
-  { name: 'replay-cut', path: '/replay/demo?cam=chase&t=95.5&rate=0.15&cutTo=cinematic&cutAt=95.9&ui=0', waitMs: 6000, expectCanvas: true, minEmber: 800 },
+  { name: 'replay-cut', path: '/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0', waitMs: 6000, expectCanvas: true, minEmber: 800 },
   // The SHAKE, at quarter speed, from TRACK CAM where the camera itself is still: the exit beat
   // at 99.98 s carries magnitude 1, and `shakeAt` throws the whole world +/- 2.4 pt for 180 ms.
-  { name: 'replay-shake', path: '/replay/demo?cam=overview&t=99.6&rate=0.15&ui=0', waitMs: 4000, expectCanvas: true, minEmber: 1200 },
+  { name: 'replay-shake', path: '/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0', waitMs: 4000, expectCanvas: true, minEmber: 1200 },
   // TRACK CAM at the half-way point: the whole circuit, the played line only, drift peaks blooming.
   { name: 'replay-overview', path: '/replay/demo?cam=overview&t=60&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
   // CHASE at the peak of the 3-link chain in lap 2: 54 deg, ember ribbon, smoke, slip arc.
@@ -234,7 +242,10 @@ export const defaultRoutes = [
   // setPointerCapture, which throws for a pointer id the browser never issued.
   { name: 'replay-scrub', path: '/replay/demo?cam=chase&scrub=0.36&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 800 },
   // A hand-held recording: it still replays, and it must not present points or a grade.
-  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true, minEmber: 800 },
+  // deliberately almost ember-free: on a recording the engine does not believe, the slip angle
+  // loses its escalation colours along with the points, so `minEmber` is only a "something drew"
+  // floor here
+  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true, minEmber: 150 },
   // Bad data: `gaps=6` blanks six seconds of recorded position (a tunnel), so buildReplay's own
   // warnings fire and the dead-reckoned stretch is dashed instead of glowing.
   { name: 'replay-warnings', path: '/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 1200 },

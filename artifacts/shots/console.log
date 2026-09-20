@@ -1,16 +1,40 @@
 
-===== replay-landscape  http://127.0.0.1:40183/replay/demo?cam=chase&t=94.9
+===== home  http://127.0.0.1:44801/
 
-===== replay-overview-landscape  http://127.0.0.1:40183/replay/demo?cam=overview&t=60&play=0&ui=0
+===== garage  http://127.0.0.1:44801/?demo=night
 
-===== replay-chase-landscape  http://127.0.0.1:40183/replay/demo?cam=chase&t=95.9&play=0&ui=1
+===== garage-bests  http://127.0.0.1:44801/?demo=night
 
-===== replay-cinematic-landscape  http://127.0.0.1:40183/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+===== garage-runs  http://127.0.0.1:44801/?demo=night
 
-===== replay-ghost-landscape  http://127.0.0.1:40183/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+===== garage-bests-harbor  http://127.0.0.1:44801/?demo=harbor
 
-===== replay-highlight-landscape  http://127.0.0.1:40183/replay/demo?hl=1&play=0&cam=chase&ui=1
+===== garage-simbay  http://127.0.0.1:44801/?demo=first
 
-===== replay-scrub-landscape  http://127.0.0.1:40183/replay/demo?cam=chase&scrub=0.36&ui=1
+===== garage-flagged  http://127.0.0.1:44801/?demo=flagged
 
-===== replay-untrusted-landscape  http://127.0.0.1:40183/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
+===== garage-delete  http://127.0.0.1:44801/?demo=first
+
+===== calibrate-nothing  http://127.0.0.1:44801/calibrate?sim=harbor&hold=1
+
+===== calibrate  http://127.0.0.1:44801/calibrate?sim=harbor&at=0.5&hold=1
+
+===== calibrate-level  http://127.0.0.1:44801/calibrate?sim=harbor&at=3&hold=1
+
+===== calibrate-ready  http://127.0.0.1:44801/calibrate?sim=harbor&at=12&hold=1
+
+===== calibrate-loose  http://127.0.0.1:44801/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
+
+===== calibrate-flat  http://127.0.0.1:44801/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
+
+===== calibrate-rejected  http://127.0.0.1:44801/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected
+
+===== calibrate-fault-permission  http://127.0.0.1:44801/calibrate?fault=permission
+
+===== calibrate-fault-unsupported  http://127.0.0.1:44801/calibrate?fault=unsupported
+
+===== calibrate-fault-services  http://127.0.0.1:44801/calibrate?fault=services
+
+===== calibrate-fault-failed  http://127.0.0.1:44801/calibrate?fault=failed
+
+===== settings  http://127.0.0.1:44801/settings

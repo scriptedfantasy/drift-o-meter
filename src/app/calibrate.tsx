@@ -69,7 +69,9 @@ export default function CalibrateScreen() {
 
   const drive = () => router.replace('/drive');
 
-  const source = <Tag label={reading.sourceLabel ?? 'STARTING'} color={reading.sourceKind === 'device' ? colors.green : colors.cyan} filled />;
+  // No source pill while the sensors are refusing to start: "STARTING" over a fault is a lie.
+  const source =
+    phase === 'failed' ? null : <Tag label={reading.sourceLabel ?? 'STARTING'} color={reading.sourceKind === 'device' ? colors.green : colors.cyan} filled />;
 
   // ---- the fault states: the whole reason this screen exists ------------------------------
   if (phase === 'failed' && reading.fault) {
@@ -159,7 +161,9 @@ export default function CalibrateScreen() {
       {phase === 'ready' ? (
         <Button label="Done — drive" size={landscape ? 'md' : 'lg'} onPress={drive} testID="cta-drive" />
       ) : (
-        <Button label="Finish it while driving" size={landscape ? 'md' : 'lg'} variant="secondary" onPress={drive} testID="cta-drive" />
+        // `md`, not `lg`: at 30 pt the sentence truncates to "FINISH IT WHILE DRIVI…", and this
+        // is the secondary action anyway — the driver has not finished what they came to do.
+        <Button label="Finish it while driving" size="md" variant="secondary" onPress={drive} testID="cta-drive" />
       )}
       <Small numberOfLines={3} style={styles.leaveNote}>
         {phase === 'ready'
