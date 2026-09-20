@@ -152,8 +152,10 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const dimmed = useDerivedValue(() => 0.62 + 0.38 * signals.valid.value);
 
   const numeral = useDerivedValue(() => String(Math.round(Math.min(99, signals.absDeg.value))));
-  const blockLeft = useDerivedValue(() => cx - (numeral.value.length * metrics.advance + metrics.deg * 1.12) / 2);
-  const degX = useDerivedValue(() => blockLeft.value + numeral.value.length * metrics.advance + metrics.advance * 0.12);
+  const blockLeft = useDerivedValue(() => cx - (numeral.value.length * metrics.advance + metrics.deg * 0.8) / 2);
+  // Tucked back into the italic slant: a digit's ADVANCE is wider than its ink, and "1" is
+  // narrower still, so sitting the sign at the full advance leaves it floating in mid air.
+  const degX = useDerivedValue(() => blockLeft.value + numeral.value.length * metrics.advance - metrics.advance * 0.16);
   const numeralScale = useDerivedValue(() => [{ scale: 1 + 0.08 * signals.punch.value }]);
   const chevronTransform = useDerivedValue(() => [
     { translateX: cx + signals.side.value * chevronOffset },

@@ -51,6 +51,14 @@ export interface TrackOptions {
    */
   slowSpeedMs: number;
   startLookbackS: number;
+  /**
+   * A standing start is back-dated further, to the instant the car ACTUALLY set off: the speed
+   * ramp out of the last sample below `slowSpeedMs` is extrapolated back to zero (never more
+   * than `setOffMaxBackdateS`). Taking the last sample under 1 m/s at face value put every lap
+   * boundary of every run 0.28–0.31 s late — the time a car takes to reach 1 m/s — which is a
+   * systematic, always-positive error in every lap time the app shows.
+   */
+  setOffMaxBackdateS: number;
   /** Half window of the centred position smoother, seconds. */
   smoothHalfWindowS: number;
   /** Path store decimation, metres. */
@@ -92,6 +100,7 @@ export const DEFAULT_TRACK_OPTIONS: TrackOptions = {
   startSpeedMs: 3,
   slowSpeedMs: 1,
   startLookbackS: 10,
+  setOffMaxBackdateS: 1.0,
   smoothHalfWindowS: 0.1,
   decimateM: 0.5,
   resampleM: 1,
@@ -229,7 +238,13 @@ export class TrackBuilder {
   private prev: Smoothed | null = null;
 
   private started = false;
-  private slow: { o: Smoothed; storedLen: number } | null = null;
+  /**
+   * Tail of the samples seen while the car was still stopped, newest last. Only the tail is
+   * kept (the car may have been parked for minutes) and only until the run starts, so that a
+   * standing start can be placed at the moment the car set off rather than at the moment it
+   * happened to pass 1 m/s.
+   */
+  private slowRing: Array<{ o: Smoothed; storedLen: number }> = [];
   private startPt: Pt = { x: 0, y: 0 };
   private startHeading: number | null = null;
   private startPathIdx = 0;
@@ -287,7 +302,7 @@ export class TrackBuilder {
     this.travelled = 0;
     this.prev = null;
     this.started = false;
-    this.slow = null;
+    this.slowRing = [];
     this.startHeading = null;
     this.startPathIdx = 0;
     this.startSampleIdx = 0;
@@ -394,15 +409,29 @@ export class TrackBuilder {
     if (!this.started) {
       if (o.speed > opts.startSpeedMs) {
         this.started = true;
-        const slow = this.slow;
+        const ring = this.slowRing;
+        const slow = ring.length ? ring[ring.length - 1] : null;
         const plausibleM = 4 * opts.startSpeedMs * opts.startLookbackS; // could not have gone further while below startSpeedMs
         if (slow && o.t - slow.o.t <= opts.startLookbackS && Math.hypot(o.x - slow.o.x, o.y - slow.o.y) <= plausibleM) {
-          // standing start: the lap began when the car set off, not when it reached startSpeedMs
-          this.startPt = { x: slow.o.x, y: slow.o.y };
-          this.startSampleIdx = slow.o.i;
-          this.lapStartT = slow.o.t;
-          this.insertPoint(slow.storedLen, slow.o);
-          this.startPathIdx = slow.storedLen;
+          // Standing start: the lap began when the car SET OFF. The last sample under
+          // slowSpeedMs is already moving, so extrapolate its speed ramp back to zero and take
+          // the last stopped sample at or before that instant as the lap's first sample.
+          const next = o; // the sample that broke startSpeedMs; the ramp runs from `slow` to it
+          let setOffT = slow.o.t;
+          if (next.t > slow.o.t && next.speed > slow.o.speed) {
+            setOffT = slow.o.t - (slow.o.speed * (next.t - slow.o.t)) / (next.speed - slow.o.speed);
+          }
+          const floorT = slow.o.t - Math.min(opts.setOffMaxBackdateS, opts.startLookbackS);
+          if (!(setOffT > floorT)) setOffT = floorT;
+          if (setOffT > slow.o.t) setOffT = slow.o.t;
+          let k = ring.length - 1;
+          while (k > 0 && ring[k].o.t > setOffT) k--;
+          const at = ring[k];
+          this.startPt = { x: at.o.x, y: at.o.y };
+          this.startSampleIdx = at.o.i;
+          this.lapStartT = Math.max(setOffT, at.o.t);
+          this.insertPoint(at.storedLen, at.o);
+          this.startPathIdx = at.storedLen;
           this.storePoint(o.x, o.y, o.t, o.i, false);
         } else {
           this.startPt = { x: o.x, y: o.y };
@@ -414,10 +443,14 @@ export class TrackBuilder {
         this.lapPathStart = this.startPathIdx;
         this.lapStartD = this.stored[this.startPathIdx].d;
         this.lapStartSample = this.startSampleIdx;
+        this.slowRing = [];
         this.prev = o;
         return null;
       }
-      if (o.speed < opts.slowSpeedMs) this.slow = { o, storedLen: this.stored.length };
+      if (o.speed < opts.slowSpeedMs) {
+        this.slowRing.push({ o, storedLen: this.stored.length });
+        if (this.slowRing.length > 256) this.slowRing.shift();
+      }
       this.storePoint(o.x, o.y, o.t, o.i, false);
       this.prev = o;
       return null;
