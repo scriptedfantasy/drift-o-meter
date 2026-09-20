@@ -16,16 +16,9 @@ import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTimin
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies, motion, radii, space } from '../theme';
 import { easings } from '../motion';
+import { TONE_COLORS as TONES } from '../callouts';
 import type { EventTone, HudBanner, HudEvent } from './useDriveRun';
 
-const TONES: Record<EventTone, string> = {
-  ember: colors.ember,
-  magenta: colors.magenta,
-  gold: colors.gold,
-  green: colors.green,
-  cyan: colors.cyan,
-  red: colors.red,
-};
 
 export interface CalloutStackProps {
   events: HudEvent[];

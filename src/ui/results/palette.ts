@@ -1,4 +1,5 @@
 /** Colour + wording constants shared by the results screen's parts. */
+import { calloutColor as sharedCalloutColor } from '../callouts';
 import { colors } from '../theme';
 import type { Grade, StyleCalloutKind } from '../../engine/types';
 
@@ -59,28 +60,12 @@ export function gradeWord(grade: Grade, drifts: number): string {
 }
 
 /**
- * Event colour by callout kind, matching the drive HUD's `toneFor` (src/ui/hud/useDriveRun.ts):
- * a driver who learned gold = EXTREME ANGLE and green = PERFECT EXIT in the car must not have to
- * unlearn it in the verdict. The two should be one exported helper — see the hand-back note.
+ * Event colour by callout kind. Delegates to `src/ui/callouts.ts`, which is the one place the
+ * mapping lives: a driver who learned gold means extreme angle and green means a clean exit
+ * while driving must not have to unlearn it in the verdict.
  */
 export function calloutColor(kind: StyleCalloutKind | string): string {
-  switch (kind) {
-    case 'transition':
-    case 'manji':
-      return colors.magenta;
-    case 'extreme-angle':
-      return colors.gold;
-    case 'smooth':
-    case 'perfect-exit':
-    case 'clean-lap':
-      return colors.green;
-    case 'high-speed':
-      return colors.cyan;
-    case 'initiation':
-      return colors.muted;
-    default:
-      return colors.ember;
-  }
+  return sharedCalloutColor(kind);
 }
 
 /** Blend two `#rrggbb` colours; `t` is how much of `b` to take. */

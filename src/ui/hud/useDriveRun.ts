@@ -20,6 +20,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
+import { toneFor, type EventTone } from '../callouts';
+
+// Re-exported so the callout components keep one import site for the run's own types.
+export type { EventTone };
 import type { LiveFrame } from '../../engine/pipeline';
 import { G, radToDeg, type DriftPhase, type GpsSample, type Grade, type MotionSample, type Session } from '../../engine/types';
 import {
@@ -47,7 +51,6 @@ import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
  */
 export type RunStatus = 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'discarded' | 'error';
 
-export type EventTone = 'ember' | 'magenta' | 'gold' | 'green' | 'cyan' | 'red';
 
 /** One entry of the callout stack. */
 export interface HudEvent {
@@ -182,23 +185,6 @@ const WALKING_PACE_MPS = 2.8;
 
 const ACTIVE_PHASES: ReadonlySet<DriftPhase> = new Set<DriftPhase>(['entry', 'drifting', 'transition']);
 
-function toneFor(kind: string): EventTone {
-  switch (kind) {
-    case 'transition':
-    case 'manji':
-      return 'magenta';
-    case 'extreme-angle':
-      return 'gold';
-    case 'smooth':
-    case 'perfect-exit':
-    case 'clean-lap':
-      return 'green';
-    case 'high-speed':
-      return 'cyan';
-    default:
-      return 'ember';
-  }
-}
 
 function errorFor(err: unknown): RunError {
   const code = err instanceof SensorSourceError ? err.code : null;

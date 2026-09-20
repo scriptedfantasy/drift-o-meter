@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T23:32:56.555Z",
+  "startedAt": "2026-09-20T23:35:34.551Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,15 +9,15 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "results-untrusted",
-      "path": "/results/fixture-handheld?reveal=off",
-      "url": "http://127.0.0.1:46107/results/fixture-handheld?reveal=off",
+      "name": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:43611/",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/results-untrusted.png",
+      "screenshot": "artifacts/shots/home.png",
       "video": null,
-      "ms": 5151,
+      "ms": 2292,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -25,11 +25,10 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 62,
-        "bodyTextNodes": 72,
+        "displayTextNodes": 21,
+        "bodyTextNodes": 27,
         "otherTextNodes": 0
       },
       "skia": {
@@ -64,22 +63,144 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 110796,
-        "cyanPixels": 0,
-        "textPixels": 14176,
-        "nonBgFraction": 0.3817
+        "emberPixels": 349864,
+        "cyanPixels": 3676,
+        "textPixels": 99584,
+        "nonBgFraction": 0.7405
       }
     },
     {
-      "name": "results-untrusted-foot",
-      "path": "/results/fixture-handheld?reveal=off",
-      "url": "http://127.0.0.1:46107/results/fixture-handheld?reveal=off",
+      "name": "drive-peak",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:43611/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/results-untrusted-foot.png",
+      "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 5863,
+      "ms": 4708,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 87,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 74680,
+        "cyanPixels": 15804,
+        "textPixels": 6148,
+        "nonBgFraction": 0.6415
+      }
+    },
+    {
+      "name": "drive-bank",
+      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:43611/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-bank.png",
+      "video": null,
+      "ms": 4350,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 88,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 118736,
+        "cyanPixels": 37060,
+        "textPixels": 6372,
+        "nonBgFraction": 0.3108
+      }
+    },
+    {
+      "name": "results-best",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:43611/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-best.png",
+      "video": null,
+      "ms": 4337,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -90,8 +211,8 @@
           "Barlow_500Medium",
           "Barlow_600SemiBold"
         ],
-        "displayTextNodes": 62,
-        "bodyTextNodes": 72,
+        "displayTextNodes": 117,
+        "bodyTextNodes": 189,
         "otherTextNodes": 0
       },
       "skia": {
@@ -126,13 +247,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 251648,
-        "cyanPixels": 0,
-        "textPixels": 10700,
-        "nonBgFraction": 0.6225
+        "emberPixels": 79664,
+        "cyanPixels": 15880,
+        "textPixels": 32852,
+        "nonBgFraction": 0.5683
       }
     }
   ],
-  "finishedAt": "2026-09-20T23:33:07.645Z",
+  "finishedAt": "2026-09-20T23:35:50.313Z",
   "failed": 0
 }

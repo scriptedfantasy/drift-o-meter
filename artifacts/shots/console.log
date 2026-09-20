@@ -1,4 +1,8 @@
 
-===== results-untrusted  http://127.0.0.1:46107/results/fixture-handheld?reveal=off
+===== home  http://127.0.0.1:43611/
 
-===== results-untrusted-foot  http://127.0.0.1:46107/results/fixture-handheld?reveal=off
+===== drive-peak  http://127.0.0.1:43611/drive?sim=harbor&rate=1&at=100.85&hold=1
+
+===== drive-bank  http://127.0.0.1:43611/drive?sim=harbor&rate=1&at=50.75&hold=1
+
+===== results-best  http://127.0.0.1:43611/results/fixture-hero?reveal=off
