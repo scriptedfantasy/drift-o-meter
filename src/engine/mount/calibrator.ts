@@ -1026,12 +1026,10 @@ export class MountCalibrator {
 
         // ---- stage 2: body up = slow low-pass of the inertial up
         const tau = t < this.stationaryUntil ? 0.3 : t < this.fastUpUntil ? o.knockFastTau : o.gravityTau;
-        // Under load the car's body rolls and pitches; slow the filter down rather than chase
-        // it. Measured on the LOW-PASSED specific force, so a rattling cradle's ripple cannot
-        // modulate the weight in step with its own tilt and bias the average.
-        const amx = this.flx + G_ACC * ix;
-        const amy = this.fly + G_ACC * iy;
-        const amz = this.flz + G_ACC * iz;
+        // under load the car's body rolls and pitches: slow the filter down rather than chase it
+        const amx = fx + G_ACC * ix;
+        const amy = fy + G_ACC * iy;
+        const amz = fz + G_ACC * iz;
         const aw = Math.sqrt(amx * amx + amy * amy + amz * amz) / o.gravitySlowdownAccel;
         const ks = dt / (tau + dt) / (1 + aw * aw);
         this.gsx += (ix - this.gsx) * ks;

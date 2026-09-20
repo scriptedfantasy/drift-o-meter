@@ -45,7 +45,7 @@ export default function DriveScreen() {
   const gaugeW = landscape ? Math.min(stageW * 0.52, height * 1.3) : width;
   const gauge = { w: gaugeW, h: Math.min(gaugeW * 0.56, height * (landscape ? 0.62 : 0.32)) };
 
-  const map = landscape ? { w: 168, h: 116 } : { w: 132, h: 108 };
+  const map = landscape ? { w: 168, h: 116 } : { w: 136, h: 136 };
 
   return (
     <View style={styles.root} testID="screen-drive">
@@ -90,19 +90,23 @@ export default function DriveScreen() {
                   <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
                 </View>
 
+                {/* Middle band: what the slide is doing (strip), what it just earned (callouts)
+                    and where it is happening (map). Nothing here is decoration. */}
                 <View style={styles.stage}>
                   <DriftStrip snapshot={run.snapshot} testID="hud-drift" />
-                  <CalloutStack events={run.events} size={26} testID="hud-callouts" />
+                  <View style={styles.stageRow}>
+                    <View style={styles.stageCallouts}>
+                      <CalloutStack events={run.events} size={23} testID="hud-callouts" />
+                    </View>
+                    <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
+                  </View>
                 </View>
 
-                <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={64} testID="hud-telemetry" />
+                <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={68} testID="hud-telemetry" />
 
-                <View style={styles.bottomRow}>
-                  <View style={styles.scoreCell}>
-                    <ScoreBanner banner={run.banner} size={26} />
-                    <ScorePanel signals={signals} snapshot={run.snapshot} size={52} testID="hud-score" />
-                  </View>
-                  <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
+                <View style={styles.scoreCell}>
+                  <ScoreBanner banner={run.banner} size={28} />
+                  <ScorePanel signals={signals} snapshot={run.snapshot} size={58} testID="hud-score" />
                 </View>
 
                 {live ? <StopControl onPress={run.stop} /> : null}
@@ -182,7 +186,9 @@ const styles = StyleSheet.create({
   frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
   frameLandscape: { paddingTop: space[1], paddingBottom: space[2] },
 
-  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'flex-start', justifyContent: 'flex-start', gap: space[3], paddingTop: space[1] },
+  stage: { flex: 1, alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2], paddingTop: space[1] },
+  stageRow: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
+  stageCallouts: { flex: 1, alignItems: 'flex-start' },
   bleed: { marginHorizontal: -gutter },
 
   landscapeRow: { flex: 1, flexDirection: 'row', gap: space[5] },
