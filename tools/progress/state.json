@@ -106,21 +106,21 @@
       "id": "hud",
       "name": "Live drive HUD",
       "layer": "app",
-      "status": "critique",
-      "rounds": 1,
-      "verdict": "Round 2: the opening alarm now names the real condition, the needle is clear of the hero number, and the colour ramp reaches gold at angles a real run produces.",
+      "status": "fixing",
+      "rounds": 2,
+      "verdict": "All fourteen earlier findings verified fixed. Held back by one line of text: during a GPS dropout it says it has stopped scoring while the scorer is still paying 17 percent of the run.",
       "note": "Angle, g-meter, speed, score combo, callouts, glow",
-      "score": "7.5 \u2192 round 2"
+      "score": "7.5 \u2192 8.0"
     },
     {
       "id": "results",
       "name": "Results & grade",
       "layer": "app",
-      "status": "critique",
-      "rounds": 1,
-      "verdict": "Round 2: the showcase no longer publishes a simulator artifact, gold is the top grade again and nothing else, and an untrusted run no longer asserts what it just disowned.",
+      "status": "passed",
+      "rounds": 2,
+      "verdict": "Passed. The showcase stopped publishing a simulator artifact, gold went back to meaning the top grade, and an untrusted run no longer asserts what it just disowned.",
       "note": "Grade reveal, breakdown, best drift",
-      "score": "7.0 \u2192 round 2"
+      "score": "7.0 \u2192 8.5 PASS"
     },
     {
       "id": "replay-ui",
@@ -151,6 +151,22 @@
     }
   ],
   "verdicts": [
+    {
+      "piece": "The two screens a driver uses",
+      "round": 2,
+      "t": "01:30",
+      "pass": false,
+      "score": "Results 8.5 PASS \u00b7 HUD 8.0",
+      "summary": "The critic rebuilt and re-shot everything, added 21 moments of its own, replayed every recording through the pipeline to check the claims, and ran the stop-to-verdict flow four times end to end. The results screen passed. The drive display fixed all fourteen earlier findings and failed on one sentence.",
+      "findings": [
+        "During a GPS dropout the display says it has stopped scoring. The scorer awards 4,867 points inside those windows, 17 percent of the run, and the results screen then publishes them as a trusted A. Two halves of the app disagreeing about whether points exist.",
+        "Two of four stop-to-verdict runs dead-ended on a storage failure, behind a button labelled ALLOW ACCESS for a disk-full error. The code itself knew the label was wrong.",
+        "Verified fixed on the display: the hero number is 13.1 millimetres at 8.2 to 1 contrast, the needle clears it by 21 pixels where it used to run through the digit, and the peak cell contradicts the number on 0 of 8,954 frames against 447 before.",
+        "Verified fixed on results: grade thresholds from 1.40 to 6.46 contrast, and the palette reversed from gold outweighing ember five to one to ember ahead.",
+        "The showcase run stopped publishing a simulator artifact. Its corners now show real spread of 0.1 to 2.7 metres where every one used to read zero point zero.",
+        "The builder caught a case the critic had missed: a corner driven at 118 degrees on both laps was reading as perfect repeatability, and now reads SPUN."
+      ]
+    },
     {
       "piece": "The two screens a driver uses",
       "round": 1,
@@ -343,6 +359,10 @@
     {
       "t": "00:45",
       "text": "Every screen now exists. The replay screen measured the motion the analysis renderer could never show: the callout slam genuinely overshoots and the shake is a decaying oscillation settling over 180 milliseconds."
+    },
+    {
+      "t": "01:35",
+      "text": "Results passed at 8.5. The drive display fixed all fourteen findings and failed on one sentence: it claims to stop scoring during a GPS dropout while the scorer keeps paying. The engine is being asked whether those points should exist at all."
     }
   ],
   "shots": [
