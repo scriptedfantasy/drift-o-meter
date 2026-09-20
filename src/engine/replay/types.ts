@@ -42,6 +42,16 @@ export interface ReplayOptions {
   fallbackPointsPerS: number;
   /** Trim leading/trailing dead air (parked car) to this many seconds. */
   deadAirS: number;
+  /**
+   * A gap between usable GPS fixes longer than this is a DROPOUT: positions through it were
+   * dead-reckoned, not measured. Both renderers dash those stretches from `trail.measured` /
+   * `gapWindows` instead of each inventing a rule from `session.gps`.
+   */
+  gpsGapS: number;
+  /** A fix with worse horizontal accuracy than this does not count as a measurement, metres. */
+  gpsMaxHAccM: number;
+  /** How long before a highlight's peak to cue playback, seconds (see `ReplayHighlight.cueT`). */
+  highlightLeadS: number;
 }
 
 export interface ReplayBounds {
@@ -91,6 +101,13 @@ export interface ReplayTrail {
   segmentOf: Int16Array;
   /** Lap index containing this sample, or -1 when the session has no laps / outside laps. */
   lapOf: Int16Array;
+  /**
+   * 1 where the position was MEASURED (a usable GPS fix brackets this sample), 0 where it was
+   * dead-reckoned through a dropout. The trail is continuous either way — the estimator fills
+   * the gap — so without this mask a renderer cannot tell a real corner from a guessed one, and
+   * two renderers inventing their own heuristics will disagree about where the data was real.
+   */
+  measured: Uint8Array;
 }
 
 /** One contiguous drifting run (from a DriftEvent) mapped onto trail samples. */
@@ -273,7 +290,14 @@ export interface ReplayTelemetry {
 
 /** A moment worth jumping to (results screen / share). Sorted by score, best first. */
 export interface ReplayHighlight {
+  /** The moment itself: the peak of the drift. */
   t: number;
+  /**
+   * Where playback should START to see this moment. `inT` is the beginning of the whole drift,
+   * which on a long chain is half a minute of run-up before anything happens; `cueT` is the
+   * run-in to the peak, so "jump to the best moment" lands on the moment.
+   */
+  cueT: number;
   /** Seconds before/after `t` worth playing. */
   inT: number;
   outT: number;
@@ -308,8 +332,21 @@ export interface Replay {
   /** Session summary for HUD chrome. */
   info: {
     name: string;
-    totalPoints: number;
-    grade: string;
+    /**
+     * Whether the run's score may be presented as an achievement (mirrors
+     * `SessionIntegrity.scoreTrusted`). When false the engine refused to publish the run.
+     */
+    trusted: boolean;
+    /**
+     * Headline score and grade — NULL when `trusted` is false, so a renderer cannot print an
+     * untrusted total by forgetting to check. Show `untrustedMessage` instead. (The raw
+     * timeline in `trail.score` is still present: it is the shape of the run, not a claim
+     * about it, and the scrubber needs it.)
+     */
+    totalPoints: number | null;
+    grade: string | null;
+    /** Driver-facing reason the score is withheld. Empty when trusted. */
+    untrustedMessage: string;
     driftCount: number;
     /** The single biggest |β| of the session, radians. */
     peakAngle: number;
@@ -319,6 +356,12 @@ export interface Replay {
     /** Band of `typicalAngle`, so one spike does not relabel a whole session. */
     severity: DriftSeverity;
   };
+  /**
+   * Stretches where the position was dead-reckoned through a GPS dropout, replay-relative
+   * seconds. Derived once, here, from `session.gps` — renderers draw these dashed rather than
+   * each deriving their own windows with their own threshold.
+   */
+  gapWindows: Array<{ startT: number; endT: number }>;
   /** Non-fatal data problems found while building (bad timestamps, missing positions…). */
   warnings: string[];
   options: ReplayOptions;

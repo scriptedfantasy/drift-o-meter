@@ -1,6 +1,2 @@
 
-===== drive-peak  http://127.0.0.1:33707/drive?sim=harbor&rate=1&at=100.85&hold=1
-
-===== drive-bank  http://127.0.0.1:33707/drive?sim=harbor&rate=1&at=50.75&hold=1
-
-===== drive-lost  http://127.0.0.1:33707/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1
+===== drive  http://127.0.0.1:36439/drive?sim=harbor&rate=1&at=39.2

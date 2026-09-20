@@ -44,7 +44,7 @@ export const CAMERA_LIMITS = {
   maxRotation: 3.0,
   /** ln(zoom) units per second */
   maxZoomLog: 1.2,
-  /** Cross-fade length after a cut, s. */
+  /** Cross-fade length after a cut, in REAL seconds (it must decay while paused). */
   cutFadeS: 0.12,
 } as const;
 
@@ -69,6 +69,12 @@ export const CAMERA_TUNING = {
   lookAheadFullSpeed: 6,
   /** Extra look-ahead as a fraction of the span while sliding, so the car leads into frame. */
   lookAheadDrift: 0.12,
+  /**
+   * Hard cap on look-ahead as a fraction of the VISIBLE shorter side, applied after the zoom
+   * (including the cinematic multiplier) is known. 12 m is a comfortable lead at a 55 m span
+   * and shoves the car off the bottom of a tall portrait stage at a 17 m one.
+   */
+  maxLookFrac: 0.22,
   /** Overview padding fraction on each side of the bounds. */
   overviewPad: 0.04,
   /** Cinematic zoom factor: 0.85 on straights → 1.6 at full drift intensity. */
@@ -134,7 +140,8 @@ interface CameraTarget {
 
 /**
  * Replay camera. `update(replay, t, dt)` returns the smoothed state for replay time `t`, where
- * `dt` is the frame interval. The first update snaps to the target (no start-up jump); afterwards
+ * `dt` is the REAL frame interval in seconds (not a replay-time delta): while paused, keep
+ * calling it with the same `t` and a real `dt` so smoothing settles and a cut's cross-fade clears. The first update snaps to the target (no start-up jump); afterwards
  * every parameter is critically-damped and hard-limited per frame (see CAMERA_LIMITS), except on
  * a deliberate cut. `jumpTo()` snaps for scrubbing; `setMode()` cuts by default.
  */
@@ -153,7 +160,9 @@ export class ReplayCamera {
    */
   private lastRotationTarget = NaN;
   private pendingCut = false;
-  private cutAt = -Infinity;
+  /** REAL seconds since the last cut, accumulated from `dt` — not replay time, which does not
+   *  advance while paused: a cut on a paused frame used to leave the screen 55 % black forever. */
+  private sinceCut = Infinity;
   private lastT = 0;
 
   constructor(mode: CameraMode, viewport: Viewport) {
@@ -187,7 +196,7 @@ export class ReplayCamera {
   /** Forget the smoothed state; the next update snaps to its target. */
   reset(): void {
     this.state = null;
-    this.cutAt = -Infinity;
+    this.sinceCut = Infinity;
     this.pendingCut = false;
     this.lastRotationTarget = NaN;
   }
@@ -212,7 +221,7 @@ export class ReplayCamera {
     this.py.snap(target.cy);
     this.pz.snap(Math.log(target.zoom));
     this.pr.snap(target.rotation);
-    if (isCut) this.cutAt = t;
+    if (isCut) this.sinceCut = 0;
     this.pendingCut = false;
     this.lastT = t;
     this.state = {
@@ -263,6 +272,7 @@ export class ReplayCamera {
     }
     const zoom = Math.exp(lz);
     this.lastT = t;
+    this.sinceCut += step; // REAL elapsed time, so the fade clears even when t is frozen
     if (![cx, cy, zoom, rot].every(Number.isFinite)) return this.snapTo(replay, t, false);
     this.state = {
       cx,
@@ -272,7 +282,7 @@ export class ReplayCamera {
       w: this.viewport.w,
       h: this.viewport.h,
       cut: false,
-      cutFade: clamp(1 - (t - this.cutAt) / CAMERA_LIMITS.cutFadeS, 0, 1),
+      cutFade: clamp(1 - this.sinceCut / CAMERA_LIMITS.cutFadeS, 0, 1),
     };
     return { ...this.state };
   }
@@ -301,13 +311,19 @@ export class ReplayCamera {
     const course = Number.isFinite(pose.course) ? pose.course : 0;
     const span = this.spanFor(speed, intensity);
     const speedF = clamp(speed / CAMERA_TUNING.lookAheadFullSpeed, 0, 1);
-    // lead the car further into frame while it is sliding, so the shot has motion of its own
-    const look = (CAMERA_TUNING.lookAheadM + CAMERA_TUNING.lookAheadDrift * span * intensity) * speedF;
+    let zoom = Math.min(w, h) / span;
+    if (this.mode === 'cinematic') {
+      zoom *= CAMERA_TUNING.cinematicZoomIdle + (CAMERA_TUNING.cinematicZoomFull - CAMERA_TUNING.cinematicZoomIdle) * intensity;
+    }
+    // lead the car further into frame while it is sliding, so the shot has motion of its own —
+    // but never by more than a fixed fraction of what is actually visible, or a zoomed-in
+    // cinematic frame on a tall stage pushes the car out of the bottom of the band
+    const visibleSpan = Math.min(w, h) / zoom;
+    const look = Math.min((CAMERA_TUNING.lookAheadM + CAMERA_TUNING.lookAheadDrift * span * intensity) * speedF, CAMERA_TUNING.maxLookFrac * visibleSpan);
     const cc = Math.cos(course);
     const sc = Math.sin(course);
     let cx = (Number.isFinite(pose.x) ? pose.x : 0) + look * cc;
     let cy = (Number.isFinite(pose.y) ? pose.y : 0) + look * sc;
-    let zoom = Math.min(w, h) / span;
     // While moving, point the travel direction up. While stopped, hold the last target — but on
     // the FIRST frame there is no last target, so seed it from the car's heading: a replay that
     // opens on a stationary car must still open pointing the right way.
@@ -315,7 +331,6 @@ export class ReplayCamera {
     else if (!Number.isFinite(this.lastRotationTarget)) this.lastRotationTarget = Math.PI / 2 - (Number.isFinite(pose.heading) ? pose.heading : 0);
     let rotation = this.lastRotationTarget;
     if (this.mode === 'cinematic') {
-      zoom *= CAMERA_TUNING.cinematicZoomIdle + (CAMERA_TUNING.cinematicZoomFull - CAMERA_TUNING.cinematicZoomIdle) * intensity;
       const ph = 2 * Math.PI * CAMERA_TUNING.swayHz * t;
       rotation += CAMERA_TUNING.swayRotation * Math.sin(ph);
       const lat = CAMERA_TUNING.swayOffsetM * Math.sin(ph + 1.3) * speedF;

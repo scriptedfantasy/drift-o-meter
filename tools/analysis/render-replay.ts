@@ -6,9 +6,11 @@
  * usage: npx tsx tools/analysis/render-replay.ts <harbor|touge> <seed> <t|keyword> <overview|chase|cinematic> out.svg
  *          [--laps=N] [--consistency=0..1] [--aggression=0..1] [--beta=DEG] [--cut]
  *   t: replay-relative seconds, or a keyword:
- *      mid | start | end | peak | transition[N] | lap2 | lap2-peak | ghost | straight | slow | spin
+ *      mid | start | end | peak | highlight | transition[N] | lap2 | lap2-peak | ghost | straight | slow | spin
  *   --beta=DEG  force a synthetic slide of DEG degrees (to check escalation past the sim's ceiling)
  *   --ghost-sync=time  place the ghost by elapsed time (a car to chase) instead of by distance
+ *   --untrusted        mark the session as one the engine refused to publish
+ *   --dropouts         simulate GPS dropouts (the dead-reckoned stretches draw dashed)
  * Convert with tools/analysis/render_replay.py (SVG → PNG at 1170×2532).
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -321,6 +323,26 @@ function drawTrail(f: Frame): string {
     };
     for (let i = 0; i <= cur; i++) {
       if (tr.segmentOf[i] >= 0) {
+        flush();
+        continue;
+      }
+      if (inView(f, tr.x[i], tr.y[i]) || run.length > 0) run.push([tr.x[i], tr.y[i]]);
+      else flush();
+    }
+    flush();
+  }
+  // where the position was dead-reckoned through a GPS dropout, the line is a guess: dash it,
+  // from `trail.measured` so every renderer dashes exactly the same stretches
+  {
+    let run: Array<[number, number]> = [];
+    const flush = () => {
+      if (run.length > 1) {
+        s += `<polyline points="${pointsAttr(run)}" stroke="${MUTED}" stroke-width="${f3(mOrPx(f, 0.45, 1.3))}" opacity="0.5" stroke-dasharray="${f2(mOrPx(f, 1.6, 4))} ${f2(mOrPx(f, 1.6, 4))}"/>`;
+      }
+      run = [];
+    };
+    for (let i = 0; i <= cur; i++) {
+      if (tr.measured[i]) {
         flush();
         continue;
       }
@@ -796,9 +818,14 @@ function topHud(f: Frame): string {
   s += text(W - 18, baseline - 26, `${kmh(p.speed)}`, { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
   s += text(W - 18, baseline - 12, 'KM/H', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
   const ptsCol = p.phase === 'drifting' ? EMBER : WHITE;
-  s += text(W - 18, baseline + 12, pts(p.points), { size: T_VALUE, fill: ptsCol, anchor: 'end', weight: 800, italic: true });
-  s += text(W - 18, baseline + 26, 'POINTS', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
-  if (p.multiplier > 1.05) {
+  if (r.info.trusted) {
+    s += text(W - 18, baseline + 12, pts(p.points), { size: T_VALUE, fill: ptsCol, anchor: 'end', weight: 800, italic: true });
+    s += text(W - 18, baseline + 26, 'POINTS', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
+  } else {
+    s += text(W - 18, baseline + 12, '\u2014', { size: T_VALUE, fill: MUTED, anchor: 'end', weight: 800, italic: true });
+    s += text(W - 18, baseline + 26, 'NOT SCORED', { size: T_LABEL, spacing: 2, fill: RED, anchor: 'end', weight: 700 });
+  }
+  if (p.multiplier > 1.05 && r.info.trusted) {
     const cw = 34;
     const cx = W - 18 - pts(p.points).length * T_VALUE * 0.46 - cw - 8;
     s += `<rect x="${f2(cx)}" y="${f2(baseline - 12)}" width="${cw}" height="17" rx="3" fill="${EMBER}"/>`;
@@ -837,6 +864,13 @@ function bottomHud(f: Frame): string {
     const b = xAt(Math.min(seg.endT, f.t));
     s += `<rect x="${f2(a)}" y="${f2(yBot + 2)}" width="${f2(Math.max(1, b - a))}" height="2.5" rx="1.2" fill="${heatColor(seg.peakAngle)}" opacity="0.85"/>`;
   }
+  // dropout windows on the scrubber, so the strip says where the data was real
+  for (const w of r.gapWindows) {
+    if (w.startT > f.t) continue;
+    const a = xAt(w.startT);
+    const b = xAt(Math.min(w.endT, f.t));
+    s += `<rect x="${f2(a)}" y="${f2(yTop)}" width="${f2(Math.max(1, b - a))}" height="${f2(yBot - yTop)}" fill="${MUTED}" opacity="0.18"/>`;
+  }
   // lap ticks, transitions
   for (const lap of r.laps) {
     if (lap.index === 0 || lap.startT > f.t) continue;
@@ -862,16 +896,27 @@ function bottomHud(f: Frame): string {
   const lapStr = r.laps.length === 0 ? 'STAGE' : lap ? `LAP ${lap.index + 1}/${r.laps.length}` : last && f.t > last.endT ? 'FINISH' : `LAP 1/${r.laps.length}`;
   s += text(18, ly, lapStr, { size: T_LABEL, spacing: 1.6, fill: WHITE, weight: 800 });
   s += text(18 + lapStr.length * T_LABEL * 0.52 + 14, ly, r.info.name.toUpperCase().replace(' (SIM)', ''), { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
-  // live totals only: TOTAL is the running score, the grade lands on the final frame
-  s += text(W - 18, ly, 'TOTAL', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
-  s += text(W - 18, ly + 22, pts(f.pose.points), { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
+  // An untrusted run has no headline: `info.totalPoints` and `info.grade` are null, so this is
+  // not a rule a renderer can forget. Show the reason and offer the run as a recording.
   const finished = f.t >= r.durationS - 0.05;
-  if (finished) {
+  if (!r.info.trusted) {
+    // no total, no grade, no multiplier chip: the reason takes the whole row instead
+    s += `<rect x="${f2(W - 18 - 74)}" y="${f2(ly - 11)}" width="74" height="16" rx="3" fill="${RED}" opacity="0.9"/>`;
+    s += text(W - 18 - 37, ly + 1, 'NOT SCORED', { size: T_LABEL, fill: '#000', anchor: 'middle', weight: 800, spacing: 1.2 });
+    const msg = r.info.untrustedMessage.toUpperCase();
+    const fit = Math.floor((W - 36) / (T_LABEL * 0.47));
+    s += text(18, ly + 21, msg.length > fit ? `${msg.slice(0, fit - 1)}\u2026` : msg, { size: T_LABEL, fill: MUTED, weight: 700 });
+  } else {
+    // live totals only: TOTAL is the running score, the grade lands on the final frame
+    s += text(W - 18, ly, 'TOTAL', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
+    s += text(W - 18, ly + 22, pts(f.pose.points), { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
+  }
+  if (finished && r.info.grade) {
     const gcol = (gradeColors as Record<string, string>)[r.info.grade] ?? EMBER;
     s += `<rect x="18" y="${f2(ly + 6)}" width="30" height="22" rx="4" fill="${gcol}"/>`;
     s += text(33, ly + 23, r.info.grade, { size: 18, fill: '#000', anchor: 'middle', weight: 800 });
     s += text(54, ly + 22, 'FINAL GRADE', { size: T_LABEL, spacing: 1.6, fill: MUTED, weight: 700 });
-  } else {
+  } else if (!finished && r.info.trusted) {
     // masked to elapsed time, like the points, the total and the grade: "BEST 71°" on the
     // opening frame is a small forward-looking spoiler
     let best = 0;
@@ -994,6 +1039,8 @@ function resolveTime(replay: Replay, spec: string): number {
     return tr ? tr.t + 0.12 : replay.durationS / 2;
   }
   if (spec === 'peak' || spec === 'spin') return segs[0]?.peakT ?? replay.durationS / 2;
+  // the model says where to cue a highlight, so no renderer has to guess a lead-in
+  if (spec === 'highlight') return replay.highlights[0]?.cueT ?? replay.durationS / 2;
   if (spec === 'mid') return replay.durationS / 2;
   if (spec === 'end') return replay.durationS;
   if (spec === 'start') return 0;
@@ -1097,8 +1144,8 @@ function amplifyBeta(replay: Replay, betaDeg: number): number {
  * automatically whenever the run is shaped (`--aggression`/`--consistency`/`--laps`) or forced
  * with `--fixture` — because synthetic and edge-case sessions have no recorded pipeline output.
  */
-export function loadSession(track: TrackId, seed: number, simOpts: { laps?: number; consistency?: number; aggression?: number; fixture?: boolean } = {}): { session: Session; source: 'pipeline' | 'fixture' } {
-  const shaped = simOpts.fixture || simOpts.aggression !== undefined || simOpts.consistency !== undefined || simOpts.laps !== undefined;
+export function loadSession(track: TrackId, seed: number, simOpts: { laps?: number; consistency?: number; aggression?: number; fixture?: boolean; untrusted?: boolean; dropouts?: boolean } = {}): { session: Session; source: 'pipeline' | 'fixture' } {
+  const shaped = simOpts.fixture || simOpts.dropouts || simOpts.aggression !== undefined || simOpts.consistency !== undefined || simOpts.laps !== undefined;
   if (!shaped) {
     const file = join(process.cwd(), 'artifacts', `session-${track}.json`);
     if (existsSync(file)) {
@@ -1106,8 +1153,17 @@ export function loadSession(track: TrackId, seed: number, simOpts: { laps?: numb
       if (session?.states?.length > 1) return { session, source: 'pipeline' };
     }
   }
-  const run = simulateRun(track, { seed, laps: simOpts.laps ?? 2, consistency: simOpts.consistency, aggression: simOpts.aggression });
+  const run = simulateRun(track, { seed, laps: simOpts.laps ?? 2, consistency: simOpts.consistency, aggression: simOpts.aggression, gpsDropouts: simOpts.dropouts });
   return { session: sessionFromSimulation(run), source: 'fixture' };
+}
+
+/** Mark a session as one the engine refused to publish, to check the untrusted presentation. */
+function doubt(session: Session): Session {
+  return {
+    ...session,
+    score: { ...session.score, trusted: false },
+    integrity: { ...session.integrity, scoreTrusted: false, mount: 'loose', message: 'Phone moved in the cradle — the numbers are not reliable' },
+  };
 }
 
 export function renderReplayFrame(
@@ -1115,9 +1171,10 @@ export function renderReplayFrame(
   seed: number,
   timeSpec: string,
   mode: CameraMode,
-  simOpts: { laps?: number; consistency?: number; aggression?: number; betaDeg?: number; cut?: boolean; fixture?: boolean; ghostSync?: 'distance' | 'time' } = {},
+  simOpts: { laps?: number; consistency?: number; aggression?: number; betaDeg?: number; cut?: boolean; fixture?: boolean; ghostSync?: 'distance' | 'time'; untrusted?: boolean; dropouts?: boolean } = {},
 ): { svg: string; t: number; replay: Replay; source: 'pipeline' | 'fixture' } {
-  const { session, source } = loadSession(track, seed, simOpts);
+  const { session: loaded, source } = loadSession(track, seed, simOpts);
+  const session = simOpts.untrusted ? doubt(loaded) : loaded;
   const replay = buildReplay(session, simOpts.ghostSync ? { ghostSync: simOpts.ghostSync } : {});
   let t = resolveTime(replay, timeSpec);
   if (simOpts.betaDeg) t = amplifyBeta(replay, simOpts.betaDeg);
@@ -1177,6 +1234,8 @@ function main(): void {
     cut: !!flags.cut,
     fixture: !!flags.fixture,
     ghostSync: flags['ghost-sync'] === 'time' ? 'time' : undefined,
+    untrusted: !!flags.untrusted,
+    dropouts: !!flags.dropouts,
   });
   writeFileSync(out, svg);
   const p = poseAt(replay, t);

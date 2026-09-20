@@ -36,6 +36,9 @@ SHOTS = [
     ("fixture-s", "peak", "cinematic", ["--fixture", "--aggression=1.0", "--consistency=1.0"]),
     ("cut", "peak", "chase", ["--cut"]),
     ("ghost-timesync", "ghost", "chase", ["--ghost-sync=time"]),
+    ("highlight", "highlight", "cinematic", []),
+    ("untrusted", "peak", "chase", ["--untrusted"]),
+    ("gps-dropout", "mid", "overview", ["--dropouts"]),
 ]
 
 

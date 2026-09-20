@@ -1123,7 +1123,8 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
     drawStr(canvas, f, f.fonts.label, 'TOTAL', lay.info.right, ly, { color: MUTED, anchor: 'end', tracking: 2 });
     drawStr(canvas, f, f.fonts.value, pts(f.pose.points), lay.info.right, ly + 22, { anchor: 'end' });
   }
-  if (finished && !f.noScore) {
+  // `info.grade` is null on a run the engine refuses to publish, which is what narrows it here.
+  if (finished && !f.noScore && r.info.grade) {
     const gcol = (gradeColors as Record<string, string>)[r.info.grade] ?? colors.ember;
     canvas.drawRect({ x: lay.info.x, y: ly + 6, width: 30, height: 22 }, fillPaint(f, gcol));
     drawStr(canvas, f, f.fonts.grade, r.info.grade, lay.info.x + 15, ly + 23, { color: '#000000', anchor: 'middle' });

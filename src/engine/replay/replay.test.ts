@@ -15,6 +15,7 @@ import {
   screenToWorld,
   scrubTelemetry,
   SEVERITY_EDGES,
+  CAMERA_TUNING,
   severityOf,
   shakeAt,
   smokeAt,
@@ -390,6 +391,90 @@ describe('buildReplay', () => {
     expect(empty.trail.n).toBeGreaterThan(0);
     expect(empty.warnings.length).toBeGreaterThan(0);
     expect(() => poseAt(empty, 0)).not.toThrow();
+  });
+});
+
+describe('contracts a second renderer must not have to remember', () => {
+  it('withholds the headline score entirely when the run is untrusted', () => {
+    // ROUND-5 FINDING 1: `totalPoints`/`grade` were populated even for a run the engine refuses
+    // to publish. Both renderers suppressed it because both were told to — discipline, not
+    // structure. They are null now, so the type stops a consumer that forgets to look.
+    expect(replay.info.trusted).toBe(true);
+    expect(replay.info.totalPoints).not.toBeNull();
+    expect(replay.info.grade).not.toBeNull();
+    expect(replay.info.untrustedMessage).toBe('');
+
+    const doubted: Session = {
+      ...session,
+      score: { ...session.score, trusted: false },
+      integrity: { ...session.integrity, scoreTrusted: false, message: 'Phone was moving in the cradle' },
+    };
+    const r = buildReplay(doubted);
+    expect(r.info.trusted).toBe(false);
+    expect(r.info.totalPoints).toBeNull();
+    expect(r.info.grade).toBeNull();
+    expect(r.info.untrustedMessage).toBe('Phone was moving in the cradle');
+    // the shape of the run is still there — it is data about the run, not a claim about it
+    expect(r.trail.score[r.trail.n - 1]).toBeGreaterThan(0);
+    // either flag alone is enough to withhold it
+    expect(buildReplay({ ...session, score: { ...session.score, trusted: false } }).info.grade).toBeNull();
+    expect(buildReplay({ ...session, integrity: { ...session.integrity, scoreTrusted: false } }).info.grade).toBeNull();
+    // and there is always something to show instead
+    expect(buildReplay({ ...session, score: { ...session.score, trusted: false } }).info.untrustedMessage.length).toBeGreaterThan(0);
+  });
+
+  it('marks dead-reckoned positions so both renderers dash the same stretches', () => {
+    // ROUND-5 FINDING 2: the estimator propagates through a GPS dropout, so the trail is
+    // continuous and nothing distinguished a measured corner from a guessed one. Each renderer
+    // was deriving its own windows from session.gps with its own threshold.
+    const hz = 100;
+    const states = line(3000, () => ({}));
+    const gps = [];
+    for (let t = 0; t <= 30; t += 1) {
+      if (t > 10 && t < 18) continue; // an 8 s hole
+      gps.push({ t, lat: 0, lon: 0, speed: 20, course: 90, hAcc: 4 });
+    }
+    const r = buildReplay(synthetic(states, { gps }));
+    expect(r.gapWindows.length).toBe(1);
+    expect(r.gapWindows[0].startT).toBeCloseTo(10 - r.t0, 1);
+    expect(r.gapWindows[0].endT).toBeCloseTo(18 - r.t0, 1);
+    expect(r.warnings.join(' ')).toMatch(/dropout/);
+    let measured = 0;
+    let reckoned = 0;
+    for (let k = 0; k < r.trail.n; k++) {
+      const t = r.trail.t[k] + r.t0;
+      if (t > 11 && t < 17) {
+        expect(r.trail.measured[k]).toBe(0);
+        reckoned++;
+      } else if (t > 2 && t < 9) {
+        expect(r.trail.measured[k]).toBe(1);
+        measured++;
+      }
+    }
+    expect(reckoned).toBeGreaterThan(50);
+    expect(measured).toBeGreaterThan(50);
+    // a clean run has nothing to dash
+    const clean = buildReplay(synthetic(line(3000, () => ({})), { gps: Array.from({ length: 31 }, (_, i) => ({ t: i, lat: 0, lon: 0, speed: 20, course: 90, hAcc: 4 })) }));
+    expect(clean.gapWindows).toEqual([]);
+    for (let k = 0; k < clean.trail.n; k++) expect(clean.trail.measured[k]).toBe(1);
+    // a useless fix (hAcc 400 m) is not a measurement
+    const junk = buildReplay(synthetic(line(600, () => ({})), { gps: Array.from({ length: 7 }, (_, i) => ({ t: i, lat: 0, lon: 0, speed: 20, course: 90, hAcc: 400 })) }));
+    expect(junk.gapWindows.length).toBeGreaterThan(0);
+  });
+
+  it('cues a highlight at the moment, not at the start of the run-up', () => {
+    // ROUND-5 FINDING 3: `inT` is the start of the whole drift, up to 25 s before the peak on a
+    // chain, so "jump to the best moment" landed on the run-up.
+    expect(replay.highlights.length).toBeGreaterThan(0);
+    for (const h of replay.highlights) {
+      expect(h.cueT).toBeGreaterThanOrEqual(h.inT - 1e-9);
+      expect(h.cueT).toBeLessThanOrEqual(h.t + 1e-9);
+      expect(h.t - h.cueT).toBeLessThanOrEqual(replay.options.highlightLeadS + 1e-9);
+    }
+    // on a long chain the cue really is much later than the drift start
+    const chained = replay.highlights.filter((h) => h.t - h.inT > 10);
+    expect(chained.length).toBeGreaterThan(0);
+    for (const h of chained) expect(h.cueT - h.inT).toBeGreaterThan(5);
   });
 });
 
@@ -845,6 +930,62 @@ describe('camera', () => {
       expect(s.cut).toBe(false);
       expect(Math.abs(wrapAngle(s.rotation - q.rotation))).toBeLessThanOrEqual(CAMERA_LIMITS.maxRotation * dt + 1e-9);
       q = s;
+    }
+  });
+
+  it('a cut fades in REAL time, so it clears while paused', () => {
+    // ROUND-5 FINDING 4: the cross-fade was measured in replay time, so a mode switch on a
+    // paused frame left the screen 55 % black forever.
+    const cam = new ReplayCamera('overview', vp);
+    cam.update(replay, 30, dt);
+    cam.setMode('chase');
+    const cut = cam.update(replay, 30, dt);
+    expect(cut.cut).toBe(true);
+    expect(cut.cutFade).toBe(1);
+    // PAUSED: replay time frozen, real frames still arriving
+    let st = cut;
+    let frames = 0;
+    for (; frames < 60 && st.cutFade > 0; frames++) st = cam.update(replay, 30, dt);
+    expect(st.cutFade).toBe(0);
+    expect(frames).toBeLessThanOrEqual(Math.ceil(CAMERA_LIMITS.cutFadeS / dt) + 2);
+    // and a long stall does not leave it stuck either
+    const cam2 = new ReplayCamera('overview', vp);
+    cam2.update(replay, 30, dt);
+    cam2.setMode('chase');
+    cam2.update(replay, 30, dt);
+    expect(cam2.update(replay, 30, 0.5).cutFade).toBe(0);
+  });
+
+  it('keeps the car inside the frame: look-ahead is a fraction of what is visible', () => {
+    // ROUND-5 FINDING 5: look-ahead was a distance in metres while the zoom fits the SHORTER
+    // side, so a zoomed-in cinematic frame on a tall portrait stage pushed the car past the
+    // bottom of the visible band — one frame had it half under the scrubber. At full cinematic
+    // zoom the old target put it 456 px below centre, off the bottom of an 844 pt screen.
+    const tall = { w: 390, h: 844 };
+    const cap = CAMERA_TUNING.maxLookFrac * Math.min(tall.w, tall.h);
+    const bandBottom = tall.h - 96 - 34; // the renderer's bottom bar + scrubber
+    for (const mode of ['chase', 'cinematic'] as CameraMode[]) {
+      // the TARGET obeys the cap (jumpTo snaps to it, with no smoothing lag). Cinematic tilts
+      // the frame by up to ±0.025 rad of sway, which swings ~1 px of the lateral offset onto
+      // the vertical axis; nothing else may exceed the cap.
+      const slack = mode === 'cinematic' ? 1.5 : 1e-6;
+      const exact = new ReplayCamera(mode, tall);
+      for (let t = 0; t <= replay.durationS; t += 0.25) {
+        const st = exact.jumpTo(replay, t);
+        const p = poseAt(replay, t);
+        expect(worldToScreen(st, p.x, p.y).y - tall.h / 2).toBeLessThanOrEqual(cap + slack);
+      }
+      // and the smoothed camera stays close to it, and well clear of the chrome
+      const cam = new ReplayCamera(mode, tall);
+      let worst = -Infinity;
+      cam.update(replay, 0, dt);
+      for (let t = dt; t <= replay.durationS; t += dt) {
+        const st = cam.update(replay, t, dt);
+        const p = poseAt(replay, t);
+        worst = Math.max(worst, worldToScreen(st, p.x, p.y).y - tall.h / 2);
+      }
+      expect(worst).toBeLessThanOrEqual(cap * 1.4); // spring lag only
+      expect(tall.h / 2 + worst).toBeLessThan(bandBottom - 40);
     }
   });
 

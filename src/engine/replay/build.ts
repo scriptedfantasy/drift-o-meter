@@ -31,6 +31,9 @@ export const DEFAULT_REPLAY_OPTIONS: ReplayOptions = {
   ghostSync: 'distance',
   fallbackPointsPerS: 100,
   deadAirS: 1.5,
+  gpsGapS: 2.5,
+  gpsMaxHAccM: 50,
+  highlightLeadS: 3.5,
 };
 
 /** Severity band edges in radians (see DriftSeverity). */
@@ -215,7 +218,53 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
     intensity,
     segmentOf: new Int16Array(n).fill(-1),
     lapOf: new Int16Array(n).fill(-1),
+    measured: new Uint8Array(n).fill(1),
   };
+}
+
+/**
+ * Which trail samples rest on a real fix, and where the run was dead-reckoned.
+ *
+ * The estimator propagates position through a GPS dropout, so the trail is continuous and a
+ * renderer cannot otherwise tell a measured corner from a reckoned one. Computing this here,
+ * once, is the difference between two renderers agreeing about where the data was real and each
+ * inventing its own threshold.
+ */
+function markMeasured(session: Session, t0: number, trail: ReplayTrail, durationS: number, opts: ReplayOptions, warnings: string[]): Array<{ startT: number; endT: number }> {
+  const usable = (g: { t: number; lat: number; lon: number; hAcc: number }) =>
+    Number.isFinite(g.t) && Number.isFinite(g.lat) && Number.isFinite(g.lon) && Number.isFinite(g.hAcc) && g.hAcc > 0 && g.hAcc <= opts.gpsMaxHAccM;
+  const fixes = (session.gps ?? []).filter(usable).map((g) => g.t - t0).sort((a, b) => a - b);
+  const windows: Array<{ startT: number; endT: number }> = [];
+  if (fixes.length === 0) {
+    // no usable fixes at all: nothing here was measured
+    trail.measured.fill(0);
+    if (trail.n > 1) windows.push({ startT: 0, endT: durationS });
+    warnings.push('no usable GPS fixes: every position was dead-reckoned');
+    return windows;
+  }
+  // a gap longer than gpsGapS (including the run-in before the first fix and the run-out after
+  // the last) is a dropout
+  const edges = [-Infinity, ...fixes, Infinity];
+  for (let i = 1; i < edges.length; i++) {
+    const a = edges[i - 1];
+    const b = edges[i];
+    const from = Math.max(0, a === -Infinity ? 0 : a);
+    const to = Math.min(durationS, b === Infinity ? durationS : b);
+    const span = (b === Infinity ? durationS : b) - (a === -Infinity ? 0 : a);
+    if (span <= opts.gpsGapS || to <= from) continue;
+    windows.push({ startT: from, endT: to });
+  }
+  trail.measured.fill(1);
+  for (const w of windows) {
+    const i0 = Math.max(0, Math.ceil(w.startT * trail.hz));
+    const i1 = Math.min(trail.n - 1, Math.floor(w.endT * trail.hz));
+    for (let k = i0; k <= i1; k++) trail.measured[k] = 0;
+  }
+  if (windows.length) {
+    const lost = windows.reduce((acc, w) => acc + (w.endT - w.startT), 0);
+    warnings.push(`${windows.length} GPS dropout${windows.length === 1 ? '' : 's'} totalling ${lost.toFixed(1)} s were dead-reckoned`);
+  }
+  return windows;
 }
 
 /** Trail index of replay time t (fractional). */
@@ -553,13 +602,16 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
   return events;
 }
 
-function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[]): ReplayHighlight[] {
+function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[], lead: number): ReplayHighlight[] {
   const out: ReplayHighlight[] = [];
   for (const seg of segments) {
     const kind: ReplayHighlight['kind'] = seg.transitions >= 2 ? 'chain' : seg.severity === 'extreme' || seg.severity === 'spin' ? 'peak' : 'transition';
+    const inT = Math.max(0, seg.startT - 1);
     out.push({
       t: seg.peakT,
-      inT: Math.max(0, seg.startT - 1),
+      // land on the moment, not on the run-up: a three-link chain starts 25 s before its peak
+      cueT: Math.max(inT, seg.peakT - lead),
+      inT,
       outT: Math.min(trail.t[trail.n - 1], seg.endT + 1.2),
       label: seg.transitions >= 2 ? `${seg.transitions}-LINK CHAIN` : `${Math.round((seg.peakAngle * 180) / Math.PI)}° · ${formatPoints(seg.points)} PTS`,
       kind,
@@ -736,7 +788,8 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
       telemetry,
       highlights: [],
       track: null,
-      info: { name: session.name ?? '', totalPoints: 0, grade: session.score?.grade ?? 'D', driftCount: 0, peakAngle: 0, typicalAngle: 0, maxSpeed: 0, severity: 'none' },
+      info: { name: session.name ?? '', trusted: false, totalPoints: null, grade: null, untrustedMessage: 'No usable data in this session', driftCount: 0, peakAngle: 0, typicalAngle: 0, maxSpeed: 0, severity: 'none' },
+      gapWindows: [],
       warnings,
       options: opts,
     };
@@ -745,6 +798,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   const t0 = window.start;
   const durationS = Math.max(1 / opts.trailHz, window.end - t0);
   const trail = buildTrail(src, t0, durationS, opts, warnings);
+  const gapWindows = markMeasured(session, t0, trail, durationS, opts, warnings);
   const laps = buildLaps(session, t0, trail, durationS);
   const segments = buildSegments(session, t0, trail, durationS, opts);
   fillScore(session, t0, trail, segments);
@@ -754,7 +808,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   const closed = !!session.track?.closed;
   const ghost = buildGhost(trail, laps, closed, durationS, opts);
   const telemetry = buildTelemetry(trail, durationS, opts);
-  const highlights = buildHighlights(trail, segments);
+  const highlights = buildHighlights(trail, segments, opts.highlightLeadS);
   const track =
     session.track && session.track.refPath?.length > 1
       ? {
@@ -774,7 +828,12 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   for (let k = 0; k < trail.n; k++) if (trail.segmentOf[k] >= 0) driftAngles.push(Math.abs(trail.beta[k]));
   driftAngles.sort((a, b) => a - b);
   const typicalAngle = driftAngles.length ? driftAngles[Math.min(driftAngles.length - 1, Math.floor(driftAngles.length * 0.9))] : 0;
-  const totalPoints = session.score && Number.isFinite(session.score.total) && session.score.total > 0 ? session.score.total : trail.score[trail.n - 1];
+  const rawTotal = session.score && Number.isFinite(session.score.total) && session.score.total > 0 ? session.score.total : trail.score[trail.n - 1];
+  // `SessionScore.trusted` mirrors `SessionIntegrity.scoreTrusted`; either saying no means the
+  // run may not be presented as an achievement, so the headline is null rather than merely
+  // flagged — a renderer cannot print it by forgetting to look.
+  const trusted = session.score?.trusted !== false && session.integrity?.scoreTrusted !== false;
+  const untrustedMessage = trusted ? '' : (session.integrity?.message ?? '').trim() || 'This run was not believed well enough to score';
   return {
     t0,
     durationS,
@@ -789,10 +848,13 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
     telemetry,
     highlights,
     track,
+    gapWindows,
     info: {
       name: session.name ?? '',
-      totalPoints: fin(totalPoints),
-      grade: session.score?.grade ?? 'D',
+      trusted,
+      totalPoints: trusted ? fin(rawTotal) : null,
+      grade: trusted ? (session.score?.grade ?? 'D') : null,
+      untrustedMessage,
       driftCount: segments.length,
       peakAngle,
       typicalAngle,
