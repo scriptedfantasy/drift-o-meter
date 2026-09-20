@@ -66,6 +66,9 @@ export interface CarShapes {
 }
 
 export interface SceneGeometry {
+  /** The scrubber's |β| ribbon as a closed polygon in unit space: x = t / duration, y = 0 at the
+   *  top of the band (the widest angle in the run) and 1 on the baseline. */
+  ribbon: SkPath;
   /** Track centre line (or the driven path when the session has no track model). */
   road: SkPath | null;
   roadClosed: boolean;
@@ -322,7 +325,17 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     ),
   );
 
+  // ---- the scrubber's |β| ribbon, in unit space -------------------------------------
+  const tel = replay.telemetry;
+  const scale = ribbonScale(replay);
+  const ribbonPts: Pt[] = [[0, 1]];
+  const stride = Math.max(1, Math.floor(tel.n / 600));
+  for (let i = 0; i < tel.n; i += stride) ribbonPts.push([clamp(tel.t[i] / Math.max(1e-6, replay.durationS), 0, 1), 1 - clamp(tel.angle[i] / scale, 0, 1)]);
+  ribbonPts.push([1, 1 - clamp(tel.angle[tel.n - 1] / scale, 0, 1)], [1, 1]);
+  const ribbon = keep(polyline(ribbonPts, true));
+
   return {
+    ribbon,
     road,
     roadClosed,
     edges,
