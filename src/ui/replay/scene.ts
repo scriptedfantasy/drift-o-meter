@@ -91,6 +91,8 @@ export interface SceneInput {
 
 interface Frame extends SceneInput {
   vis: WorldBounds;
+  /** The band the camera frames — where world labels are allowed to live. */
+  action: { x: number; y: number; w: number; h: number };
   /** Trail index reached at `t`. */
   cur: number;
   overview: boolean;
@@ -516,7 +518,7 @@ function drawGhost(canvas: SkCanvas, f: Frame): void {
   const g = f.ghost;
   if (!g) return;
   const gs = toS(f, g.x, g.y);
-  const st = f.layout.stage;
+  const st = f.action;
   const onScreen = gs.x > 0 && gs.x < f.layout.w && gs.y > st.y && gs.y < st.y + st.h;
   if (!onScreen) return;
   const lap = lapAt(f.replay, f.t);
@@ -656,7 +658,7 @@ function drawStreaks(canvas: SkCanvas, f: Frame): void {
   if (f.overview || f.ui.reduceMotion) return;
   const k = clamp((f.pose.speed - 11) / 19, 0, 1);
   if (k <= 0.02) return;
-  const st = f.layout.stage;
+  const st = f.action;
   const paint = strokePaint(f, WHITE, 0.7 + 0.8 * k, 0.05 + 0.13 * k);
   let h = 987654321;
   for (let i = 0; i < 14; i++) {
@@ -705,7 +707,7 @@ function drawGhostLabel(canvas: SkCanvas, f: Frame, col: LabelCollider, x: numbe
 }
 
 function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
-  const st = f.layout.stage;
+  const st = f.action;
   const col = new LabelCollider({ x0: f.layout.insets.left + 14, y0: st.y + 10, x1: f.layout.w - f.layout.insets.right - 14, y1: st.y + st.h - 14 });
   const carS = toS(f, f.pose.x, f.pose.y);
   col.reserve({ x0: carS.x - 46, y0: carS.y - 52, x1: carS.x + 46, y1: carS.y + 40 });
@@ -810,7 +812,7 @@ function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
 function minimapRect(f: Frame): { x: number; y: number; size: number } {
   const size = f.layout.landscape ? 58 : 66;
   const x = f.layout.w - f.layout.insets.right - 16 - size;
-  const y = f.layout.landscape ? f.layout.stage.y + f.layout.stage.h - size - 14 : f.layout.stage.y + 14;
+  const y = f.layout.landscape ? f.action.y + f.action.h - size - 14 : f.action.y + 14;
   return { x, y, size };
 }
 
@@ -850,7 +852,7 @@ function drawCallout(canvas: SkCanvas, f: Frame): void {
   const label = f.noScore && /^[+−-]?[\d ,. ]+$/.test(e.label) ? '' : e.label;
   if (!label) return;
   const color = eventColor(e.kind);
-  const y = Math.round(f.layout.stage.y + f.layout.stage.h * 0.3);
+  const y = Math.round(f.action.y + f.action.h * 0.3);
   const cx = f.layout.w / 2;
   const scale = f.ui.reduceMotion ? 1 : e.scale;
   canvas.save();
@@ -1037,7 +1039,10 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   const last = r.laps[r.laps.length - 1];
   const lapStr = r.laps.length === 0 ? 'STAGE' : lap ? `LAP ${lap.index + 1}/${r.laps.length}` : last && f.t > last.endT ? 'FINISH' : `LAP 1/${r.laps.length}`;
   let x = lay.info.x + drawStr(canvas, f, f.fonts.label, lapStr, lay.info.x, ly, { tracking: 1.6 }) + 14;
-  x += drawStr(canvas, f, f.fonts.label, f.view.title, x, ly, { color: MUTED, tracking: 1.4 }) + 14;
+  // the run's name gets whatever room the total leaves it, and an ellipsis when that is not enough
+  const titleRoom = lay.info.right - x - (compact ? 150 : 84);
+  const title = f.fonts.label ? ellipsize(f, f.fonts.label, f.view.title, titleRoom, 1.4) : '';
+  x += drawStr(canvas, f, f.fonts.label, title, x, ly, { color: MUTED, tracking: 1.4 }) + 14;
 
   let best = 0;
   let done = 0;
@@ -1084,6 +1089,15 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   }
 }
 
+/** Cut a label to fit, with an ellipsis, rather than letting it run under the next thing. */
+function ellipsize(f: Frame, font: SkFont, text: string, maxW: number, tracking = 0): string {
+  if (maxW <= 0) return '';
+  if (measure(f, font, text, tracking) <= maxW) return text;
+  let out = text;
+  while (out.length > 1 && measure(f, font, `${out}\u2026`, tracking) > maxW) out = out.slice(0, -1);
+  return `${out.trimEnd()}\u2026`;
+}
+
 /** Break a sentence into lines that fit `maxW`, the long way, because Skia has no text layout. */
 function wrapText(f: Frame, font: SkFont, text: string, maxW: number, maxLines = 3): string[] {
   const words = text.split(/\s+/).filter(Boolean);
@@ -1112,7 +1126,7 @@ function drawStageNotices(canvas: SkCanvas, f: Frame): void {
   const label = f.fonts.label;
   if (!label) return;
   const left = lay.insets.left + 18;
-  let y = lay.stage.y + 18;
+  let y = f.action.y + 18;
 
   // the bad-data plate: what is wrong, in one word, impossible to miss
   if (f.view.warnings.length > 0) {
@@ -1150,7 +1164,7 @@ function drawStageNotices(canvas: SkCanvas, f: Frame): void {
     const wl = measure(f, f.fonts.peak, h.label, 0.6);
     const w = Math.max(wk, wl) + 24;
     const x = lay.w / 2 - w / 2;
-    const top = Math.max(y - 12, lay.stage.y + 18);
+    const top = Math.max(y - 12, f.action.y + 18);
     canvas.drawRect({ x, y: top, width: w, height: 46 }, fillPaint(f, BG, 0.82 * h.alpha));
     canvas.drawRect({ x, y: top, width: w, height: 46 }, strokePaint(f, colors.gold, 1, 0.55 * h.alpha, StrokeCap.Butt));
     drawStr(canvas, f, label, kicker, lay.w / 2, top + 17, { color: colors.gold, anchor: 'middle', tracking: 1.6, alpha: h.alpha });
@@ -1192,6 +1206,7 @@ export function drawReplayFrame(canvas: SkCanvas, input: SceneInput): void {
       minY: Math.min(...corners.map((c) => c.y)) - margin,
       maxY: Math.max(...corners.map((c) => c.y)) + margin,
     },
+    action: input.mode === 'overview' ? lay.stage : lay.action,
     cur: Math.max(0, Math.min(trail.n - 1, Math.floor(input.t * trail.hz))),
     overview: input.mode === 'overview',
     noScore: !input.view.trusted,

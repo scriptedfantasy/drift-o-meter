@@ -130,8 +130,10 @@ export function useReplayPlayer(replay: Replay | null, opts: PlayerOptions): Rep
       setHighlightIndex(i);
       setFocusDriftId(h.driftId ?? null);
       chip.current = { index: i + 1, total: replay.highlights.length, label: h.label, until: Date.now() + CHIP_MS };
-      // start a little before the moment so the jump lands on the run-up, not the aftermath
-      seek(h.inT + Math.min(0.6, Math.max(0, h.t - h.inT) * 0.25), { play: true });
+      // Land a few seconds before the MOMENT, not at the start of the whole drift: a 3-link
+      // chain's window is half a minute long, and a jump that opens on 25 s of run-up is not a
+      // highlight. The window start still bounds it for short drifts.
+      seek(Math.max(h.inT, h.t - 3.5), { play: true });
     },
     [replay, seek],
   );
