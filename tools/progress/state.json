@@ -78,9 +78,9 @@
       "id": "replay",
       "name": "Replay scene",
       "layer": "engine",
-      "status": "fixing",
-      "rounds": 1,
-      "verdict": "Failed: the frames are a telemetry map, not a replay. The ghost was the car itself for half the run, one bad sensor sample killed the camera for good, and a 70\u00b0 near-spin looked identical to a 15\u00b0 slide.",
+      "status": "critique",
+      "rounds": 2,
+      "verdict": "Round 2 delivered against every finding. Background emptiness fell from 74 percent to 5, the car doubled in size, and extremes now escalate from ember through gold to red. Back with the critic.",
       "note": "Session \u2192 timeline, glow trail, camera, ghost",
       "score": "4.5 \u2192 round 2"
     },
@@ -248,27 +248,31 @@
     {
       "t": "19:50",
       "text": "The pipeline is wired and passes. The judgement layer failed its critique at 3.5 out of 10; the shared event contract now carries a required spin flag, and a rehabilitation agent is working the full findings list against the critic\u2019s own probes."
+    },
+    {
+      "t": "20:05",
+      "text": "Replay round 2 landed and was measured with the critic\u2019s own probes: the ghost is no longer the car, one bad sensor sample no longer kills the camera, and background emptiness fell from 74 percent to 5. Sent back to the same critic to re-judge."
     }
   ],
   "shots": [
     {
-      "path": "artifacts/slip-touge.png",
-      "caption": "The estimator against ground truth on the mountain pass: initiation, hold, a 110 deg/s transition and exit, with the filter learning 11 % of road camber as it goes.",
+      "path": "artifacts/replay-chase-drift.png",
+      "caption": "Replay after round 2: lit ground, kerbs, a gold escalation at 49 degrees, the ghost in green with its points gap. Before the critique this frame was 74 percent empty black.",
       "width": 560
     },
     {
+      "path": "artifacts/slip-touge.png",
+      "caption": "The slip estimator against ground truth on the mountain pass, learning 11 percent of road camber as it goes.",
+      "width": 560
+    },
+    {
+      "path": "artifacts/shots/drive-peak.png",
+      "caption": "The live drive display at a 44 degree slide. The score counter below it is visibly broken and has been sent back.",
+      "width": 240
+    },
+    {
       "path": "artifacts/shots/home.png",
-      "caption": "Garage screen, running in the real app bundle in Chromium.",
-      "width": 240
-    },
-    {
-      "path": "artifacts/shots/drive.png",
-      "caption": "Drive screen with Skia rendering live simulated sensor data. The HUD is being rebuilt now.",
-      "width": 240
-    },
-    {
-      "path": "artifacts/replay-chase-drift.png",
-      "caption": "Replay chase camera at 52 degrees. The critic failed this frame: too empty, car too small, nothing escalates.",
+      "caption": "Garage screen in the real app bundle.",
       "width": 240
     }
   ]
