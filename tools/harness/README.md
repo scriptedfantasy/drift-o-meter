@@ -491,3 +491,21 @@ whatever the engine's shape was on the day they ran, and those scripts are evide
 than source: a critic must be free to leave its instruments behind without a later contract
 change turning `npm run typecheck` red for everyone. Anything that must keep compiling
 belongs in `tools/`.
+
+## `--dist <dir>`: capturing while someone else is building
+
+`expo export` CLEARS `dist/` before it writes it. So one person rebuilding kills another
+person's running capture with `ENOENT dist/index.html`, and the failure looks like a broken
+server rather than a collision. Three separate agents lost runs to this and each invented the
+same workaround by hand: copy `dist` somewhere private and serve from there.
+
+`--dist <dir>` makes that first-class. With `--no-build` it serves an export you already have;
+with a build it exports normally and then copies the result to that directory, so the capture
+is insulated from anyone else's rebuild for the rest of the run.
+
+```
+cp -a dist /tmp/my-dist
+node tools/harness/shoot.mjs --no-build --dist /tmp/my-dist --only home
+```
+
+If a shoot ever dies with a missing `index.html`, that is this collision rather than a bug.

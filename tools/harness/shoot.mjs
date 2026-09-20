@@ -12,7 +12,7 @@
  * error, console.error, failed request, HTTP >= 400 or failed check. See README.md.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -23,7 +23,7 @@ import { defaultRoutes } from './routes.mjs';
 import { startStaticServer } from './staticServer.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DIST = path.join(ROOT, 'dist');
+const DEFAULT_DIST = path.join(ROOT, 'dist');
 const PORTRAIT = { width: 393, height: 852 };
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 
@@ -44,6 +44,11 @@ function parseArgs(argv) {
     fontCheck: true,
     fullPage: false,
     scale: 3,
+    // Where the built app is served from. Concurrent agents matter here: `expo export` clears
+    // `dist/` before writing it, so one agent rebuilding kills another's running capture with
+    // ENOENT on index.html. Three separate agents lost runs to that and each invented the same
+    // workaround by hand. `--dist <dir>` makes a private copy first-class instead.
+    dist: DEFAULT_DIST,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -60,6 +65,7 @@ function parseArgs(argv) {
       case '--routes': args.routesFile = path.resolve(next()); break;
       case '--only': args.only = next().split(',').map((s) => s.trim()).filter(Boolean); break;
       case '--out': args.out = path.resolve(next()); break;
+      case '--dist': args.dist = path.resolve(next()); break;
       case '--video-dir': args.videoDir = path.resolve(next()); break;
       case '--port': args.port = Number(next()); break;
       case '--no-font-check': args.fontCheck = false; break;
@@ -82,13 +88,20 @@ async function loadRoutes(file) {
   return routes;
 }
 
-function build() {
+function build(dist) {
   console.log('\n[shoot] building web export (npm run web:export)...');
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const r = spawnSync(npm, ['run', 'web:export'], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, CI: '1' } });
   if (r.status !== 0) {
     console.error('[shoot] web export FAILED');
     process.exit(r.status ?? 1);
+  }
+  // Building into a private dist means copying the fresh export there, so the capture is
+  // insulated from anyone else's rebuild for the rest of the run.
+  if (dist !== DEFAULT_DIST) {
+    rmSync(dist, { recursive: true, force: true });
+    cpSync(DEFAULT_DIST, dist, { recursive: true });
+    console.log(`[shoot] copied the export to ${dist}`);
   }
 }
 
@@ -182,8 +195,10 @@ async function main() {
   if (args.only) routes = routes.filter((r) => args.only.includes(r.name));
   if (routes.length === 0) throw new Error('No routes selected');
 
-  if (args.build) build();
-  if (!existsSync(path.join(DIST, 'index.html'))) throw new Error(`dist/index.html missing; run without --no-build`);
+  if (args.build) build(args.dist);
+  if (!existsSync(path.join(args.dist, 'index.html'))) {
+    throw new Error(`${path.relative(ROOT, args.dist)}/index.html missing; run without --no-build, or pass --dist <dir> pointing at an export you already have`);
+  }
 
   mkdirSync(args.out, { recursive: true });
   if (args.video) mkdirSync(args.videoDir, { recursive: true });
@@ -194,9 +209,9 @@ async function main() {
     consoleLines.push(line);
   };
 
-  const server = await startStaticServer({ root: DIST, port: args.port });
+  const server = await startStaticServer({ root: args.dist, port: args.port });
   const { browser, executablePath } = await launchChromium();
-  console.log(`[shoot] serving ${path.relative(ROOT, DIST)} at ${server.url}`);
+  console.log(`[shoot] serving ${path.relative(ROOT, args.dist)} at ${server.url}`);
   console.log(`[shoot] chromium: ${executablePath} (${browser.version()})`);
   console.log(`[shoot] viewport ${viewport.width}x${viewport.height} @${args.scale}x, ${args.landscape ? 'landscape' : 'portrait'}${args.video ? ', recording video' : ''}`);
 
