@@ -1,0 +1,191 @@
+<title>Drift-O-Meter Build Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg:#0B0D11; --panel:#12161C; --panel2:#181D25; --line:#232B37; --text:#ECE9E2; --muted:#8B93A3;
+  --ember:#FF6A2A; --cyan:#2FD6F0; --pass:#45E0A0; --fail:#FF4D4D; --amber:#FFC14D; --dim:#5B6472;
+  --display:'Barlow Condensed', 'Arial Narrow', Impact, sans-serif; --body:'Barlow', 'Helvetica Neue', Arial, sans-serif;
+}
+html { color-scheme: dark; }
+body { background:var(--bg); color:var(--text); font-family:var(--body); font-size:15px; line-height:1.45; margin:0; padding-block:0 48px; padding-inline:16px; }
+.wrap { max-width:1080px; margin:0 auto; }
+header { padding-block:28px 18px; border-bottom:2px solid var(--ember); display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px; }
+h1 { font-family:var(--display); font-weight:700; font-style:italic; font-size:clamp(34px,6vw,54px); letter-spacing:.01em; line-height:.95; margin:0; text-transform:uppercase; }
+h1 span { color:var(--ember); }
+.phase { color:var(--muted); font-weight:500; letter-spacing:.06em; text-transform:uppercase; font-size:12px; margin-top:8px; }
+.updated { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+.summary { color:var(--text); max-width:70ch; margin-block:18px 0; }
+.strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-block:22px; }
+.tile { background:var(--panel); border:1px solid var(--line); padding:12px 14px; }
+.tile b { display:block; font-family:var(--display); font-size:36px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+.tile span { color:var(--muted); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+.tile.pass b { color:var(--pass); } .tile.build b { color:var(--ember); } .tile.crit b { color:var(--amber); } .tile.fail b { color:var(--fail); }
+h2 { font-family:var(--display); font-weight:700; text-transform:uppercase; font-size:22px; letter-spacing:.03em; margin-block:34px 12px; color:var(--text); }
+.tablewrap { overflow-x:auto; border:1px solid var(--line); background:var(--panel); }
+table { border-collapse:collapse; width:100%; min-width:760px; }
+th { text-align:left; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:10px 12px; border-bottom:1px solid var(--line); }
+td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+tr:last-child td { border-bottom:0; }
+td.name .piece { display:block; font-family:var(--display); font-size:19px; font-weight:600; letter-spacing:.01em; }
+td.name .note { display:block; color:var(--muted); font-size:13px; max-width:34ch; }
+td.num { font-variant-numeric:tabular-nums; text-align:right; }
+td.verdict { max-width:36ch; font-size:14px; }
+.layer { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--cyan); }
+.chip { display:inline-block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; padding:3px 8px; border:1px solid currentColor; border-radius:2px; white-space:nowrap; }
+.chip.queued { color:var(--dim); } .chip.building { color:var(--ember); } .chip.critique { color:var(--amber); } .chip.passed { color:var(--pass); } .chip.failed { color:var(--fail); }
+.dim { color:var(--dim); }
+.verdict-card { background:var(--panel); border:1px solid var(--line); padding:12px 14px; margin-bottom:10px; }
+.verdict-card summary { cursor:pointer; font-size:15px; }
+.verdict-card .score { color:var(--muted); font-variant-numeric:tabular-nums; margin-left:6px; }
+.verdict-card p { color:var(--text); margin-block:10px 6px; max-width:80ch; }
+.verdict-card ol { margin:0; padding-left:20px; color:var(--muted); }
+.verdict-card li { margin-bottom:4px; }
+.shots { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px; }
+figure { margin:0; background:var(--panel); border:1px solid var(--line); padding:8px; }
+figure img { width:100%; display:block; }
+figcaption { font-size:12px; color:var(--muted); margin-top:6px; }
+ul.verif { padding-left:18px; color:var(--muted); max-width:80ch; }
+ol.log { list-style:none; padding:0; margin:0; border-left:2px solid var(--line); }
+ol.log li { display:grid; grid-template-columns:56px 1fr; gap:10px; padding:6px 0 6px 14px; }
+ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight:600; font-size:13px; }
+@media (max-width:480px) { ol.log li { grid-template-columns:1fr; gap:2px; } }
+@media (prefers-reduced-motion:no-preference) { header { animation:in .5s ease-out both; } @keyframes in { from { opacity:.6; transform:translateY(4px); } to { opacity:1; transform:none; } } }
+</style>
+<div class="wrap">
+<header>
+  <div><h1>Drift-<span>O</span>-Meter <span>Build Board</span></h1><div class="phase">Phase 1 — engine, simulator, app foundation</div></div>
+  <div class="updated">Updated 2026-09-20 13:30 UTC</div>
+</header>
+<p class="summary">Building an Expo/React Native iPhone app that judges real-world drifting from the gyroscope, accelerometer and GPS, with NFS / Tokyo Drift-grade presentation. Each piece is built by one agent and judged by a separate fresh-context critic against the running app, real sensor output and finished visualisations.</p>
+<div class="strip">
+  <div class="tile"><b>14</b><span>pieces</span></div>
+  <div class="tile pass"><b>0</b><span>passed critic</span></div>
+  <div class="tile crit"><b>0</b><span>in critique</span></div>
+  <div class="tile build"><b>2</b><span>building / fixing</span></div>
+  <div class="tile"><b>12</b><span>queued</span></div>
+</div>
+<h2>Pieces</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Piece</th><th>Layer</th><th>Status</th><th>Critic rounds</th><th>Critic score</th><th>Latest verdict</th></tr></thead>
+<tbody>
+    <tr>
+      <td class="name"><span class="piece">Sensor simulator</span><span class="note">Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip building">Building</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Mount calibration</span><span class="note">Phone frame → vehicle frame from gravity and forward acceleration</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Slip-angle estimator</span><span class="note">Kalman fusion of gyro heading, lateral-g kinematics and GPS course</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Drift detection</span><span class="note">Entry / sustain / transition / exit state machine</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Scoring &amp; style</span><span class="note">Angle × duration × speed, multipliers, callouts, S–D grade, consistency</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Track &amp; laps</span><span class="note">GPS → local map, lap gate, corners, lap-to-lap consistency</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Signal integrity</span><span class="note">Loose-mount detection, physics plausibility, GPS quality gating</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Replay scene</span><span class="note">Session → timeline, glow trail, camera, ghost</span></td>
+      <td><span class="layer">engine</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">App foundation</span><span class="note">Theme, fonts, navigation, Skia on web, sensor adapters, screenshot harness</span></td>
+      <td><span class="layer">app</span></td>
+      <td><span class="chip building">Building</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Live drive HUD</span><span class="note">Angle, g-meter, speed, score combo, callouts, glow</span></td>
+      <td><span class="layer">app</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Results &amp; grade</span><span class="note">Grade reveal, breakdown, best drift</span></td>
+      <td><span class="layer">app</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Replay screen</span><span class="note">Track map, trail, scrubber, camera modes</span></td>
+      <td><span class="layer">app</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Calibration flow</span><span class="note">Mount guidance with live sensor feedback</span></td>
+      <td><span class="layer">app</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr>
+    <tr>
+      <td class="name"><span class="piece">Garage &amp; sessions</span><span class="note">Home, session list, personal bests</span></td>
+      <td><span class="layer">app</span></td>
+      <td><span class="chip queued">Queued</span></td>
+      <td class="num">0</td>
+      <td class="num">–</td>
+      <td class="verdict"><span class="dim">no verdict yet</span></td>
+    </tr></tbody></table></div>
+<h2>Latest critic verdicts</h2>
+<p class="dim">No critic rounds yet.</p>
+<h2>What the critics are looking at</h2>
+<div class="shots"><p class="dim">Screenshots appear here once the harness runs.</p></div>
+<h2>How things are verified</h2>
+<ul class="verif"><li>This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.</li><li>The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder&#x27;s summary.</li><li>What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off.</li></ul>
+<h2>Log</h2>
+<ol class="log"><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
+</div>

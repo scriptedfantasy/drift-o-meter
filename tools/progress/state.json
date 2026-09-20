@@ -1,0 +1,34 @@
+{
+  "title": "Drift-O-Meter Build Board",
+  "phase": "Phase 1 — engine, simulator, app foundation",
+  "updated": "",
+  "summary": "Building an Expo/React Native iPhone app that judges real-world drifting from the gyroscope, accelerometer and GPS, with NFS / Tokyo Drift-grade presentation. Each piece is built by one agent and judged by a separate fresh-context critic against the running app, real sensor output and finished visualisations.",
+  "verification": [
+    "This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.",
+    "The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder's summary.",
+    "What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off."
+  ],
+  "pieces": [
+    {"id": "sim", "name": "Sensor simulator", "layer": "engine", "status": "building", "rounds": 0, "verdict": "", "note": "Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth"},
+    {"id": "mount", "name": "Mount calibration", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Phone frame → vehicle frame from gravity and forward acceleration"},
+    {"id": "slip", "name": "Slip-angle estimator", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Kalman fusion of gyro heading, lateral-g kinematics and GPS course"},
+    {"id": "detect", "name": "Drift detection", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Entry / sustain / transition / exit state machine"},
+    {"id": "score", "name": "Scoring & style", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Angle × duration × speed, multipliers, callouts, S–D grade, consistency"},
+    {"id": "track", "name": "Track & laps", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "GPS → local map, lap gate, corners, lap-to-lap consistency"},
+    {"id": "integrity", "name": "Signal integrity", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Loose-mount detection, physics plausibility, GPS quality gating"},
+    {"id": "replay", "name": "Replay scene", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Session → timeline, glow trail, camera, ghost"},
+    {"id": "foundation", "name": "App foundation", "layer": "app", "status": "building", "rounds": 0, "verdict": "", "note": "Theme, fonts, navigation, Skia on web, sensor adapters, screenshot harness"},
+    {"id": "hud", "name": "Live drive HUD", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Angle, g-meter, speed, score combo, callouts, glow"},
+    {"id": "results", "name": "Results & grade", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Grade reveal, breakdown, best drift"},
+    {"id": "replay-ui", "name": "Replay screen", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Track map, trail, scrubber, camera modes"},
+    {"id": "calibrate-ui", "name": "Calibration flow", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Mount guidance with live sensor feedback"},
+    {"id": "garage", "name": "Garage & sessions", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Home, session list, personal bests"}
+  ],
+  "verdicts": [],
+  "log": [
+    {"t": "13:12", "text": "Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium."},
+    {"t": "13:20", "text": "Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched."},
+    {"t": "13:27", "text": "Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected."}
+  ],
+  "shots": []
+}
