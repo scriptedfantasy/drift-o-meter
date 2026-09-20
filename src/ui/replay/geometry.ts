@@ -69,11 +69,17 @@ export interface SceneGeometry {
   /** The scrubber's |β| ribbon as a closed polygon in unit space: x = t / duration, y = 0 at the
    *  top of the band (the widest angle in the run) and 1 on the baseline. */
   ribbon: SkPath;
-  /** Track centre line (or the driven path when the session has no track model). */
+  /**
+   * Track centre line, or the driven path when the session has no track model. ONE path, stroked
+   * four times: in this renderer a draw call costs far more than the geometry in it (measured in
+   * the harness's software rasteriser at roughly a millisecond a call, whatever is in it), so
+   * everything that can share a path does.
+   */
   road: SkPath | null;
   roadClosed: boolean;
   edges: SkPath[];
-  kerbs: Array<{ path: SkPath; bounds: WorldBounds }>;
+  /** Every kerb in one path — see the note on `road`. */
+  kerbs: SkPath | null;
   corners: Array<{ x: number; y: number; radiusM: number }>;
   gate: { ax: number; ay: number; bx: number; by: number } | null;
   runs: LineRun[];
@@ -214,12 +220,10 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     for (let i = 0; i < tr.n; i += 4) roadPts.push([tr.x[i], tr.y[i]]);
   }
   const road = roadPts.length > 1 ? keep(polyline(roadPts, roadClosed)) : null;
-  const edges = road
-    ? [ROAD_W / 2 - 0.4, -(ROAD_W / 2 - 0.4)].map((d) => keep(polyline(offsetPolyline(roadPts, d, roadClosed), roadClosed)))
-    : [];
+  const edges = road ? [ROAD_W / 2 - 0.4, -(ROAD_W / 2 - 0.4)].map((d) => keep(polyline(offsetPolyline(roadPts, d, roadClosed), roadClosed))) : [];
 
   // ---- kerbs at the corners -----------------------------------------------------------
-  const kerbs: SceneGeometry['kerbs'] = [];
+  const kerbParts: Pt[][] = [];
   const corners: SceneGeometry['corners'] = [];
   if (replay.track?.corners?.length && roadPts.length > 2) {
     const n = roadPts.length;
@@ -241,10 +245,11 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         seg.push(roadPts[i]);
       }
       if (seg.length < 3) continue;
-      const inside = offsetPolyline(seg, c.direction * (ROAD_W / 2 + 0.55), false);
-      kerbs.push({ path: keep(polyline(inside)), bounds: boundsOf(inside) });
+      kerbParts.push(offsetPolyline(seg, c.direction * (ROAD_W / 2 + 0.55), false));
     }
   }
+
+  const kerbs = kerbParts.length ? keep(contours(kerbParts)) : null;
 
   // ---- the driven line, broken at every drift and every data gap ----------------------
   const runs: LineRun[] = [];
@@ -252,6 +257,9 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
   {
     let run: Pt[] = [];
     let startIndex = 0;
+    // cut long runs up as well, for the same reason the road is chunked: a lap of breadcrumbs is
+    // one 1 200-point path, and only a few metres of it are ever on screen
+    const MAX_RUN = 40;
     const flush = (endIndex: number) => {
       if (run.length > 1) runs.push({ path: keep(polyline(run)), bounds: boundsOf(run), startIndex, endIndex, dead: false });
       run = [];
@@ -263,6 +271,12 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
       }
       if (run.length === 0) startIndex = i;
       run.push([tr.x[i], tr.y[i]]);
+      if (run.length >= MAX_RUN) {
+        const last: Pt = [tr.x[i], tr.y[i]];
+        flush(i);
+        run.push(last);
+        startIndex = i;
+      }
     }
     flush(tr.n - 1);
     // the stretches with no measured position at all, drift or not: these are dashed, never lit
@@ -304,8 +318,15 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     if (part.length > 1) parts.push(part);
     const pts: Pt[] = parts.flat();
     if (count < 2 || parts.length === 0) continue;
+    // The ribbon's width and colour follow |beta| sample by sample, which as separate strokes is
+    // a hundred draw calls a segment. Quantising the intensity into a few bands keeps the
+    // escalation visible (the bands are 25 % of the ramp apart) and collapses each band into one
+    // path: the same picture for a handful of calls.
     const chunks: TrailChunk[] = [];
+    const BANDS = 4;
     for (const hot of [false, true]) {
+      const bands: Array<{ parts: Pt[][]; part: Pt[]; inten: number; mag: number; n: number; from: number; to: number }> = [];
+      for (let k = 0; k < BANDS; k++) bands.push({ parts: [], part: [], inten: 0, mag: 0, n: 0, from: -1, to: -1 });
       const step = 3;
       for (let a = seg.startIndex; a < seg.endIndex; a += step) {
         const b = Math.min(seg.endIndex, a + step);
@@ -321,14 +342,33 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         if (cp.length < 2) continue;
         inten /= cp.length;
         if (hot && inten < 0.1) continue;
+        const k = Math.min(BANDS - 1, Math.floor(inten * BANDS));
+        const band = bands[k];
+        // contours inside a band stay separate, so two distant stretches never join up
+        if (band.part.length > 0 && band.to === a) band.part.push(...cp.slice(1));
+        else {
+          if (band.part.length > 1) band.parts.push(band.part);
+          band.part = [...cp];
+          if (band.from < 0) band.from = a;
+        }
+        band.to = b;
+        band.inten += inten;
+        band.mag = Math.max(band.mag, mag);
+        band.n++;
+      }
+      for (let k = 0; k < BANDS; k++) {
+        const band = bands[k];
+        if (band.part.length > 1) band.parts.push(band.part);
+        if (band.parts.length === 0) continue;
+        const flat = band.parts.flat();
         chunks.push({
-          path: keep(polyline(cp)),
-          color: hot ? mix(HOT, heatColor(mag), 0.35) : heatColor(mag),
-          intensity: inten,
+          path: keep(contours(band.parts)),
+          color: hot ? mix(HOT, heatColor(band.mag), 0.35) : heatColor(band.mag),
+          intensity: band.inten / Math.max(1, band.n),
           hot,
-          bounds: boundsOf(cp),
-          startIndex: a,
-          endIndex: b,
+          bounds: boundsOf(flat),
+          startIndex: band.from,
+          endIndex: band.to,
         });
       }
     }

@@ -17,6 +17,11 @@
  */
 import type { MountPreset } from '../../sim';
 
+/** Why the driver was sent here. Set by the garage when the last run left evidence. */
+export type CalibrateReason = 'rejected' | 'loose' | 'unresolved' | 'suspect';
+
+const REASONS: readonly CalibrateReason[] = ['rejected', 'loose', 'unresolved', 'suspect'];
+
 export interface CalibrateParams {
   /** Recording seconds to warp to before drawing anything. NaN = play from the start. */
   at: number;
@@ -24,9 +29,11 @@ export interface CalibrateParams {
   hold: boolean;
   /** Simulated mount preset, or null to leave the recording alone. */
   mount: MountPreset | null;
+  /** Why this screen was opened, when the garage sent the driver here. */
+  why: CalibrateReason | null;
 }
 
-export const DEFAULT_CALIBRATE_PARAMS: CalibrateParams = { at: NaN, hold: false, mount: null };
+export const DEFAULT_CALIBRATE_PARAMS: CalibrateParams = { at: NaN, hold: false, mount: null, why: null };
 
 const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
 const MOUNTS: readonly MountPreset[] = ['portrait-vent', 'landscape-dash', 'flat-console', 'random'];
@@ -42,9 +49,11 @@ export function parseCalibrateParams(input: string | URLSearchParams | null | un
   const rawAt = p.get('at');
   const at = rawAt === null || rawAt.trim() === '' ? NaN : Number(rawAt);
   const mount = (p.get('mount') ?? '').trim().toLowerCase();
+  const why = (p.get('why') ?? '').trim().toLowerCase();
   return {
     at: Number.isFinite(at) && at > 0 ? at : NaN,
     hold: TRUTHY.has((p.get('hold') ?? '').toLowerCase()),
     mount: (MOUNTS as readonly string[]).includes(mount) ? (mount as MountPreset) : null,
+    why: (REASONS as readonly string[]).includes(why) ? (why as CalibrateReason) : null,
   };
 }

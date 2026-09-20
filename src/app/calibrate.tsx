@@ -24,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, Button, colors, gutter, Micro, Small, space, TopBar } from '@/ui';
 import {
+  arrivalOf,
   attitudeWords,
   Banner,
   Cautions,
@@ -49,7 +50,7 @@ import { Tag } from '@/ui/results';
 export default function CalibrateScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const { reading, retry } = useCalibration();
+  const { reading, params, retry } = useCalibration();
 
   const landscape = width > height;
   const phase = phaseOf(reading);
@@ -59,7 +60,8 @@ export default function CalibrateScreen() {
   const steps = useMemo(() => stepsOf(reading), [reading]);
   const cautions = useMemo(() => cautionsOf(reading), [reading]);
   const flat = isFlat(reading);
-  const dialSize = landscape ? Math.min(height - 150, 236) : Math.min(width - gutter * 2, 264);
+  const arrival = arrivalOf(params.why);
+  const dialSize = landscape ? Math.min(height - 168, 214) : Math.min(width - gutter * 2, 264);
 
   const drive = () => router.replace('/drive');
 
@@ -100,17 +102,21 @@ export default function CalibrateScreen() {
         idle={reading.samples === 0}
         testID="mount-dial"
       />
-      {/* The one honest number, and what it has to clear. Under the dial rather than over the
-          glyph: the glyph is the other half of the answer and must stay readable. */}
-      <View style={styles.readout}>
-        <AppText variant="hero" color={band.color} numeric style={styles.percent} testID="confidence">
-          {band.display}
-        </AppText>
-        <Micro color={band.color === 'red' ? 'red' : 'muted'}>Confidence in this mount</Micro>
-        <Micro style={styles.legend} numberOfLines={1}>
-          {Math.round(TRUST_QUALITY * 100)}% the judge&apos;s bar · {Math.round(SHARP_QUALITY * 100)}% no caveats
-        </Micro>
-      </View>
+    </View>
+  );
+
+  /* The one honest number, and what it has to clear. Never over the glyph — the glyph is the
+     other half of the answer — so it sits under the dial in portrait and beside it in
+     landscape, where there is no room underneath. */
+  const readout = (
+    <View style={[styles.readout, landscape && styles.readoutSide]}>
+      <AppText variant="hero" color={band.color} numeric style={[styles.percent, landscape && styles.percentSide]} testID="confidence">
+        {band.display}
+      </AppText>
+      <Micro color={band.color === 'red' ? 'red' : 'muted'}>Confidence in this mount</Micro>
+      <Micro style={styles.legend} numberOfLines={1}>
+        {Math.round(TRUST_QUALITY * 100)}% the judge&apos;s bar · {Math.round(SHARP_QUALITY * 100)}% no caveats
+      </Micro>
     </View>
   );
 
@@ -137,15 +143,25 @@ export default function CalibrateScreen() {
     <View style={styles.root} testID="screen-calibrate">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
         <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} testID="calibrate-scroll">
+          {/* Landscape is 393 px tall: the 44 pt title would push the dial — the whole point of
+              the screen — below the fold, so it keeps the kicker and drops the slab. */}
           <TopBar
             kicker="Mount calibration"
-            title="Calibrate"
+            title={landscape ? undefined : 'Calibrate'}
             right={<Tag label={reading.sourceLabel ?? 'STARTING'} color={reading.sourceKind === 'device' ? colors.green : colors.cyan} filled />}
           />
 
+          {arrival ? <Banner title={arrival.title} body={arrival.body} tone={arrival.tone} testID="calibrate-arrival" /> : null}
+
           <View style={landscape ? styles.heroRow : styles.heroCol}>
-            {dial}
-            <View style={landscape ? styles.heroSide : undefined}>{verdict}</View>
+            <View style={styles.dialCol}>
+              {dial}
+              {landscape ? null : readout}
+            </View>
+            <View style={landscape ? styles.heroSide : styles.heroFull}>
+              {landscape ? readout : null}
+              {verdict}
+            </View>
           </View>
 
           {phase === 'blocked' ? <Banner title="The phone is moving" body={reading.message} tone="red" testID="calibrate-loose" /> : null}
@@ -193,15 +209,19 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   padded: { paddingHorizontal: gutter, gap: space[4] },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[12], gap: space[4] },
+  scroll: { paddingHorizontal: gutter, paddingBottom: space[12], gap: space[4], width: '100%', maxWidth: 820, alignSelf: 'center' },
 
   heroCol: { alignItems: 'center', gap: space[4] },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: space[6] },
-  heroSide: { flex: 1, minWidth: 0 },
+  heroSide: { flex: 1, minWidth: 0, gap: space[4] },
+  heroFull: { alignSelf: 'stretch' },
+  dialCol: { alignItems: 'center' },
 
-  dialWrap: { alignItems: 'center', justifyContent: 'center', gap: space[1] },
+  dialWrap: { alignItems: 'center', justifyContent: 'center' },
   readout: { alignItems: 'center', gap: 0, marginTop: -space[2] },
+  readoutSide: { alignItems: 'flex-start', marginTop: 0 },
   percent: { fontSize: 64, lineHeight: 62, letterSpacing: -3, includeFontPadding: false },
+  percentSide: { fontSize: 52, lineHeight: 50 },
   legend: { marginTop: space[2], opacity: 0.75 },
 
   verdict: { gap: space[1], alignSelf: 'stretch' },

@@ -45,6 +45,16 @@ export const DEMO_SETS: Record<string, DemoRun[]> = {
   ],
   /** A driver who has been out exactly once. */
   first: [{ fixture: 'good', seed: 7 }],
+  /**
+   * The last run was hand-held and thrown out — the one case where the garage has something to
+   * say about the mount. Newest first, so the rejected run is the card AND the notice.
+   */
+  flagged: [
+    { fixture: 'handheld', seed: 9 },
+    { fixture: 'good', seed: 7 },
+    { fixture: 'spin', seed: 4 },
+    { fixture: 'sloppy', seed: 1 },
+  ],
   /** One track, four scored runs: the personal-best board with something to say. */
   harbor: [
     { fixture: 'good', seed: 7 },

@@ -1,4 +1,7 @@
 /** Garage screen kit: the session list, the personal bests and the demo bay. */
+export { mountAdvice } from './advice';
+export type { MountAdvice, MountConcern } from './advice';
+export { MountNotice } from './MountNotice';
 export { personalBests, bestGradeOf, UNTRACKED } from './bests';
 export type { BestRecord, RecordKey, TrackBests } from './bests';
 export { factsOf, peekFacts, forgetFacts, readFacts, readFactsInOrder, unreadableFacts } from './facts';

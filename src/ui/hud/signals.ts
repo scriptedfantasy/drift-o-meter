@@ -29,6 +29,13 @@ export interface HudSignals {
   active: SharedValue<number>;
   /** Running score (banked + at risk). */
   total: SharedValue<number>;
+  /**
+   * The same score, smoothed at sample rate for the odometer (τ ≈ 0.12 s, snapping when it
+   * arrives). Filtered in the sample callback rather than by an animation, so it tracks a score
+   * climbing at 1 500 points a second instead of trailing it, unwinds a CHAIN LOST instead of
+   * cutting, and lands on the exact figure the moment the run is frozen.
+   */
+  totalDisplay: SharedValue<number>;
   /** Un-banked points. */
   chainPoints: SharedValue<number>;
   multiplier: SharedValue<number>;
@@ -67,6 +74,7 @@ export function useHudSignals(): HudSignals {
   const intensity = useSharedValue(0);
   const active = useSharedValue(0);
   const total = useSharedValue(0);
+  const totalDisplay = useSharedValue(0);
   const chainPoints = useSharedValue(0);
   const multiplier = useSharedValue(1);
   const chainRatio = useSharedValue(0);
@@ -91,6 +99,7 @@ export function useHudSignals(): HudSignals {
       intensity,
       active,
       total,
+      totalDisplay,
       chainPoints,
       multiplier,
       chainRatio,
@@ -114,6 +123,7 @@ export function useHudSignals(): HudSignals {
       intensity,
       active,
       total,
+      totalDisplay,
       chainPoints,
       multiplier,
       chainRatio,
@@ -141,6 +151,7 @@ export function resetSignals(s: HudSignals): void {
   s.intensity.value = 0;
   s.active.value = 0;
   s.total.value = 0;
+  s.totalDisplay.value = 0;
   s.chainPoints.value = 0;
   s.multiplier.value = 1;
   s.chainRatio.value = 0;

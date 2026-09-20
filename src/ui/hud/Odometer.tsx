@@ -9,16 +9,15 @@
  *    the window dissolves instead of being sliced off. A partial digit then reads as motion,
  *    not as a broken character. Leading zeros are hidden, not dimmed, and the thousands comma
  *    is part of the layout, so the score reads like the figures printed beside it.
- *  3. The roll itself is a 260 ms linear tween, re-aimed whenever the score changes. While the
- *    points pour in that chains into one continuous roll; the moment the score stops, the last
- *    tween finishes and every column parks on a whole digit. (Exponential smoothing in a frame
- *    callback looks the same in motion but never settles on web, which leaves a parked score
- *    frozen mid-digit.)
+ *  3. The value it renders is filtered at SAMPLE rate by the sample callback, not by an
+ *    animation: re-aiming a tween a hundred times a second leaves each one a few milliseconds
+ *    to run, and the digits end up trailing the real score by thousands of points. See
+ *    `HudSignals.totalDisplay`.
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import { Fragment, memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedReaction, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies } from '../theme';
@@ -32,29 +31,17 @@ export interface OdometerProps {
   color?: string;
   /** Background the mask fades into (the surface the odometer sits on). */
   background?: string;
-  /** Seconds for the display to cover a change (the tween lasts 2 × this). */
-  tau?: number;
   testID?: string;
 }
 
 const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
-function OdometerImpl({ value, columns = 6, size, color = colors.ember, background = colors.bg0, tau = 0.13, testID }: OdometerProps) {
-  const display = useSharedValue(0);
+function OdometerImpl({ value, columns = 6, size, color = colors.ember, background = colors.bg0, testID }: OdometerProps) {
+  // `value` is already smoothed at sample rate (see `HudSignals.totalDisplay`), so the columns
+  // are a pure function of it: no animation scheduler between the score and the digits.
+  const display = value;
   const rowH = Math.round(size * 0.94);
   const colW = Math.round(size * 0.56);
-
-  useAnimatedReaction(
-    () => Math.round(value.value),
-    (target, prev) => {
-      if (prev === null) {
-        display.value = target;
-      } else if (target !== prev) {
-        display.value = withTiming(target, { duration: Math.round(tau * 2000), easing: Easing.linear });
-      }
-    },
-    [],
-  );
 
   const places = useMemo(() => Array.from({ length: columns }, (_, i) => columns - 1 - i), [columns]);
 

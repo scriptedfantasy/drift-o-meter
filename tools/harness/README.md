@@ -71,6 +71,7 @@ first, with real runs rather than mock rows:
 /?demo=night     six runs across two tracks, one of them NOT SCORED   (the default demo)
 /?demo=harbor    four scored runs on one track — every personal best filled in
 /?demo=first     one run
+/?demo=flagged   the last run was hand-held and thrown out — the garage's mount notice
 /?demo=none      wipe the garage (also `clear`, `empty`, `0`)
 ```
 
@@ -106,6 +107,7 @@ The seeds are chosen so no two runs share a minute: the fixture builder dates a 
 | `garage-runs` | the run list, including the NOT SCORED row for the hand-held recording |
 | `garage-bests-harbor` | one track, four scored runs: no dashed-out records |
 | `garage-simbay` | the demo bay: simulated source, mount looseness and GPS dropouts selectable |
+| `garage-flagged` | the one state where the garage mentions calibration: the last run was thrown out |
 | `garage-delete` | the confirmation a delete asks for (`Alert` is a no-op on web, so it is the app's own) |
 
 **A run with no grade.** A row may not print a grade letter until it knows whether the engine
@@ -126,6 +128,7 @@ phone is sitting:
 | `at=<seconds>` | feed the calibrator every sample up to that instant of the recording at once |
 | `hold=1` | stop there. The frame is then deterministic: same URL, same pixels |
 | `mount=portrait-vent\|landscape-dash\|flat-console` | REGENERATE the recording with the phone sitting that way. Not a presentational override — the simulator really puts the phone on the console, and the screen reads it back out of the gravity vector like any other mount |
+| `why=rejected\|loose\|unresolved\|suspect` | why the driver was sent here. The garage sets it when the last run left evidence, and the screen leads with that instead of a generic invitation |
 
 The usual `sim=` / `rate=` / `seed=` / `laps=` / `looseness=` / `dropouts=` still pick the
 recording, which is how the loose-mount state is photographed from a genuinely hand-held drive
@@ -149,6 +152,12 @@ On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below 
 | `calibrate-ready` | calibrated: past the bar, both axes resolved |
 | `calibrate-loose` | a real hand-held recording (`looseness=1&dropouts=1`): the monitor's own words |
 | `calibrate-flat` | the phone lying flat on the console, detected from gravity |
+| `calibrate-rejected` | arrived because a run was thrown out — the normal way into this screen |
+
+**This screen is not a step in the flow.** Calibration happens by itself while driving
+(docs/DESIGN.md, "the whole app is four steps"), so the garage never invites anyone here. It
+links here only when the LAST run left evidence — `mountAdvice` in `src/ui/garage/advice.ts` —
+and passes `?why=`, which is what `garage-flagged` and `calibrate-rejected` photograph together.
 
 **Why the screen's bar is not `docs/DESIGN.md`'s 0.8.** The calibrator's confidence is
 `upQuality × (0.4 + 0.6·min(lineQuality, signQuality))`, and `upQuality` is capped by the
@@ -174,9 +183,9 @@ t = 0. `src/ui/hud/hudParams.ts` adds four query parameters on top of the `sim` 
 
 | param | effect |
 | --- | --- |
-| `at=<seconds>` | WARP: feed the pipeline every sample up to that instant of the recording at once, silently (no callouts animate, no haptics), then carry on from there. ~11 000 samples take about 0.3 s. Implies `run=1`. |
+| `at=<seconds>` | WARP: feed the pipeline every sample up to that instant of the recording at once, silently (no callouts animate, no haptics), then carry on from there. ~11 000 samples take about 0.3 s. |
 | `hold=1` | FREEZE at `at`: no further samples. The frame is then deterministic — the same URL gives the same pixels, verified by shooting one URL three times 2.5 s apart. |
-| `run=1` | Arm and start the run on mount instead of showing the READY screen. |
+| `run=1` | Accepted and harmless. Opening `/drive` starts the run by itself — there is no arming step (docs/DESIGN.md, "the whole app is four steps"), so every route below is a live run. |
 | `integrity=loose\|suspect\|gps-poor\|gps-none\|physics\|ok` | Presentation-only override of `frame.integrity`, so the warning states can be photographed from a clean recording. It changes nothing upstream of the view; the wording is the IntegrityMonitor's own. |
 
 `at` counts seconds of MOTION data (the same clock the HUD's own timer shows), so `at=100.85`
@@ -197,7 +206,7 @@ Default drive routes, and what each one is evidence of:
 
 | route | moment |
 | --- | --- |
-| `drive-idle` | armed, before the run: gauge at rest, GO, nothing claimed |
+| `drive-open` | the instant the screen opens: a live run at 0:00, gauge at rest, nothing claimed |
 | `drive-start` | the first seconds of EVERY run — forward axis not resolved yet, so a calm cyan FINDING FORWARD, muted gauge, no score. This state used to open every run with a red alarm |
 | `drive` | LIVE through the MANJI flick at 42.4 s (video: `npm run shoot -- --video --only drive`) |
 | `drive-peak` | held at 48° right, ×4.5, 22,675 points, 7,927 at risk, three callouts stacked |
@@ -300,6 +309,94 @@ bundled ffmpeg (its filter parser is unusable in this build, so use `-r`, not `-
 ```
 /opt/pw-browsers/ffmpeg-1011/ffmpeg-linux -i artifacts/video/results-reveal.webm -r 12 /tmp/f%03d.png
 ```
+
+## Replay: the cinematic stage (`/replay/[id]?...`)
+
+The replay draws the scene model in `src/engine/replay` — the same data the SVG reference
+renderer (`tools/analysis/render-replay.ts`) draws for the critic — on one full-bleed Skia canvas,
+with the HUD over true letterbox bars. The frame loop lives in `src/ui/replay/ReplayCanvas.tsx`
+and never touches React: the clock, the transport and the scrub position are Reanimated shared
+values, and the picture is handed to Skia through one of them.
+
+**Which session plays.** `/replay/<storedId>` plays a recording from storage. Anything the
+results screen's fixture resolver recognises rebuilds the same deterministic session instead, so
+a deep link from a fixture result lands on the same run:
+
+```
+/replay/demo                      the default fixture (`good`) — the id the app pushes today
+/replay/fixture-handheld          the hand-held recording the engine will not score
+/replay/x?fixture=rough&gaps=6    any fixture by name, plus the overrides below
+```
+
+`fixture`, `source=sim|pipeline`, `track`, `seed`, `laps`, `agg`, `cons`, `spin`, `drifts`,
+`loose` and `rough` all mean exactly what they mean on the results screen (see above).
+
+**Replay parameters** (`src/ui/replay/params.ts`; everything is optional and clamped):
+
+| param | effect |
+| --- | --- |
+| `t=<seconds>` | seek there on open (replay-relative). The results screen pushes this |
+| `drift=<id>` | seek to that drift and pick its ribbon out with a white halo, with a chip naming it. The results screen pushes this when a drift row is tapped |
+| `hl=<n>` | jump to the nth-best highlight (1-based) and name it in a chip |
+| `cam=overview\|chase\|cinematic` | camera mode (`track` and `cine` also work) |
+| `play=0\|1` | freeze on the opening frame, or start playing (default: play) |
+| `rate=<n>` | playback speed. The transport offers x0.5 / x1 / x2; the URL may ask for any rate, which is how motion is captured (see below) |
+| `scrub=<0..1>` | open with the playhead GRABBED at that fraction of the run: the same shared values a real drag writes, so the frame is the held state (fat playhead, time bubble, camera cut to the new moment) |
+| `ghost=time\|distance\|off` | how the best-lap ghost is placed, or no ghost at all |
+| `gaps=<seconds>` | blank the recorded positions (and the fixes behind them) for that long in the middle of the run — a tunnel. This damages the RECORDING, so `buildReplay`'s own warnings fire and the renderer has a real hole to be honest about |
+| `ui=1\|0` | pin the transport controls on, or hide them (which is what the app itself does a few seconds into playback) |
+| `motion=reduce\|full` | force reduce-motion (no shake, no grain, no speed streaks, no callout overshoot) or force full motion |
+
+A synthetic pointer sequence cannot drive the scrubber: react-native-gesture-handler calls
+`setPointerCapture`, which throws for a pointer id the browser never issued, and that uncaught
+error fails the whole shoot. `scrub=` exists for exactly this reason. A real drag
+(`page.mouse.down/move`) works and raises nothing.
+
+| route | what it is evidence of |
+| --- | --- |
+| `replay` | LIVE from 01:33 in chase: the route to record video of |
+| `replay-motion` | quarter speed at the callout beat — the video route for the slam and the shake |
+| `replay-cut` | the camera cut: chase, then CINE tapped 1.2 s in, at quarter speed |
+| `replay-shake` | quarter speed from TRACK CAM, where the camera is still, over the biggest beat of the run |
+| `replay-overview` | TRACK CAM at the half-way point: the whole circuit, only the part already driven |
+| `replay-chase` | CHASE at the peak of the 3-link chain: 41 deg, ribbon, smoke, slip arc, ghost |
+| `replay-cinematic` | CINEMATIC 120 ms after TRANSITION x3: the magenta chip and the callout mid-hold |
+| `replay-ghost` | the best-lap ghost far enough off the line to be a car rather than a badge |
+| `replay-highlight` | a highlight jump, named by its chip |
+| `replay-scrub` | the scrubber held mid-drag |
+| `replay-untrusted` | a hand-held recording: it plays, and it presents no points and no grade |
+| `replay-warnings` | six seconds of position blanked: the DATA GAPS plate, dashed dead reckoning, the gap marked on the timeline |
+| `replay-warnings-open` | the plate opened: the engine's own sentences behind it |
+| `replay-end` | the last frame, where the grade finally lands |
+| `replay-from-results` | the deep link end to end: REPLAY THIS DRIFT on the results screen lands in the replay at that moment, with the drift picked out |
+| `replay-touge` | a point-to-point stage: STAGE rather than LAP 1/2, no lap ticks, no ghost |
+
+**Frame rate, and how to capture motion.** The harness renders WebGL through SwiftShader, in
+software. A full-bleed cinematic scene costs it about 170 ms a frame at `--scale 1` and 650 ms at
+the default `--scale 3` (measured: the same page with the scene switched off runs at 60 fps, and
+the drive HUD in this browser manages about 5 fps too). Nothing about that is the app on a phone,
+where the same picture is one GPU pass, but it does mean a 1x video of this screen is a
+slideshow: a 320 ms callout slam lands in one and a half frames.
+
+So capture motion at quarter speed and at scale 1, which resolves every beat into frames without
+changing what the app does — the motion is the app's own, sampled finer:
+
+```
+npm run shoot -- --no-build --video --scale 1 --only replay-motion,replay-cut,replay-shake
+/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux -i artifacts/video/replay-motion.webm -r 25 /tmp/m%03d.png
+```
+
+What those frames show, measured rather than asserted:
+
+* **the callout slam** — the magenta area of TRANSITION x3 falls 4086 -> 2516 -> 1850 -> 1431 ->
+  1242 px and then rises to 1385 and holds: scale 1.8 to 1.0 with the overshoot going *past* the
+  resting size and coming back, which is the engine's own `activeEvents` curve;
+* **the shake** — on the still TRACK CAM, a static road edge sits at y = 358.98 for every frame
+  before the exit beat, jumps to 360.22 on it, then 359.23, 358.53, 358.63, and settles at
+  358.99: a decaying oscillation about the resting position, 180 ms long;
+* **the camera cut** — mean frame luminance steps 17.4 (chase) -> 25.3 (the cross-fade frame,
+  still darkened) -> 36.2 (cinematic, at full brightness), which is the engine's 120 ms cross-fade
+  measured in replay time, so it slows down with the playback rate like everything else.
 
 ## Gotchas this harness already handles (keep them in mind when extending it)
 

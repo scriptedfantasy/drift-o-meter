@@ -6,6 +6,7 @@
  * re-exports it directly.
  */
 export {
+  arrivalOf,
   attitudeWords,
   cautionsOf,
   headlineOf,
@@ -24,9 +25,9 @@ export {
   SHARP_QUALITY,
   TRUST_QUALITY,
 } from './model';
-export type { CalibrationFault, CalibrationFaultKind, CalibrationPhase, CalibrationReading, Caution, Headline, Light, QualityBand, Step } from './model';
+export type { Arrival, CalibrationFault, CalibrationFaultKind, CalibrationPhase, CalibrationReading, Caution, Headline, Light, QualityBand, Step } from './model';
 export { parseCalibrateParams, DEFAULT_CALIBRATE_PARAMS } from './params';
-export type { CalibrateParams } from './params';
+export type { CalibrateParams, CalibrateReason } from './params';
 export { useCalibration } from './useCalibration';
 export type { Calibration } from './useCalibration';
 export { Banner, Cautions, EngineStrip, Lights, Steps } from './parts';

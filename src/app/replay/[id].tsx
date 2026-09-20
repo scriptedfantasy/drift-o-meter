@@ -182,7 +182,7 @@ export default function ReplayScreen() {
     );
   }
 
-  const shareLabel = shareState === 'copied' ? 'Copied' : shareState === 'failed' ? 'Failed' : 'Share';
+  const shareLabel = shareState === 'copied' ? 'Copied' : shareState === 'failed' ? 'Failed' : canShare() ? 'Share' : 'No share';
 
   return (
     <View style={styles.root} testID="screen-replay">
@@ -221,7 +221,7 @@ export default function ReplayScreen() {
         highlightCount={view.replay.highlights.length}
         onShare={onShare}
         shareLabel={shareLabel}
-        shareDisabled={false}
+        shareDisabled={!canShare()}
         visible={!hidden}
       />
       <Scrubber layout={layout} durationS={view.replay.durationS} player={player} />
@@ -232,6 +232,13 @@ export default function ReplayScreen() {
       ) : null}
     </View>
   );
+}
+
+/** Whether this platform can hand the link anywhere at all; if not, the control says so. */
+function canShare(): boolean {
+  if (Platform.OS !== 'web') return true;
+  if (typeof navigator === 'undefined') return false;
+  return !!navigator.clipboard?.writeText || !!navigator.share || typeof document !== 'undefined';
 }
 
 /** Clipboard first, the share sheet second, the legacy copy last — one of them works everywhere. */

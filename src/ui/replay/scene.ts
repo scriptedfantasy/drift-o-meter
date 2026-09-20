@@ -200,9 +200,8 @@ function fontKey(fonts: SceneFonts, font: SkFont): string {
 function measure(f: Frame, font: SkFont, s: string, tracking = 0): number {
   const key = fontKey(f.fonts, font);
   if (!tracking) return f.res.width(font, key, s);
-  let w = 0;
-  for (const ch of s) w += f.res.width(font, key, ch) + tracking;
-  return Math.max(0, w - tracking);
+  const run = f.res.glyphs(font, key, s, tracking);
+  return run.ids.length > 0 ? run.width : f.res.width(font, key, s) + tracking * Math.max(0, s.length - 1);
 }
 
 function drawStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string, x: number, y: number, o: TextOpts = {}): number {
@@ -222,12 +221,12 @@ function drawStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string, x: 
       canvas.drawText(s, left, y, paint, font);
       return;
     }
-    let cx = left;
-    const key = fontKey(f.fonts, font);
-    for (const ch of s) {
-      canvas.drawText(ch, cx, y, paint, font);
-      cx += f.res.width(font, key, ch) + tracking;
+    const run = f.res.glyphs(font, fontKey(f.fonts, font), s, tracking);
+    if (run.ids.length === 0) {
+      canvas.drawText(s, left, y, paint, font);
+      return;
     }
+    canvas.drawGlyphs(run.ids, run.pos, left, y, font, paint);
   };
   const alpha = o.alpha ?? 1;
   if (o.outline) draw(o.outline, alpha, PaintStyle.Stroke, o.outlineW ?? 3);
@@ -235,28 +234,28 @@ function drawStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string, x: 
   return w;
 }
 
-/** A big glowing number: a blurred copy under the fill (Skia can blur; the SVG had to fake it). */
+/**
+ * A big glowing number: two translucent thick-stroked copies under the fill. This is the SVG
+ * reference's construction rather than a real Gaussian blur, and deliberately so — a blurred
+ * mask filter costs more than the whole rest of the frame in a software rasteriser, and this
+ * reads the same.
+ */
 function drawGlowStr(canvas: SkCanvas, f: Frame, font: SkFont | null, s: string, x: number, y: number, fillCol: string, glowCol: string, glowOpacity: number, anchor: Anchor = 'start', size = 40): number {
   if (!font || !s) return 0;
   const w = measure(f, font, s);
   const left = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
-  if (glowOpacity > 0.02 && !f.ui.reduceMotion) {
-    f.res.setGlowBlur(Math.max(3, size * 0.22));
-    const g = f.res.glow;
-    g.setStyle(PaintStyle.Fill);
-    g.setShader(null);
-    g.setColor(f.res.color(glowCol));
-    g.setAlphaf(clamp(glowOpacity * 0.85, 0, 1));
-    canvas.drawText(s, left, y, g, font);
-  }
   const p = f.res.text;
-  p.setStyle(PaintStyle.Stroke);
-  p.setShader(null);
-  p.setStrokeJoin(StrokeJoin.Round);
-  p.setStrokeWidth(Math.max(2, size * 0.09));
-  p.setColor(f.res.color(glowCol));
-  p.setAlphaf(clamp(0.55 + 0.45 * glowOpacity, 0, 1));
-  canvas.drawText(s, left, y, p, font);
+  const stroke = (width: number, alpha: number) => {
+    p.setStyle(PaintStyle.Stroke);
+    p.setShader(null);
+    p.setStrokeJoin(StrokeJoin.Round);
+    p.setStrokeWidth(width);
+    p.setColor(f.res.color(glowCol));
+    p.setAlphaf(clamp(alpha, 0, 1));
+    canvas.drawText(s, left, y, p, font);
+  };
+  stroke(size * 0.2, glowOpacity * 0.45);
+  stroke(size * 0.08, glowOpacity);
   p.setStyle(PaintStyle.Fill);
   p.setColor(f.res.color(fillCol));
   p.setAlphaf(1);
@@ -277,15 +276,19 @@ function drawGround(canvas: SkCanvas, f: Frame): void {
   const rr = f.overview ? 0.62 * Math.max(b.maxX - b.minX, b.maxY - b.minY) : 0.55 * (maxX - minX);
   shadeEllipse(canvas, f, f.res.pool, cx, cy, rr, rr, 1);
   const spacing = f.cam.zoom > 3 ? 20 : 50;
-  const grid = strokePaint(f, GRID_LINE, 1 / f.cam.zoom, 0.85, StrokeCap.Butt);
-  for (let x = Math.floor(minX / spacing) * spacing; x <= maxX; x += spacing) canvas.drawLine(x, minY, x, maxY, grid);
-  for (let y = Math.floor(minY / spacing) * spacing; y <= maxY; y += spacing) canvas.drawLine(minX, y, maxX, y, grid);
+  const grid = Skia.PathBuilder.Make();
+  for (let x = Math.floor(minX / spacing) * spacing; x <= maxX; x += spacing) grid.moveTo(x, minY).lineTo(x, maxY);
+  for (let y = Math.floor(minY / spacing) * spacing; y <= maxY; y += spacing) grid.moveTo(minX, y).lineTo(maxX, y);
+  const gridPath = grid.detach();
+  canvas.drawPath(gridPath, strokePaint(f, GRID_LINE, 1 / f.cam.zoom, 0.85, StrokeCap.Butt));
+  gridPath.dispose();
 }
 
 function drawRoad(canvas: SkCanvas, f: Frame): void {
   const g = f.geo;
   if (!g.road) return;
   const verge = ROAD_W + 7;
+  // one pass per material: gravel run-off, verge, then the asphalt itself
   canvas.drawPath(g.road, strokePaint(f, RUNOFF, verge + 6));
   canvas.drawPath(g.road, strokePaint(f, VERGE, verge));
   canvas.drawPath(g.road, strokePaint(f, ASPHALT_HI, ROAD_W + 1.4));
@@ -301,12 +304,11 @@ function drawRoad(canvas: SkCanvas, f: Frame): void {
       canvas.drawCircle(c.x, c.y, mOrPx(f, 6, 9), ring);
     }
   }
-  const kw = mOrPx(f, 1.1, 2.4);
-  const kerbDash = mOrPx(f, 2, 4);
-  for (const k of g.kerbs) {
-    if (!overlaps(f, k.bounds)) continue;
-    canvas.drawPath(k.path, strokePaint(f, KERB_PALE, kw, 0.35));
-    canvas.drawPath(k.path, dashPaint(f, colors.red, kw, kerbDash, kerbDash, 0.3));
+  if (g.kerbs) {
+    const kw = mOrPx(f, 1.1, 2.4);
+    const kerbDash = mOrPx(f, 2, 4);
+    canvas.drawPath(g.kerbs, strokePaint(f, KERB_PALE, kw, 0.35));
+    canvas.drawPath(g.kerbs, dashPaint(f, colors.red, kw, kerbDash, kerbDash, 0.3));
   }
   if (f.cam.zoom > 2) {
     const chip = strokePaint(f, MUTED, mOrPx(f, 0.2, 0.7), 0.45);
@@ -743,6 +745,19 @@ function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
   const col = new LabelCollider({ x0: f.layout.insets.left + 14, y0: st.y + 10, x1: f.layout.w - f.layout.insets.right - 14, y1: st.y + st.h - 14 });
   const carS = toS(f, f.pose.x, f.pose.y);
   col.reserve({ x0: carS.x - 46, y0: carS.y - 52, x1: carS.x + 46, y1: carS.y + 40 });
+  // in landscape the hero angle and the speed/points block float over the world, so they own
+  // their corners the same way the car owns its own space
+  if (!f.layout.hero.inBar) {
+    const h = f.layout.hero;
+    col.reserve({ x0: h.x - 8, y0: h.baseline - TYPE.hero, x1: h.x + 170, y1: h.baseline + 22 });
+    const r = f.layout.readout;
+    col.reserve({ x0: r.x - 170, y0: r.baseline - 46, x1: r.x + 8, y1: r.baseline + 34 });
+  }
+  // the mini-map is drawn after the labels and would sit on top of any that land under it
+  {
+    const m = minimapRect(f);
+    if (!f.overview) col.reserve({ x0: m.x - 6, y0: m.y - 6, x1: m.x + m.size + 6, y1: m.y + m.size + 6 });
+  }
 
   // the slip readout, beside the arc
   const p = f.pose;
@@ -844,7 +859,7 @@ function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
 function minimapRect(f: Frame): { x: number; y: number; size: number } {
   const size = f.layout.landscape ? 58 : 66;
   const x = f.layout.w - f.layout.insets.right - 16 - size;
-  const y = f.layout.landscape ? f.action.y + f.action.h - size - 14 : f.action.y + 14;
+  const y = f.action.y + (f.layout.landscape ? 10 : 14);
   return { x, y, size };
 }
 

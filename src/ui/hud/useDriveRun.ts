@@ -40,7 +40,12 @@ import { SimPlayer } from './simPlayer';
 import { resetSignals, type HudSignals } from './signals';
 import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
 
-export type RunStatus = 'ready' | 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'error';
+/**
+ * There is no 'ready'. Opening the screen IS the arming step (docs/DESIGN.md, "the whole app is
+ * four steps"): the run starts on mount, and anything the engine has not worked out yet — the
+ * forward axis, the first GPS fix — is reported while it records.
+ */
+export type RunStatus = 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'error';
 
 export type EventTone = 'ember' | 'magenta' | 'gold' | 'green' | 'cyan' | 'red';
 
@@ -115,9 +120,9 @@ export interface DriveRun {
   banner: HudBanner | null;
   trail: Trail;
   params: HudParams;
-  start(): void;
+  /** Retry after a failed start (a denied permission is the one case a driver can fix here). */
+  retry(): void;
   stop(): void;
-  dismissError(): void;
 }
 
 const IDLE_SNAPSHOT: HudSnapshot = {
@@ -152,6 +157,8 @@ const MAX_CALLOUTS = 3;
 const TRAIL_INTERVAL_S = 0.12;
 /** Chain-bar scale: points at which the bar is ~63 % full. */
 const CHAIN_SCALE = 2500;
+/** Below this top speed, with no drift found, the "run" was the walk to the car: 10 km/h. */
+const WALKING_PACE_MPS = 2.8;
 
 const ACTIVE_PHASES: ReadonlySet<DriftPhase> = new Set<DriftPhase>(['entry', 'drifting', 'transition']);
 
@@ -195,7 +202,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
 
   const [params] = useState<HudParams>(() => parseHudParams(currentSearch()));
 
-  const [status, setStatus] = useState<RunStatus>(params.autoRun ? 'starting' : 'ready');
+  const [status, setStatus] = useState<RunStatus>('starting');
   const [error, setError] = useState<RunError | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [sourceKind, setSourceKind] = useState<'device' | 'simulated' | null>(null);
@@ -222,6 +229,9 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     intensity: 0,
     lastTrailT: -Infinity,
     eventKey: 1,
+    displayTotal: 0,
+    warping: false,
+    maxSpeed: 0,
     peakDeg: 0,
     driftId: -1,
     gpsEverGood: false,
@@ -283,6 +293,18 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.ayG.value = f.state.ay / G;
       signals.active.value = active ? 1 : 0;
       signals.total.value = f.score.total;
+      // The odometer's own value: one exponential filter at sample rate. It converges during a
+      // warp, tracks a fast climb with ~0.12 s of lag, and snaps once it is within half a point
+      // so a parked score reads exactly.
+      const dTotal = f.score.total - h.displayTotal;
+      // Snap generously (25 points, or 0.2 % of a big score): while the score climbs the gap is
+      // far wider than that, and the moment it plateaus the digits park on the exact figure
+      // instead of hovering a fraction below it.
+      const snapAt = Math.max(25, f.score.total * 0.002);
+      // Snapping rounds: the engine's total is fractional (callout bonuses carry the multiplier),
+      // and a settled odometer must sit on a whole digit, not 0.3 of the way past it.
+      h.displayTotal = Math.abs(dTotal) < snapAt ? Math.round(f.score.total) : h.displayTotal + dTotal * (1 - Math.exp(-dt / 0.12));
+      signals.totalDisplay.value = h.displayTotal;
       signals.chainPoints.value = f.score.chainPoints;
       signals.multiplier.value = f.score.multiplier;
       signals.chainRatio.value = 1 - Math.exp(-f.score.chainPoints / CHAIN_SCALE);
@@ -291,6 +313,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.carY.value = f.state.y;
       signals.carHeading.value = f.state.heading;
       signals.valid.value = f.state.valid ? 1 : 0;
+      if (f.state.speed > h.maxSpeed) h.maxSpeed = f.state.speed;
 
       // Glow intensity: blooms fast, fades slowly (design: entry 220 ms, exit 420 ms), and never
       // blooms at all for a slide the engine is not scoring.
@@ -300,21 +323,26 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.intensity.value = h.intensity;
 
       // ── edges ──────────────────────────────────────────────────────────────────────
+      // A warp (`?at=`) replays minutes of data in one synchronous burst. The STATE changes
+      // (callouts land on the stack, the multiplier grows), but the impulses do not: firing a
+      // flash and a haptic for every transition in the skipped minutes would leave the screen
+      // mid-flash the instant it appears, and buzz the phone for drifts nobody drove.
+      const quiet = h.warping;
       const phase = f.phase;
       const wasActive = ACTIVE_PHASES.has(h.prevPhase);
       if (active && !wasActive) {
         // Entry: the numeral punches to 1.08× and springs back.
-        if (!reduceMotion.current) {
+        if (!reduceMotion.current && !quiet) {
           signals.punch.value = withSequence(withTiming(1, { duration: 70 }), withSpring(0, { damping: 11, stiffness: 150, mass: 0.6 }));
         }
-        fireHaptic('entry');
+        if (!quiet) fireHaptic('entry');
       } else if (!active && wasActive) {
-        fireHaptic('exit');
+        if (!quiet) fireHaptic('exit');
       }
       if (phase === 'transition' && h.prevPhase !== 'transition') {
         // Transition: 120 ms magenta flash, 100 ms 2 px shake. Reduce-motion keeps the state
         // change (the callout, the multiplier, the chevron) and drops both of these.
-        if (!reduceMotion.current) {
+        if (!reduceMotion.current && !quiet) {
           signals.flash.value = withSequence(withTiming(1, { duration: 40 }), withTiming(0, { duration: 140 }));
           signals.shake.value = withSequence(
             withTiming(1, { duration: 24 }),
@@ -323,7 +351,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
             withTiming(0, { duration: 26 }),
           );
         }
-        fireHaptic('transition');
+        if (!quiet) fireHaptic('transition');
       }
       h.prevPhase = phase;
 
@@ -380,6 +408,13 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         meta.rate = sel.sim.params.rate;
       }
       const session = pipe.finish(meta);
+      // A run that never got above walking pace and never found a drift is the walk to the car,
+      // not a session. Discard it rather than making the driver decide (and rather than gating
+      // the start on a tap).
+      if (hot.current.maxSpeed < WALKING_PACE_MPS && session.drifts.length === 0) {
+        router.replace('/');
+        return;
+      }
       const entry = await saveSession(session);
       router.replace({ pathname: '/results/[id]', params: { id: entry.id } });
     } catch (err) {
@@ -417,6 +452,9 @@ export function useDriveRun(signals: HudSignals): DriveRun {
           intensity: 0,
           lastTrailT: -Infinity,
           eventKey: hot.current.eventKey,
+          displayTotal: 0,
+          warping: false,
+          maxSpeed: 0,
           peakDeg: 0,
           driftId: -1,
           gpsEverGood: false,
@@ -431,7 +469,18 @@ export function useDriveRun(signals: HudSignals): DriveRun {
             onEnd: () => void finishAndSave(),
           });
           playerRef.current = player;
-          if (Number.isFinite(params.at)) player.warpTo(params.at);
+          if (Number.isFinite(params.at)) {
+            hot.current.warping = true;
+            try {
+              player.warpTo(params.at);
+            } finally {
+              hot.current.warping = false;
+            }
+            // The odometer's filter has no more samples to converge on after a warp that ends in
+            // a freeze, so land it on the figure the engine actually reports.
+            hot.current.displayTotal = Math.round(frameRef.current.score.total);
+            signals.totalDisplay.value = hot.current.displayTotal;
+          }
           if (params.hold) {
             setStatus('held');
           } else {
@@ -456,10 +505,12 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     void finishAndSave();
   }, [finishAndSave]);
 
-  const dismissError = useCallback(() => {
+  /** A denied permission is the one failure a driver can fix without leaving: ask again. */
+  const retry = useCallback(() => {
     setError(null);
-    setStatus('ready');
-  }, []);
+    startedRef.current = false;
+    start();
+  }, [start]);
 
   // Haptics follow the setting; read once and on change, never inside the hot path.
   useEffect(() => {
@@ -476,10 +527,11 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     };
   }, []);
 
-  // Auto-start (`?run=1` / `?at=`) — the harness needs a running HUD without a tap.
+  // Opening the screen starts the run. No GO button, no countdown: the driver already decided
+  // when they tapped DRIVE. (`?at=` still seeks and `?hold=1` still freezes, for the harness.)
   useEffect(() => {
-    if (params.autoRun) start();
-  }, [params.autoRun, start]);
+    start();
+  }, [start]);
 
   // The ~10 Hz snapshot: words, not motion.
   useEffect(() => {
@@ -539,9 +591,8 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     banner,
     trail,
     params,
-    start,
     stop,
-    dismissError,
+    retry,
   };
 }
 

@@ -9,7 +9,7 @@
  * positioned by transforming the canvas before drawing, so one shader serves every smoke puff,
  * the light pool, the vignette, the letterbox feet and the scrubber ribbon.
  */
-import { BlurStyle, FilterMode, PaintStyle, Skia, StrokeCap, StrokeJoin, TileMode, type SkColor, type SkFont, type SkPaint, type SkPathEffect, type SkShader } from '@shopify/react-native-skia';
+import { BlurStyle, FilterMode, PaintStyle, Skia, StrokeCap, StrokeJoin, TileMode, type SkColor, type SkFont, type SkPaint, type SkPathEffect, type SkPoint, type SkShader } from '@shopify/react-native-skia';
 
 import { colors } from '../theme';
 
@@ -36,6 +36,13 @@ export interface SceneResources {
   dash(on: number, off: number): SkPathEffect;
   /** Advance width of one string in this font, cached per font+string. */
   width(font: SkFont, key: string, s: string): number;
+  /**
+   * One letter-spaced label as a single glyph run. Skia has no letter spacing, and drawing a
+   * label character by character costs a draw call per character — which, in the harness's
+   * software rasteriser, is the most expensive thing on the frame. `drawGlyphs` places all of
+   * them in one call instead.
+   */
+  glyphs(font: SkFont, key: string, s: string, tracking: number): { ids: number[]; pos: SkPoint[]; width: number };
   setGlowBlur(sigma: number): void;
   dispose(): void;
 }
@@ -159,6 +166,7 @@ export function createSceneResources(): SceneResources {
   const colorCache = new Map<string, SkColor>();
   const dashCache = new Map<string, SkPathEffect>();
   const widthCache = new Map<string, number>();
+  const glyphCache = new Map<string, { ids: number[]; pos: SkPoint[]; width: number }>();
   let blurSigma = -1;
 
   return {
@@ -208,6 +216,30 @@ export function createSceneResources(): SceneResources {
       }
       return w;
     },
+    glyphs(font: SkFont, key: string, s: string, tracking: number) {
+      const k = `${key}\u0000${tracking}\u0000${s}`;
+      let run = glyphCache.get(k);
+      if (!run) {
+        let ids: number[] = [];
+        let widths: number[] = [];
+        try {
+          ids = font.getGlyphIDs(s);
+          widths = font.getGlyphWidths(ids);
+        } catch {
+          ids = [];
+          widths = [];
+        }
+        const pos: SkPoint[] = [];
+        let x = 0;
+        for (let i = 0; i < ids.length; i++) {
+          pos.push({ x, y: 0 });
+          x += (Number.isFinite(widths[i]) ? widths[i] : 0) + tracking;
+        }
+        run = { ids, pos, width: Math.max(0, x - tracking) };
+        glyphCache.set(k, run);
+      }
+      return run;
+    },
     setGlowBlur(sigma: number): void {
       if (Math.abs(sigma - blurSigma) < 0.05) return;
       blurSigma = sigma;
@@ -231,6 +263,7 @@ export function createSceneResources(): SceneResources {
       dashCache.clear();
       colorCache.clear();
       widthCache.clear();
+      glyphCache.clear();
     },
   };
 }

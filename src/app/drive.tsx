@@ -12,7 +12,7 @@
  * evaluates Skia before CanvasKit is ready.
  */
 import { useRouter } from 'expo-router';
-import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -37,7 +37,8 @@ export default function DriveScreen() {
 
   const shake = useAnimatedStyle(() => ({ transform: [{ translateX: signals.shake.value * 2 }, { translateY: signals.shake.value * -1.2 }] }));
 
-  const live = run.status === 'running' || run.status === 'held' || run.status === 'saving';
+  // The HUD is live from the moment the screen opens: there is no pre-run state to render.
+  const live = run.status !== 'error';
   const stageW = width - gutter * 2;
 
   // The gauge's box is the arc's bounding box (a wide, shallow bowl): height ≈ 0.56 × width.
@@ -64,12 +65,12 @@ export default function DriveScreen() {
                 </View>
 
                 <View style={styles.rightColumn}>
+                  {live ? <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" /> : null}
                   <View style={styles.calloutsLandscape} pointerEvents="none">
                     <CalloutStack events={run.events} fromRight size={22} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
                   </View>
                   {live ? (
                     <>
-                      <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" />
                       <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={56} testID="hud-telemetry" />
                       <View style={styles.scoreRowLandscape}>
                         <View style={styles.scoreCell}>
@@ -132,11 +133,8 @@ export default function DriveScreen() {
         </SafeAreaView>
       </Animated.View>
 
-      {!live && run.status !== 'error' ? (
-        <ArmOverlay status={run.status} label={run.sourceLabel} onStart={run.start} landscape={landscape} topOffset={landscape ? 0 : gauge.h} />
-      ) : null}
       {run.status === 'error' && run.error ? (
-        <ErrorOverlay title={run.error.title} body={run.error.body} retryable={run.error.retryable} onRetry={run.dismissError} onBack={() => router.replace('/')} />
+        <ErrorOverlay title={run.error.title} body={run.error.body} retryable={run.error.retryable} onRetry={run.retry} onBack={() => router.replace('/')} />
       ) : null}
       {run.status === 'saving' ? <SavingOverlay /> : null}
     </View>
@@ -159,31 +157,14 @@ function StopControl({ onPress, compact = false }: { onPress: () => void; compac
   );
 }
 
-function ArmOverlay({ status, label, onStart, landscape, topOffset }: { status: string; label: string | null; onStart: () => void; landscape: boolean; topOffset: number }) {
-  const starting = status === 'starting';
-  return (
-    <View style={[styles.overlay, landscape && styles.overlayLandscape, { paddingTop: topOffset }]} pointerEvents="box-none">
-      <View style={styles.armCard} pointerEvents="auto">
-        <View style={styles.armRule} />
-        <Micro color={colors.ember}>{label ?? (Platform.OS === 'web' ? 'SIMULATED SOURCE' : 'DEVICE SENSORS')}</Micro>
-        <AppText style={styles.armTitle}>{starting ? 'ARMING' : 'READY TO DRIVE'}</AppText>
-        <Body color="muted" style={styles.armBody}>
-          {starting ? 'Waking the sensors and finding the car’s forward axis.' : 'Phone in the mount, screen toward you. Drive one straight line to calibrate, then get sideways.'}
-        </Body>
-        <Button label={starting ? 'Arming…' : 'Go'} size="lg" onPress={onStart} disabled={starting} testID="cta-go" style={styles.armButton} />
-      </View>
-    </View>
-  );
-}
-
 function ErrorOverlay({ title, body, retryable, onRetry, onBack }: { title: string; body: string; retryable: boolean; onRetry: () => void; onBack: () => void }) {
   return (
     <View style={styles.overlay} testID="hud-error">
       <Panel accent={colors.red} style={styles.errorCard}>
-        <AppText style={[styles.armTitle, { color: colors.red }]}>{title}</AppText>
+        <AppText style={[styles.errorTitle, { color: colors.red }]}>{title}</AppText>
         <Body color="muted">{body}</Body>
         <View style={styles.errorButtons}>
-          {retryable ? <Button label="Try again" size="md" onPress={onRetry} testID="cta-retry" /> : null}
+          {retryable ? <Button label="Allow access" size="md" onPress={onRetry} testID="cta-retry" /> : null}
           <Button label="Garage" variant="secondary" size="md" onPress={onBack} testID="cta-garage" />
         </View>
       </Panel>
@@ -212,7 +193,7 @@ const styles = StyleSheet.create({
   frameLive: { justifyContent: 'space-between', paddingBottom: STOP_DOCK_H + space[4] },
   frameLiveLandscape: { paddingBottom: space[2] },
   stopDock: { position: 'absolute', left: gutter, right: gutter, bottom: space[3] },
-  stopDockLandscape: { left: undefined, right: gutter, bottom: space[2], width: '46%' },
+  stopDockLandscape: { left: '52%', right: gutter, bottom: space[2] },
   frameLandscape: { paddingTop: space[2], paddingBottom: space[2] },
 
   stage: { alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2] },
@@ -225,7 +206,7 @@ const styles = StyleSheet.create({
   leftColumn: { flex: 1.06, gap: space[2] },
   gaugeWrapLandscape: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: space[2] },
   rightColumn: { flex: 1, justifyContent: 'flex-end', gap: space[3], paddingBottom: STOP_DOCK_H - space[2] },
-  calloutsLandscape: { flex: 1, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[2], paddingRight: space[1] },
+  calloutsLandscape: { flex: 1, flexShrink: 1, overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[2], paddingRight: space[1] },
   scoreRowLandscape: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
 
   bottomRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
@@ -249,14 +230,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
 
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: gutter, backgroundColor: 'rgba(7, 9, 13, 0.5)' },
-  // Landscape keeps the gauge visible on the left and puts the arm block in the right half,
-  // where the telemetry and the score live once the run is going.
-  overlayLandscape: { justifyContent: 'center', paddingLeft: '52%' },
-  armCard: { maxWidth: 460, alignSelf: 'stretch', alignItems: 'flex-start', gap: space[2] },
-  armRule: { alignSelf: 'stretch', height: 1, backgroundColor: colors.line, marginBottom: space[2] },
-  armTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 40, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },
-  armBody: { maxWidth: 340 },
-  armButton: { alignSelf: 'stretch', marginTop: space[2] },
+  errorTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 40, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },
 
   errorCard: { maxWidth: 420, gap: space[3] },
   errorButtons: { flexDirection: 'row', gap: space[3], marginTop: space[2] },

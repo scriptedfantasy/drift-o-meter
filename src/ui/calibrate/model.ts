@@ -18,6 +18,7 @@ import { DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../..
 import { DEFAULT_MOUNT_OPTIONS } from '../../engine/mount';
 import type { Vec3 } from '../../engine/types';
 import { G } from '../../engine/types';
+import type { CalibrateReason } from './params';
 
 /** The bar the engine itself uses before it will believe a slide. */
 export const TRUST_QUALITY = DEFAULT_INTEGRITY_OPTIONS.minCalibrationQuality;
@@ -307,6 +308,50 @@ export function cautionsOf(r: CalibrationReading): Caution[] {
     });
   }
   return out;
+}
+
+/**
+ * Why the driver is here.
+ *
+ * This screen is not a step in the flow — it is where the app sends someone when something is
+ * actually wrong. Arriving that way should say so at the top, in the words of whatever went
+ * wrong, before a single instruction.
+ */
+export interface Arrival {
+  title: string;
+  body: string;
+  tone: 'red' | 'gold';
+}
+
+export function arrivalOf(why: CalibrateReason | null): Arrival | null {
+  switch (why) {
+    case 'rejected':
+      return {
+        title: 'Your last run was thrown out',
+        body: 'The engine would not vouch for a single angle in it. Nothing below takes more than a minute of driving to put right.',
+        tone: 'red',
+      };
+    case 'loose':
+      return {
+        title: 'The phone was moving in its mount',
+        body: 'Last run was scored, but movement in the cradle reads as slip the car never made. Get it rigid and the same driving is worth more.',
+        tone: 'red',
+      };
+    case 'unresolved':
+      return {
+        title: 'Last run never worked out which way the car points',
+        body: 'Without a forward axis a slide and a lane change look alike. One hard pull in a straight line is the whole fix.',
+        tone: 'gold',
+      };
+    case 'suspect':
+      return {
+        title: 'Last run’s mount looked unsteady',
+        body: 'Nothing was invalid, but some of the angle may have been cradle rattle rather than the car.',
+        tone: 'gold',
+      };
+    default:
+      return null;
+  }
 }
 
 /** The one honest number: where the calibration sits against the bar the engine uses. */

@@ -6,9 +6,10 @@
  * harness — can capture the same frame every time instead of whatever t=0 happens to look like:
  *
  *   ?at=114.5     warp the run to 114.5 s of the recording (the pipeline is fed every sample up
- *                 to that instant at once, silently), then keep playing from there. Implies run=1.
+ *                 to that instant at once, silently), then keep playing from there.
  *   ?hold=1       stop at `at` and hold that frame: no further samples, deterministic pixels.
- *   ?run=1        arm and start the run on mount instead of showing the READY screen.
+ *   ?run=1        accepted and harmless: opening /drive already starts the run (there is no
+ *                 arming step any more — see docs/DESIGN.md, "the whole app is four steps").
  *   ?integrity=loose|suspect|gps-poor|gps-none|physics
  *                 presentation-only override of `frame.integrity`, so the warning states can be
  *                 captured from a clean recording. It changes nothing upstream of the view.
@@ -22,7 +23,7 @@ export interface HudParams {
   at: number;
   /** Freeze playback once `at` is reached. */
   hold: boolean;
-  /** Start the run without the READY screen. */
+  /** Legacy: the run starts on mount regardless. Kept so old capture URLs keep working. */
   autoRun: boolean;
   /** Presentation override for the integrity block, or null. */
   integrity: LiveFrame['integrity'] | null;

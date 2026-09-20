@@ -52,6 +52,18 @@ export default function SettingsScreen() {
         <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <TopBar kicker="Preferences" title="Settings" />
 
+          <Section title="The mount" hint="The app works this out by itself while you drive — open this only if something looks wrong.">
+            <Pressable
+              onPress={() => router.push('/calibrate')}
+              accessibilityRole="button"
+              testID="setting-calibrate"
+              style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+              <AppText variant="subheading" color="cyan" style={styles.linkLabel}>
+                Check the mount →
+              </AppText>
+            </Pressable>
+          </Section>
+
           <Section title="Sensor source" hint={isWeb ? 'A browser has no motion sensors, so everything here is simulated.' : 'Use the simulator to see how the judge scores a run without driving.'}>
             <Segmented
               options={[
@@ -220,7 +232,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[10] },
+  scroll: { paddingHorizontal: gutter, paddingBottom: space[10], width: '100%', maxWidth: 660, alignSelf: 'center' },
   section: { marginBottom: space[3], gap: space[2] },
   sectionBody: { gap: space[4], marginTop: space[1] },
   field: { gap: space[2] },
@@ -238,6 +250,17 @@ const styles = StyleSheet.create({
   stepButtonLabel: { fontSize: 20, lineHeight: 22 },
   stepOff: { opacity: 0.35 },
   stepValue: { minWidth: 56, textAlign: 'center', fontSize: 26, lineHeight: 28 },
+  link: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: space[4],
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.bg2,
+    borderRadius: 8,
+  },
+  linkLabel: { fontSize: 16, lineHeight: 19 },
   wipe: {
     alignSelf: 'flex-start',
     minHeight: 44,

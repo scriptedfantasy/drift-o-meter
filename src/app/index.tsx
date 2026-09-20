@@ -1,10 +1,19 @@
 /**
  * Garage — the home screen, and the only screen most nights start on.
  *
- * One thing dominates: DRIVE. Under it, in descending order of how likely a driver is to want
- * it, sits the run they just did (a card twice the size of anything else), the records they are
- * trying to beat, and then the rest of the nights, one line each. Swipe a run sideways or hold
- * it to throw it away; the app asks before it does.
+ * DRIVE is step two of the whole app (docs/DESIGN.md, "the whole app is four steps"): tapping it
+ * starts recording, and nothing on this screen is allowed to stand between a driver and that.
+ * There is no calibration errand next to it — the engine calibrates itself while driving — and
+ * the simulated-source bay lives at the BOTTOM, off the path.
+ *
+ * Under DRIVE, in descending order of how likely a driver is to want it, sits the run they just
+ * did (a card twice the size of anything else), the records they are trying to beat, and then
+ * the rest of the nights, one line each. Swipe a run sideways or hold it to throw it away; the
+ * app asks before it does.
+ *
+ * Calibration appears here in exactly one case: the last run left evidence that the mount was
+ * wrong. Then the garage says what was wrong (`mountAdvice`) and offers the screen that fixes
+ * it. Otherwise the link is tucked away in the footer with settings.
  *
  * A run the engine refused to score is never dressed up as an achievement here — no grade
  * letter, no record, the monitor's own sentence instead (see `SessionIntegrity.scoreTrusted`).
@@ -31,13 +40,15 @@ import {
   type SimParams,
   type SessionIndexEntry,
 } from '@/platform';
-import { AppText, colors, formatDate, formatDuration, gutter, Micro, Small, space, Wordmark } from '@/ui';
+import { colors, formatDate, formatDuration, gutter, Micro, Small, space, Wordmark } from '@/ui';
 import {
   BestsBoard,
   ConfirmDialog,
   DriveSlab,
   EmptyGarage,
   LastRunCard,
+  mountAdvice,
+  MountNotice,
   RunRow,
   SimBay,
   SwipeToDelete,
@@ -120,6 +131,15 @@ export default function GarageScreen() {
   );
 
   const hasRuns = garage.entries.length > 0;
+  // The one thing that earns a calibration prompt: the last run said something was wrong.
+  const advice = useMemo(() => mountAdvice(garage.last, garage.last ? garage.facts.get(garage.last.id) : undefined), [garage.facts, garage.last]);
+  const openCalibrate = useCallback(
+    (why?: string) => {
+      const q = [simQuery.slice(1), why ? `why=${why}` : ''].filter(Boolean).join('&');
+      router.push(`/calibrate${q ? `?${q}` : ''}`);
+    },
+    [router, simQuery],
+  );
 
   return (
     <View style={styles.root} testID="screen-garage">
@@ -141,18 +161,17 @@ export default function GarageScreen() {
           <DriveSlab onPress={() => router.push(`/drive${simQuery}`)} caption={captionFor(sourceLabel, simParams !== null)} testID="cta-drive" />
 
           <View style={styles.underCta}>
-            <Pressable
-              onPress={() => router.push(`/calibrate${simQuery}`)}
-              accessibilityRole="button"
-              testID="cta-calibrate"
-              style={({ pressed }) => [styles.calibrate, pressed && styles.pressed]}>
-              <AppText variant="subheading" color="cyan" style={styles.calibrateLabel}>
-                Calibrate the mount
-              </AppText>
-              <Micro numberOfLines={1}>One straight, one hard pull</Micro>
-            </Pressable>
-            <Tag label={sourceLabel} color={simParams ? colors.cyan : colors.green} filled style={styles.sourceTag} />
+            <Micro numberOfLines={1} style={styles.ctaNote}>
+              Starts recording at once
+            </Micro>
+            <Tag label={sourceLabel} color={simParams ? colors.cyan : colors.green} filled />
           </View>
+
+          {advice ? (
+            <View style={styles.notice}>
+              <MountNotice advice={advice} onPress={() => openCalibrate(advice.concern)} testID="mount-notice" />
+            </View>
+          ) : null}
 
           {garage.error ? (
             <View style={styles.errorBox}>
@@ -192,11 +211,9 @@ export default function GarageScreen() {
               <SectionHead title="Personal bests" accent={colors.gold} right={garage.bests.length === 1 ? '1 track' : `${garage.bests.length} tracks`} />
               <BestsBoard bests={garage.bests} onOpen={openRecord} />
 
-              <SectionHead
-                title="Earlier"
-                accent={colors.cyan}
-                right={garage.earlier.length === 1 ? '1 run' : `${garage.earlier.length} runs`}
-              />
+              {garage.earlier.length > 0 ? (
+                <SectionHead title="Earlier" accent={colors.cyan} right={garage.earlier.length === 1 ? '1 run' : `${garage.earlier.length} runs`} />
+              ) : null}
               {garage.earlier.length === 0 ? (
                 <Small style={styles.onlyRun}>That is the only run in here. The next one goes above it.</Small>
               ) : (
@@ -218,6 +235,16 @@ export default function GarageScreen() {
               <SimBay params={simParams} onChange={changeSim} testID="sim-bay" />
             </>
           ) : null}
+
+          {/* Tucked away, where an errand belongs: the app calibrates itself while driving. */}
+          <View style={styles.footer}>
+            <Pressable onPress={() => openCalibrate()} accessibilityRole="button" testID="nav-calibrate" style={({ pressed }) => pressed && styles.pressed}>
+              <Micro color="muted">Check the mount</Micro>
+            </Pressable>
+            <Pressable onPress={() => router.push('/settings')} accessibilityRole="button" style={({ pressed }) => pressed && styles.pressed}>
+              <Micro color="muted">Settings</Micro>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
 
@@ -245,13 +272,21 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[16] },
+  scroll: { paddingHorizontal: gutter, paddingBottom: space[16], width: '100%', maxWidth: 660, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: space[3], paddingBottom: space[8] },
   settings: { paddingVertical: space[1], paddingHorizontal: space[2], borderWidth: 1, borderColor: colors.line, borderRadius: 4 },
   underCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], marginTop: space[4] },
-  calibrate: { flex: 1, gap: 1 },
-  calibrateLabel: { fontSize: 17, lineHeight: 20 },
-  sourceTag: { alignSelf: 'center' },
+  ctaNote: { flexShrink: 1 },
+  notice: { marginTop: space[4] },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: space[4],
+    marginTop: space[10],
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: space[4],
+  },
   errorBox: { marginTop: space[4], borderLeftWidth: 3, borderLeftColor: colors.red, paddingLeft: space[3] },
   seeding: { marginTop: space[5], gap: 2, borderLeftWidth: 3, borderLeftColor: colors.cyan, paddingLeft: space[3] },
   skeletonCard: { height: 180, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg1, opacity: 0.6 },

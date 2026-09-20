@@ -84,8 +84,16 @@ speed and |β| traces and drift markers; play/pause, ×0.5/×1/×2, camera mode
 ### Calibrate (`/calibrate`)
 "Mount the phone, then drive": a live phone-orientation glyph (from gravity), a quality
 meter, plain-language steps ("Drive straight and accelerate once"), forward-axis
-resolved state, mount-looseness warning from the integrity monitor, DONE when quality
-≥ 0.8.
+resolved state, mount-looseness warning from the integrity monitor.
+
+DONE is the ENGINE'S OWN BAR, not a number written here. It is
+`IntegrityMonitor.calibrationOk`: quality at or above `minCalibrationQuality` with the
+forward axis resolved. This doc previously said 0.8, which the calibrator cannot reach —
+measured across seeds and mounts the ceiling is 0.74 at the simulator's default vibration,
+and 0.8 only appears with vibration switched off entirely. A screen must never gate on a
+threshold the engine cannot clear, so the rule is that the engine names the bar and the
+screen reports it. Show the second tick at 0.75, which is where the results screen stops
+qualifying a score.
 
 ### Garage (`/`)
 DRIVE call-to-action (dominant), last session grade, personal bests per track, sessions

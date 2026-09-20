@@ -13,14 +13,14 @@
 import { StyleSheet, View } from 'react-native';
 
 import { simParamsToQuery, type SimParams } from '../../platform';
+import { listTracks } from '../../sim';
 import { Segmented, type SegmentOption } from '../Segmented';
 import { AppText, Micro, Small } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
 
-const TRACKS: SegmentOption<SimParams['track']>[] = [
-  { value: 'harbor', label: 'Harbor loop' },
-  { value: 'touge', label: 'Mountain touge' },
-];
+// The simulator's own names, so the bay, the settings screen and the HUD all call a road the
+// same thing.
+const TRACKS: SegmentOption<SimParams['track']>[] = listTracks().map((t) => ({ value: t.id, label: t.name }));
 
 const RATES: SegmentOption<number>[] = [
   { value: 0.5, label: '0.5×' },

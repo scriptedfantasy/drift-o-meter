@@ -260,8 +260,10 @@ function degradeCalibration(session: Session): void {
 }
 
 const TRACK_TITLES: Record<TrackId, string> = {
-  harbor: 'Harbor Loop',
-  touge: 'Mountain Touge',
+  // These must match the simulator's own names in src/sim/track.ts; the app showed two
+  // different names for the same track depending on which screen you were on.
+  harbor: 'Harbor Circuit',
+  touge: 'Mountain Pass',
 };
 
 /**

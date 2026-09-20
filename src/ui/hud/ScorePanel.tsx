@@ -31,7 +31,10 @@ function ScorePanelImpl({ signals, snapshot, size = 54, align = 'left', testID }
   // When the engine does not stand behind the reading, the digits lose their colour and the
   // line underneath says exactly what is wrong with them — rather than a confident ember number
   // the results screen may never agree with.
-  const note = readIntegrity(snapshot).scoreNote;
+  const integrity = readIntegrity(snapshot);
+  const note = integrity.scoreNote;
+  // Red is for a fault. "Waiting for GPS" in the first seconds of a run is not one.
+  const noteTone = integrity.tier === 'severe' ? colors.red : colors.muted;
   const trusted = snapshot.trust > 0;
   return (
     <View style={[styles.wrap, right && styles.wrapRight]} testID={testID}>
@@ -39,8 +42,8 @@ function ScorePanelImpl({ signals, snapshot, size = 54, align = 'left', testID }
         <Micro>Score</Micro>
         {trusted ? <MultiplierChip signals={signals} value={snapshot.multiplier} /> : null}
       </View>
-      <Odometer value={signals.total} size={size} columns={6} color={trusted ? colors.ember : colors.muted} testID="hud-odometer" />
-      <ChainBar signals={signals} snapshot={snapshot} right={right} note={note} />
+      <Odometer value={signals.totalDisplay} size={size} columns={6} color={trusted ? colors.ember : colors.muted} testID="hud-odometer" />
+      <ChainBar signals={signals} snapshot={snapshot} right={right} note={note} noteTone={noteTone} />
     </View>
   );
 }
@@ -71,7 +74,7 @@ function MultiplierChip({ signals, value }: { signals: HudSignals; value: number
   );
 }
 
-function ChainBar({ signals, snapshot, right, note }: { signals: HudSignals; snapshot: HudSnapshot; right: boolean; note: string | null }) {
+function ChainBar({ signals, snapshot, right, note, noteTone }: { signals: HudSignals; snapshot: HudSnapshot; right: boolean; note: string | null; noteTone: string }) {
   const fill = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, signals.chainRatio.value)) * 100}%` }));
   const glow = useAnimatedStyle(() => ({ opacity: 0.25 + 0.75 * Math.min(1, signals.chainRatio.value) }));
   const atRisk = snapshot.chainPoints > 0;
@@ -80,7 +83,7 @@ function ChainBar({ signals, snapshot, right, note }: { signals: HudSignals; sna
       <View style={[styles.chainWrap, right && styles.wrapRight]}>
         <View style={styles.chainTrack} />
         <View style={[styles.chainHead, right && styles.headRight]}>
-          <Micro color={colors.red}>{note}</Micro>
+          <Micro color={noteTone}>{note}</Micro>
         </View>
       </View>
     );

@@ -15,7 +15,7 @@
  *
  * Imports Skia directly, so on web it must only ever be loaded through `ReplayCanvasView`.
  */
-import { Canvas, createPicture, Picture, Skia, useCanvasRef, useTypeface, type SkFont, type SkPicture, type SkTypeface } from '@shopify/react-native-skia';
+import { Canvas, createPicture, Picture, Skia, useTypeface, type SkFont, type SkPicture, type SkTypeface } from '@shopify/react-native-skia';
 import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
@@ -45,11 +45,6 @@ const BC_800_ITALIC = require('@expo-google-fonts/barlow-condensed/800ExtraBold_
 const BC_700 = require('@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf');
 const ORBITRON_700 = require('@expo-google-fonts/orbitron/700Bold/Orbitron_700Bold.ttf');
 
-export interface ReplaySnapshotApi {
-  /** A PNG of the frame on screen, or null when this platform cannot produce one. */
-  png(): Uint8Array | null;
-}
-
 export interface ReplayCanvasProps {
   replay: Replay;
   view: ReplayView;
@@ -59,8 +54,6 @@ export interface ReplayCanvasProps {
   focusDriftId: number | null;
   chip: { current: HighlightChip | null };
   reduceMotion: boolean;
-  /** Called once with a handle that can turn the current frame into a PNG. */
-  onSnapshotReady?: (api: ReplaySnapshotApi) => void;
   testID?: string;
 }
 
@@ -106,8 +99,7 @@ function actionRect(layout: ReplayLayout, mode: CameraMode) {
   return mode === 'overview' ? layout.stage : layout.action;
 }
 
-export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, onSnapshotReady, testID }: ReplayCanvasProps) {
-  const canvasRef = useCanvasRef();
+export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, testID }: ReplayCanvasProps) {
   const res = useMemo(() => createSceneResources(), []);
   const geo = useMemo(() => buildSceneGeometry(replay, view.dead), [replay, view.dead]);
   const tfHero = useTypeface(BC_800);
@@ -145,23 +137,6 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   useEffect(() => {
     markDirty(600);
   }, [fontBook, geo, view, focusDriftId]);
-
-  useEffect(() => {
-    if (!onSnapshotReady) return;
-    onSnapshotReady({
-      png(): Uint8Array | null {
-        try {
-          const image = canvasRef.current?.makeImageSnapshot();
-          if (!image) return null;
-          const bytes = image.encodeToBytes();
-          image.dispose();
-          return bytes ?? null;
-        } catch {
-          return null;
-        }
-      },
-    });
-  }, [canvasRef, onSnapshotReady]);
 
   useEffect(() => {
     let raf = 0;
@@ -215,16 +190,40 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
         // a mode switch cuts inside the camera itself
         if (cam.cut) cutWall = now;
       }
-      // The engine measures the cross-fade in REPLAY time, which never advances while paused;
-      // wall-clock keeps its 120 ms honest whether the run is playing or not.
-      const cutFade = clamp(1 - (now - cutWall) / 1000 / CAMERA_LIMITS.cutFadeS, 0, 1);
+      // The engine measures the 120 ms cross-fade in REPLAY time, which is right while the run
+      // is playing (at half speed the cut is half as fast, like everything else) but never
+      // advances while paused — so a cut made on a paused frame fades on the wall clock instead.
+      const wallFade = clamp(1 - (now - cutWall) / 1000 / CAMERA_LIMITS.cutFadeS, 0, 1);
+      const cutFade = Math.max(sv.playing.value === 1 ? cam.cutFade : 0, wallFade);
 
       // The camera frames the ACTION rectangle, which in portrait stops above the floating
       // transport. `worldToScreen` puts the centre at (w/2, h/2), so hand the renderer a state
       // whose half-extents ARE that rectangle's centre on screen: the mapping stays exact and the
       // engine's camera never has to know about the chrome.
       const act = actionRect(s.layout, camera.getMode());
-      const camScreen: CameraState = { ...cam, w: 2 * (act.x + act.w / 2), h: 2 * (act.y + act.h / 2) };
+      let cxs = act.x + act.w / 2;
+      let cys = act.y + act.h / 2;
+      // Safe frame. The engine's look-ahead is a distance in metres and its zoom is fitted to the
+      // SHORTER side of the viewport, so on a tall portrait stage — and especially in cinematic,
+      // which zooms in by up to 1.6x — the car can be pushed past the bottom of the band. This
+      // slides the frame (not the camera) back along the same line until the car is inside it
+      // again: the camera's own motion is untouched, and a car is never half off the screen.
+      const pose = poseAt(s.replay, t);
+      {
+        const dx = pose.x - cam.cx;
+        const dy = pose.y - cam.cy;
+        const c = Math.cos(cam.rotation);
+        const sn = Math.sin(cam.rotation);
+        const offX = cam.zoom * (c * dx - sn * dy);
+        const offY = -cam.zoom * (sn * dx + c * dy);
+        const maxY = act.h * 0.32;
+        const maxX = act.w * 0.34;
+        if (offY > maxY) cys -= offY - maxY;
+        else if (offY < -maxY) cys += -maxY - offY;
+        if (offX > maxX) cxs -= offX - maxX;
+        else if (offX < -maxX) cxs += -maxX - offX;
+      }
+      const camScreen: CameraState = { ...cam, w: 2 * cxs, h: 2 * cys };
 
       const chipNow = s.chip.current;
       // A paused frame is a poster frame: the chip that names the moment stays up until the run
@@ -249,7 +248,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
             t,
             mode: camera.getMode(),
             cam: camScreen,
-            pose: poseAt(s.replay, t),
+            pose,
             ghost: ghostPoseAt(s.replay, t),
             events: activeEvents(s.replay, t),
             shake: shakeAt(s.replay, t),
@@ -295,7 +294,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   }, [camera, picture, res, sv]);
 
   return (
-    <Canvas style={StyleSheet.absoluteFill} ref={canvasRef} testID={testID}>
+    <Canvas style={StyleSheet.absoluteFill} testID={testID}>
       <Picture picture={picture} />
     </Canvas>
   );

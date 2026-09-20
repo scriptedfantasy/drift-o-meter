@@ -16,20 +16,26 @@
  * through the pipeline and print the callout times — see tools/harness/README.md.
  */
 /**
- * A long press, as a page script: react-native-web's Pressable starts its long-press timer on
- * pointerdown, so a synthetic down / wait / up pair is a real long press to it. `tap()` cannot
+ * A long press, as a page script: react-native-web's press responder starts its long-press timer
+ * on pointerdown, so a synthetic down / wait / up pair is a real long press to it. `tap()` cannot
  * hold, and the harness's action vocabulary is deliberately small.
+ *
+ * MOUSE EVENTS, not pointer and not touch. react-native-web's responder system listens on the
+ * document for `mousedown` / `touchstart` (`useResponderEvents/ResponderSystem.js`) and ignores
+ * pointer events entirely, so a synthetic `pointerdown` is a no-op — and an empty
+ * `new TouchEvent('touchstart')` carries no `changedTouches`, which `createResponderEvent` reads
+ * as `changedTouches[0].force`. That is where `TypeError: Cannot read properties of undefined
+ * (reading 'force')` came from: the harness, not the app.
  */
 function longPress(testId, ms = 700) {
   return `(async () => {
     const el = document.querySelector('[data-testid="${testId}"]');
     if (!el) throw new Error('no element ${testId}');
     const r = el.getBoundingClientRect();
-    const at = { bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + 24, pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1 };
-    el.dispatchEvent(new PointerEvent('pointerdown', at));
-    el.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true }));
-    await new Promise((r) => setTimeout(r, ${ms}));
-    el.dispatchEvent(new PointerEvent('pointerup', { ...at, buttons: 0 }));
+    const at = { bubbles: true, cancelable: true, view: window, clientX: r.x + r.width / 2, clientY: r.y + 24, button: 0, buttons: 1, detail: 1 };
+    el.dispatchEvent(new MouseEvent('mousedown', at));
+    await new Promise((res) => setTimeout(res, ${ms}));
+    el.dispatchEvent(new MouseEvent('mouseup', { ...at, buttons: 0 }));
   })()`;
 }
 
@@ -51,6 +57,9 @@ export const defaultRoutes = [
   { name: 'garage-bests-harbor', path: '/?demo=harbor', waitMs: 7000, actions: [{ type: 'scroll', y: 760 }, { type: 'wait', ms: 900 }] },
   // The demo bay at the bottom: the simulated source made selectable, looseness and dropouts included.
   { name: 'garage-simbay', path: '/?demo=first', waitMs: 6000, actions: [{ type: 'scroll', y: 1600 }, { type: 'wait', ms: 900 }] },
+  // The ONLY state in which the garage mentions calibration: the last run was thrown out, so it
+  // says what was wrong (the monitor's own words) and offers the screen that fixes it.
+  { name: 'garage-flagged', path: '/?demo=flagged', waitMs: 8000 },
   // Deleting asks first — a long press on a row opens the app's own confirmation (Alert is a
   // no-op on web, so the question has to be the app's own).
   {
@@ -79,16 +88,20 @@ export const defaultRoutes = [
   { name: 'calibrate-loose', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1', waitMs: 2400, expectCanvas: true },
   // The phone lying flat, from a recording the simulator really put on the console.
   { name: 'calibrate-flat', path: '/calibrate?sim=harbor&mount=flat-console&at=12&hold=1', waitMs: 2400, expectCanvas: true },
+  // Arrived here because a run was thrown out (`?why=`): the screen leads with that, not with
+  // a generic invitation. This is how a driver normally reaches this screen at all.
+  { name: 'calibrate-rejected', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected', waitMs: 2400, expectCanvas: true },
 
   // ---- drive: the live HUD at the moments that matter -----------------------------------
-  // Armed, before the run: gauge at rest, GO, nothing claimed yet.
-  { name: 'drive-idle', path: '/drive?sim=harbor&rate=1', waitMs: 1800, expectCanvas: true, minEmber: 1500 },
+  // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
+  // this is the first frame of a live run — gauge at rest, clock at zero, nothing claimed.
+  { name: 'drive-open', path: '/drive?sim=harbor&rate=1&at=0.3&hold=1', waitMs: 2400, expectCanvas: true, minEmber: 100 },
   // The first seconds of EVERY run: the calibrator has not resolved which way the car points and
   // there is no fix yet. Calm cyan FINDING FORWARD, gauge muted, score not counting.
   { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, minEmber: 200 },
   // LIVE (the route to record video of): warped to 38 s and left running, so the shot lands on
   // the MANJI flick at 42.4 s and EXTREME ANGLE at 42.8 s, and the video covers the whole flick.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=38', waitMs: 3200, expectCanvas: true, minEmber: 2000 },
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, minEmber: 2000 },
   // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48° right, ×4.5, 22,675
   // points with 7,927 at risk, 47 km/h, three callouts stacked, peak 50°, 23.9 s held.
   { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 2000 },
@@ -151,6 +164,25 @@ export const defaultRoutes = [
   // LIVE, from the top, chase camera: this is the one to record video of (the callout slam, the
   // shake, the smoke and the camera cut only exist in motion).
   { name: 'replay', path: '/replay/demo?cam=chase&t=93', waitMs: 3000, expectCanvas: true, minEmber: 1500 },
+  // MOTION, at quarter speed: the frame the callout slams in on. Shoot this one with --video and
+  // --scale 1 — the harness's software rasteriser (SwiftShader) draws this full-bleed scene at
+  // about 6 fps at 1x and 1.5 fps at 3x, so a quarter-speed pass is what resolves a 320 ms slam
+  // and a 180 ms shake into frames. The motion is the app's own, sampled finer.
+  { name: 'replay-motion', path: '/replay/demo?cam=chase&t=94.4&rate=0.25&ui=0', waitMs: 4000, expectCanvas: true, minEmber: 1200 },
+  // A CAMERA CUT driven by the control, at quarter speed: chase, then CINE 1.2 s in. The engine
+  // makes a mode switch a cut with a 120 ms cross-fade; the video shows it.
+  {
+    name: 'replay-cut',
+    path: '/replay/demo?cam=chase&t=95.5&rate=0.25&ui=1',
+    waitMs: 1600,
+    expectCanvas: true,
+    // a full-bleed Skia scene draws at a handful of frames a second in the harness's software
+    // rasteriser, and playwright's tap waits for the element to hold still across frames
+    actions: [{ type: 'tap', testId: 'replay-cam-cinematic', timeout: 60000 }, { type: 'wait', ms: 1400 }],
+  },
+  // The SHAKE, at quarter speed, from TRACK CAM where the camera itself is still: the exit beat
+  // at 99.98 s carries magnitude 1, and `shakeAt` throws the whole world +/- 2.4 pt for 180 ms.
+  { name: 'replay-shake', path: '/replay/demo?cam=overview&t=99.6&rate=0.25&ui=0', waitMs: 3000, expectCanvas: true, minEmber: 1200 },
   // TRACK CAM at the half-way point: the whole circuit, the played line only, drift peaks blooming.
   { name: 'replay-overview', path: '/replay/demo?cam=overview&t=60&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
   // CHASE at the peak of the 3-link chain in lap 2: 54 deg, ember ribbon, smoke, slip arc.
@@ -179,10 +211,26 @@ export const defaultRoutes = [
     path: '/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1',
     waitMs: 3600,
     expectCanvas: true,
-    actions: [{ type: 'tap', testId: 'replay-warn-toggle' }, { type: 'wait', ms: 500 }],
+    actions: [{ type: 'tap', testId: 'replay-warn-toggle', timeout: 60000 }, { type: 'wait', ms: 700 }],
   },
   // The last frame: the grade lands only once the run is over.
   { name: 'replay-end', path: '/replay/demo?cam=overview&t=999&play=0&ui=0', waitMs: 2600, expectCanvas: true, minEmber: 1500 },
+  // The deep link the results screen pushes, end to end: scroll to the best drift, tap REPLAY
+  // THIS DRIFT, and land in the replay at that moment with the drift picked out.
+  {
+    name: 'replay-from-results',
+    path: '/results/fixture-good?reveal=off',
+    waitMs: 2600,
+    // no `expectCanvas`: the check runs on the page that is LOADED, and that is the results
+    // screen, which has no canvas once its reveal is off
+    actions: [
+      { type: 'scroll', y: 1150 },
+      { type: 'wait', ms: 700 },
+      { type: 'tap', testId: 'cta-watch-best', timeout: 60000 },
+      { type: 'waitFor', testId: 'screen-replay', timeout: 60000 },
+      { type: 'wait', ms: 2000 },
+    ],
+  },
   // A point-to-point stage: no laps, so no lap ticks and no ghost — STAGE, not LAP 1/2.
   { name: 'replay-touge', path: '/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
   { name: 'settings', path: '/settings', waitMs: 900 },

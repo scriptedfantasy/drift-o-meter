@@ -86,7 +86,9 @@ export function parseReplayParams(params: Raw): ReplayParams {
     })(),
     cam: cam && CAMS[cam] ? CAMS[cam] : null,
     play: flag(params, 'play'),
-    rate: rate === null ? null : nearestRate(rate),
+    // The transport offers three speeds; the URL may ask for any of them, and for the slower
+    // ones the harness needs to resolve motion that a software rasteriser cannot draw at 60 fps.
+    rate,
     scrub: num(params, 'scrub', 0, 1),
     ghost: ghost === 'time' ? 'time' : 'distance',
     noGhost: ghost === 'off' || ghost === 'none' || flag(params, 'ghost') === false,

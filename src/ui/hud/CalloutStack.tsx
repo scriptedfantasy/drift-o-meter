@@ -1,7 +1,7 @@
 /**
  * Callouts and banners — the loud part of the HUD.
  *
- * A callout SLAMS in (scale 1.8 → 1.0 with overshoot over 320 ms, sliding in from the side),
+ * A callout SLAMS in (scale 1.8 → 1.0 with overshoot, anchored to the edge it is aligned to),
  * holds, then recedes as newer ones push it down the stack. Up to three are on screen; the
  * stack itself is owned by `useDriveRun` and expires by RECORDING time, so a frozen frame keeps
  * whatever had just fired.
@@ -11,9 +11,9 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { AppText, Micro } from '../Text';
+import { AppText } from '../Text';
 import { alpha, colors, fontFamilies, motion, radii, space } from '../theme';
 import { easings } from '../motion';
 import type { EventTone, HudBanner, HudEvent } from './useDriveRun';
@@ -63,13 +63,15 @@ function Callout({ event, depth, fromRight, size, muted }: { event: HudEvent; de
     depthV.value = withTiming(depth, { duration: motion.duration.base, easing: easings.out });
   }, [depth, depthV]);
 
+  // Scale only, anchored to the edge the stack is aligned to: a callout caught mid-slam grows
+  // INTO the screen instead of arriving from outside it, so a frame captured during the 220 ms
+  // never shows a label half off the edge.
   const style = useAnimatedStyle(() => {
     const p = enter.value;
     const scale = reduced ? 1 : 1.8 - 0.8 * p;
-    const slide = reduced ? 0 : (1 - p) * (fromRight ? 64 : -64);
     return {
       opacity: Math.min(1, p * 3) * (1 - 0.2 * depthV.value),
-      transform: [{ translateX: slide }, { scale }],
+      transform: [{ scale }],
     };
   });
 
@@ -137,20 +139,6 @@ function Banner({ banner, size, align }: { banner: HudBanner; size: number; alig
         {banked ? 'BANKED +' : 'CHAIN LOST −'}
         {shown.toLocaleString('en-US')}
       </AppText>
-    </Animated.View>
-  );
-}
-
-/** A quiet line that says what the HUD is waiting for, when nothing is happening. */
-export function HudHint({ text }: { text: string }) {
-  const pulse = useSharedValue(0);
-  useEffect(() => {
-    pulse.value = withDelay(400, withSpring(1, { damping: 14, stiffness: 90 }));
-  }, [pulse]);
-  const style = useAnimatedStyle(() => ({ opacity: 0.35 + 0.35 * pulse.value }));
-  return (
-    <Animated.View style={style}>
-      <Micro>{text}</Micro>
     </Animated.View>
   );
 }
