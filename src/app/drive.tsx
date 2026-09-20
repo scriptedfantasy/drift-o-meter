@@ -20,7 +20,7 @@ import { useSettings } from '@/platform';
 import { AppText, Body, Button, colors, fontFamilies, gutter, Micro, Panel, radii, space } from '@/ui';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
 import { CalloutStack, ScoreBanner } from '@/ui/hud/CalloutStack';
-import { EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
+import { DriftStrip, EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
 import MiniMapView from '@/ui/hud/MiniMapView';
 import ScorePanel from '@/ui/hud/ScorePanel';
 import { useHudSignals } from '@/ui/hud/signals';
@@ -59,6 +59,7 @@ export default function DriveScreen() {
                   <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} testID="hud-status" />
                   <View style={styles.gaugeWrapLandscape}>
                     <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
+                    <DriftStrip snapshot={run.snapshot} testID="hud-drift" />
                   </View>
                 </View>
 
@@ -83,14 +84,15 @@ export default function DriveScreen() {
                 <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} testID="hud-status" />
                 <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" />
 
+                {/* The gauge sits high: a phone in a dash mount is read from below, so the
+                    clearest sightline is the top of the screen. */}
+                <View style={styles.bleed}>
+                  <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
+                </View>
+
                 <View style={styles.stage}>
-                  {/* the stack grows UPWARD from just above the gauge, so the gauge never moves */}
-                  <View style={[styles.callouts, { bottom: gauge.h + space[3] }]} pointerEvents="none">
-                    <CalloutStack events={run.events} size={26} testID="hud-callouts" />
-                  </View>
-                  <View style={styles.bleed}>
-                    <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
-                  </View>
+                  <DriftStrip snapshot={run.snapshot} testID="hud-drift" />
+                  <CalloutStack events={run.events} size={26} testID="hud-callouts" />
                 </View>
 
                 <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={64} testID="hud-telemetry" />
@@ -180,13 +182,12 @@ const styles = StyleSheet.create({
   frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
   frameLandscape: { paddingTop: space[1], paddingBottom: space[2] },
 
-  stage: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
-  callouts: { position: 'absolute', left: 0, right: 0, alignItems: 'flex-start', justifyContent: 'flex-end' },
+  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'flex-start', justifyContent: 'flex-start', gap: space[3], paddingTop: space[1] },
   bleed: { marginHorizontal: -gutter },
 
   landscapeRow: { flex: 1, flexDirection: 'row', gap: space[5] },
   leftColumn: { flex: 1.06, gap: space[2] },
-  gaugeWrapLandscape: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  gaugeWrapLandscape: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: space[2] },
   rightColumn: { flex: 1, justifyContent: 'flex-end', gap: space[3], paddingBottom: space[1] },
   calloutsLandscape: { flex: 1, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[1] },
   scoreRowLandscape: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },

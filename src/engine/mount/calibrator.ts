@@ -110,7 +110,12 @@ export interface MountOptions {
   fitQualityRad: number;
   /** Cut-off (seconds) between the inertial up's trusted fast content and its drifting slow part. */
   upSepTau: number;
-  /** Gyro-invisible re-orientation cues: OS-gravity disagreement (deg, held s) and unexplained tilt (deg, held s). */
+  /**
+   * Gyro-invisible re-orientation cues: OS-gravity disagreement (deg, held s) and unexplained
+   * tilt (deg, held s). Both have to clear what a car plus an OS gravity estimate can do on
+   * their own: 10° of lean into a long corner, on top of ±7° of off-camber banking and body
+   * roll, is a normal hairpin — not a phone that was picked up.
+   */
   reseedGravityDeg: number;
   reseedGravityHoldS: number;
   reseedTiltDeg: number;
@@ -227,10 +232,10 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   fitTau: 4,
   fitQualityRad: 0.06,
   upSepTau: 3,
-  reseedGravityDeg: 25,
-  reseedGravityHoldS: 0.5,
-  reseedTiltDeg: 30,
-  reseedTiltHoldS: 2,
+  reseedGravityDeg: 40,
+  reseedGravityHoldS: 1.5,
+  reseedTiltDeg: 45,
+  reseedTiltHoldS: 2.5,
   gapS: 0.5,
   trustAccel: 0.8,
   trustForce: 0.4,

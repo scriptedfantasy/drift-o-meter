@@ -84,6 +84,44 @@ function Pill({ label, color, filled = false }: { label: string; color: string; 
   );
 }
 
+/**
+ * The live drift strip: what the slide in progress has earned so far — peak angle, how long it
+ * has been held, how many times it has been flicked. It sits under the gauge, where the callout
+ * stack lands, so the middle of the screen always says something instead of going black between
+ * callouts. All three values step slowly enough for the 10 Hz snapshot.
+ */
+export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
+  const live = snapshot.phase !== 'idle' && snapshot.phase !== 'exit';
+  const chained = snapshot.chainActive && snapshot.chainPoints > 0;
+  if (!live) {
+    return (
+      <View style={styles.stripRow} testID={testID}>
+        <AppText variant="micro" color={chained ? colors.ember : colors.muted} style={styles.hint}>
+          {chained ? 'CHAIN OPEN — GET BACK SIDEWAYS TO KEEP IT' : 'WAITING FOR A SLIDE'}
+        </AppText>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.stripRow} testID={testID}>
+      <StripCell label="Peak" value={`${Math.round(snapshot.peakDeg)}°`} tone={colors.gold} />
+      <StripCell label="Held" value={`${snapshot.driftDurationS.toFixed(1)}s`} tone={colors.text} />
+      <StripCell label="Flicks" value={`×${snapshot.transitions}`} tone={snapshot.transitions > 0 ? colors.magenta : colors.muted} last />
+    </View>
+  );
+});
+
+function StripCell({ label, value, tone, last }: { label: string; value: string; tone: string; last?: boolean }) {
+  return (
+    <View style={[styles.cell, !last && styles.cellBorder]}>
+      <Micro>{label}</Micro>
+      <AppText numeric style={[styles.cellValue, { color: tone }]}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
 /** The loud half of integrity: only mounted when something is actually wrong. */
 export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
   const { mount, gps, physics, message } = snapshot.integrity;
@@ -124,6 +162,12 @@ const styles = StyleSheet.create({
   lapValue: { fontFamily: fontFamilies.display.bold, fontSize: 18, lineHeight: 20, color: colors.muted },
   pill: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: space[2], paddingVertical: 2 },
   pillText: { fontSize: 10, lineHeight: 13 },
+
+  stripRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: space[3] },
+  cell: { flexDirection: 'row', alignItems: 'baseline', gap: space[2], paddingRight: space[3] },
+  cellBorder: { borderRightWidth: 1, borderRightColor: colors.line },
+  cellValue: { fontFamily: fontFamilies.display.boldItalic, fontSize: 20, lineHeight: 22 },
+  hint: { letterSpacing: 1.4 },
 
   banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[2], paddingRight: space[3] },
   bannerBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },

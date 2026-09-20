@@ -1,89 +1,25 @@
 {
-  "startedAt": "2026-09-20T19:06:44.416Z",
+  "startedAt": "2026-09-20T19:08:46.841Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "results-reveal-hold",
-      "path": "/results/fixture-hero?reveal=hold",
-      "url": "http://127.0.0.1:40497/results/fixture-hero?reveal=hold",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/results-reveal-hold.png",
-      "video": null,
-      "ms": 3014,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 147,
-        "bodyTextNodes": 207,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 1836,
-        "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.3631
-      }
-    },
-    {
-      "name": "results-reveal-slam",
+      "name": "results-reveal-slam-landscape",
       "path": "/results/fixture-hero?reveal=slam",
-      "url": "http://127.0.0.1:40497/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:42423/results/fixture-hero?reveal=slam",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/results-reveal-slam.png",
+      "screenshot": "artifacts/shots/results-reveal-slam-landscape.png",
       "video": null,
-      "ms": 4024,
+      "ms": 4000,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -104,8 +40,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -130,22 +66,22 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 1772,
+        "emberPixels": 4524,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.5254
+        "nonBgFraction": 0.4617
       }
     },
     {
-      "name": "results-reduced",
-      "path": "/results/fixture-hero?reveal=hold&motion=reduce",
-      "url": "http://127.0.0.1:40497/results/fixture-hero?reveal=hold&motion=reduce",
+      "name": "results-landscape",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:42423/results/fixture-hero?reveal=off",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/results-reduced.png",
+      "screenshot": "artifacts/shots/results-landscape.png",
       "video": null,
-      "ms": 3018,
+      "ms": 3299,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -156,8 +92,8 @@
           "Barlow_500Medium",
           "Barlow_600SemiBold"
         ],
-        "displayTextNodes": 147,
-        "bodyTextNodes": 207,
+        "displayTextNodes": 145,
+        "bodyTextNodes": 203,
         "otherTextNodes": 0
       },
       "skia": {
@@ -166,8 +102,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -192,13 +128,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 296,
-        "cyanPixels": 24,
-        "textPixels": 5764,
-        "nonBgFraction": 0.0431
+        "emberPixels": 33136,
+        "cyanPixels": 3000,
+        "textPixels": 41736,
+        "nonBgFraction": 0.4362
       }
     }
   ],
-  "finishedAt": "2026-09-20T19:06:54.532Z",
+  "finishedAt": "2026-09-20T19:08:54.219Z",
   "failed": 0
 }

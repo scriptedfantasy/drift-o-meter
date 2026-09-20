@@ -72,6 +72,8 @@ export interface HudSnapshot {
   chainActive: boolean;
   transitions: number;
   peakDeg: number;
+  /** Seconds the drift in progress has been running (0 when idle). */
+  driftDurationS: number;
   elapsedS: number;
   lapCount: number;
   lapProgress: number;
@@ -115,6 +117,7 @@ const IDLE_SNAPSHOT: HudSnapshot = {
   chainActive: false,
   transitions: 0,
   peakDeg: 0,
+  driftDurationS: 0,
   elapsedS: 0,
   lapCount: 0,
   lapProgress: NaN,
@@ -438,6 +441,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         chainActive: f.score.chainActive,
         transitions: f.live?.transitions ?? 0,
         peakDeg: f.live ? radToDeg(f.live.peakAngle) : 0,
+        driftDurationS: f.live?.durationS ?? 0,
         elapsedS: f.t - t0,
         lapCount: f.lap.count,
         lapProgress: f.lap.progress,

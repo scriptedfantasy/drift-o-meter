@@ -1,6 +1,4 @@
 
-===== results-reveal-hold  http://127.0.0.1:40497/results/fixture-hero?reveal=hold
+===== results-reveal-slam-landscape  http://127.0.0.1:42423/results/fixture-hero?reveal=slam
 
-===== results-reveal-slam  http://127.0.0.1:40497/results/fixture-hero?reveal=slam
-
-===== results-reduced  http://127.0.0.1:40497/results/fixture-hero?reveal=hold&motion=reduce
+===== results-landscape  http://127.0.0.1:42423/results/fixture-hero?reveal=off

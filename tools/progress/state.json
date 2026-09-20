@@ -41,8 +41,8 @@
       "id": "detect",
       "name": "Drift detection",
       "layer": "engine",
-      "status": "critique",
-      "rounds": 0,
+      "status": "fixing",
+      "rounds": 1,
       "verdict": "Retuned: the drift now starts where the flick that initiated it started, not where the slide crossed a threshold. Entry latency 604 ms down to 224 ms, transition counting 70 % up to 100 %.",
       "note": "Entry / sustain / transition / exit state machine"
     },
@@ -50,17 +50,18 @@
       "id": "score",
       "name": "Scoring & style",
       "layer": "engine",
-      "status": "critique",
-      "rounds": 0,
-      "verdict": "Complete: 33 tests green. Angle \u00d7 duration \u00d7 speed, multipliers, chains, callouts, S\u2013D grade.",
-      "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency"
+      "status": "fixing",
+      "rounds": 1,
+      "verdict": "Failed hard. A spin reached the results screen as a clean drift, sawing the wheel outscored a real drift 81 to 1, and hand-holding the phone paid 40 percent more than a proper mount.",
+      "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency",
+      "score": "3.5 \u2192 round 2"
     },
     {
       "id": "track",
       "name": "Track & laps",
       "layer": "engine",
-      "status": "critique",
-      "rounds": 0,
+      "status": "fixing",
+      "rounds": 1,
       "verdict": "Complete: laps from a derived start gate, reference lap refined every lap, corners, cross-lap consistency.",
       "note": "GPS \u2192 local map, lap gate, corners, lap-to-lap consistency"
     },
@@ -68,8 +69,8 @@
       "id": "integrity",
       "name": "Signal integrity",
       "layer": "engine",
-      "status": "critique",
-      "rounds": 0,
+      "status": "fixing",
+      "rounds": 1,
       "verdict": "Retuned: loose-mount cues renormalised to a scale measured over 384 rigid configurations. A rigid mount scores at most 0.12, a rattling cradle 0.20 to 0.66, a hand 0.80 to 1.00.",
       "note": "Loose-mount detection, physics plausibility, GPS quality gating"
     },
@@ -87,9 +88,9 @@
       "id": "pipeline",
       "name": "Engine pipeline",
       "layer": "engine",
-      "status": "building",
+      "status": "passed",
       "rounds": 0,
-      "verdict": "Wiring every module into one object the app talks to, plus recorded sessions for the screens to load.",
+      "verdict": "Wired and verified end to end: recall 1.00 against ground truth with real calibration and estimation in the loop, 4 to 20 microseconds per sample, 237 tests green.",
       "note": "One object the app talks to: sensors in, live frames and a scored session out"
     },
     {
@@ -148,6 +149,23 @@
     }
   ],
   "verdicts": [
+    {
+      "piece": "The judgement layer (detector, scoring, track, integrity)",
+      "round": 1,
+      "t": "19:45",
+      "pass": false,
+      "score": "3.5 / 10",
+      "summary": "A critic asked the only question that matters: would a trackside judge agree with this app? It wrote eleven of its own probes and swept 200 full runs across the whole skill range. The detector and the integrity monitor came out strong. The scoring stage between them would have to be rejected outright.",
+      "findings": [
+        "A confirmed spin never reached the results screen. The live display flashed CHAIN LOST while the results screen awarded the same moment a perfect exit, and the saved session recorded no spin at all.",
+        "Sawing the wheel back and forth at twelve degrees, which is not drifting, scored 572,345 points against 7,082 for a real forty-degree slide held for thirty seconds. The transition bonus grew quadratically with no cap.",
+        "The consistency score threw away exactly the drifts that were inconsistent, because a drift that never settles has no settled section to measure. The sloppiest driver in the grid took the top grade on a 0.62 second window.",
+        "Hand-holding the phone paid 40 percent more than a proper mount. The integrity monitor detects this correctly within 0.7 seconds, but nothing in the app was listening to it.",
+        "Between 76 and 85 degrees the app silently deleted 82 percent of a drift\u2019s points and told the driver nothing, because the detector and the scorer disagreed about what counts as a spin.",
+        "On the main circuit the top grade was unreachable and the whole skill range collapsed into two letters. The same code on the mountain pass spanned the full range, so a grade said more about the track than the driving.",
+        "Two of the five component bars were near-constants. One style award fired on 99.6 percent of drifts, another could never fire at all."
+      ]
+    },
     {
       "piece": "Replay scene",
       "round": 1,
@@ -226,6 +244,10 @@
     {
       "t": "19:25",
       "text": "Slip estimator finished and verified: 53 tests, every original target intact, and the plotted estimate hugs the truth through a full drift sequence. Three mountain-pass seeds outside the test set remain 0.2 degrees over target, disclosed rather than tuned away."
+    },
+    {
+      "t": "19:50",
+      "text": "The pipeline is wired and passes. The judgement layer failed its critique at 3.5 out of 10; the shared event contract now carries a required spin flag, and a rehabilitation agent is working the full findings list against the critic\u2019s own probes."
     }
   ],
   "shots": [
