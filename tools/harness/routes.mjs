@@ -118,6 +118,30 @@ export const defaultRoutes = [
   // A REAL GPS dropout (`dropouts=1`), 1.2 s into the second gap: GPS LOST is severe here
   // because a fix HAS been held before — "no fix yet" at the start of a run is not an alarm.
   { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 100 },
+  // STOP on a run that never left walking pace: it is the walk to the car, not a session, so the
+  // HUD says so instead of filing it or dropping the driver into the garage with no word.
+  {
+    name: 'drive-discarded',
+    path: '/drive?sim=harbor&rate=1&at=0.3&hold=1',
+    waitMs: 2400,
+    expectCanvas: true,
+    actions: [{ type: 'tap', testId: 'cta-stop', timeout: 30000 }, { type: 'wait', ms: 1200 }],
+  },
+  // STOP on a REAL run whose write then fails. The failure is made the way the device makes it —
+  // `Storage.prototype.setItem` throws QuotaExceededError, which is exactly what a full
+  // localStorage does — so `src/platform/storage.ts` raises its own StorageError and the HUD has
+  // to hand back the verdict rather than stranding a finished run behind a dialog.
+  {
+    name: 'drive-savefail',
+    path: '/drive?sim=harbor&rate=1&at=100.85&hold=1',
+    waitMs: 2800,
+    expectCanvas: true,
+    actions: [
+      { type: 'eval', js: "Storage.prototype.setItem = function () { const e = new Error('disk is full'); e.name = 'QuotaExceededError'; throw e; };" },
+      { type: 'tap', testId: 'cta-stop', timeout: 30000 },
+      { type: 'wait', ms: 1400 },
+    ],
+  },
 
   // ---- results: the verdict screen ------------------------------------------------------
   // `?fixture=<name>` (or the id `fixture-<name>`) rebuilds a deterministic session from the

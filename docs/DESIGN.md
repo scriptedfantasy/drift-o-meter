@@ -88,12 +88,19 @@ resolved state, mount-looseness warning from the integrity monitor.
 
 DONE is the ENGINE'S OWN BAR, not a number written here. It is
 `IntegrityMonitor.calibrationOk`: quality at or above `minCalibrationQuality` with the
-forward axis resolved. This doc previously said 0.8, which the calibrator cannot reach —
-measured across seeds and mounts the ceiling is 0.74 at the simulator's default vibration,
-and 0.8 only appears with vibration switched off entirely. A screen must never gate on a
-threshold the engine cannot clear, so the rule is that the engine names the bar and the
-screen reports it. Show the second tick at 0.75, which is where the results screen stops
-qualifying a score.
+forward axis resolved. The rule is that the engine names the bar and the screen reports it,
+so that a screen can never gate on a threshold the engine cannot clear.
+
+A CORRECTION, LEFT IN PLACE AS A WARNING. This doc previously said DONE at quality ≥ 0.8.
+It was then changed on the strength of a measurement that the ceiling is 0.74 — which a
+later critic disproved by running 24 combinations of track, mount and seed instead of one:
+the real spread at the simulator's default vibration is 0.68 to 0.86, with 8 of 24 above
+0.78. Seed 1 happens to be the low one, and it is the harness default, so a single-seed
+measurement read as a ceiling. The conclusion survived for a different reason than the one
+given — the engine should name its own bar regardless — but the number was wrong, and a
+correct conclusion resting on a wrong measurement is luck rather than engineering. Any
+claim about what the engine "cannot" do must be measured across seeds before it is written
+down here.
 
 ### Garage (`/`)
 DRIVE call-to-action (dominant), last session grade, personal bests per track, sessions

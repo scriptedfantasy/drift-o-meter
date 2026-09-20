@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-20T22:42:43.601Z",
+  "startedAt": "2026-09-20T22:50:03.807Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -9,15 +9,875 @@
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive-open",
-      "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:36559/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "name": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:44547/",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-open.png",
+      "screenshot": "artifacts/shots/home.png",
       "video": null,
-      "ms": 3548,
+      "ms": 2279,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 27,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 349864,
+        "cyanPixels": 3676,
+        "textPixels": 99584,
+        "nonBgFraction": 0.7405
+      }
+    },
+    {
+      "name": "garage",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:44547/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage.png",
+      "video": null,
+      "ms": 9629,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 386676,
+        "cyanPixels": 3676,
+        "textPixels": 64128,
+        "nonBgFraction": 0.6779
+      }
+    },
+    {
+      "name": "garage-bests",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:44547/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-bests.png",
+      "video": null,
+      "ms": 10576,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 49024,
+        "cyanPixels": 7464,
+        "textPixels": 25136,
+        "nonBgFraction": 0.7466
+      }
+    },
+    {
+      "name": "garage-runs",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:44547/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-runs.png",
+      "video": null,
+      "ms": 10259,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 22080,
+        "cyanPixels": 43784,
+        "textPixels": 19632,
+        "nonBgFraction": 0.7631
+      }
+    },
+    {
+      "name": "garage-bests-harbor",
+      "path": "/?demo=harbor",
+      "url": "http://127.0.0.1:44547/?demo=harbor",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-bests-harbor.png",
+      "video": null,
+      "ms": 9690,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 21372,
+        "cyanPixels": 31036,
+        "textPixels": 22560,
+        "nonBgFraction": 0.6679
+      }
+    },
+    {
+      "name": "garage-simbay",
+      "path": "/?demo=first",
+      "url": "http://127.0.0.1:44547/?demo=first",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-simbay.png",
+      "video": null,
+      "ms": 8301,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 23,
+        "bodyTextNodes": 28,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "cyanPixels": 44492,
+        "textPixels": 6784,
+        "nonBgFraction": 0.5922
+      }
+    },
+    {
+      "name": "garage-flagged",
+      "path": "/?demo=flagged",
+      "url": "http://127.0.0.1:44547/?demo=flagged",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-flagged.png",
+      "video": null,
+      "ms": 9668,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 404580,
+        "cyanPixels": 3676,
+        "textPixels": 60252,
+        "nonBgFraction": 0.7338
+      }
+    },
+    {
+      "name": "garage-delete",
+      "path": "/?demo=first",
+      "url": "http://127.0.0.1:44547/?demo=first",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-delete.png",
+      "video": null,
+      "ms": 8963,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 23,
+        "bodyTextNodes": 28,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 21084,
+        "cyanPixels": 0,
+        "textPixels": 5820,
+        "nonBgFraction": 0.4304
+      }
+    },
+    {
+      "name": "calibrate",
+      "path": "/calibrate?sim=harbor&at=0.5&hold=1",
+      "url": "http://127.0.0.1:44547/calibrate?sim=harbor&at=0.5&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate.png",
+      "video": null,
+      "ms": 3543,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 53,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 3316,
+        "cyanPixels": 63328,
+        "textPixels": 28508,
+        "nonBgFraction": 0.3019
+      }
+    },
+    {
+      "name": "calibrate-level",
+      "path": "/calibrate?sim=harbor&at=3&hold=1",
+      "url": "http://127.0.0.1:44547/calibrate?sim=harbor&at=3&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-level.png",
+      "video": null,
+      "ms": 3570,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 53,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 32736,
+        "cyanPixels": 48788,
+        "textPixels": 30052,
+        "nonBgFraction": 0.2893
+      }
+    },
+    {
+      "name": "calibrate-ready",
+      "path": "/calibrate?sim=harbor&at=12&hold=1",
+      "url": "http://127.0.0.1:44547/calibrate?sim=harbor&at=12&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-ready.png",
+      "video": null,
+      "ms": 3741,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 53,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 94436,
+        "cyanPixels": 19208,
+        "textPixels": 32408,
+        "nonBgFraction": 0.3539
+      }
+    },
+    {
+      "name": "calibrate-loose",
+      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "url": "http://127.0.0.1:44547/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-loose.png",
+      "video": null,
+      "ms": 3749,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 23,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 56960,
+        "cyanPixels": 16676,
+        "textPixels": 38392,
+        "nonBgFraction": 0.3321
+      }
+    },
+    {
+      "name": "calibrate-flat",
+      "path": "/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "url": "http://127.0.0.1:44547/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-flat.png",
+      "video": null,
+      "ms": 3745,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 23,
+        "bodyTextNodes": 54,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 91668,
+        "cyanPixels": 14948,
+        "textPixels": 44780,
+        "nonBgFraction": 0.3492
+      }
+    },
+    {
+      "name": "calibrate-rejected",
+      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "url": "http://127.0.0.1:44547/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-rejected.png",
+      "video": null,
+      "ms": 3771,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 24,
+        "bodyTextNodes": 53,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 77312,
+        "cyanPixels": 14076,
+        "textPixels": 46052,
+        "nonBgFraction": 0.3436
+      }
+    },
+    {
+      "name": "drive-open",
+      "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-open.png",
+      "video": null,
+      "ms": 3779,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -69,15 +929,136 @@
       }
     },
     {
-      "name": "drive-peak",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:36559/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "name": "drive-start",
+      "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak.png",
+      "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 4936,
+      "ms": 3886,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 32,
+        "bodyTextNodes": 29,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 6888,
+        "cyanPixels": 20368,
+        "textPixels": 2568,
+        "nonBgFraction": 0.1396
+      }
+    },
+    {
+      "name": "drive",
+      "path": "/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=39.2",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive.png",
+      "video": null,
+      "ms": 6800,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 70,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 140800,
+        "cyanPixels": 20264,
+        "textPixels": 6540,
+        "nonBgFraction": 0.5933
+      }
+    },
+    {
+      "name": "drive-peak",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-peak.png",
+      "video": null,
+      "ms": 4675,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -130,15 +1111,137 @@
       }
     },
     {
-      "name": "drive-loose",
-      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:36559/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "name": "drive-transition",
+      "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-loose.png",
+      "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 4409,
+      "ms": 4426,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 83,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 143716,
+        "cyanPixels": 19280,
+        "textPixels": 6136,
+        "nonBgFraction": 0.5947
+      }
+    },
+    {
+      "name": "drive-bank",
+      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-bank.png",
+      "video": null,
+      "ms": 4373,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 88,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 129072,
+        "cyanPixels": 37060,
+        "textPixels": 6372,
+        "nonBgFraction": 0.3108
+      }
+    },
+    {
+      "name": "drive-loose",
+      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-loose.png",
+      "video": null,
+      "ms": 4359,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -191,15 +1294,76 @@
       }
     },
     {
-      "name": "drive-gps",
-      "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:36559/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "name": "drive-lost",
+      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-gps.png",
+      "screenshot": "artifacts/shots/drive-lost.png",
       "video": null,
-      "ms": 4435,
+      "ms": 4432,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 42,
+        "bodyTextNodes": 31,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 50236,
+        "cyanPixels": 20060,
+        "textPixels": 4868,
+        "nonBgFraction": 0.329
+      }
+    },
+    {
+      "name": "drive-gps",
+      "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-gps.png",
+      "video": null,
+      "ms": 4487,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -250,8 +1414,2185 @@
         "textPixels": 5192,
         "nonBgFraction": 0.501
       }
+    },
+    {
+      "name": "drive-discarded",
+      "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "ok": false,
+      "errors": [
+        "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http 404: http://127.0.0.1:44547/canvaskit.wasm",
+        "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "console.error: wasm streaming compile failed: TypeError: Failed to execute 'compile' on 'WebAssembly': HTTP status code is not ok",
+        "console.error: falling back to ArrayBuffer instantiation",
+        "http 404: http://127.0.0.1:44547/canvaskit.wasm",
+        "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "console.error: failed to asynchronously prepare wasm: both async and sync fetching of the wasm failed",
+        "console.error: Aborted(both async and sync fetching of the wasm failed)",
+        "console.error: [skia] CanvasKit failed to load RuntimeError: Aborted(both async and sync fetching of the wasm failed). Build with -sASSERTIONS for more info.\n    at L (http://127.0.0.1:44547/_expo/static/js/web/entry-2602b26839b0d1e9d253d5980478358d.js:1459:78963)\n    at O (http://127.0.0.1:44547/_expo/static/js/web/entry-2602b26839b0d1e9d253d5980478358d.js:1459:79336)\n    at async http://127.0.0.1:44547/_expo/static/js/web/entry-2602b26839b0d1e9d253d5980478358d.js:1459:121410\n    at async t (http://127.0.0.1:",
+        "pageerror: Aborted(both async and sync fetching of the wasm failed). Build with -sASSERTIONS for more info.",
+        "pageerror: Aborted(both async and sync fetching of the wasm failed). Build with -sASSERTIONS for more info.",
+        "no <canvas> appeared: page.waitForSelector: Timeout 20000ms exceeded.",
+        "harness: locator.tap: Timeout 30000ms exceeded."
+      ],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-discarded.png",
+      "video": null,
+      "ms": 53158,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 0,
+        "bodyTextNodes": 0,
+        "otherTextNodes": 0
+      }
+    },
+    {
+      "name": "drive-savefail",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:44547/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-savefail.png",
+      "video": null,
+      "ms": 6772,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 87,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 112004,
+        "cyanPixels": 8880,
+        "textPixels": 3132,
+        "nonBgFraction": 0.7598
+      }
+    },
+    {
+      "name": "results-reveal",
+      "path": "/results/fixture-hero",
+      "url": "http://127.0.0.1:44547/results/fixture-hero",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-reveal.png",
+      "video": null,
+      "ms": 5111,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 95936,
+        "cyanPixels": 1072,
+        "textPixels": 58836,
+        "nonBgFraction": 0.3836
+      }
+    },
+    {
+      "name": "results-skip",
+      "path": "/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:44547/results/fixture-hero?reveal=slam",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-skip.png",
+      "video": null,
+      "ms": 4560,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 95132,
+        "cyanPixels": 1072,
+        "textPixels": 58836,
+        "nonBgFraction": 0.3836
+      }
+    },
+    {
+      "name": "results-reveal-hold",
+      "path": "/results/fixture-hero?reveal=hold",
+      "url": "http://127.0.0.1:44547/results/fixture-hero?reveal=hold",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/results-reveal-hold.png",
+      "video": null,
+      "ms": 2926,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 1836,
+        "cyanPixels": 0,
+        "textPixels": 0,
+        "nonBgFraction": 0.3631
+      }
+    },
+    {
+      "name": "results-reveal-slam",
+      "path": "/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:44547/results/fixture-hero?reveal=slam",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/results-reveal-slam.png",
+      "video": null,
+      "ms": 4075,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 1792,
+        "cyanPixels": 0,
+        "textPixels": 0,
+        "nonBgFraction": 0.5255
+      }
+    },
+    {
+      "name": "results",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results.png",
+      "video": null,
+      "ms": 3419,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 140,
+        "bodyTextNodes": 189,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 95132,
+        "cyanPixels": 1072,
+        "textPixels": 58836,
+        "nonBgFraction": 0.3837
+      }
+    },
+    {
+      "name": "results-sloppy",
+      "path": "/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-sloppy?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-sloppy.png",
+      "video": null,
+      "ms": 3457,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 129,
+        "bodyTextNodes": 196,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 41076,
+        "cyanPixels": 0,
+        "textPixels": 76676,
+        "nonBgFraction": 0.2921
+      }
+    },
+    {
+      "name": "results-spin",
+      "path": "/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-spin?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-spin.png",
+      "video": null,
+      "ms": 3453,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 141,
+        "bodyTextNodes": 201,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 81320,
+        "cyanPixels": 75356,
+        "textPixels": 65424,
+        "nonBgFraction": 0.3715
+      }
+    },
+    {
+      "name": "results-clean",
+      "path": "/results/fixture-clean?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-clean?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-clean.png",
+      "video": null,
+      "ms": 3414,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 51,
+        "bodyTextNodes": 66,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 6704,
+        "cyanPixels": 0,
+        "textPixels": 63980,
+        "nonBgFraction": 0.2824
+      }
+    },
+    {
+      "name": "results-best",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-best.png",
+      "video": null,
+      "ms": 4565,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 140,
+        "bodyTextNodes": 189,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 79976,
+        "cyanPixels": 15880,
+        "textPixels": 32852,
+        "nonBgFraction": 0.5683
+      }
+    },
+    {
+      "name": "results-drifts",
+      "path": "/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-spin?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-drifts.png",
+      "video": null,
+      "ms": 4220,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 141,
+        "bodyTextNodes": 201,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 54088,
+        "cyanPixels": 0,
+        "textPixels": 34232,
+        "nonBgFraction": 0.7463
+      }
+    },
+    {
+      "name": "results-laps",
+      "path": "/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-sloppy?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-laps.png",
+      "video": null,
+      "ms": 4068,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 129,
+        "bodyTextNodes": 196,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 205228,
+        "cyanPixels": 6084,
+        "textPixels": 27768,
+        "nonBgFraction": 0.4933
+      }
+    },
+    {
+      "name": "results-untrusted",
+      "path": "/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-handheld?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-untrusted.png",
+      "video": null,
+      "ms": 4949,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 62,
+        "bodyTextNodes": 72,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 111252,
+        "cyanPixels": 0,
+        "textPixels": 14176,
+        "nonBgFraction": 0.3818
+      }
+    },
+    {
+      "name": "results-untrusted-foot",
+      "path": "/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-handheld?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-untrusted-foot.png",
+      "video": null,
+      "ms": 5862,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 62,
+        "bodyTextNodes": 72,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 251648,
+        "cyanPixels": 0,
+        "textPixels": 10700,
+        "nonBgFraction": 0.6225
+      }
+    },
+    {
+      "name": "results-integrity",
+      "path": "/results/fixture-rough?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-rough?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-integrity.png",
+      "video": null,
+      "ms": 4265,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 143,
+        "bodyTextNodes": 200,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 243964,
+        "cyanPixels": 0,
+        "textPixels": 10700,
+        "nonBgFraction": 0.5315
+      }
+    },
+    {
+      "name": "results-pipeline",
+      "path": "/results/fixture-good?reveal=off&source=pipeline",
+      "url": "http://127.0.0.1:44547/results/fixture-good?reveal=off&source=pipeline",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-pipeline.png",
+      "video": null,
+      "ms": 4887,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 139,
+        "bodyTextNodes": 183,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 160388,
+        "cyanPixels": 1072,
+        "textPixels": 58784,
+        "nonBgFraction": 0.3834
+      }
+    },
+    {
+      "name": "results-reduced",
+      "path": "/results/fixture-hero?reveal=hold&motion=reduce",
+      "url": "http://127.0.0.1:44547/results/fixture-hero?reveal=hold&motion=reduce",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-reduced.png",
+      "video": null,
+      "ms": 3266,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 296,
+        "cyanPixels": 52,
+        "textPixels": 5864,
+        "nonBgFraction": 0.0432
+      }
+    },
+    {
+      "name": "results-missing",
+      "path": "/results/no-such-session",
+      "url": "http://127.0.0.1:44547/results/no-such-session",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-missing.png",
+      "video": null,
+      "ms": 1928,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 19,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 73364,
+        "cyanPixels": 116,
+        "textPixels": 48112,
+        "nonBgFraction": 0.0949
+      }
+    },
+    {
+      "name": "replay",
+      "path": "/replay/demo?cam=chase&t=93",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=chase&t=93",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay.png",
+      "video": null,
+      "ms": 14444,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 71768,
+        "cyanPixels": 3884,
+        "textPixels": 35296,
+        "nonBgFraction": 0.9776
+      }
+    },
+    {
+      "name": "replay-motion",
+      "path": "/replay/demo?cam=chase&t=94.4&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=chase&t=94.4&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-motion.png",
+      "video": null,
+      "ms": 14494,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 69608,
+        "cyanPixels": 3700,
+        "textPixels": 57764,
+        "nonBgFraction": 0.9761
+      }
+    },
+    {
+      "name": "replay-cut",
+      "path": "/replay/demo?cam=chase&t=95.5&rate=0.25&ui=1",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=chase&t=95.5&rate=0.25&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cut.png",
+      "video": null,
+      "ms": 24180,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 75876,
+        "cyanPixels": 5324,
+        "textPixels": 36184,
+        "nonBgFraction": 0.9801
+      }
+    },
+    {
+      "name": "replay-shake",
+      "path": "/replay/demo?cam=overview&t=99.6&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=overview&t=99.6&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-shake.png",
+      "video": null,
+      "ms": 8054,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 48132,
+        "cyanPixels": 960,
+        "textPixels": 38972,
+        "nonBgFraction": 0.9718
+      }
+    },
+    {
+      "name": "replay-overview",
+      "path": "/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-overview.png",
+      "video": null,
+      "ms": 5214,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 45892,
+        "cyanPixels": 236,
+        "textPixels": 30368,
+        "nonBgFraction": 0.9727
+      }
+    },
+    {
+      "name": "replay-chase",
+      "path": "/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-chase.png",
+      "video": null,
+      "ms": 6994,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 105496,
+        "cyanPixels": 5828,
+        "textPixels": 61308,
+        "nonBgFraction": 0.9787
+      }
+    },
+    {
+      "name": "replay-cinematic",
+      "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cinematic.png",
+      "video": null,
+      "ms": 5823,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 41956,
+        "cyanPixels": 4548,
+        "textPixels": 59164,
+        "nonBgFraction": 0.977
+      }
+    },
+    {
+      "name": "replay-ghost",
+      "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-ghost.png",
+      "video": null,
+      "ms": 6678,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 25880,
+        "cyanPixels": 3796,
+        "textPixels": 31396,
+        "nonBgFraction": 0.9749
+      }
+    },
+    {
+      "name": "replay-highlight",
+      "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "url": "http://127.0.0.1:44547/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-highlight.png",
+      "video": null,
+      "ms": 11990,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 110612,
+        "cyanPixels": 5880,
+        "textPixels": 39756,
+        "nonBgFraction": 0.9769
+      }
+    },
+    {
+      "name": "replay-scrub",
+      "path": "/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-scrub.png",
+      "video": null,
+      "ms": 11333,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 73504,
+        "cyanPixels": 3924,
+        "textPixels": 32968,
+        "nonBgFraction": 0.9783
+      }
+    },
+    {
+      "name": "replay-untrusted",
+      "path": "/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-untrusted.png",
+      "video": null,
+      "ms": 7218,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 26688,
+        "cyanPixels": 6980,
+        "textPixels": 30224,
+        "nonBgFraction": 0.9697
+      }
+    },
+    {
+      "name": "replay-warnings",
+      "path": "/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-warnings.png",
+      "video": null,
+      "ms": 6100,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 20312,
+        "cyanPixels": 4472,
+        "textPixels": 36596,
+        "nonBgFraction": 0.9701
+      }
+    },
+    {
+      "name": "replay-warnings-open",
+      "path": "/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
+      "url": "http://127.0.0.1:44547/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-warnings-open.png",
+      "video": null,
+      "ms": 7719,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 56888,
+        "cyanPixels": 3856,
+        "textPixels": 53312,
+        "nonBgFraction": 0.976
+      }
+    },
+    {
+      "name": "replay-end",
+      "path": "/replay/demo?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/demo?cam=overview&t=999&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-end.png",
+      "video": null,
+      "ms": 5697,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 51648,
+        "cyanPixels": 6636,
+        "textPixels": 43092,
+        "nonBgFraction": 0.9713
+      }
+    },
+    {
+      "name": "replay-from-results",
+      "path": "/results/fixture-good?reveal=off",
+      "url": "http://127.0.0.1:44547/results/fixture-good?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-from-results.png",
+      "video": null,
+      "ms": 12006,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 139,
+        "bodyTextNodes": 183,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 79492,
+        "cyanPixels": 3424,
+        "textPixels": 34768,
+        "nonBgFraction": 0.9778
+      }
+    },
+    {
+      "name": "replay-touge",
+      "path": "/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "url": "http://127.0.0.1:44547/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-touge.png",
+      "video": null,
+      "ms": 6552,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 68352,
+        "cyanPixels": 11624,
+        "textPixels": 65768,
+        "nonBgFraction": 0.9814
+      }
+    },
+    {
+      "name": "settings",
+      "path": "/settings",
+      "url": "http://127.0.0.1:44547/settings",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/settings.png",
+      "video": null,
+      "ms": 1712,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 45,
+        "bodyTextNodes": 35,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 7304,
+        "cyanPixels": 13492,
+        "textPixels": 67064,
+        "nonBgFraction": 0.7366
+      }
     }
   ],
-  "finishedAt": "2026-09-20T22:43:00.990Z",
-  "failed": 0
+  "finishedAt": "2026-09-20T22:57:01.157Z",
+  "failed": 1
 }

@@ -259,7 +259,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
 
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: gutter, backgroundColor: 'rgba(7, 9, 13, 0.5)' },
-  errorTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 40, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },
+  // Uppercase because every other headline on this screen is (LOOSE MOUNT, GPS LOST, CHAIN
+  // LOST, SAVING RUN): a dialog is not the place the HUD suddenly starts speaking in sentences.
+  errorTitle: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 34, lineHeight: 36, color: colors.text, letterSpacing: -0.2, textTransform: 'uppercase' },
 
   errorCard: { maxWidth: 420, gap: space[3] },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: space[4] },

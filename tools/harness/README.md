@@ -195,12 +195,14 @@ Two details make a frozen frame reproducible, and both are worth knowing before 
 
 * the callout stack expires by RECORDING time, not wall time, so freezing the run freezes the
   stack — `drive-peak` keeps the three callouts that fired in the 3.2 s before `at`;
-* the score odometer settles on whole digits when the score stops changing (a chained linear
-  tween, not an exponential smoother, which on web never finishes).
+* the score odometer is filtered in the 100 Hz sample callback, not by an animation, and snaps
+  to the exact total once it is within a few points — so a frozen frame always shows whole
+  digits rather than a column caught mid-roll. After a warp it is landed outright.
 
 A live route (no `hold`) is NOT frame-exact: the screenshot lands wherever playback has reached,
 about 4.5 s after `at` with `waitMs: 3200`. `drive` is deliberately live — it is the route to
-record video of — and is warped to 96.3 s so that window covers the MANJI flick at 100.0 s.
+record video of — and is warped to 39.2 s so that window covers the MANJI flick at 42.4 s and
+EXTREME ANGLE at 42.8 s.
 
 Default drive routes, and what each one is evidence of:
 
@@ -215,11 +217,19 @@ Default drive routes, and what each one is evidence of:
 | `drive-loose` | a REAL hand-held run (`looseness=1`): muted gauge, no bloom, grey score, "these points may not stand" |
 | `drive-lost` | the same run 0.2 s after the slide spun: CHAIN LOST |
 | `drive-gps` | a REAL GPS dropout (`dropouts=1`) 1.2 s into the gap: GPS LOST is severe because a fix had been held |
+| `drive-discarded` | STOP pressed on a run that never left walking pace: NOTHING TO SCORE instead of filing it or dropping the driver into the garage without a word |
+| `drive-savefail` | STOP pressed on a real run whose WRITE then fails: the finished verdict (grade, points, drifts, peak, duration) is handed back beside the storage layer's own sentence, with the retry labelled from the error |
 
 `looseness` and `dropouts` go through the SIMULATOR (`src/platform/simParams.ts`), so those three
 routes exercise the estimator, the detector and the integrity monitor on genuinely bad data. The
 `integrity=` override stays for one narrow job — proving the banner's own rendering — and should
 not be used as evidence that the app notices anything.
+
+The two stop routes use actions rather than parameters, so nothing in the app knows it is being
+tested. `drive-discarded` taps STOP at 0.3 s, when the recording is still at rest. `drive-savefail`
+breaks `Storage.prototype.setItem` with a `QuotaExceededError` — which is exactly what a full
+localStorage throws — so `src/platform/storage.ts` raises its real `StorageError` and the HUD's
+failure path runs for real. Neither one needs a debug flag in the shipped code.
 
 Frames from the video (the bundled ffmpeg's filter parser is unusable — use `-r`, not `-vf fps=`):
 
