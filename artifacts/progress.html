@@ -54,14 +54,14 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <div class="wrap">
 <header>
   <div><h1>Drift-<span>O</span>-Meter <span>Build Board</span></h1><div class="phase">Phase 2 — engine tuning against the reworked simulator, app screens next</div></div>
-  <div class="updated">Updated 2026-09-20 18:35 UTC</div>
+  <div class="updated">Updated 2026-09-20 18:48 UTC</div>
 </header>
 <p class="summary">An iPhone app (Expo SDK 57, TypeScript) that judges real drifting from the gyroscope, accelerometer and GPS and turns a run into a cinematic replay. Each piece is built by its own agent and judged by a separate fresh-context critic that re-runs the code and looks at the actual output, never the builder&#x27;s summary. The reference bar is Need for Speed and Tokyo Drift.</p>
 <div class="strip">
   <div class="tile"><b>15</b><span>pieces</span></div>
   <div class="tile pass"><b>2</b><span>passed critic</span></div>
-  <div class="tile crit"><b>2</b><span>in critique</span></div>
-  <div class="tile build"><b>6</b><span>building / fixing</span></div>
+  <div class="tile crit"><b>4</b><span>in critique</span></div>
+  <div class="tile build"><b>4</b><span>building / fixing</span></div>
   <div class="tile"><b>5</b><span>queued</span></div>
 </div>
 <h2>Pieces</h2>
@@ -95,10 +95,10 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Drift detection</span><span class="note">Entry / sustain / transition / exit state machine</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Fixing</span></td>
+      <td><span class="chip critique">In critique</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict">Entry latency and transition counts regressed because the driver now feints before initiating and links corners; the feint is being handled as part of the initiation.</td>
+      <td class="verdict">Retuned: the drift now starts where the flick that initiated it started, not where the slide crossed a threshold. Entry latency 604 ms down to 224 ms, transition counting 70 % up to 100 %.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Scoring &amp; style</span><span class="note">Angle × duration × speed, multipliers, callouts, S–D grade, consistency</span></td>
@@ -119,10 +119,10 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Signal integrity</span><span class="note">Loose-mount detection, physics plausibility, GPS quality gating</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Fixing</span></td>
+      <td><span class="chip critique">In critique</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
-      <td class="verdict">Loose-mount cues being retuned against the new broadband vibration; rigid-vs-hand-held separation preserved.</td>
+      <td class="verdict">Retuned: loose-mount cues renormalised to a scale measured over 384 rigid configurations. A rigid mount scores at most 0.12, a rattling cradle 0.20 to 0.66, a hand 0.80 to 1.00.</td>
     </tr>
     <tr>
       <td class="name"><span class="piece">Replay scene</span><span class="note">Session → timeline, glow trail, camera, ghost</span></td>
@@ -205,5 +205,5 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <h2>How things are verified</h2>
 <ul class="verif"><li>This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.</li><li>The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder&#x27;s summary.</li><li>What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off.</li></ul>
 <h2>Log</h2>
-<ol class="log"><li><time>18:45</time><span>Replay visuals failed their first critique at 4.5 out of 10 with four severity-one defects. The full findings went back to the builder with before-and-after measurements required for each one.</span></li><li><time>18:20</time><span>Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired.</span></li><li><time>17:40</time><span>Session limit paused four agents mid-tuning. Everything they had written was already on disk.</span></li><li><time>15:10</time><span>Simulator rewritten against the critic verdict: continuous start and roll-out, feint plus bounded yaw acceleration on initiation, linked corners, broadband vibration, phone lever arm, leaning OS gravity, per-seed GPS latency with a filtered course.</span></li><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
+<ol class="log"><li><time>19:05</time><span>Detector and integrity are green again, 51 tests, with every original target still asserted at its original value. A critic is now checking whether the four judgement modules together would agree with a human drift judge.</span></li><li><time>18:45</time><span>Replay visuals failed their first critique at 4.5 out of 10 with four severity-one defects. The full findings went back to the builder with before-and-after measurements required for each one.</span></li><li><time>18:20</time><span>Restarted: mount, slip, detector and integrity are being re-tuned against the new simulator, and the pipeline that joins every module is being wired.</span></li><li><time>17:40</time><span>Session limit paused four agents mid-tuning. Everything they had written was already on disk.</span></li><li><time>15:10</time><span>Simulator rewritten against the critic verdict: continuous start and roll-out, feint plus bounded yaw acceleration on initiation, linked corners, broadband vibration, phone lever arm, leaning OS gravity, per-seed GPS latency with a filtered course.</span></li><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
 </div>

@@ -2,9 +2,9 @@
  * Replay scene model — DATA, not pixels.
  *
  * `buildReplay(session)` turns a Session into a compact, renderer-agnostic scene description:
- * a 20 Hz trail, glow segments, smoke particles, markers, a ghost of the best lap and a 10 Hz
- * telemetry strip. The Skia renderer in the app and the SVG renderer in the harness both draw
- * exactly this data, so what the critic sees on Linux is what the phone shows.
+ * a 20 Hz trail, glow segments, smoke particles, markers, events, a ghost of the best lap and a
+ * 10 Hz telemetry strip. The Skia renderer in the app and the SVG renderer in the harness both
+ * draw exactly this data, so what the critic sees on Linux is what the phone shows.
  *
  * TIME CONVENTION: every time in a Replay is REPLAY-RELATIVE seconds (0 = first trail sample).
  * `Replay.t0` is the session-clock time of replay time 0, so `sessionT = t0 + replayT`.
@@ -32,6 +32,8 @@ export interface ReplayOptions {
   ghost: boolean;
   /** Fallback points rate (pts/s at intensity 1) when the session has no per-drift score. */
   fallbackPointsPerS: number;
+  /** Trim leading/trailing dead air (parked car) to this many seconds. */
+  deadAirS: number;
 }
 
 export interface ReplayBounds {
@@ -40,6 +42,17 @@ export interface ReplayBounds {
   minY: number;
   maxY: number;
 }
+
+/**
+ * How dramatic the current slide is. Bands are absolute so the renderer's colour ramp,
+ * shake and smoke rate mean the same thing in every session:
+ *   none    |β| < 8°     not sliding
+ *   hold    8–25°        a controlled drift
+ *   big     25–40°       committed
+ *   extreme 40–65°       ember → gold territory, the money shot
+ *   spin    ≥ 65°        about to be a spin; red
+ */
+export type DriftSeverity = 'none' | 'hold' | 'big' | 'extreme' | 'spin';
 
 /** The car's path resampled at `hz`, as typed arrays (all length `n`). */
 export interface ReplayTrail {
@@ -52,12 +65,16 @@ export interface ReplayTrail {
   /** Math-convention radians, wrapped to (-π, π]. */
   heading: Float64Array;
   course: Float64Array;
-  /** Signed slip angle, radians. */
+  /** Signed slip angle, radians, wrapped to (-π, π]. */
   beta: Float64Array;
   /** m/s. */
   speed: Float64Array;
   /** Cumulative points at this sample. */
   score: Float64Array;
+  /** Score multiplier in force at this sample (1 when not drifting). */
+  multiplier: Float32Array;
+  /** Points banked in the CURRENT chain at this sample (0 when not drifting). */
+  chain: Float32Array;
   /** Distance travelled since replay start, metres. */
   dist: Float64Array;
   /** Glow intensity 0..1 from |β| (intensityLo → 0, intensityHi → 1). */
@@ -84,11 +101,15 @@ export interface ReplaySegment {
   peakAngle: number;
   peakT: number;
   peakIndex: number;
+  /** Severity band of the peak. */
+  severity: DriftSeverity;
   /** +1 right-hand drift (β>0) at initiation, −1 left. */
   initialDirection: 1 | -1;
   transitions: number;
   /** Points awarded for this drift (score total, or the fallback estimate). */
   points: number;
+  /** Lap index this drift starts in, or -1. */
+  lapIndex: number;
 }
 
 /** A tyre-smoke puff. Position/size/opacity at a later time come from `smokeAt()`. */
@@ -98,7 +119,7 @@ export interface SmokeParticle {
   /** Emission point (rear axle, one tyre), metres. */
   x: number;
   y: number;
-  /** Initial velocity, m/s (opposite to the travel direction plus a little lateral spread). */
+  /** Initial velocity, m/s (opposite to the travel direction plus lateral spread). */
   vx: number;
   vy: number;
   /** Initial radius, metres. */
@@ -109,6 +130,10 @@ export interface SmokeParticle {
   strength: number;
   /** +1 left rear tyre, −1 right rear tyre. */
   side: 1 | -1;
+  /** Deterministic 0..1 per-particle randomness: turbulence phase, rotation, size variance. */
+  seed: number;
+  /** 0..1 how hot the rubber was: 1 = white-hot fresh smoke, 0 = cold grey dust. */
+  heat: number;
 }
 
 export type ReplayMarkerKind = 'drift-start' | 'drift-peak' | 'drift-end' | 'transition' | 'lap';
@@ -123,12 +148,55 @@ export interface ReplayMarker {
   course: number;
   /** Short HUD label, e.g. "42°", "+1 250", "LAP 2", "TRANSITION". */
   label: string;
+  /** Lap this marker belongs to, or -1. Renderers use it to retire previous laps' markers. */
+  lapIndex: number;
+  /** Draw priority for screen-space label de-confliction (higher wins). */
+  priority: number;
   driftId?: number;
-  lapIndex?: number;
   /** Peak |β| in radians for drift-peak markers. */
   peakAngle?: number;
+  /** Severity band for drift-peak markers. */
+  severity?: DriftSeverity;
   /** Points for drift-end markers. */
   points?: number;
+}
+
+/**
+ * A timed dramatic beat the renderer animates: the SAME data drives the Skia app and the SVG
+ * harness, so their motion cannot diverge. `magnitude` 0..1 scales the effect (shake, slam).
+ */
+export type ReplayEventKind = 'entry' | 'transition' | 'peak' | 'exit' | 'lap' | 'finish' | 'spin';
+
+export interface ReplayEvent {
+  kind: ReplayEventKind;
+  /** Replay-relative seconds at which the beat fires. */
+  t: number;
+  /** How long the callout holds before it fades, s. */
+  holdS: number;
+  /** 0..1 dramatic weight: drives shake amplitude, slam scale and glow bloom. */
+  magnitude: number;
+  /** Higher wins when two beats overlap. */
+  priority: number;
+  /** Uppercase callout text, or '' for beats with no callout. */
+  label: string;
+  /** Points this beat awards, if any (for the odometer). */
+  points?: number;
+  driftId?: number;
+  lapIndex: number;
+}
+
+/** An event with its animation phase resolved at a given time (see `activeEvents`). */
+export interface ActiveEvent extends ReplayEvent {
+  /** Seconds since the beat fired. */
+  age: number;
+  /** 0..1 through hold+fade. */
+  progress: number;
+  /** Callout scale: slams 1.8 → 1.0 with overshoot (DESIGN.md motion language). */
+  scale: number;
+  /** 0..1 callout opacity. */
+  opacity: number;
+  /** 0..1 screen-shake envelope (decays over 100–200 ms). */
+  shake: number;
 }
 
 export interface ReplayLap {
@@ -142,8 +210,12 @@ export interface ReplayLap {
   endIndex: number;
   /** Points scored inside this lap (cumulative score at end − at start). */
   points: number;
-  /** True for the lap the ghost replays. */
+  /** True for the lap the ghost replays (best points). */
   best: boolean;
+  /** True for the quickest lap. */
+  fastest: boolean;
+  /** Which lap the ghost shows while THIS lap is being watched (never itself), or -1. */
+  ghostRef: number;
 }
 
 /** The best lap re-sampled on lap-relative time τ ∈ [0, durationS] at the trail rate. */
@@ -154,6 +226,8 @@ export interface ReplayGhost {
   endT: number;
   durationS: number;
   points: number;
+  /** What made this lap the reference. The renderer labels the gap accordingly. */
+  criterion: 'points' | 'time';
   n: number;
   hz: number;
   /** Lap-relative time τ. */
@@ -166,6 +240,8 @@ export interface ReplayGhost {
   speed: Float64Array;
   /** Distance since lap start, metres. */
   dist: Float64Array;
+  /** Points scored since lap start. */
+  points_: Float64Array;
 }
 
 export interface ReplayTelemetry {
@@ -187,6 +263,19 @@ export interface ReplayTelemetry {
   maxPoints: number;
 }
 
+/** A moment worth jumping to (results screen / share). Sorted by score, best first. */
+export interface ReplayHighlight {
+  t: number;
+  /** Seconds before/after `t` worth playing. */
+  inT: number;
+  outT: number;
+  label: string;
+  kind: 'peak' | 'chain' | 'transition';
+  driftId?: number;
+  points: number;
+  peakAngle: number;
+}
+
 export interface Replay {
   /** Session-clock seconds corresponding to replay time 0. */
   t0: number;
@@ -196,13 +285,22 @@ export interface Replay {
   segments: ReplaySegment[];
   smoke: SmokeParticle[];
   markers: ReplayMarker[];
+  events: ReplayEvent[];
   laps: ReplayLap[];
   ghost: ReplayGhost | null;
   telemetry: ReplayTelemetry;
+  highlights: ReplayHighlight[];
   /** Track centre-line (metres) when the session has a track model, for drawing the road. */
-  track: { path: Array<{ x: number; y: number }>; closed: boolean; gate?: { ax: number; ay: number; bx: number; by: number } } | null;
+  track: {
+    path: Array<{ x: number; y: number }>;
+    closed: boolean;
+    gate?: { ax: number; ay: number; bx: number; by: number };
+    corners: Array<{ x: number; y: number; direction: 1 | -1; radiusM: number; apexS: number }>;
+  } | null;
   /** Session summary for HUD chrome. */
-  info: { name: string; totalPoints: number; grade: string; driftCount: number; peakAngle: number; maxSpeed: number };
+  info: { name: string; totalPoints: number; grade: string; driftCount: number; peakAngle: number; maxSpeed: number; severity: DriftSeverity };
+  /** Non-fatal data problems found while building (bad timestamps, missing positions…). */
+  warnings: string[];
   options: ReplayOptions;
 }
 
@@ -215,9 +313,15 @@ export interface ReplayPose {
   beta: number;
   speed: number;
   points: number;
+  /** Score multiplier in force. */
+  multiplier: number;
+  /** Points banked in the current chain. */
+  chain: number;
   phase: 'idle' | 'drifting';
   /** 0..1 glow intensity from |β|. */
   intensity: number;
+  /** Absolute drama band from |β| — drives colour, shake and smoke rate. */
+  severity: DriftSeverity;
   /** Segment index or -1. */
   segment: number;
   /** Lap index or -1. */
@@ -235,9 +339,19 @@ export interface GhostPose {
   speed: number;
   /** Lap-relative time, s. */
   tau: number;
+  /** Which lap the ghost is replaying. Never the lap being watched. */
+  lapIndex: number;
   /** Metres the CAR is ahead (+) or behind (−) the ghost along the lap. */
   gapM: number;
-  /** True while the ghost is still inside its best lap (false once it has crossed the line). */
+  /**
+   * TRUE time gap in seconds: how much earlier (+, car ahead) or later (−) the car reached
+   * this point than the ghost did. Computed by inverting the ghost's distance→time curve,
+   * so it does not flicker with instantaneous speed.
+   */
+  gapS: number;
+  /** Points the car is ahead (+) / behind (−) the ghost at the same point of the lap. */
+  gapPoints: number;
+  /** True while the ghost is still inside its reference lap. */
   inLap: boolean;
 }
 
@@ -250,4 +364,10 @@ export interface SmokeState {
   opacity: number;
   /** 0..1 */
   age: number;
+  /** 0..1 white-hot → grey. */
+  heat: number;
+  /** Rotation for a non-circular sprite, radians. */
+  rotation: number;
+  /** 0..1 per-particle randomness, carried through from the particle. */
+  seed: number;
 }

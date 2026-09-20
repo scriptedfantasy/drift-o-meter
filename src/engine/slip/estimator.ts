@@ -115,11 +115,15 @@ export interface SlipOptions {
   accelBiasSigma0: number;
   /**
    * Lateral specific-force scale error s (a_y,true ≈ (1+s)·a_y,measured): initial 1σ, random
-   * walk (per √s — banking changes corner by corner) and the clamp on |s|. 0.06 covers a
-   * roll gradient anywhere in 2–6 °/g.
+   * walk per √s, random walk per √radian of course change, and the clamp on |s|. 0.06 covers
+   * a roll gradient anywhere in 2–6 °/g. The per-radian walk exists because the other half of
+   * s is the road's camber: it is constant along a straight but can be anything in the next
+   * corner (a banked bowl and an off-camber touge hairpin have opposite signs), so s must be
+   * free to move while the car is turning and pinned while it is not.
    */
   ayScaleSigma0: number;
   ayScaleWalk: number;
+  ayScaleWalkPerRad: number;
   ayScaleMax: number;
   /** Gyro white noise (rad/s), bias random walk (rad/s/√s) and initial bias 1σ (rad/s). */
   gyroSigma: number;
@@ -139,7 +143,15 @@ export interface SlipOptions {
   priorSigmaDeg: number;
   priorSigmaDegPerAy: number;
   priorHz: number;
+  /**
+   * Calm gate on |β̇| (rad/s). β̇ is measured as a_y/v − r, so its own noise floor grows as
+   * 1/v: at 3 m/s a 0.3 m/s² accelerometer offset already looks like 6 °/s of slip rate.
+   * The gate is therefore priorBetaDotMax + priorBetaDotAccel / v — without the second term
+   * the prior switches itself off exactly where it is most needed (rolling to a stop), and
+   * β wanders off on integrated accelerometer bias.
+   */
   priorBetaDotMax: number;
+  priorBetaDotAccel: number;
   priorBetaMaxDeg: number;
   priorHoldS: number;
   straightAyMax: number;
@@ -183,23 +195,25 @@ export const DEFAULT_SLIP_OPTIONS: SlipOptions = {
   hAccScale: 0.4,
   posDriftPerS: 0.15,
   posDriftPerV2: 0.004,
-  accelSigma: 0.25,
+  accelSigma: 0.18,
   speedAccelSigma: 0.12,
   accelScaleSigma: 0.02,
   accelBiasWalk: 0.05,
   accelBiasSigma0: 0.15,
   ayScaleSigma0: 0.06,
-  ayScaleWalk: 0.02,
+  ayScaleWalk: 0.001,
+  ayScaleWalkPerRad: 0.02,
   ayScaleMax: 0.25,
   gyroSigma: 0.003,
   gyroBiasWalk: 0.0002,
   gyroBiasSigma0: 0.03,
-  priorSigmaDeg: 1.0,
+  priorSigmaDeg: 0.5,
   priorSigmaDegPerAy: 0.6,
-  priorHz: 5,
+  priorHz: 15,
   priorBetaDotMax: 0.05,
+  priorBetaDotAccel: 0.5,
   priorBetaMaxDeg: 6,
-  priorHoldS: 0.6,
+  priorHoldS: 0.15,
   straightAyMax: 1.2,
   straightYawMax: 0.06,
   straightHoldS: 2.5,
@@ -571,7 +585,7 @@ export class SlipEstimator {
       P[IG * N + IO] = P[IO * N + IG];
     }
     P[IG * N + IG] += o.gyroBiasWalk ** 2 * qt;
-    P[IS * N + IS] += o.ayScaleWalk ** 2 * qt;
+    P[IS * N + IS] += o.ayScaleWalk ** 2 * qt + o.ayScaleWalkPerRad ** 2 * Math.abs(chiDot) * qt;
     this.cInt += chiDot * dt;
     this.sInt += dSdt * dt;
     this.lastBetaDot = betaDot;
@@ -622,8 +636,9 @@ export class SlipEstimator {
     // of atan(r·d_x/v) — up to a couple of degrees in a tight corner. Pinning the phone's β
     // to zero instead would inject exactly that error into every corner.
     if (dt > 0) this.betaDotFiltered += (betaDot - this.betaDotFiltered) * Math.min(1, dt / 0.2);
-    const betaGrip = moving ? Math.atan2((r - this.bias) * o.leverArmX, Math.max(this.vel, o.minSpeed)) : 0;
-    const settled = moving && this.courseLocked && Math.abs(this.betaDotFiltered) < o.priorBetaDotMax;
+    const betaGrip = clamp(Math.atan2((r - this.bias) * o.leverArmX, Math.max(this.vel, o.minSpeed)), -0.35, 0.35);
+    const betaDotGate = o.priorBetaDotMax + o.priorBetaDotAccel / Math.max(this.vel, o.minSpeed);
+    const settled = moving && this.courseLocked && Math.abs(this.betaDotFiltered) < betaDotGate;
     const straight = settled && Math.abs(ayC) < o.straightAyMax && Math.abs(r - this.bias) < o.straightYawMax;
     const calm = settled && Math.abs(this.beta - betaGrip) < degToRad(o.priorBetaMaxDeg);
     if (calm) {

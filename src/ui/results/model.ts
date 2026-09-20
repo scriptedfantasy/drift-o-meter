@@ -187,20 +187,42 @@ export function gpsQuality(session: Session): GpsQuality {
  */
 export function integrityNotes(session: Session, gps: GpsQuality): IntegrityNote[] {
   const notes: IntegrityNote[] = [];
+  const meta = session.meta ?? {};
   const cal = session.calibration;
   const q = Math.round((cal?.quality ?? 0) * 100);
-  if (!cal || cal.quality < 0.55) {
+
+  // The pipeline's own integrity monitor, when it left its verdict in the session.
+  const mount = typeof meta.mount === 'string' ? meta.mount : null;
+  if (mount === 'loose' || mount === 'handheld') {
     notes.push({
       level: 'bad',
-      title: 'Mount was loose',
-      body: `Calibration confidence ${q}%${cal && !cal.forwardResolved ? ', and the forward axis never resolved' : ''}. A phone that moves in the cradle adds angle that the car never made — treat every number below as a lower bound on the error, not a lower bound on the driving.`,
+      title: 'The phone was moving',
+      body: 'The integrity monitor saw the phone shifting against the car, not just the car moving. Movement in the cradle shows up as slip angle the car never made, so every angle below is worth less than it looks.',
     });
-  } else if (cal.quality < 0.8 || !cal.forwardResolved) {
+  } else if (mount === 'suspect') {
     notes.push({
       level: 'warn',
-      title: 'Mount only half trusted',
-      body: `Calibration confidence ${q}%${!cal.forwardResolved ? '; the forward axis was still being resolved when the run started' : ''}. Angles are usable, but a couple of degrees of this is the cradle.`,
+      title: 'Mount looked unsteady',
+      body: 'The monitor could not tell whether some of the motion was the phone rather than the car. Nothing here is invalid, but a couple of degrees of angle may be cradle rattle.',
     });
+  }
+
+  if (!cal || cal.quality < 0.4 || (cal && !cal.forwardResolved)) {
+    notes.push({
+      level: 'bad',
+      title: 'Mount never calibrated',
+      body: `Calibration confidence ${q}%${cal && !cal.forwardResolved ? ' and the forward axis was never resolved' : ''}. Without a resolved forward axis the app cannot tell a slide from a lane change, so treat the angles as indicative only.`,
+    });
+  } else if (cal.quality < 0.75) {
+    notes.push({
+      level: 'warn',
+      title: 'Calibration only half confident',
+      body: `The mount calibration settled at ${q}%. Drive a straight, accelerate once and the forward axis sharpens up; until then a few degrees of every angle here belong to the mount.`,
+    });
+  }
+
+  if (meta.physics === 'implausible') {
+    notes.push({ level: 'bad', title: 'Motion the car cannot make', body: 'The monitor latched an impossible yaw rate or lateral g during the run. Something shook the phone; the affected moments are not driving.' });
   }
 
   if (gps.fixes === 0) {
@@ -209,13 +231,23 @@ export function integrityNotes(session: Session, gps: GpsQuality): IntegrityNote
     notes.push({
       level: 'bad',
       title: 'GPS was poor',
-      body: `Median accuracy ${gps.medianHAcc.toFixed(1)} m, ${Math.round(gps.poorFraction * 100)}% of fixes worse than 15 m${gps.maxGapS > 3 ? `, longest gap ${gps.maxGapS.toFixed(1)} s` : ''}. Course noise leaks straight into slip angle: the angles here are softer than they look.`,
+      body: `Median accuracy ${gps.medianHAcc.toFixed(1)} m, ${Math.round(gps.poorFraction * 100)}% of fixes worse than 15 m${gps.maxGapS > 3 ? `, longest gap ${gps.maxGapS.toFixed(1)} s` : ''}. Course noise leaks straight into slip angle: these angles are softer than they look.`,
     });
   } else if (gps.maxGapS > 3) {
     notes.push({
       level: 'warn',
       title: 'GPS dropped out',
-      body: `${gps.maxGapS.toFixed(1)} s without a fix. Through the gap the angle is dead-reckoned from the gyro alone and drifts a little.`,
+      body: `${gps.maxGapS.toFixed(1)} s without a fix (median accuracy ${gps.medianHAcc.toFixed(1)} m otherwise). Through the gap the angle is dead-reckoned from the gyro alone and drifts a little.`,
+    });
+  }
+
+  const dropped = typeof meta.droppedSamples === 'number' ? meta.droppedSamples : 0;
+  const nanGuards = typeof meta.nanGuards === 'number' ? meta.nanGuards : 0;
+  if (dropped + nanGuards > 0) {
+    notes.push({
+      level: 'warn',
+      title: 'Sensor stream had holes',
+      body: `${dropped} samples arrived out of order or too late and ${nanGuards} had to be repaired. Small gaps are normal on a phone; large ones bend the angle trace.`,
     });
   }
 
@@ -251,8 +283,8 @@ export function integrityNotes(session: Session, gps: GpsQuality): IntegrityNote
   if (notes.length === 0) {
     notes.push({
       level: 'ok',
-      title: 'Data is clean',
-      body: `Mount rigid (${q}% confidence), ${gps.fixes} GPS fixes at ${gps.medianHAcc.toFixed(1)} m median accuracy, no dropouts over 3 s. The score stands as measured.`,
+      title: 'Nothing qualifies this score',
+      body: `Mount calibrated to ${q}% with the forward axis resolved, ${gps.fixes} GPS fixes at ${gps.medianHAcc.toFixed(1)} m median accuracy, no dropouts over 3 s. The numbers above are the driving.`,
     });
   }
   return notes;
@@ -275,8 +307,10 @@ function driftRows(session: Session, breakdown: SessionBreakdown): DriftRow[] {
       startT: event.startT,
       endT: event.endT,
       durationS: event.durationS,
-      peakDeg: stats ? stats.peakDeg : radToDeg(event.peakAngle),
-      heldPeakDeg: stats ? stats.heldPeakDeg : radToDeg(event.peakAngle),
+      // a spin stops the accumulator on the sample that tripped it, so its running peak can be
+      // 0: fall back to the event's own peak, which is what the trace shows
+      peakDeg: stats && stats.peakDeg > 0 ? stats.peakDeg : radToDeg(event.peakAngle),
+      heldPeakDeg: stats && stats.heldPeakDeg > 0 ? stats.heldPeakDeg : radToDeg(event.peakAngle),
       entryKmh: stats ? stats.entrySpeedKmh : event.entrySpeed * 3.6,
       meanKmh: stats ? stats.meanSpeedKmh : event.meanSpeed * 3.6,
       transitions: stats ? stats.transitions : event.transitions,

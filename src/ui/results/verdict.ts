@@ -112,9 +112,11 @@ function praiseFor(model: ResultsBase): string | null {
   const b = model.breakdown;
   const best = model.best;
   const held = model.stats.heldPeakDeg;
+  // the corner that produced the biggest HELD angle, which is not always the biggest scorer
+  const holder = model.drifts.reduce<DriftRow | null>((m, r) => (!m || r.heldPeakDeg > m.heldPeakDeg ? r : m), null);
   const perDrift = b.drifts > 0 ? b.transitions / b.drifts : 0;
   if (b.angle >= 85 && best) {
-    return `Huge angles — ${round(held)}° held${best.corner ? ` through ${cornerLabel(best.corner)}` : ''}`;
+    return `Huge angles — ${round(held)}° held${holder?.corner ? ` through ${cornerLabel(holder.corner)}` : ''}`;
   }
   if (b.spins === 0 && b.consistency >= 85 && model.lapCount >= 2) {
     return `You put the car in the same place lap after lap`;

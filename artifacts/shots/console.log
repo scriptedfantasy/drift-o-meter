@@ -1,12 +1,6 @@
 
-===== home  http://127.0.0.1:38921/
+===== drive-idle  http://127.0.0.1:44161/drive?sim=harbor&rate=1
 
-===== calibrate  http://127.0.0.1:38921/calibrate
+===== drive  http://127.0.0.1:44161/drive?sim=harbor&rate=1&at=104
 
-===== drive  http://127.0.0.1:38921/drive?sim=harbor&rate=1
-
-===== results  http://127.0.0.1:38921/results/demo
-
-===== replay  http://127.0.0.1:38921/replay/demo
-
-===== settings  http://127.0.0.1:38921/settings
+===== drive-peak  http://127.0.0.1:44161/drive?sim=harbor&rate=1&at=114.5&hold=1

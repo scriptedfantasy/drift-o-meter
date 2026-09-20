@@ -41,9 +41,9 @@
       "id": "detect",
       "name": "Drift detection",
       "layer": "engine",
-      "status": "fixing",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "Entry latency and transition counts regressed because the driver now feints before initiating and links corners; the feint is being handled as part of the initiation.",
+      "verdict": "Retuned: the drift now starts where the flick that initiated it started, not where the slide crossed a threshold. Entry latency 604 ms down to 224 ms, transition counting 70 % up to 100 %.",
       "note": "Entry / sustain / transition / exit state machine"
     },
     {
@@ -68,9 +68,9 @@
       "id": "integrity",
       "name": "Signal integrity",
       "layer": "engine",
-      "status": "fixing",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "Loose-mount cues being retuned against the new broadband vibration; rigid-vs-hand-held separation preserved.",
+      "verdict": "Retuned: loose-mount cues renormalised to a scale measured over 384 rigid configurations. A rigid mount scores at most 0.12, a rattling cradle 0.20 to 0.66, a hand 0.80 to 1.00.",
       "note": "Loose-mount detection, physics plausibility, GPS quality gating"
     },
     {
@@ -218,6 +218,10 @@
     {
       "t": "18:45",
       "text": "Replay visuals failed their first critique at 4.5 out of 10 with four severity-one defects. The full findings went back to the builder with before-and-after measurements required for each one."
+    },
+    {
+      "t": "19:05",
+      "text": "Detector and integrity are green again, 51 tests, with every original target still asserted at its original value. A critic is now checking whether the four judgement modules together would agree with a human drift judge."
     }
   ],
   "shots": []

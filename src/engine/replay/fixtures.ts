@@ -29,6 +29,15 @@ export interface FixtureOptions {
   minDurationS: number;
   /** |β| that counts as "strong" for transitions / std-dev, rad. */
   strongAngle: number;
+  /**
+   * A drift ENDS when |β| falls below `settleAngle` for at least `settleS`: linked corners with
+   * a straight in between are separate drifts, not one 28-second "drift" that shades most of the
+   * telemetry strip ember.
+   */
+  settleAngle: number;
+  settleS: number;
+  /** Split anything still longer than this at its deepest interior |β| minimum, s. */
+  maxDurationS: number;
   /** Points per second at the reference angle. */
   pointsPerS: number;
   /** Angle at which the angle factor is 1. */
@@ -43,6 +52,9 @@ const DEFAULT_FIXTURE: FixtureOptions = {
   mergeGapS: 0.3,
   minDurationS: 0.6,
   strongAngle: degToRad(8),
+  settleAngle: degToRad(10),
+  settleS: 0.35,
+  maxDurationS: 10,
   pointsPerS: 100,
   refAngle: degToRad(30),
   track: true,
@@ -82,7 +94,53 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
     if (last && truth[iv[0]].t - truth[last[1]].t < opt.mergeGapS) last[1] = iv[1];
     else merged.push([iv[0], iv[1]]);
   }
-  return merged.filter(([a, b]) => truth[b].t - truth[a].t >= opt.minDurationS);
+  // split where the car settles (|β| below settleAngle for settleS): that is a drift EXIT,
+  // even though the simulator's `drifting` flag stays true through a linked sequence.
+  const split: Array<[number, number]> = [];
+  for (const [a, b] of merged) {
+    let segStart = a;
+    let dipStart = -1;
+    for (let i = a; i <= b; i++) {
+      const low = Math.abs(truth[i].beta) < opt.settleAngle;
+      if (low && dipStart < 0) dipStart = i;
+      if (!low && dipStart >= 0) {
+        const dipS = truth[i - 1].t - truth[dipStart].t;
+        if (dipS >= opt.settleS && dipStart > segStart) {
+          split.push([segStart, dipStart]);
+          segStart = i - 1;
+        }
+        dipStart = -1;
+      }
+    }
+    const tail = dipStart >= 0 && truth[b].t - truth[dipStart].t >= opt.settleS ? dipStart : b;
+    if (tail > segStart) split.push([segStart, tail]);
+  }
+  // anything still too long is cut at its deepest interior |β| minimum
+  const out: Array<[number, number]> = [];
+  const cut = (a: number, b: number, depth: number): void => {
+    if (truth[b].t - truth[a].t <= opt.maxDurationS || depth > 4) {
+      out.push([a, b]);
+      return;
+    }
+    const guard = Math.round(1.5 / Math.max(1e-6, truth[a + 1].t - truth[a].t));
+    let best = -1;
+    let bestV = Infinity;
+    for (let i = a + guard; i <= b - guard; i++) {
+      const v = Math.abs(truth[i].beta);
+      if (v < bestV) {
+        bestV = v;
+        best = i;
+      }
+    }
+    if (best < 0) {
+      out.push([a, b]);
+      return;
+    }
+    cut(a, best, depth + 1);
+    cut(best, b, depth + 1);
+  };
+  for (const [a, b] of split) cut(a, b, 0);
+  return out.filter(([a, b]) => truth[b].t - truth[a].t >= opt.minDurationS);
 }
 
 function makeDrift(id: number, truth: TruthSample[], a: number, b: number, opt: FixtureOptions): DriftEvent {

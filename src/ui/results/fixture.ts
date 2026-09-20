@@ -9,7 +9,8 @@
  *
  * Everything here is pure and seeded, so a given URL always produces the same pixels.
  */
-import { sessionFromSimulation } from '../../engine/replay';
+import { DriftPipeline } from '../../engine/pipeline';
+import { sessionFromSimulation } from '../../engine/replay/fixtures';
 import { clamp, degToRad, radToDeg, type Session, type SlipState } from '../../engine/types';
 import { simulateRun, type TrackId } from '../../sim';
 
@@ -28,11 +29,19 @@ export interface FixtureSpec {
   noDrifts: boolean;
   /** Rattling cradle + GPS dropouts, so the integrity notes have something true to report. */
   rough: boolean;
+  /**
+   * `sim` fills the session from simulator ground truth (fast, ~200 ms).
+   * `pipeline` pushes the simulated sensors through the REAL engine pipeline — mount
+   * calibration, slip estimator, detector, scorer — which is what the phone does, and takes
+   * about a second.
+   */
+  source: 'sim' | 'pipeline';
   /** One-line, driver-facing description of what this scenario is. */
   blurb: string;
 }
 
 const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
+  source: 'sim',
   track: 'harbor',
   seed: 3,
   laps: 2,
@@ -49,7 +58,7 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
  */
 export const FIXTURES: Record<string, FixtureSpec> = {
   /** S: a hero lap — huge held angles, repeatable corner after corner. */
-  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.5, consistency: 1, blurb: 'Hero lap · grade S' },
+  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.8, consistency: 1, blurb: 'Hero lap · grade S' },
   /** A/B: the default, a good but human run. */
   good: { ...BASE, name: 'good', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap · grade A' },
   /** D: low angles, wandering, corners never repeated. */
@@ -101,8 +110,10 @@ export function resolveFixture(id: string | undefined, params: Record<string, st
   const noDrifts = params.drifts === 'none' || params.drifts === '0';
   const rough = bool(params.rough);
   const track = params.track === 'touge' || params.track === 'harbor' ? params.track : base.track;
+  const source = params.source === 'pipeline' ? 'pipeline' : params.source === 'sim' ? 'sim' : base.source;
   return {
     ...base,
+    source,
     name: FIXTURES[key] ? base.name : key,
     track,
     seed: num(params.seed, base.seed, 0, 2 ** 31 - 1, true),
@@ -126,6 +137,7 @@ export function fixtureQuery(spec: FixtureSpec): string {
   if (spec.consistency !== base.consistency) q.set('cons', String(spec.consistency));
   if (spec.spin !== base.spin) q.set('spin', spec.spin ? '1' : '0');
   if (spec.noDrifts) q.set('drifts', 'none');
+  if (spec.source !== base.source) q.set('source', spec.source);
   return q.toString();
 }
 
@@ -216,6 +228,10 @@ function injectSpin(session: Session): void {
   target.peakAngleT = peakT;
   target.meanAngle = sum / Math.max(1, b - a + 1);
   target.minSpeed = Math.min(target.minSpeed, session.states[b].speed);
+  // a car that has spun is stopped, not starting the next corner: drop anything that began
+  // inside the spin, so the trace and the event list tell the same story
+  const spinEndT = session.states[b].t;
+  session.drifts = session.drifts.filter((d) => d === target || d.endT <= target.startT || d.startT > spinEndT + 0.4);
 }
 
 /** Degrade the mount calibration to match a cradle the simulator was told to rattle. */
@@ -229,8 +245,31 @@ const TRACK_TITLES: Record<TrackId, string> = {
 };
 
 /**
+ * Feed the simulated sensors through the real `DriftPipeline`, exactly as the sensor source
+ * does on the phone: mount calibration → slip estimator → detector → scorer. Slower than the
+ * ground-truth fixture (about a second for two laps) and worth it when the point is to see the
+ * screen render what the engine actually produces, estimator noise and all.
+ */
+function throughPipeline(run: ReturnType<typeof simulateRun>, spec: FixtureSpec, name: string): Session {
+  const pipeline = new DriftPipeline({
+    gpsLatencyS: 0.45,
+    id: `fixture-${spec.name}`,
+    name,
+    startedAt: Date.UTC(2026, 8, 19, 21, 44) + spec.seed * 60_000,
+  });
+  const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+  let j = 0;
+  for (const m of run.motion) {
+    while (j < gps.length && gps[j].t <= m.t) pipeline.pushGps(gps[j++]);
+    pipeline.pushMotion(m);
+  }
+  while (j < gps.length) pipeline.pushGps(gps[j++]);
+  return pipeline.finish({ ...run.meta, trackId: run.trackId, source: 'simulation', engine: 'pipeline' });
+}
+
+/**
  * Build the fixture session. Deterministic: same spec → same session, every time, on every
- * platform. Takes 100–300 ms (the simulator runs the whole lap at 100 Hz).
+ * platform. Takes 200–300 ms through the simulator, about a second through the real pipeline.
  */
 export function buildFixtureSession(spec: FixtureSpec): Session {
   const run = simulateRun(spec.track, {
@@ -243,7 +282,8 @@ export function buildFixtureSession(spec: FixtureSpec): Session {
     gpsDropouts: spec.rough,
     mount: spec.rough ? 'flat-console' : 'portrait-vent',
   });
-  const session = sessionFromSimulation(run, { name: `${TRACK_TITLES[spec.track]} · ${spec.blurb}` });
+  const name = `${TRACK_TITLES[spec.track]} · ${spec.blurb}`;
+  const session = spec.source === 'pipeline' ? throughPipeline(run, spec, name) : sessionFromSimulation(run, { name });
   if (spec.noDrifts) gripLap(session);
   if (spec.spin) injectSpin(session);
   if (spec.rough) degradeCalibration(session);

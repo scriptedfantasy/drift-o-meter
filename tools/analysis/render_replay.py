@@ -20,11 +20,20 @@ W, H = 1170, 2532
 
 # the standard critic shots: (name, track, seed, time spec, camera mode, extra flags)
 SHOTS = [
+    # the five the critic re-rendered, plus the edge cases it asked for
     ("overview-mid", "mid", "overview", []),
     ("chase-drift", "peak", "chase", []),
     ("cinematic-transition", "transition", "cinematic", []),
     ("ghost-lap2", "ghost", "chase", []),
     ("cinematic-peak", "lap2-peak", "cinematic", []),
+    ("start", "start", "chase", []),
+    ("straight", "straight", "chase", []),
+    ("slow", "slow", "chase", []),
+    ("end", "end", "chase", []),
+    ("spin70", "peak", "chase", ["--beta=70"]),
+    ("spin95", "peak", "cinematic", ["--beta=95"]),
+    ("nodrift", "mid", "chase", ["--aggression=0.0", "--consistency=1.0"]),
+    ("cut", "peak", "chase", ["--cut"]),
 ]
 
 

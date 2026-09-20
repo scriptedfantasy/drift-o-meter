@@ -23,12 +23,19 @@ export interface CameraState {
   rotation: number;
   w: number;
   h: number;
+  /** True on the single frame where the camera CUT (mode switch / scrub). */
+  cut: boolean;
+  /** 0..1 cross-fade after a cut (1 on the cut frame, 0 once the 120 ms fade is over). */
+  cutFade: number;
 }
 
 /**
- * Hard per-second bounds on camera motion, enforced after smoothing. At 60 fps this means
- * pan ≤ 1.0 m, rotation ≤ 0.05 rad (2.9°) and zoom ratio ≤ 2.0 % per frame, in every mode,
- * including mode switches and the first frames after a scrub.
+ * Hard per-second bounds on camera motion, enforced after smoothing during CONTINUOUS
+ * playback. At 60 fps: pan ≤ 1.0 m, rotation ≤ 0.05 rad (2.9°) and zoom ratio ≤ 2.0 % per frame.
+ *
+ * A mode switch is deliberately NOT smoothed: it is a CUT with a 120 ms cross-fade (film
+ * language), because a rate-limited 180° rotation takes >1 s of nauseating spin on a phone.
+ * The cut frame is flagged `cut: true`; every other frame obeys the bounds.
  */
 export const CAMERA_LIMITS = {
   /** m/s */
@@ -37,6 +44,8 @@ export const CAMERA_LIMITS = {
   maxRotation: 3.0,
   /** ln(zoom) units per second */
   maxZoomLog: 1.2,
+  /** Cross-fade length after a cut, s. */
+  cutFadeS: 0.12,
 } as const;
 
 export const CAMERA_TUNING = {
@@ -44,11 +53,22 @@ export const CAMERA_TUNING = {
   positionTau: 0.35,
   zoomTau: 0.8,
   rotationTau: 0.5,
-  /** Chase/cinematic: metres of track across the shorter viewport side. */
-  chaseSpanM: 60,
+  /**
+   * Chase/cinematic framing: metres of track across the SHORTER viewport side, adapted to speed
+   * so a slow hairpin fills the frame and a 100 km/h straight still shows what is coming.
+   * 28 m at ≤ 30 km/h → 55 m at ≥ 100 km/h.
+   */
+  spanSlowM: 28,
+  spanFastM: 55,
+  spanSlowSpeed: 8.3,
+  spanFastSpeed: 27.8,
+  /** Full drift intensity pulls in by up to 30 % on top of that. */
+  spanDriftPull: 0.3,
   /** Look-ahead along the course, metres (fades to 0 below `lookAheadFullSpeed`). */
   lookAheadM: 12,
   lookAheadFullSpeed: 6,
+  /** Extra look-ahead as a fraction of the span while sliding, so the car leads into frame. */
+  lookAheadDrift: 0.12,
   /** Overview padding fraction on each side of the bounds. */
   overviewPad: 0.08,
   /** Cinematic zoom factor: 0.85 on straights → 1.6 at full drift intensity. */
@@ -63,26 +83,40 @@ export const CAMERA_TUNING = {
 /**
  * Critically damped second-order smoother with an exact (closed-form) step, so it is stable for
  * any dt. τ is the response scale: ω = 2/τ, the step response reaches 63 % at ≈ τ and 95 % at ≈ 2.4 τ.
+ * Self-heals: if its state ever goes non-finite (bad sample upstream) it snaps to the target
+ * instead of staying NaN forever.
  */
 class Spring {
   x = 0;
   v = 0;
   constructor(private wrap: boolean) {}
   snap(target: number): void {
-    this.x = this.wrap ? wrapAngle(target) : target;
+    const t = Number.isFinite(target) ? target : 0;
+    this.x = this.wrap ? wrapAngle(t) : t;
     this.v = 0;
   }
   /** Advance towards `target`; `feedforward` is added to the velocity outside the spring loop. */
   step(target: number, dt: number, tau: number, feedforward = 0): number {
+    const tgt = Number.isFinite(target) ? target : this.x;
+    if (!Number.isFinite(this.x) || !Number.isFinite(this.v)) {
+      this.snap(tgt);
+      return this.x;
+    }
+    const ff = Number.isFinite(feedforward) ? feedforward : 0;
     const w = 2 / tau;
-    const x0 = this.x + feedforward * dt;
-    const e0 = this.wrap ? wrapAngle(x0 - target) : x0 - target;
+    const x0 = this.x + ff * dt;
+    const e0 = this.wrap ? wrapAngle(x0 - tgt) : x0 - tgt;
     const v0 = this.v;
     const c = v0 + w * e0;
     const ex = Math.exp(-w * dt);
     const e1 = (e0 + c * dt) * ex;
     const v1 = (v0 - c * w * dt) * ex;
-    this.x = this.wrap ? wrapAngle(target + e1) : target + e1;
+    const nx = this.wrap ? wrapAngle(tgt + e1) : tgt + e1;
+    if (!Number.isFinite(nx) || !Number.isFinite(v1)) {
+      this.snap(tgt);
+      return this.x;
+    }
+    this.x = nx;
     this.v = v1;
     return this.x;
   }
@@ -101,8 +135,8 @@ interface CameraTarget {
 /**
  * Replay camera. `update(replay, t, dt)` returns the smoothed state for replay time `t`, where
  * `dt` is the frame interval. The first update snaps to the target (no start-up jump); afterwards
- * every parameter is critically-damped and hard-limited per frame (see CAMERA_LIMITS).
- * `jumpTo()` snaps for scrubbing.
+ * every parameter is critically-damped and hard-limited per frame (see CAMERA_LIMITS), except on
+ * a deliberate cut. `jumpTo()` snaps for scrubbing; `setMode()` cuts by default.
  */
 export class ReplayCamera {
   private mode: CameraMode;
@@ -113,7 +147,9 @@ export class ReplayCamera {
   private pr = new Spring(true);
   private state: CameraState | null = null;
   private lastRotationTarget = 0;
-  private lastT = NaN;
+  private pendingCut = false;
+  private cutAt = -Infinity;
+  private lastT = 0;
 
   constructor(mode: CameraMode, viewport: Viewport) {
     this.mode = mode;
@@ -124,9 +160,15 @@ export class ReplayCamera {
     return this.mode;
   }
 
-  /** Switch mode; the springs carry the current state over so the switch is a smooth move. */
-  setMode(mode: CameraMode): void {
+  /**
+   * Switch mode. By default this is a CUT on the next update (with a 120 ms cross-fade the
+   * renderer can use); pass `{ smooth: true }` to ride the springs instead, which is rate-limited
+   * and therefore slow for large rotations.
+   */
+  setMode(mode: CameraMode, opts: { smooth?: boolean } = {}): void {
+    if (mode === this.mode) return;
     this.mode = mode;
+    if (!opts.smooth) this.pendingCut = true;
   }
 
   setViewport(viewport: Viewport): void {
@@ -140,27 +182,39 @@ export class ReplayCamera {
   /** Forget the smoothed state; the next update snaps to its target. */
   reset(): void {
     this.state = null;
-    this.lastT = NaN;
+    this.cutAt = -Infinity;
+    this.pendingCut = false;
   }
 
   getState(): CameraState | null {
     return this.state ? { ...this.state } : null;
   }
 
-  /** Snap to the target for time t (use when the user scrubs). */
+  /** Snap to the target for time t (use when the user scrubs, or on a mode cut). */
   jumpTo(replay: Replay, t: number): CameraState {
     const target = this.targetFor(replay, t);
     this.px.snap(target.cx);
     this.py.snap(target.cy);
     this.pz.snap(Math.log(target.zoom));
     this.pr.snap(target.rotation);
-    this.state = { cx: target.cx, cy: target.cy, zoom: target.zoom, rotation: wrapAngle(target.rotation), w: this.viewport.w, h: this.viewport.h };
+    this.cutAt = t;
+    this.pendingCut = false;
     this.lastT = t;
+    this.state = {
+      cx: this.px.x,
+      cy: this.py.x,
+      zoom: Math.exp(this.pz.x),
+      rotation: wrapAngle(this.pr.x),
+      w: this.viewport.w,
+      h: this.viewport.h,
+      cut: true,
+      cutFade: 1,
+    };
     return { ...this.state };
   }
 
   update(replay: Replay, t: number, dt: number): CameraState {
-    if (!this.state || !(dt > 0)) return this.jumpTo(replay, t);
+    if (!this.state || !(dt > 0) || this.pendingCut) return this.jumpTo(replay, t);
     const target = this.targetFor(replay, t);
     const prev = this.state;
     const step = Math.min(dt, 1); // a stalled frame must not become a teleport
@@ -191,9 +245,28 @@ export class ReplayCamera {
       rot = wrapAngle(prev.rotation + Math.sign(dr) * maxR);
       this.pr.x = rot;
     }
-    this.state = { cx, cy, zoom: Math.exp(lz), rotation: rot, w: this.viewport.w, h: this.viewport.h };
+    const zoom = Math.exp(lz);
     this.lastT = t;
+    if (![cx, cy, zoom, rot].every(Number.isFinite)) return this.jumpTo(replay, t);
+    this.state = {
+      cx,
+      cy,
+      zoom,
+      rotation: rot,
+      w: this.viewport.w,
+      h: this.viewport.h,
+      cut: false,
+      cutFade: clamp(1 - (t - this.cutAt) / CAMERA_LIMITS.cutFadeS, 0, 1),
+    };
     return { ...this.state };
+  }
+
+  /** Metres across the shorter viewport side for this pose (speed- and drift-adaptive). */
+  private spanFor(speed: number, intensity: number): number {
+    const T = CAMERA_TUNING;
+    const f = clamp((speed - T.spanSlowSpeed) / (T.spanFastSpeed - T.spanSlowSpeed), 0, 1);
+    const base = T.spanSlowM + (T.spanFastM - T.spanSlowM) * f;
+    return base * (1 - T.spanDriftPull * clamp(intensity, 0, 1));
   }
 
   private targetFor(replay: Replay, t: number): CameraTarget {
@@ -202,29 +275,39 @@ export class ReplayCamera {
       const b = replay.bounds;
       const ex = Math.max(1, (b.maxX - b.minX) * (1 + 2 * CAMERA_TUNING.overviewPad));
       const ey = Math.max(1, (b.maxY - b.minY) * (1 + 2 * CAMERA_TUNING.overviewPad));
-      return { cx: 0.5 * (b.minX + b.maxX), cy: 0.5 * (b.minY + b.maxY), zoom: Math.min(w / ex, h / ey), rotation: 0, vx: 0, vy: 0 };
+      const cx = 0.5 * (b.minX + b.maxX);
+      const cy = 0.5 * (b.minY + b.maxY);
+      return { cx: Number.isFinite(cx) ? cx : 0, cy: Number.isFinite(cy) ? cy : 0, zoom: Math.min(w / ex, h / ey), rotation: 0, vx: 0, vy: 0 };
     }
     const pose = poseAt(replay, t);
-    const speedF = clamp(pose.speed / CAMERA_TUNING.lookAheadFullSpeed, 0, 1);
-    const look = CAMERA_TUNING.lookAheadM * speedF;
-    const cc = Math.cos(pose.course);
-    const sc = Math.sin(pose.course);
-    let cx = pose.x + look * cc;
-    let cy = pose.y + look * sc;
-    let zoom = Math.min(w, h) / CAMERA_TUNING.chaseSpanM;
-    // hold the last rotation while (nearly) stopped: a parked car has no travel direction
-    if (pose.speed > 1) this.lastRotationTarget = Math.PI / 2 - pose.course;
-    else if (!Number.isFinite(this.lastRotationTarget) || Number.isNaN(this.lastT)) this.lastRotationTarget = Math.PI / 2 - pose.heading;
+    const speed = Number.isFinite(pose.speed) ? pose.speed : 0;
+    const intensity = Number.isFinite(pose.intensity) ? pose.intensity : 0;
+    const course = Number.isFinite(pose.course) ? pose.course : 0;
+    const span = this.spanFor(speed, intensity);
+    const speedF = clamp(speed / CAMERA_TUNING.lookAheadFullSpeed, 0, 1);
+    // lead the car further into frame while it is sliding, so the shot has motion of its own
+    const look = (CAMERA_TUNING.lookAheadM + CAMERA_TUNING.lookAheadDrift * span * intensity) * speedF;
+    const cc = Math.cos(course);
+    const sc = Math.sin(course);
+    let cx = (Number.isFinite(pose.x) ? pose.x : 0) + look * cc;
+    let cy = (Number.isFinite(pose.y) ? pose.y : 0) + look * sc;
+    let zoom = Math.min(w, h) / span;
+    if (speed > 1) this.lastRotationTarget = Math.PI / 2 - course;
+    else if (!Number.isFinite(this.lastRotationTarget)) this.lastRotationTarget = Math.PI / 2 - (Number.isFinite(pose.heading) ? pose.heading : 0);
     let rotation = this.lastRotationTarget;
     if (this.mode === 'cinematic') {
-      zoom *= CAMERA_TUNING.cinematicZoomIdle + (CAMERA_TUNING.cinematicZoomFull - CAMERA_TUNING.cinematicZoomIdle) * pose.intensity;
+      zoom *= CAMERA_TUNING.cinematicZoomIdle + (CAMERA_TUNING.cinematicZoomFull - CAMERA_TUNING.cinematicZoomIdle) * intensity;
       const ph = 2 * Math.PI * CAMERA_TUNING.swayHz * t;
       rotation += CAMERA_TUNING.swayRotation * Math.sin(ph);
       const lat = CAMERA_TUNING.swayOffsetM * Math.sin(ph + 1.3) * speedF;
       cx += -sc * lat;
       cy += cc * lat;
     }
-    return { cx, cy, zoom, rotation, vx: pose.speed * cc, vy: pose.speed * sc };
+    if (![cx, cy, zoom, rotation].every(Number.isFinite)) {
+      const b = replay.bounds;
+      return { cx: 0.5 * (b.minX + b.maxX) || 0, cy: 0.5 * (b.minY + b.maxY) || 0, zoom: Math.min(w, h) / CAMERA_TUNING.spanFastM, rotation: 0, vx: 0, vy: 0 };
+    }
+    return { cx, cy, zoom, rotation, vx: speed * cc, vy: speed * sc };
   }
 }
 

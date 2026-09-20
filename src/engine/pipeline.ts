@@ -407,6 +407,9 @@ export class DriftPipeline implements DriftPipelineApi {
   private firstT = NaN;
   private startedAt = 0;
   private lastStoredT = -Infinity;
+  private sinceStored = 0;
+  /** Smoothed input sample interval, s — drives the storage stride (0 until the second sample). */
+  private dtEma = 0;
   private readonly storeIntervalS: number;
 
   // ---- cached snapshots (refreshed at a slow rate, reused in between: see the header)
@@ -472,6 +475,8 @@ export class DriftPipeline implements DriftPipelineApi {
       this.firstT = t;
       if (!this.startedAt) this.startedAt = this.opts.startedAt ?? Date.now();
     }
+    const dt = Number.isFinite(this.lastT) ? t - this.lastT : 0;
+    if (dt > 0 && dt < 1) this.dtEma = this.dtEma > 0 ? this.dtEma + (dt - this.dtEma) * 0.05 : dt;
     this.lastT = t;
     this.nSamples++;
 
@@ -503,7 +508,8 @@ export class DriftPipeline implements DriftPipelineApi {
     this.lastState = state;
 
     // ---- 3. integrity watches the raw stream, the calibrated stream and the state
-    this.integrity.pushMotion(raw, vm);
+    //  (`mi` is `vm` with every component guarded, and the monitor does not retain it)
+    this.integrity.pushMotion(raw, mi);
     this.integrity.pushState(state);
 
     // ---- 4. drift state machine → live phase + finished events
@@ -526,7 +532,7 @@ export class DriftPipeline implements DriftPipelineApi {
           }
         : null,
     );
-    let callouts = tick.callouts.length ? tick.callouts : EMPTY_CALLOUTS;
+    const callouts = tick.callouts.length ? this.guardCallouts(tick.callouts) : EMPTY_CALLOUTS;
     let completed = det.completed;
     if (completed) {
       completed = this.guardEvent(completed);
@@ -541,9 +547,20 @@ export class DriftPipeline implements DriftPipelineApi {
     if (trackTick.lapCompleted) this.scorer.onLapCompleted(trackTick.lapCompleted);
 
     // ---- 7. keep the raw sample (decimated) for re-analysis
-    if (this.opts.keepMotion !== false && t - this.lastStoredT >= this.storeIntervalS * 0.999) {
-      this.lastStoredT = t;
-      this.motionStore.push(t, raw.accel, raw.gravity, raw.rotationRate, raw.attitude);
+    //  Stride, not a time threshold: phone timestamps jitter by a few ms, and `t − last ≥ 20 ms`
+    //  against a jittery 100 Hz stream skips a third sample and stores 38 Hz, not 50.
+    if (this.opts.keepMotion !== false) {
+      if (this.dtEma > 0) {
+        const stride = Math.max(1, Math.min(1000, Math.round(this.storeIntervalS / this.dtEma)));
+        if (++this.sinceStored >= stride || t - this.lastStoredT >= 1.5 * this.storeIntervalS) {
+          this.sinceStored = 0;
+          this.lastStoredT = t;
+          this.motionStore.push(t, raw.accel, raw.gravity, raw.rotationRate, raw.attitude);
+        }
+      } else {
+        this.lastStoredT = t;
+        this.motionStore.push(t, raw.accel, raw.gravity, raw.rotationRate, raw.attitude);
+      }
     }
 
     // ---- 8. the frame the app renders
@@ -617,7 +634,8 @@ export class DriftPipeline implements DriftPipelineApi {
   markStationary(): void {
     this.calibrator.markStationary();
     this.cal = this.calibrator.calibration;
-    this.calT = this.lastT;
+    // before the first sample `lastT` is NaN, and a NaN deadline would freeze the refresh
+    this.calT = Number.isFinite(this.lastT) ? this.lastT : -Infinity;
   }
 
   // ═══════════════════════════════════════════════════════════════════ outputs
@@ -715,8 +733,9 @@ export class DriftPipeline implements DriftPipelineApi {
       score,
       track,
       calibration: this.calibrator.calibration,
+      // the pipeline's own provenance first, the caller's keys last: an app that knows better
+      // (the track id, the driver, the phone model) wins over anything derived here
       meta: {
-        ...meta,
         engine: 'pipeline',
         samples: diag.samples,
         droppedSamples: diag.droppedSamples,
@@ -726,7 +745,7 @@ export class DriftPipeline implements DriftPipelineApi {
         calibrationQuality: Math.round(diag.calibrationQuality * 1000) / 1000,
         forwardResolved: diag.calibrationForwardResolved,
         gpsLatencyS: Math.round(this.estimator.gpsLatency * 1000) / 1000,
-        laps: this.trackBuilder.laps.length,
+        lapsDetected: this.trackBuilder.laps.length,
         driftTimeS: Math.round(b.driftTimeS * 100) / 100,
         spins: b.spins,
         transitions: b.transitions,
@@ -737,6 +756,7 @@ export class DriftPipeline implements DriftPipelineApi {
         mount: diag.mount,
         physics: diag.physics,
         integrity: diag.integrityMessage,
+        ...meta,
       },
     };
   }
@@ -763,6 +783,8 @@ export class DriftPipeline implements DriftPipelineApi {
     this.firstT = NaN;
     this.startedAt = 0;
     this.lastStoredT = -Infinity;
+    this.sinceStored = 0;
+    this.dtEma = 0;
     this.cal = this.calibrator.calibration;
     this.calT = -Infinity;
     this.integritySnapshot = this.readIntegrity();
@@ -841,6 +863,18 @@ export class DriftPipeline implements DriftPipelineApi {
     const out = { ...e };
     for (const k of EVENT_NUMS) out[k] = fin(e[k]);
     return out;
+  }
+
+  /** Hard NaN guard on the callouts of one frame (rare path: a few per drift). */
+  private guardCallouts(cs: StyleCallout[]): StyleCallout[] {
+    for (const c of cs) {
+      if (!Number.isFinite(c.t) || !Number.isFinite(c.points)) {
+        this.nGuards++;
+        c.t = fin(c.t, this.lastT);
+        c.points = fin(c.points);
+      }
+    }
+    return cs;
   }
 
   /**
