@@ -86,9 +86,12 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
       : { opacity: interpolate(t.value, [0, 40, BARS_OUT + 120, TOTAL], [1, 1, 1, 0], Extrapolation.CLAMP) },
   );
 
-  const bar = useAnimatedStyle(() => ({
-    height: reduceMotion ? 0 : interpolate(t.value, [0, BARS_IN, BARS_OUT, BARS_OUT + 420], [0, barH, barH, 0], Extrapolation.CLAMP),
-  }));
+  // the hairline on the inner edge of a bar must vanish with the bar, or a closed-to-zero bar
+  // leaves a bright line along the very edge of the screen
+  const bar = useAnimatedStyle(() => {
+    const h = interpolate(t.value, [0, BARS_IN, BARS_OUT, BARS_OUT + 420], [0, barH, barH, 0], Extrapolation.CLAMP);
+    return { height: h, borderTopWidth: h > 2 ? 1 : 0, borderBottomWidth: h > 2 ? 1 : 0 };
+  });
 
   const shake = useAnimatedStyle(() => {
     if (reduceMotion) return { transform: [{ translateX: 0 }, { translateY: 0 }] };
@@ -192,8 +195,12 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
           </Animated.View>
         </Animated.View>
 
-        <Animated.View style={[styles.barTop, { borderBottomColor: alpha(color, 0.55) }, bar]} pointerEvents="none" />
-        <Animated.View style={[styles.barBottom, { borderTopColor: alpha(color, 0.55) }, bar]} pointerEvents="none" />
+        {reduceMotion ? null : (
+          <>
+            <Animated.View style={[styles.barTop, { borderBottomColor: alpha(color, 0.55) }, bar]} pointerEvents="none" />
+            <Animated.View style={[styles.barBottom, { borderTopColor: alpha(color, 0.55) }, bar]} pointerEvents="none" />
+          </>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -217,7 +224,7 @@ const styles = StyleSheet.create({
   kicker: { marginTop: space[2] },
   hint: { position: 'absolute', top: '22%' },
   skipHint: { position: 'absolute', bottom: '14%' },
-  barTop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000000', borderBottomWidth: 1 },
-  barBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#000000', borderTopWidth: 1 },
+  barTop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000000', borderTopWidth: 0, borderTopColor: 'transparent' },
+  barBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#000000', borderBottomWidth: 0, borderBottomColor: 'transparent' },
   scan: { position: 'absolute', height: 2, opacity: 0 },
 });

@@ -108,6 +108,8 @@ export interface MountOptions {
    * which that residual drives the up-axis quality to 0. */
   fitTau: number;
   fitQualityRad: number;
+  /** Cut-off (seconds) between the inertial up's trusted fast content and its drifting slow part. */
+  upSepTau: number;
   /** Gyro-invisible re-orientation cues: OS-gravity disagreement (deg, held s) and unexplained tilt (deg, held s). */
   reseedGravityDeg: number;
   reseedGravityHoldS: number;
@@ -224,6 +226,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   knockRefTau: 1.0,
   fitTau: 4,
   fitQualityRad: 0.06,
+  upSepTau: 3,
   reseedGravityDeg: 25,
   reseedGravityHoldS: 0.5,
   reseedTiltDeg: 30,
@@ -231,7 +234,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gapS: 0.5,
   trustAccel: 0.8,
   trustForce: 0.4,
-  gravitySlowdownAccel: 0.8,
+  gravitySlowdownAccel: 0.5,
   gravityJumpDeg: 35,
   gravityJumpHoldS: 1,
   knockFastTau: 1.5,
@@ -244,7 +247,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gpsGateLow: 0.5,
   gpsGateHigh: 0.85,
   sliceExpiry: 3.5,
-  betaGate: 0.2,
+  betaGate: 0.3,
   betaTau: 8,
   betaMinSpeed: 4,
   lineTau: 25,
@@ -374,6 +377,9 @@ export class MountCalibrator {
   private reseeds = 0;
   private gravDisSince = -1; // OS gravity vs inertial up disagreement start
   private tiltSince = -1; // unexplained specific-force tilt start
+  private mx = 0; // medium low-pass of the inertial up (its slow, drifting part)
+  private my = 0;
+  private mz = 1;
   private kx = 0; // knock reference: medium low-pass of the inertial up
   private ky = 0;
   private kz = 1;
@@ -598,6 +604,9 @@ export class MountCalibrator {
     this.reseeds = 0;
     this.gravDisSince = -1;
     this.tiltSince = -1;
+    this.mx = 0;
+    this.my = 0;
+    this.mz = 1;
     this.kx = 0;
     this.ky = 0;
     this.kz = 1;
@@ -847,9 +856,9 @@ export class MountCalibrator {
         this.flx = fx;
         this.fly = fy;
         this.flz = fz;
-        this.gsx = this.kx = this.ix;
-        this.gsy = this.ky = this.iy;
-        this.gsz = this.kz = this.iz;
+        this.gsx = this.kx = this.mx = this.ix;
+        this.gsy = this.ky = this.my = this.iy;
+        this.gsz = this.kz = this.mz = this.iz;
         this.updateUpFromSlow();
       } else if (gap) {
         // sample gap: the rotation during it is unknown — re-seed from the OS attitude filter
@@ -1005,6 +1014,10 @@ export class MountCalibrator {
         this.kx += (ix - this.kx) * kk;
         this.ky += (iy - this.ky) * kk;
         this.kz += (iz - this.kz) * kk;
+        const km = dt / (o.upSepTau + dt);
+        this.mx += (ix - this.mx) * km;
+        this.my += (iy - this.my) * km;
+        this.mz += (iz - this.mz) * km;
 
         // ---- stage 2: body up = slow low-pass of the inertial up
         const tau = t < this.stationaryUntil ? 0.3 : t < this.fastUpUntil ? o.knockFastTau : o.gravityTau;
@@ -1037,12 +1050,34 @@ export class MountCalibrator {
     // degrees. Using the body up instead leaves G·sin(roll) and G·sin(pitch) in the residual —
     // but body roll is proportional to a_y and pitch to a_x, so the residual lies ALONG the
     // vehicle axes and scales them by a few percent instead of rotating them.
+    // The separation up is the body up plus the FAST part of the inertial up (its slow part,
+    // `m`, is where the gyro's drift lives and is replaced by the body up's long average).
+    // Every degree of separation-up error is 0.17 m/s² of phantom horizontal acceleration:
+    //  - taking it straight from the inertial up leaves a slowly-varying few-degree gyro drift,
+    //    which points one way for tens of seconds and rotates the forward axis by as much;
+    //  - taking it straight from the body up throws away the cradle's own wobble (±1.5° rigid,
+    //    ±8° at looseness 0.25 = 1.4 m/s² of phantom acceleration, larger than the events the
+    //    forward axis is built from), and only leaves G·sin(roll) and G·sin(pitch), which lie
+    //    ALONG the vehicle axes and merely scale them by a few percent.
+    let sx = this.ix - this.mx + this.bx;
+    let sy = this.iy - this.my + this.by;
+    let sz = this.iz - this.mz + this.bz;
+    const sn = Math.sqrt(sx * sx + sy * sy + sz * sz);
+    if (sn > EPS) {
+      sx /= sn;
+      sy /= sn;
+      sz /= sn;
+    } else {
+      sx = this.bx;
+      sy = this.by;
+      sz = this.bz;
+    }
     const ux = this.bx;
     const uy = this.by;
     const uz = this.bz;
-    const ax = fx + G_ACC * ux;
-    const ay = fy + G_ACC * uy;
-    const az = fz + G_ACC * uz;
+    const ax = fx + G_ACC * sx;
+    const ay = fy + G_ACC * sy;
+    const az = fz + G_ACC * sz;
 
     // ---- yaw rate about the body up, horizontal acceleration (low-passed)
     const r = (wx - this.gbx) * ux + (wy - this.gby) * uy + (wz - this.gbz) * uz;

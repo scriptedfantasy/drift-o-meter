@@ -9,7 +9,7 @@
  */
 import { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useFrameCallback, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedReaction, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 
 import { AppText } from '../Text';
 import { colors, fontFamilies } from '../theme';
@@ -33,14 +33,22 @@ function OdometerImpl({ value, columns = 6, size, color = colors.ember, tau = 0.
   const rowH = Math.round(size * 0.94);
   const colW = Math.round(size * 0.56);
 
-  useFrameCallback((info) => {
-    'worklet';
-    const dt = Math.min(0.05, Math.max(0.001, (info.timeSincePreviousFrame ?? 16) / 1000));
-    const k = 1 - Math.exp(-dt / tau);
-    const target = Math.round(value.value);
-    const next = display.value + (target - display.value) * k;
-    display.value = Math.abs(target - next) < 0.05 ? target : next;
-  }, true);
+  // Every change of the score re-aims a short linear tween. Chained 100 times a second while
+  // points pour in, that reads as one continuous roll; the moment the score stops changing the
+  // last tween finishes and every column parks on a whole digit. (A frame callback doing
+  // exponential smoothing looks the same in motion but never settles on web, which leaves a
+  // parked score frozen mid-digit — see the note in the HUD report.)
+  useAnimatedReaction(
+    () => Math.round(value.value),
+    (target, prev) => {
+      if (prev === null) {
+        display.value = target;
+      } else if (target !== prev) {
+        display.value = withTiming(target, { duration: Math.round(tau * 2000), easing: Easing.linear });
+      }
+    },
+    [],
+  );
 
   const places = useMemo(() => Array.from({ length: columns }, (_, i) => columns - 1 - i), [columns]);
 

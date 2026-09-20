@@ -82,17 +82,8 @@ const fmtTime = (s: number) => {
   return `${String(m).padStart(2, '0')}:${r < 10 ? '0' : ''}${r.toFixed(1)}`;
 };
 
-/**
- * Score text. No thousands separator below six digits: a space is 74 % of a digit width and
- * parses as two numbers at arm's length, and Barlow has no thin-space glyph (cairosvg then
- * substitutes a full-width advance). "7273", "24820" — one number, one glance.
- */
-function pts(p: number): string {
-  const v = Math.round(Number.isFinite(p) ? p : 0);
-  const a = Math.abs(v);
-  const body = a < 100000 ? String(a) : a.toLocaleString('en-US');
-  return (v < 0 ? '-' : '') + body;
-}
+/** Score text; the engine owns the rule so both renderers agree. */
+const pts = formatPoints;
 
 function mix(a: string, b: string, f: number): string {
   const t = clamp(f, 0, 1);
@@ -760,7 +751,7 @@ function topHud(f: Frame): string {
   s += `<rect x="0" y="${TOP_BAR - 22}" width="${W}" height="22" fill="url(#lbTop)"/>`;
   s += `<circle cx="20" cy="26" r="3.4" fill="${RED}"/>`;
   s += text(29, 30, 'REPLAY', { size: T_LABEL, spacing: 2.6, fill: WHITE, weight: 700 });
-  s += text(W / 2, 30, `${fmtTime(f.t)} / ${fmtTime(r.durationS)}`, { size: 11, family: MONO, fill: MUTED, anchor: 'middle', weight: 700 });
+  s += text(W / 2, 30, `${fmtTime(f.t)} / ${fmtTime(r.durationS)}`, { size: 12, family: MONO, fill: MUTED, anchor: 'middle', weight: 700 });
   const modeLabel = f.mode === 'overview' ? 'TRACK CAM' : f.mode === 'chase' ? 'CHASE CAM' : 'CINEMATIC';
   s += text(W - 18, 30, modeLabel, { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
   // tier 1: the angle is the biggest thing on screen (DESIGN.md), coloured by severity
@@ -836,9 +827,9 @@ function bottomHud(f: Frame): string {
   // --- one info line, colour-coded, no legend
   const ly = barTop + 26;
   const lap = lapAt(r, f.t);
-  const lapStr = r.laps.length > 0 ? `LAP ${lap ? lap.index + 1 : r.laps.length}/${r.laps.length}` : 'POINT TO POINT';
+  const lapStr = r.laps.length > 0 ? `LAP ${lap ? lap.index + 1 : r.laps.length}/${r.laps.length}` : 'STAGE';
   s += text(18, ly, lapStr, { size: T_LABEL, spacing: 1.6, fill: WHITE, weight: 800 });
-  s += text(96, ly, r.info.name.toUpperCase(), { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
+  s += text(18 + lapStr.length * T_LABEL * 0.52 + 14, ly, r.info.name.toUpperCase().replace(' (SIM)', ''), { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
   // live totals only: TOTAL is the running score, the grade lands on the final frame
   s += text(W - 18, ly, 'TOTAL', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
   s += text(W - 18, ly + 22, pts(f.pose.points), { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });

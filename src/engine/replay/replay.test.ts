@@ -401,10 +401,15 @@ describe('poseAt', () => {
     expect(scrubTelemetry(replay, 1e6).index).toBe(replay.telemetry.n - 1);
   });
 
-  it('formatPoints groups without a wide gap', () => {
-    expect(formatPoints(7273)).toBe('7,273'.replace(',', ' '));
+  it('formatPoints never leaves a wide gap in a score', () => {
+    // FINDING 8: "13 672" had a 35 px thousands gap (74 % of a digit width) and parsed as two
+    // numbers at arm's length. One rule, in the engine, so both renderers agree.
+    expect(formatPoints(7273)).toBe('7273');
+    expect(formatPoints(99999)).toBe('99999');
+    expect(formatPoints(123456)).toBe('123,456');
     expect(formatPoints(-15)).toBe('-15');
     expect(formatPoints(NaN)).toBe('0');
+    for (const v of [0, 1, 850, 7273, 16140, 99999]) expect(formatPoints(v)).not.toMatch(/[\s\u2009\u200a,]/);
   });
 });
 

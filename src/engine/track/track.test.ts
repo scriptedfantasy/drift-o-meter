@@ -137,8 +137,9 @@ function syntheticDrifts(run: SimulatedRun): DriftEvent[] {
         minSpeed: minV,
         distanceM: (sumV / seg.length) * (seg[seg.length - 1].t - seg[0].t),
         peakYawRate: peakYaw,
-        peakLateralG: peakAy / 9.80665,
+        peakLateralAccel: peakAy,
         initialDirection: seg[0].beta >= 0 ? 1 : -1,
+        spin: false,
         sampleStart: i,
         sampleEnd: j - 1,
       });

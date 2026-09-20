@@ -40,6 +40,13 @@ export const defaultRoutes = [
   // `?reveal=` plays (full), skips (off) or FREEZES a frame of the grade reveal.
   // the reveal playing end to end — shoot this one with --video and pull frames out with ffmpeg
   { name: 'results-reveal', path: '/results/fixture-hero', waitMs: 3400 },
+  // the reveal is skippable: tap anywhere during it and the page is there, already settled
+  {
+    name: 'results-skip',
+    path: '/results/fixture-hero',
+    waitMs: 1200,
+    actions: [{ type: 'tap', testId: 'reveal-skip' }, { type: 'wait', ms: 900 }],
+  },
   { name: 'results-reveal-hold', path: '/results/fixture-hero?reveal=hold', waitMs: 1600 },
   { name: 'results-reveal-slam', path: '/results/fixture-hero?reveal=slam', waitMs: 2200, expectCanvas: true, minEmber: 300 },
   { name: 'results', path: '/results/fixture-hero?reveal=off', waitMs: 2000, minEmber: 1500 },

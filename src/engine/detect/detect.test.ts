@@ -183,7 +183,7 @@ describe('DriftDetector on simulated runs (noisy estimator)', () => {
         expect(ev.distanceM).toBeGreaterThan(ev.meanSpeed * ev.durationS * 0.85);
         expect(ev.distanceM).toBeLessThan(ev.meanSpeed * ev.durationS * 1.15);
         expect(ev.peakYawRate).toBeGreaterThan(0.15);
-        expect(ev.peakLateralG).toBeGreaterThan(1.5);
+        expect(ev.peakLateralAccel).toBeGreaterThan(1.5);
         expect([1, -1]).toContain(ev.initialDirection);
         // boundaries are interpolated between samples, so the index is the nearest sample
         expect(Math.abs(r.states[ev.sampleStart].t - ev.startT)).toBeLessThanOrEqual(0.011);

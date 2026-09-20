@@ -134,11 +134,19 @@ export interface DriftEvent {
   minSpeed: number;
   /** Ground distance covered while drifting, metres. */
   distanceM: number;
-  /** Peak |yawRate| rad/s and peak |ay| m/s². */
+  /** Peak |yawRate|, rad/s. */
   peakYawRate: number;
-  peakLateralG: number;
+  /** Peak |ay| in m/s², NOT in g. Divide by G to display a g-force. */
+  peakLateralAccel: number;
   /** +1 when the drift starts as a right-hand drift (β>0), −1 for left. */
   initialDirection: 1 | -1;
+  /**
+   * True when the drift ended in a spin rather than a controlled exit. REQUIRED, and
+   * required for a reason: a spin must reach the scorer and the results screen, or the
+   * HUD says "CHAIN LOST" while the results screen congratulates the driver on a clean
+   * exit. Every producer of a DriftEvent must set it explicitly.
+   */
+  spin: boolean;
   /** Index range into the run's SlipState array for replay/scrubbing. */
   sampleStart: number;
   sampleEnd: number;

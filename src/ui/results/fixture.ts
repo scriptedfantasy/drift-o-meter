@@ -224,6 +224,7 @@ function injectSpin(session: Session): void {
     }
     sum += v;
   }
+  target.spin = true; // the trace says so; say it in the event too, which is what the scorer reads
   target.peakAngle = peak;
   target.peakAngleT = peakT;
   target.meanAngle = sum / Math.max(1, b - a + 1);

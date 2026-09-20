@@ -767,8 +767,9 @@ export class DriftDetector {
       minSpeed: Number.isFinite(s.minSpeed) ? s.minSpeed : d.entrySpeed,
       distanceM: s.dist,
       peakYawRate: s.peakYaw,
-      peakLateralG: s.peakAy,
+      peakLateralAccel: s.peakAy,
       initialDirection: d.initialDirection,
+      spin: d.spin,
       sampleStart: d.startIdx,
       sampleEnd: d.endIdx,
     };

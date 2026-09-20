@@ -200,8 +200,9 @@ function makeDrift(id: number, truth: TruthSample[], a: number, b: number, opt: 
     minSpeed: Number.isFinite(minV) ? minV : 0,
     distanceM: dist,
     peakYawRate: peakYaw,
-    peakLateralG: peakAy,
+    peakLateralAccel: peakAy,
     initialDirection: initial === -1 ? -1 : 1,
+    spin: false,
     sampleStart: a,
     sampleEnd: b,
   };

@@ -386,9 +386,11 @@ function MissingSession({ id, error, onGarage, onDrive }: { id?: string; error: 
     <View style={styles.root} testID="screen-results-missing">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
         <View style={styles.missing}>
-          <AppText variant="micro" color="muted">
-            ← Garage
-          </AppText>
+          <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => pressed && styles.pressed}>
+            <AppText variant="micro" color="muted">
+              ← Garage
+            </AppText>
+          </Pressable>
           <AppText variant="title" uppercase style={styles.missingTitle}>
             No such session
           </AppText>

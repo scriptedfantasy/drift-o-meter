@@ -73,8 +73,9 @@ export function eventFromRange(id: number, states: SlipState[], a0: number, b0: 
     minSpeed: seg.reduce((x, s) => Math.min(x, s.speed), Infinity),
     distanceM: dist,
     peakYawRate: seg.reduce((x, s) => Math.max(x, Math.abs(s.yawRate)), 0),
-    peakLateralG: seg.reduce((x, s) => Math.max(x, Math.abs(s.ay)), 0),
+    peakLateralAccel: seg.reduce((x, s) => Math.max(x, Math.abs(s.ay)), 0),
     initialDirection: beta(Math.min(seg.length - 1, 30)) >= 0 ? 1 : -1,
+    spin: false,
     sampleStart: a0,
     sampleEnd: b0,
   };

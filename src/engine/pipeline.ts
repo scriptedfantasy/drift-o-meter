@@ -539,7 +539,7 @@ export class DriftPipeline implements DriftPipelineApi {
       this._drifts.push(completed);
       const id = this.idRemap.get(completed.id) ?? completed.id;
       this.idRemap.delete(completed.id);
-      this.scorer.onDriftCompleted({ ...completed, id, spin: this.detector.spins.get(completed.id) === true } as DriftEvent);
+      this.scorer.onDriftCompleted({ ...completed, id, spin: completed.spin || this.detector.spins.get(completed.id) === true });
     }
 
     // ---- 6. laps (CLEAN LAP surfaces on the next frame, with the scorer's other pending callouts)
@@ -696,7 +696,7 @@ export class DriftPipeline implements DriftPipelineApi {
       this._drifts.push(e);
       const id = this.idRemap.get(e.id) ?? e.id;
       this.idRemap.delete(e.id);
-      this.scorer.onDriftCompleted({ ...e, id, spin: this.detector.spins.get(e.id) === true } as DriftEvent);
+      this.scorer.onDriftCompleted({ ...e, id, spin: e.spin || this.detector.spins.get(e.id) === true });
     }
     const track = this.trackBuilder.build();
     this.built = track;
@@ -854,7 +854,7 @@ export class DriftPipeline implements DriftPipelineApi {
     };
   }
 
-  /** Hard NaN guard on a finished DriftEvent (rare path: once per drift). */
+  /** Hard NaN guard on a finished DriftEvent's numeric fields (rare path: once per drift). */
   private guardEvent(e: DriftEvent): DriftEvent {
     let clean = true;
     for (const k of EVENT_NUMS) if (!Number.isFinite(e[k])) clean = false;
@@ -930,10 +930,10 @@ export class DriftPipeline implements DriftPipelineApi {
 type EventNumKey =
   | 'startT' | 'endT' | 'durationS' | 'peakAngle' | 'peakAngleT' | 'meanAngle' | 'angleStdDev'
   | 'transitions' | 'entrySpeed' | 'meanSpeed' | 'minSpeed' | 'distanceM' | 'peakYawRate'
-  | 'peakLateralG' | 'sampleStart' | 'sampleEnd';
+  | 'peakLateralAccel' | 'sampleStart' | 'sampleEnd';
 
 const EVENT_NUMS: EventNumKey[] = [
   'startT', 'endT', 'durationS', 'peakAngle', 'peakAngleT', 'meanAngle', 'angleStdDev',
   'transitions', 'entrySpeed', 'meanSpeed', 'minSpeed', 'distanceM', 'peakYawRate',
-  'peakLateralG', 'sampleStart', 'sampleEnd',
+  'peakLateralAccel', 'sampleStart', 'sampleEnd',
 ];

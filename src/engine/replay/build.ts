@@ -437,10 +437,15 @@ function poseFields(trail: ReplayTrail, t: number): { x: number; y: number; head
   };
 }
 
-/** Points with a tightened thousands separator (thin space) — "13 672", never "13   672". */
+/**
+ * Score text, one rule for every renderer. No thousands separator below six digits: a space is
+ * ~74 % of a digit width, so "7 273" parses as two numbers at arm's length — and Barlow has no
+ * thin-space glyph, so a renderer that substitutes one gets a full-width gap.
+ */
 export function formatPoints(p: number): string {
   const v = Math.round(Number.isFinite(p) ? p : 0);
-  return Math.abs(v).toLocaleString('en-US').replace(/,/g, ' ').replace(/^/, v < 0 ? '-' : '');
+  const a = Math.abs(v);
+  return (v < 0 ? '-' : '') + (a < 100000 ? String(a) : a.toLocaleString('en-US'));
 }
 
 const MARKER_PRIORITY: Record<string, number> = { 'drift-peak': 40, transition: 30, 'drift-end': 20, lap: 15, 'drift-start': 10 };
