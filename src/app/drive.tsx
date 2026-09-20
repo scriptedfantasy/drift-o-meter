@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   fill: { flex: 1 },
   frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
-  frameLandscape: { paddingTop: space[1], paddingBottom: space[2] },
+  frameLandscape: { paddingTop: space[2], paddingBottom: space[2] },
 
   stage: { flex: 1, alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2], paddingTop: space[1] },
   stageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   leftColumn: { flex: 1.06, gap: space[2] },
   gaugeWrapLandscape: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: space[2] },
   rightColumn: { flex: 1, justifyContent: 'flex-end', gap: space[3], paddingBottom: space[1] },
-  calloutsLandscape: { flex: 1, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[1] },
+  calloutsLandscape: { flex: 1, justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[2], paddingRight: space[1] },
   scoreRowLandscape: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
 
   bottomRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },

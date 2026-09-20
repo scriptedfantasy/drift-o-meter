@@ -100,7 +100,7 @@ writeFileSync(file, json);
 
 // ---- summary on stderr (stdout stays free for piping) --------------------------------------
 const d = pipeline.diagnostics;
-const b = pipeline.sessionBreakdown;
+const b = pipeline.breakdown;
 const peakDeg = radToDeg(session.drifts.reduce((m, x) => Math.max(m, x.peakAngle), 0));
 const lines = [
   `${file}  (${(json.length / 1048576).toFixed(2)} MB)`,

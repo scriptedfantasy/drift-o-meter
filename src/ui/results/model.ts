@@ -5,7 +5,7 @@
  * cross-lap analysis (`lapConsistency`); this module only arranges them, names the corners and
  * counts what the screen has to show. Nothing here invents a score.
  */
-import { driftSamples, scoreSession, type ScoredDrift, type SessionBreakdown } from '../../engine/score';
+import { driftSamples, scoreSession, type ScoredDrift, type SessionBreakdown, type SessionContext } from '../../engine/score';
 import { lapConsistency, type LapConsistency } from '../../engine/track';
 import type { DriftEvent, Grade, Session, StyleCalloutKind, TrackCorner } from '../../engine/types';
 import { radToDeg } from '../../engine/types';
@@ -185,8 +185,23 @@ export function gpsQuality(session: Session): GpsQuality {
  * session: calibration quality, GPS accuracy and gaps, how long the estimator held a lock, and
  * whether anything in the trace is physically impossible.
  */
-export function integrityNotes(session: Session, gps: GpsQuality): IntegrityNote[] {
+export function integrityNotes(session: Session, gps: GpsQuality, judged?: SessionBreakdown['integrity']): IntegrityNote[] {
   const notes: IntegrityNote[] = [];
+
+  // The scorer's own verdict comes first: it is the one that decided whether the total counts.
+  if (judged && !judged.scoreTrusted) {
+    notes.push({
+      level: 'bad',
+      title: 'The engine will not vouch for this score',
+      body: `${judged.message || 'Too much of the run could not be believed.'} ${Math.round(judged.implausibleDriftFraction * 100)}% of your drifting time earned nothing (${judged.suppressedS.toFixed(1)} s), so the total above is a floor, not a measurement.`,
+    });
+  } else if (judged && judged.implausibleDriftFraction > 0.02) {
+    notes.push({
+      level: 'warn',
+      title: 'Some of the run was not believed',
+      body: `${judged.suppressedS.toFixed(1)} s of drifting (${Math.round(judged.implausibleDriftFraction * 100)}%) scored nothing because the monitor could not square it with the physics.${judged.message ? ` ${judged.message}` : ''}`,
+    });
+  }
   const meta = session.meta ?? {};
   const cal = session.calibration;
   const q = Math.round((cal?.quality ?? 0) * 100);
@@ -350,11 +365,26 @@ function tallyCallouts(rows: DriftRow[]): { callouts: CalloutTally[]; points: nu
 }
 
 /**
+ * What the integrity monitor concluded during the run, if the pipeline left its verdict in the
+ * session. The per-sample plausibility mask is not part of a stored `Session`, so a replay can
+ * only repeat the monitor's end-of-run judgement — it cannot re-derive which samples it doubted.
+ */
+function sessionContext(session: Session): SessionContext | undefined {
+  const m = session.meta ?? {};
+  const mount = m.mount === 'loose' || m.mount === 'suspect' || m.mount === 'rigid' ? m.mount : null;
+  const physics = m.physics === 'implausible' || m.physics === 'ok' ? m.physics : null;
+  const gps = m.gps === 'poor' || m.gps === 'none' || m.gps === 'good' ? m.gps : null;
+  const message = typeof m.integrity === 'string' ? m.integrity : '';
+  if (!mount && !physics && !gps && !message) return undefined;
+  return { integrity: { mount: mount ?? 'rigid', physics: physics ?? 'ok', gps: gps ?? 'good', message } };
+}
+
+/**
  * Derive the whole screen from a session. Runs the real scorer, so it costs a few hundred
  * milliseconds on a big session — call it once, memoised.
  */
 export function buildResultsModel(session: Session): ResultsModel {
-  const breakdown = scoreSession(session.drifts, session.states, session.track);
+  const breakdown = scoreSession(session.drifts, session.states, session.track, undefined, sessionContext(session));
   const rows = driftRows(session, breakdown);
   const best = breakdown.bestDriftId !== null ? (rows.find((r) => r.id === breakdown.bestDriftId) ?? null) : null;
   const { callouts, points: calloutPoints } = tallyCallouts(rows);

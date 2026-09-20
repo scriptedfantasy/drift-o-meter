@@ -23,8 +23,8 @@ export interface FixtureSpec {
   /** Driver skill knobs handed to the simulator (0..1 nominal; > 1 = a hero lap). */
   aggression: number;
   consistency: number;
-  /** Force the biggest slide past the scorer's 85° spin threshold. */
-  spin: boolean;
+  /** Force this many of the biggest slides past the spin threshold (0 = none). */
+  spins: number;
   /** Drive it on grip: |β| stays under 5°, so there is honestly nothing to detect. */
   noDrifts: boolean;
   /** Rattling cradle + GPS dropouts, so the integrity notes have something true to report. */
@@ -47,7 +47,7 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
   laps: 2,
   aggression: 0.85,
   consistency: 0.7,
-  spin: false,
+  spins: 0,
   noDrifts: false,
   rough: false,
 };
@@ -58,13 +58,13 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
  */
 export const FIXTURES: Record<string, FixtureSpec> = {
   /** S: a hero lap — huge held angles, repeatable corner after corner. */
-  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.8, consistency: 0.96, blurb: 'Hero lap · grade S' },
+  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.3, consistency: 1, blurb: 'Best lap of the night' },
   /** A/B: the default, a good but human run. */
   good: { ...BASE, name: 'good', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap · grade A' },
-  /** D: low angles, wandering, corners never repeated. */
-  sloppy: { ...BASE, name: 'sloppy', seed: 5, aggression: 0, consistency: 0, blurb: 'Sloppy night · grade D' },
-  /** The chain-ending spin: the biggest slide goes past 85° and takes its chain with it. */
-  spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spin: true, blurb: 'Spun it · chain lost' },
+  /** The bad night: no angle, no repeatability, and the rear let go three times. */
+  sloppy: { ...BASE, name: 'sloppy', seed: 5, aggression: 0, consistency: 0, spins: 3, blurb: 'Bad night · spun three times' },
+  /** The chain-ending spin: the biggest slide goes past the spin threshold and takes its chain. */
+  spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spins: 1, blurb: 'Spun it · chain lost' },
   /** Nothing slid: a clean lap with no drift events at all. */
   clean: { ...BASE, name: 'clean', seed: 2, aggression: 0.2, consistency: 0.9, noDrifts: true, blurb: 'Clean lap · no slides' },
   /** Bad data: phone loose in the cradle, GPS dropping out. */
@@ -106,7 +106,7 @@ export function resolveFixture(id: string | undefined, params: Record<string, st
   if (raw === undefined) return null;
   const key = raw.trim().toLowerCase();
   const base = FIXTURES[key] ?? FIXTURES[DEFAULT_FIXTURE];
-  const spin = bool(params.spin);
+  const spinParam = params.spin === undefined ? null : Number.isFinite(Number(params.spin)) && params.spin.trim() !== '' ? Math.max(0, Math.min(8, Math.round(Number(params.spin)))) : bool(params.spin) === true ? 1 : 0;
   const noDrifts = params.drifts === 'none' || params.drifts === '0';
   const rough = bool(params.rough);
   const track = params.track === 'touge' || params.track === 'harbor' ? params.track : base.track;
@@ -120,7 +120,7 @@ export function resolveFixture(id: string | undefined, params: Record<string, st
     laps: num(params.laps, base.laps, 1, 6, true),
     aggression: num(params.agg, base.aggression, 0, 2),
     consistency: num(params.cons, base.consistency, 0, 1),
-    spin: spin === null ? base.spin : spin,
+    spins: spinParam === null ? base.spins : spinParam,
     noDrifts: noDrifts || base.noDrifts,
     rough: rough === null ? base.rough : rough,
   };
@@ -135,7 +135,7 @@ export function fixtureQuery(spec: FixtureSpec): string {
   if (spec.laps !== base.laps) q.set('laps', String(spec.laps));
   if (spec.aggression !== base.aggression) q.set('agg', String(spec.aggression));
   if (spec.consistency !== base.consistency) q.set('cons', String(spec.consistency));
-  if (spec.spin !== base.spin) q.set('spin', spec.spin ? '1' : '0');
+  if (spec.spins !== base.spins) q.set('spin', String(spec.spins));
   if (spec.noDrifts) q.set('drifts', 'none');
   if (spec.source !== base.source) q.set('source', spec.source);
   return q.toString();
@@ -188,10 +188,12 @@ function gripLap(session: Session): void {
  * kinematic identity r = a_y/v − β̇, and the car scrubs speed like a real spin. The scorer then
  * finds the spin with its own rule and takes the chain's un-banked points away.
  */
-function injectSpin(session: Session): void {
-  if (session.drifts.length === 0) return;
-  let target = session.drifts[0];
-  for (const d of session.drifts) if (d.peakAngle > target.peakAngle) target = d;
+function injectSpin(session: Session, skip: Set<number>): void {
+  const candidates = session.drifts.filter((d) => !skip.has(d.id));
+  if (candidates.length === 0) return;
+  let target = candidates[0];
+  for (const d of candidates) if (d.peakAngle > target.peakAngle) target = d;
+  skip.add(target.id);
   const a = Math.max(0, Math.min(session.states.length - 1, target.sampleStart));
   const b = Math.max(a, Math.min(session.states.length - 1, target.sampleEnd));
   const t0 = session.states[a].t;
@@ -235,7 +237,11 @@ function injectSpin(session: Session): void {
   session.drifts = session.drifts.filter((d) => d === target || d.endT <= target.startT || d.startT > spinEndT + 0.4);
 }
 
-/** Degrade the mount calibration to match a cradle the simulator was told to rattle. */
+/**
+ * The ground-truth fixture hard-codes a perfect calibration, which would be a lie for a run the
+ * simulator was told to rattle. Only applied on the `sim` source: through the real pipeline the
+ * mount calibrator produces its own number and nothing here may overwrite it.
+ */
 function degradeCalibration(session: Session): void {
   session.calibration = { ...session.calibration, quality: 0.41, forwardResolved: false };
 }
@@ -286,8 +292,9 @@ export function buildFixtureSession(spec: FixtureSpec): Session {
   const name = `${TRACK_TITLES[spec.track]} · ${spec.blurb}`;
   const session = spec.source === 'pipeline' ? throughPipeline(run, spec, name) : sessionFromSimulation(run, { name });
   if (spec.noDrifts) gripLap(session);
-  if (spec.spin) injectSpin(session);
-  if (spec.rough) degradeCalibration(session);
+  const spun = new Set<number>();
+  for (let i = 0; i < spec.spins; i++) injectSpin(session, spun);
+  if (spec.rough && spec.source === 'sim') degradeCalibration(session);
   session.id = `fixture-${spec.name}`;
   session.startedAt = Date.UTC(2026, 8, 19, 21, 44) + spec.seed * 60_000;
   session.meta = {

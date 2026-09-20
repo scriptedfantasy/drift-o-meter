@@ -400,7 +400,10 @@ export class DriftPipeline implements DriftPipelineApi {
 
   private _frame: LiveFrame | null = null;
   private built: TrackModel | null = null;
-  /** Full session breakdown, populated by `finish()`. Public so probes and tools can read it. */
+  /**
+   * Full session breakdown (components, chains, per-drift stats, integrity), populated by
+   * `finish()`. THE accessor — there is no second name for it.
+   */
   breakdown: SessionBreakdown | null = null;
 
   // ---- time
@@ -438,6 +441,8 @@ export class DriftPipeline implements DriftPipelineApi {
   private nextSyntheticId = 1_000_001;
 
   // ---- diagnostics
+  /** 1 per state sample where the integrity monitor believed the slide. Aligned with `states`. */
+  private plausibleMask = new BitMask();
   private nSamples = 0;
   private nDropped = 0;
   private nGps = 0;
@@ -519,6 +524,12 @@ export class DriftPipeline implements DriftPipelineApi {
     const scorerId = this.scorerIdFor(live);
 
     // ---- 5. live scoring
+    //  The integrity monitor's verdict for THIS instant gates the points: while it does not
+    //  believe the slide (phone loose in its mount, impossible physics, no GPS, too slow) the
+    //  drift earns nothing. Nothing used to ask it, so hand-holding the phone scored 40 % MORE
+    //  than the same drive with the phone bolted down.
+    const plausible = this.integrity.plausible;
+    this.plausibleMask.push(plausible);
     const tick = this.scorer.push(
       state,
       live
@@ -532,6 +543,7 @@ export class DriftPipeline implements DriftPipelineApi {
             id: scorerId,
           }
         : null,
+      plausible,
     );
     const callouts = tick.callouts.length ? this.guardCallouts(tick.callouts) : EMPTY_CALLOUTS;
     let completed = det.completed;
@@ -540,7 +552,7 @@ export class DriftPipeline implements DriftPipelineApi {
       this._drifts.push(completed);
       const id = this.idRemap.get(completed.id) ?? completed.id;
       this.idRemap.delete(completed.id);
-      this.scorer.onDriftCompleted({ ...completed, id, spin: completed.spin || this.detector.spins.get(completed.id) === true });
+      this.scorer.onDriftCompleted({ ...completed, id });
     }
 
     // ---- 6. laps (CLEAN LAP surfaces on the next frame, with the scorer's other pending callouts)
@@ -661,11 +673,6 @@ export class DriftPipeline implements DriftPipelineApi {
     return this.built ?? this.trackBuilder.model;
   }
 
-  /** Full session breakdown (components, chains, per-drift stats) — populated by `finish()`. */
-  get sessionBreakdown(): SessionBreakdown | null {
-    return this.breakdown;
-  }
-
   get diagnostics(): PipelineDiagnostics {
     const s = this.integrity.state;
     return {
@@ -697,12 +704,16 @@ export class DriftPipeline implements DriftPipelineApi {
       this._drifts.push(e);
       const id = this.idRemap.get(e.id) ?? e.id;
       this.idRemap.delete(e.id);
-      this.scorer.onDriftCompleted({ ...e, id, spin: e.spin || this.detector.spins.get(e.id) === true });
+      this.scorer.onDriftCompleted({ ...e, id });
     }
     const track = this.trackBuilder.build();
     this.built = track;
     const states = this.stateStore.materialise();
-    const b = scoreSession(this._drifts, states, track, this.opts.score);
+    const iState = this.integrity.state;
+    const b = scoreSession(this._drifts, states, track, this.opts.score, {
+      plausible: this.plausibleMask.toArray(states.length),
+      integrity: { mount: iState.mount, physics: iState.physics, gps: iState.gps, message: iState.message },
+    });
     this.breakdown = b;
     const score: SessionScore = {
       total: b.total,
@@ -757,6 +768,16 @@ export class DriftPipeline implements DriftPipelineApi {
         mount: diag.mount,
         physics: diag.physics,
         integrity: diag.integrityMessage,
+        // The integrity BLOCK the score depends on. These belong on `Session` as one
+        // `SessionIntegrity` object; types.ts is owned elsewhere, so they ride in `meta`
+        // (string | number | boolean only) until the field exists. See the report.
+        scoreTrusted: b.integrity.scoreTrusted,
+        integrityImplausibleFraction: b.integrity.implausibleDriftFraction,
+        integritySuppressedS: b.integrity.suppressedS,
+        integrityVerdict: b.integrity.message,
+        bestShare: b.bestShare,
+        medianDriftPoints: b.medianDriftPoints,
+        pointsPerDriftSecond: b.pointsPerDriftSecond,
         ...meta,
       },
     };
@@ -773,6 +794,7 @@ export class DriftPipeline implements DriftPipelineApi {
     }
     this.integrity.reset();
     this.stateStore.clear();
+    this.plausibleMask.clear();
     this.lastState = null;
     this._drifts.length = 0;
     this._gps.length = 0;
@@ -925,6 +947,39 @@ export class DriftPipeline implements DriftPipelineApi {
       integrity: this.integritySnapshot,
       lap: { count: 0, progress: 0, completed: null },
     };
+  }
+}
+
+/**
+ * One bit per sample. A 120 000-sample run costs 15 KB here instead of 120 KB of booleans,
+ * and `toArray` materialises the Uint8Array the offline scorer indexes with.
+ */
+class BitMask {
+  private words = new Uint32Array(1024);
+  private n = 0;
+  push(v: boolean): void {
+    const w = this.n >>> 5;
+    if (w >= this.words.length) {
+      const next = new Uint32Array(this.words.length * 2);
+      next.set(this.words);
+      this.words = next;
+    }
+    if (v) this.words[w] |= 1 << (this.n & 31);
+    else this.words[w] &= ~(1 << (this.n & 31));
+    this.n++;
+  }
+  clear(): void {
+    this.words = new Uint32Array(1024);
+    this.n = 0;
+  }
+  get length(): number {
+    return this.n;
+  }
+  /** Dense 0/1 bytes for the first `len` samples (missing tail = believed). */
+  toArray(len = this.n): Uint8Array {
+    const out = new Uint8Array(len);
+    for (let i = 0; i < len; i++) out[i] = i < this.n ? (this.words[i >>> 5] >>> (i & 31)) & 1 : 1;
+    return out;
   }
 }
 

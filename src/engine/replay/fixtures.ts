@@ -135,10 +135,14 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
       return;
     }
     const guard = Math.round(1.5 / Math.max(1e-6, truth[a + 1].t - truth[a].t));
+    const centre = 0.5 * (a + b);
+    const span = Math.max(1, b - a);
     let best = -1;
     let bestV = Infinity;
     for (let i = a + guard; i <= b - guard; i++) {
-      const v = Math.abs(truth[i].beta);
+      // a tiny centre bias breaks ties: a slide held at a CONSTANT angle has no valley, and
+      // without this the first candidate wins and shaves 1.5 s off the front repeatedly
+      const v = Math.abs(truth[i].beta) + 1e-4 * (Math.abs(i - centre) / span);
       if (v >= bestV) continue;
       // reject a candidate that separates two lobes of OPPOSITE sign: that is a transition
       if (meanSign(a, i) * meanSign(i, b) < 0) continue;

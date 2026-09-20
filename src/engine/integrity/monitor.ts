@@ -377,6 +377,14 @@ export class IntegrityMonitor {
     this.recompute();
   }
 
+  /**
+   * The one verdict the scorer needs on EVERY sample: is this slide believable right now?
+   * A plain boolean read, because `state` allocates a snapshot and this is called at 100 Hz.
+   */
+  get plausible(): boolean {
+    return this.driftPlausible;
+  }
+
   /** Current verdicts. Every read returns a fresh, independent snapshot that is safe to keep or mutate. */
   get state(): IntegrityState {
     return {

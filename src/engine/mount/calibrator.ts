@@ -75,12 +75,18 @@ import { type GpsSample, type MotionSample, type MountCalibration, type VehicleM
  *   LEVER    The phone does not sit at the CG.  With the phone d metres ahead of it the
  *   ARM      accelerometer genuinely reads a_y + ṙ·d_x and a_x − r²·d_x; that is real physics,
  *            not a mount error, and it is NOT calibrated away — the axes above are estimated
- *            with it present.  But `VehicleMotionSample` is consumed by kinematics that hold at
- *            the CG (β̇ = a_y/v − r), so the OUTPUT is translated back: d̂_x is estimated by a
- *            ridge regression of the high-passed lateral acceleration on the high-passed yaw
+ *            with it present, and `VehicleMotionSample.ax/ay/az` are reported AT THE PHONE, as
+ *            measured (see the contract on that type).  Exactly one module may remove the lever
+ *            arm or it gets removed twice, and that module is the slip estimator, whose
+ *            propagation is exact at the phone and which also owns the GPS course offset and the
+ *            zero-slip prior.  What the calibrator does contribute is d̂_x itself: a ridge
+ *            regression of the high-passed lateral acceleration on the high-passed yaw
  *            acceleration (both high-passed at `leverHpTau`, so the smooth cornering signal
- *            cannot bias it), and a_y −= d̂_x·ṙ, a_x += d̂_x·r².  Set `leverCompensation: false`
- *            to report the acceleration at the phone instead.
+ *            cannot bias the slope), reported as `MountDiagnostics.leverDx` so the estimator can
+ *            one day replace its fixed 0.9 m constant with a measured one.  It is estimated
+ *            whether or not `leverCompensation` is set; that option (default FALSE) only decides
+ *            whether it is also subtracted here, and turning it on double-compensates against
+ *            the current pipeline.
  *
  * All state lives in scalar fields and one preallocated Float64Array: the only allocation per
  * push() is the returned sample.
@@ -210,7 +216,10 @@ export interface MountOptions {
   /** Speed change over a GPS interval at which that interval is half rejected, m/s. */
   gradeDvGate: number;
   /**
-   * Translate the reported acceleration from the phone back to the CG (see LEVER ARM above).
+   * Translate the reported acceleration from the phone back to the CG. DEFAULT FALSE, and it
+   * should stay false against the current pipeline: `VehicleMotionSample` is defined at the
+   * phone and the slip estimator removes the lever arm itself, so turning this on compensates
+   * twice. d̂_x is estimated either way and published as `MountDiagnostics.leverDx`.
    * `leverTau` smooths the yaw-rate derivative (two poles), `leverHpTau` high-passes both
    * regression signals, `leverRegressTau` is the regression memory in seconds, `leverRidge`
    * the ridge term (units of the regressor's integrated square) and `leverMax` the cap on the
@@ -281,7 +290,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gradeMaxRad: 0.25,
   gradeMinEvidence: 60,
   gradeDvGate: 1,
-  leverCompensation: true,
+  leverCompensation: false,
   leverTau: 0.015,
   leverHpTau: 0.3,
   leverRegressTau: 40,
@@ -342,7 +351,11 @@ export interface MountDiagnostics {
   gradeTiltDeg: number;
   /** Slip proxy β̂ (rad) from the GPS course rate vs the integrated gyro yaw. */
   betaHat: number;
-  /** Estimated forward lever arm from the CG to the phone, metres (0 until it has evidence). */
+  /**
+   * Estimated forward lever arm from the CG to the phone, metres (0 until it has evidence).
+   * Published for the slip estimator, which owns the lever arm; the calibrator only estimates
+   * it so that the ṙ·d_x it puts on the lateral axis cannot rotate the forward axis.
+   */
   leverDx: number;
 }
 
@@ -1192,9 +1205,10 @@ export class MountCalibrator {
       const rn = this.rFast + (yawRate - this.rFast) * kf;
       this.rDot += ((rn - this.rFast) / dt - this.rDot) * kf;
       this.rFast = rn;
-      if (o.leverCompensation && this.forwardResolved && moving) {
+      if (this.forwardResolved && moving) {
         // regress the HIGH-PASSED lateral acceleration on the high-passed yaw acceleration:
         // the smooth cornering term v·r lives below `leverHpTau` and cannot bias the slope.
+        // Always estimated — it is published as a diagnostic whatever `leverCompensation` says.
         const kh = dt / (o.leverHpTau + dt);
         this.rDotSlow += (this.rDot - this.rDotSlow) * kh;
         this.ayVSlow += (vay - this.ayVSlow) * kh;
@@ -1207,6 +1221,7 @@ export class MountCalibrator {
       }
     }
     if (o.leverCompensation && this.leverDx !== 0) {
+      // OFF by default: ax/ay are reported at the phone and the slip estimator owns the lever arm
       vay -= this.leverDx * this.rDot;
       vax += this.leverDx * yawRate * yawRate;
     }

@@ -1,44 +1,45 @@
 {
-  "startedAt": "2026-09-20T19:22:46.837Z",
+  "startedAt": "2026-09-20T19:28:33.383Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "drive-idle-landscape",
-      "path": "/drive?sim=harbor&rate=1",
-      "url": "http://127.0.0.1:35729/drive?sim=harbor&rate=1",
+      "name": "drive",
+      "path": "/drive?sim=harbor&rate=1&at=96.3",
+      "url": "http://127.0.0.1:42411/drive?sim=harbor&rate=1&at=96.3",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-idle-landscape.png",
-      "video": null,
-      "ms": 3374,
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive.png",
+      "video": "../../../../../../home/user/drift-o-meter/artifacts/video/drive.webm",
+      "ms": 8205,
       "fonts": {
         "status": "loaded",
         "families": [
           "BarlowCondensed_600SemiBold",
           "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 10,
-        "bodyTextNodes": 9,
+        "displayTextNodes": 81,
+        "bodyTextNodes": 19,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -63,139 +64,13 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 280184,
-        "cyanPixels": 0,
-        "textPixels": 33180,
-        "nonBgFraction": 0.2115
-      }
-    },
-    {
-      "name": "drive-peak-landscape",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:35729/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "[hud] run failed to start TypeError: Cannot read properties of undefined (reading 'angleRad')\n    at r.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1473:1000)\n    at u.step (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0"
-      ],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak-landscape.png",
-      "video": null,
-      "ms": 4522,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 11,
-        "bodyTextNodes": 9,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 101288,
-        "cyanPixels": 24,
-        "textPixels": 3184,
-        "nonBgFraction": 0.3067
-      }
-    },
-    {
-      "name": "drive-transition-landscape",
-      "path": "/drive?sim=harbor&rate=1&at=85.05&hold=1",
-      "url": "http://127.0.0.1:35729/drive?sim=harbor&rate=1&at=85.05&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "[hud] run failed to start TypeError: Cannot read properties of undefined (reading 'angleRad')\n    at r.push (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0f.js:1473:1000)\n    at u.step (http://127.0.0.1:35729/_expo/static/js/web/entry-31210c86d3070bb674cf14b3ebde2e0"
-      ],
-      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-transition-landscape.png",
-      "video": null,
-      "ms": 4480,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 11,
-        "bodyTextNodes": 9,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 101288,
-        "cyanPixels": 24,
-        "textPixels": 3184,
-        "nonBgFraction": 0.3067
+        "emberPixels": 141840,
+        "cyanPixels": 16136,
+        "textPixels": 7116,
+        "nonBgFraction": 0.5741
       }
     }
   ],
-  "finishedAt": "2026-09-20T19:22:59.296Z",
+  "finishedAt": "2026-09-20T19:28:41.666Z",
   "failed": 0
 }

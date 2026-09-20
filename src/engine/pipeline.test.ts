@@ -219,7 +219,7 @@ function verdict(track: TrackId, sim: SimulateOptions): { seed: number; grade: s
   const p = new DriftPipeline({ ...BASE, name: 'verdict' });
   drive(p, run);
   const session = p.finish();
-  const b = p.sessionBreakdown as { combined: number } | null;
+  const b = p.breakdown as { combined: number } | null;
   return { seed: sim.seed ?? 0, grade: session.score.grade, combined: b ? b.combined : 0 };
 }
 
@@ -291,12 +291,12 @@ describe('DriftPipeline end to end', () => {
   it('grades a good driver A or S and a sloppy one C or D', () => {
     const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     GOOD_VERDICTS.push(
-      { seed: 3, grade: harborGood.session.score.grade, combined: (harborGood.pipeline.sessionBreakdown as { combined: number }).combined },
+      { seed: 3, grade: harborGood.session.score.grade, combined: (harborGood.pipeline.breakdown as { combined: number }).combined },
       verdict('harbor', { seed: 1, ...GOOD }),
       verdict('harbor', { seed: 2, ...GOOD }),
     );
     SLOPPY_VERDICTS.push(
-      { seed: 1, grade: harborSloppy.session.score.grade, combined: (harborSloppy.pipeline.sessionBreakdown as { combined: number }).combined },
+      { seed: 1, grade: harborSloppy.session.score.grade, combined: (harborSloppy.pipeline.breakdown as { combined: number }).combined },
       verdict('harbor', { seed: 2, ...SLOPPY }),
       verdict('harbor', { seed: 3, ...SLOPPY }),
     );

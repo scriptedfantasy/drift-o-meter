@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { simulateRun, type SimulatedRun } from '../../sim';
 import { degToRad, radToDeg, wrapAngle, type Session, type SlipState } from '../types';
@@ -17,6 +18,7 @@ import {
   severityOf,
   shakeAt,
   smokeAt,
+  trailValueAt,
   worldToScreen,
   type CameraMode,
   type Replay,
@@ -75,15 +77,84 @@ describe('fixture', () => {
     }
   });
 
-  it('a drift is a drift, not a whole lap: every segment is 0.6–12 s', () => {
+  it('a drift is a drift, not a whole lap — unless it is a linked chain', () => {
     // FINDING 9: a 28 s "drift" shaded 70 % of the telemetry strip end to end.
+    // ROUND-3 FINDING 3: but the length cutter must not sever a switchback, so a chain is
+    // allowed to run long. Everything else is capped.
     for (const seg of replay.segments) {
       expect(seg.durationS).toBeGreaterThanOrEqual(0.6);
-      expect(seg.durationS).toBeLessThanOrEqual(12);
+      if (seg.transitions === 0) expect(seg.durationS).toBeLessThanOrEqual(12);
     }
-    const longest = Math.max(...replay.segments.map((s) => s.durationS));
-    expect(longest).toBeLessThan(12);
     expect(replay.segments.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('never cuts a switchback: a flick with no settle stays one drift with its transition', () => {
+    // ROUND-3 FINDING 3: the cutter took the deepest interior |β| minimum, which in a linked
+    // sequence IS the transition — so it severed precisely the beat that owns the magenta
+    // callout, flash, shake and haptic. Harbor went 6 transitions to 1, touge 3 to 0.
+    const hz = 100;
+    const n = 30 * hz; // 30 s: comfortably past maxDurationS, so the cutter WILL want to cut
+    const truth = [];
+    for (let i = 0; i < n; i++) {
+      const t = i / hz;
+      // +35° held, a fast flick through zero at t=15 s, then −35° held. No settle anywhere.
+      const k = Math.tanh((15 - t) * 3);
+      const beta = degToRad(35) * k;
+      truth.push({
+        t,
+        x: 20 * t,
+        y: 0,
+        heading: 0,
+        course: beta,
+        speed: 20,
+        beta,
+        yawRate: 0,
+        ay: 0,
+        ax: 0,
+        drifting: Math.abs(beta) > degToRad(5),
+      });
+    }
+    const run = { trackId: 'harbor', motion: [], gps: [], truth, mount: [], lapTimes: [], corners: [], centreLine: [], originLat: 0, originLon: 0, plans: [], meta: {} } as unknown as SimulatedRun;
+    const flick = sessionFromSimulation(run, { track: false });
+    expect(flick.drifts.length).toBe(1);
+    expect(flick.drifts[0].durationS).toBeGreaterThan(25);
+    expect(flick.drifts[0].transitions).toBe(1);
+    const fr = buildReplay(flick);
+    expect(fr.segments.length).toBe(1);
+    expect(fr.segments[0].transitions).toBe(1);
+    expect(fr.markers.filter((m) => m.kind === 'transition').length).toBe(1);
+    // ...and a long SAME-direction slide still gets split
+    const flat = truth.map((s, i) => ({ ...s, beta: degToRad(35), course: degToRad(35), drifting: true, t: i / hz }));
+    const long = sessionFromSimulation({ ...run, truth: flat } as unknown as SimulatedRun, { track: false });
+    expect(long.drifts.length).toBeGreaterThan(1);
+    expect(Math.max(...long.drifts.map((d) => d.durationS))).toBeLessThanOrEqual(12);
+  });
+
+  it('grades span the scale across driver skill, and so does severity', () => {
+    // ROUND-3 FINDING 2: splitting one 28 s drift into seven collapsed every grade to C,
+    // because the fixture graded on points PER DRIFT. It grades on points per second now,
+    // which is invariant to how a run is cut up.
+    const grades = new Set<string>();
+    const severities = new Set<string>();
+    for (const track of ['harbor', 'touge'] as const) {
+      for (const [aggression, consistency] of [
+        [0.15, 0.2],
+        [0.6, 0.6],
+        [1.0, 1.0],
+      ] as Array<[number, number]>) {
+        for (const seed of [1, 2]) {
+          const ses = sessionFromSimulation(simulateRun(track, { seed, laps: 2, aggression, consistency }));
+          const rep = buildReplay(ses);
+          grades.add(ses.score.grade);
+          severities.add(rep.info.severity);
+        }
+      }
+    }
+    expect(grades.size).toBeGreaterThanOrEqual(3);
+    expect(severities.size).toBeGreaterThanOrEqual(2);
+    // the gold S chip and the muted D chip must both be reachable, or the grade colour is dead
+    expect(grades.has('S') || grades.has('A')).toBe(true);
+    expect(grades.has('D') || grades.has('C')).toBe(true);
   });
 });
 
@@ -414,9 +485,11 @@ describe('poseAt', () => {
 });
 
 describe('ghost', () => {
-  it('is NEVER the car being watched', () => {
+  it('is NEVER the car being watched, and is distance-synced so it stays on screen', () => {
     // FINDING 1: the ghost was the same lap for 47 % of the replay — a cyan outline sitting
     // exactly on the white car, which reads as a rendering glitch.
+    // ROUND-3: it is now synced by DISTANCE, so instead of being an off-screen badge 88 % of
+    // the time it sits beside the car showing the reference line through the same corner.
     expect(replay.ghost).not.toBeNull();
     expect(replay.laps.length).toBe(2);
     for (const lap of replay.laps) {
@@ -424,21 +497,27 @@ describe('ghost', () => {
       expect(lap.ghostRef).not.toBe(lap.index);
     }
     let samples = 0;
+    let onScreen = 0;
     let identical = 0;
-    let minSep = Infinity;
+    const seps: number[] = [];
     for (let t = 0; t <= replay.durationS; t += 0.25) {
       const g = ghostPoseAt(replay, t);
       if (!g) continue;
       const p = poseAt(replay, t);
-      const d = Math.hypot(g.x - p.x, g.y - p.y);
       samples++;
-      if (d < 0.5) identical++;
-      minSep = Math.min(minSep, d);
+      // it must always come from a different lap than the one being watched
       expect(g.lapIndex).not.toBe(p.lap);
+      if (g.x === p.x && g.y === p.y && g.heading === p.heading) identical++;
+      const d = Math.hypot(g.x - p.x, g.y - p.y);
+      seps.push(d);
+      if (d < 45) onScreen++;
     }
     expect(samples).toBeGreaterThan(300);
     expect(identical).toBe(0);
-    expect(minSep).toBeGreaterThan(1);
+    // within 45 m is roughly "inside the chase frame"
+    expect(onScreen / samples).toBeGreaterThan(0.95);
+    seps.sort((a, b) => a - b);
+    expect(seps[Math.floor(seps.length / 2)]).toBeLessThan(15);
   });
 
   it('reports a true, stable time gap and a points gap', () => {
@@ -467,21 +546,54 @@ describe('ghost', () => {
     expect(gSlow.gapS).toBeLessThan(0);
   });
 
-  it('the reference is the best-points lap, and the ghost pose matches that lap', () => {
+  it('the reference is the best-points lap, sampled at the car\'s distance into the lap', () => {
     const best = replay.laps.find((l) => l.best)!;
     expect(replay.ghost!.lapIndex).toBe(best.index);
     expect(replay.ghost!.criterion).toBe('points');
     for (const lap of replay.laps) expect(lap.points).toBeLessThanOrEqual(best.points + 1e-6);
-    // watching a non-best lap: the ghost is the best lap at the same lap-relative time
+    // distance sync: the ghost has covered the same distance into its lap as the car has into its
     const other = replay.laps.find((l) => !l.best)!;
-    const tau = 20;
-    const g = ghostPoseAt(replay, other.startT + tau)!;
-    const ref = poseAt(replay, best.startT + tau);
-    expect(g.lapIndex).toBe(best.index);
-    expect(g.x).toBeCloseTo(ref.x, 3);
-    expect(g.y).toBeCloseTo(ref.y, 3);
+    const trail = replay.trail;
+    const distInto = (t: number, lap: typeof best) => trailValueAt(trail, trail.dist, t) - trailValueAt(trail, trail.dist, lap.startT);
+    for (const frac of [0.2, 0.45, 0.7, 0.9]) {
+      const t = other.startT + other.durationS * frac;
+      const g = ghostPoseAt(replay, t)!;
+      expect(g.lapIndex).toBe(best.index);
+      const carDist = distInto(t, other);
+      const ghostDist = distInto(best.startT + g.tau, best);
+      expect(ghostDist).toBeCloseTo(carDist, 0);
+      // and the pose really is the reference lap at that moment
+      const ref = poseAt(replay, best.startT + g.tau);
+      expect(g.x).toBeCloseTo(ref.x, 1);
+      expect(g.y).toBeCloseTo(ref.y, 1);
+    }
     expect(ghostPoseAt(replay, 0.2)).toBeNull();
     expect(lapAt(replay, -1)).toBeNull();
+  });
+});
+
+describe('real pipeline sessions', () => {
+  // The frames render the REAL pipeline output when it exists, so the critic sees what the app
+  // actually scores rather than what the fixture guesses.
+  const files = ['artifacts/session-harbor.json', 'artifacts/session-touge.json'].filter((f) => existsSync(f));
+  it.runIf(files.length > 0)('build a valid replay with laps, drifts and a real grade', () => {
+    for (const file of files) {
+      const ses = JSON.parse(readFileSync(file, 'utf8')) as Session;
+      const rep = buildReplay(ses);
+      expect(rep.warnings).toEqual([]);
+      expect(rep.trail.n).toBeGreaterThan(100);
+      expect(rep.segments.length).toBeGreaterThan(0);
+      expect(rep.info.totalPoints).toBeGreaterThan(1000);
+      expect(['S', 'A', 'B', 'C', 'D']).toContain(rep.info.grade);
+      for (let k = 0; k < rep.trail.n; k++) expect(Number.isFinite(rep.trail.x[k])).toBe(true);
+      const cam = new ReplayCamera('chase', { w: 390, h: 844 });
+      let prev = cam.update(rep, 0, 1 / 60);
+      for (let t = 1 / 60; t <= rep.durationS; t += 1 / 60) {
+        const st = cam.update(rep, t, 1 / 60);
+        expect(Math.abs(wrapAngle(st.rotation - prev.rotation))).toBeLessThanOrEqual(CAMERA_LIMITS.maxRotation / 60 + 1e-9);
+        prev = st;
+      }
+    }
   });
 });
 
@@ -518,6 +630,35 @@ describe('camera', () => {
       expect(maxPan).toBeLessThan(0.9);
       expect(maxRot).toBeLessThan(0.045);
     }
+  });
+
+  it('opens pointing the right way and never whips at the start', () => {
+    // ROUND-3 FINDING 1 (regression): `lastRotationTarget = 0` made the heading-seed branch dead
+    // code, so every chase/cinematic replay opened ~90° wrong and swept a quarter turn in the
+    // first second — 2.24°/frame, 57 frames over 0.5°/frame. Round 1 peaked at 0.55°/frame.
+    for (const mode of ['chase', 'cinematic'] as CameraMode[]) {
+      const cam = new ReplayCamera(mode, vp);
+      let prev = cam.update(replay, 0, dt);
+      const p0 = poseAt(replay, 0);
+      expect(Math.abs(wrapAngle(prev.rotation - (Math.PI / 2 - p0.heading)))).toBeLessThan(0.05);
+      let maxEarly = 0;
+      let over = 0;
+      for (let t = dt; t <= 3; t += dt) {
+        const s = cam.update(replay, t, dt);
+        const d = Math.abs(wrapAngle(s.rotation - prev.rotation));
+        maxEarly = Math.max(maxEarly, d);
+        if (d > degToRad(0.5)) over++;
+        prev = s;
+      }
+      expect(over).toBe(0);
+      expect(maxEarly).toBeLessThan(degToRad(0.5));
+    }
+    // a fresh camera on a PARKED car still seeds from the heading, and reset() re-arms it
+    const cam = new ReplayCamera('chase', vp);
+    const a = cam.update(replay, 0, dt);
+    cam.reset();
+    const b = cam.update(replay, 0, dt);
+    expect(b.rotation).toBeCloseTo(a.rotation, 9);
   });
 
   it('overview fits the bounds with padding and no rotation', () => {
