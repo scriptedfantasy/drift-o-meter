@@ -48,3 +48,11 @@ example
 #   raw runs:  npx tsx tools/analysis/dump-run.ts <track> <seed> <laps>
 artifacts/critic-*/
 artifacts/*.json
+
+# An agent's PRIVATE capture directory — the harness's `--out` / `--video-dir` / `--dist` for one
+# agent's working run, so concurrent agents do not clear each other's output mid-capture. These
+# are regenerable and churn while an agent works. The record stays `artifacts/shots/` and
+# `artifacts/video/`: anything an agent wants judged or kept goes there.
+artifacts/*/shots/
+artifacts/*/video/
+artifacts/*/dist/
