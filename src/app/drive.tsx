@@ -40,9 +40,10 @@ export default function DriveScreen() {
   const live = run.status === 'running' || run.status === 'held' || run.status === 'saving';
   const stageW = width - gutter * 2;
 
-  const gauge = landscape
-    ? { w: Math.min(stageW * 0.54, height * 1.25), h: Math.min(height - 96, stageW * 0.42) }
-    : { w: stageW, h: Math.min(stageW * 0.82, height * 0.4) };
+  // The gauge's box is the arc's bounding box (a wide, shallow bowl): height ≈ 0.56 × width.
+  // Portrait runs it full-bleed — the arc is the widest thing on the screen, as it should be.
+  const gaugeW = landscape ? Math.min(stageW * 0.52, height * 1.3) : width;
+  const gauge = { w: gaugeW, h: Math.min(gaugeW * 0.56, height * (landscape ? 0.62 : 0.32)) };
 
   const map = landscape ? { w: 168, h: 116 } : { w: 132, h: 108 };
 
@@ -83,10 +84,13 @@ export default function DriveScreen() {
                 <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" />
 
                 <View style={styles.stage}>
-                  <View style={styles.callouts} pointerEvents="none">
+                  {/* the stack grows UPWARD from just above the gauge, so the gauge never moves */}
+                  <View style={[styles.callouts, { bottom: gauge.h + space[3] }]} pointerEvents="none">
                     <CalloutStack events={run.events} size={26} testID="hud-callouts" />
                   </View>
-                  <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
+                  <View style={styles.bleed}>
+                    <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
+                  </View>
                 </View>
 
                 <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={64} testID="hud-telemetry" />
@@ -177,7 +181,8 @@ const styles = StyleSheet.create({
   frameLandscape: { paddingTop: space[1], paddingBottom: space[2] },
 
   stage: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
-  callouts: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'flex-start' },
+  callouts: { position: 'absolute', left: 0, right: 0, alignItems: 'flex-start', justifyContent: 'flex-end' },
+  bleed: { marginHorizontal: -gutter },
 
   landscapeRow: { flex: 1, flexDirection: 'row', gap: space[5] },
   leftColumn: { flex: 1.06, gap: space[2] },

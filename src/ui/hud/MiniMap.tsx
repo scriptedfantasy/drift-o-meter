@@ -67,7 +67,7 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
   const carOpacity = useDerivedValue(() => (signals.valid.value > 0.5 ? 1 : 0.25));
 
   const car = useMemo(() => {
-    const s = Math.max(6, Math.min(width, height) * 0.07);
+    const s = Math.max(5, Math.min(width, height) * 0.055);
     return Skia.PathBuilder.Make()
       .moveTo(s, 0)
       .lineTo(-s * 0.72, s * 0.62)

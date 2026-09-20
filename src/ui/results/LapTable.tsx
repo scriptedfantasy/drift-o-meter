@@ -14,7 +14,7 @@ import type { LapConsistency } from '../../engine/track';
 import type { TrackCorner } from '../../engine/types';
 import { AppText } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
-import { cornerTag } from './corners';
+import { cornerShape } from './corners';
 import { useEnter } from './entrance';
 import { Tag } from './parts';
 
@@ -74,12 +74,14 @@ export function LapTable({ laps, corners, width, run, reduceMotion = false, test
         return (
           <View key={c.cornerId} style={[styles.row, i === 0 && rows.length > 1 && c.score < 0.6 ? styles.worst : null]}>
             <View style={styles.cornerCol}>
-              <AppText variant="bodyStrong" numberOfLines={1}>
-                {cornerTag(corner)}
+              <AppText variant="subheading" numberOfLines={1} style={styles.cornerName}>
+                Turn {corner.id + 1}
               </AppText>
-              <AppText variant="micro" color="muted" numeric>
-                {seen.length < vals.length ? `skipped ${vals.length - seen.length} lap${vals.length - seen.length === 1 ? '' : 's'} · ` : ''}
-                entry ±{c.entrySpreadM.toFixed(1)} m
+              <AppText variant="micro" color="muted" numberOfLines={1}>
+                {cornerShape(corner)}
+              </AppText>
+              <AppText variant="micro" color="muted" numeric numberOfLines={1}>
+                {seen.length < vals.length ? `skipped ${vals.length - seen.length}× · ` : ''}entry ±{c.entrySpreadM.toFixed(1)} m
               </AppText>
             </View>
 
@@ -148,7 +150,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   worst: { borderColor: alpha(colors.red, 0.5) },
-  cornerCol: { flex: 1, gap: 1, minWidth: 0 },
+  cornerCol: { flex: 1, gap: 0, minWidth: 0 },
+  cornerName: { fontSize: 18, lineHeight: 20 },
   plotCol: { gap: 2 },
   plotVals: { flexDirection: 'row', justifyContent: 'space-between' },
   verdictCol: { alignItems: 'flex-end', gap: 3, minWidth: 74 },

@@ -62,7 +62,15 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, onWatch
           </View>
         </View>
 
-        <Sparkline trace={drift.trace} width={inner} height={78} color={accent} spun={drift.spun} style={styles.spark} />
+        <Sparkline
+          trace={drift.trace}
+          width={inner}
+          height={86}
+          color={accent}
+          spun={drift.spun}
+          maxDeg={Math.max(45, Math.ceil((drift.peakDeg * 1.35) / 15) * 15)}
+          style={styles.spark}
+        />
         <View style={styles.sparkAxis}>
           <AppText variant="micro" color="muted">
             {drift.cornerLabel ? drift.cornerLabel.replace(/^the /, '').toUpperCase() : 'ENTRY'}
@@ -75,7 +83,7 @@ export function BestDriftCard({ drift, width, run, reduceMotion = false, onWatch
         <View style={styles.grid}>
           <Stat label="Duration" value={drift.durationS.toFixed(1)} unit="s" size={26} />
           <Stat label="Entry speed" value={String(Math.round(drift.entryKmh))} unit="km/h" color={colors.cyan} size={26} />
-          <Stat label="Transitions" value={String(drift.transitions)} color={colors.magenta} size={26} />
+          <Stat label="Transitions" value={String(drift.transitions)} color={drift.transitions > 0 ? colors.magenta : colors.muted} size={26} />
           <Stat label="Exit" value={drift.spun ? 'SPUN' : drift.cleanExit ? 'CLEAN' : 'SNATCHED'} color={drift.spun ? colors.red : drift.cleanExit ? colors.green : colors.gold} size={20} />
         </View>
 

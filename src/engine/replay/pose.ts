@@ -115,7 +115,7 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
   const g = replay.ghost;
   let gapS = 0;
   if (ref.index === g.lapIndex) {
-    gapS = tau - tauAtDistance(g.dist, g.tau, carDist);
+    gapS = tauAtDistance(g.dist, g.tau, carDist) - tau;
   } else {
     // reference lap is not the sampled ghost lap: walk the trail inside that lap
     const n = Math.max(2, Math.round(ref.durationS * trail.hz) + 1);
@@ -127,7 +127,7 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
       if (d <= carDist) lo = mid;
       else hi = mid;
     }
-    gapS = tau - lo / trail.hz;
+    gapS = lo / trail.hz - tau;
   }
   return {
     x: gx,

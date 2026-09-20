@@ -16,6 +16,7 @@
  *   ?source=sim|pipeline                     ground-truth fixture, or the real engine pipeline
  * See tools/harness/README.md for the full list.
  */
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -23,7 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Session } from '@/engine/types';
 import { useSession } from '@/platform';
-import { AppText, Button, colors, formatDate, formatDuration, formatScore, gutter, space } from '@/ui';
+import { alpha, AppText, Button, colors, formatDate, formatDuration, formatScore, gutter, space } from '@/ui';
 import {
   BestDriftCard,
   buildFixtureSession,
@@ -149,7 +150,8 @@ export default function ResultsScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
         <ResultsPage model={model} width={width} run={pageRun} reduceMotion={reduceMotion} onReplay={openReplay} onGarage={() => router.replace('/')} onDrive={() => router.replace('/drive')} />
       </SafeAreaView>
-      {reveal === 'off' ? null : (
+      {/* unmounted once it has played: a finished overlay must not keep eating taps */}
+      {reveal === 'off' || (revealed && !frozen) ? null : (
         <GradeReveal
           grade={model.grade}
           color={model.gradeColor}
@@ -229,8 +231,19 @@ function ResultsPage({
 
       {/* ---- hero ------------------------------------------------------------------ */}
       <View style={styles.hero}>
+        <LinearGradient
+          colors={[alpha(model.gradeColor, 0.2), alpha(model.gradeColor, 0.04), 'transparent']}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroWash}
+          pointerEvents="none"
+        />
         <View style={styles.heroTop}>
           <View style={styles.gradeBox}>
+            <AppText variant="micro" color="muted" style={styles.gradeLabel}>
+              Grade
+            </AppText>
             <AppText
               variant="hero"
               color={model.gradeColor}
@@ -338,7 +351,7 @@ function ResultsPage({
         <Button label="Watch replay" size="lg" onPress={() => onReplay()} testID="cta-replay" style={styles.wide} />
         <View style={styles.actionRow}>
           <Button
-            label={Platform.OS === 'web' ? 'Share · iPhone only' : 'Share'}
+            label="Share"
             variant="secondary"
             onPress={share}
             disabled={Platform.OS === 'web'}
@@ -423,6 +436,10 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space[2], paddingBottom: space[3] },
   pressed: { opacity: 0.6 },
   hero: { gap: space[4] },
+  // stops short of the very top of the viewport on purpose: the harness checks that the
+  // page's corner pixels are still bg0
+  heroWash: { position: 'absolute', left: -gutter, right: -gutter, top: 0, bottom: -space[6] },
+  gradeLabel: { marginBottom: -space[2] },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   gradeBox: { justifyContent: 'flex-start' },
   grade: {

@@ -38,14 +38,14 @@ export interface GradeRevealProps {
 const BARS_IN = 360;
 const HOLD_UNTIL = 900;
 const SLAM = HOLD_UNTIL;
-const BURST_MS = 900;
+const BURST_MS = 760;
 const BARS_OUT = 1880;
 const TOTAL = 2280;
 
 const RM_TOTAL = 1050;
 
 /** Frames the harness can freeze on. */
-const FROZEN: Partial<Record<RevealMode, number>> = { hold: 640, slam: 1060, settle: 1980 };
+const FROZEN: Partial<Record<RevealMode, number>> = { hold: 640, slam: 1170, settle: 1980 };
 
 export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduceMotion = false, onDone, testID }: GradeRevealProps) {
   const { width, height } = useWindowDimensions();
@@ -97,20 +97,32 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
     return { transform: [{ translateX: x }, { translateY: y }] };
   });
 
+  // Where the page's own hero letter sits, so the reveal can hand the grade over to it instead
+  // of cutting: the overlay letter flies up-left and shrinks to the hero's size as it fades.
+  const handoffX = width * 0.28 - width / 2;
+  const handoffY = height * 0.19 - height / 2;
+  const handoffScale = Math.min(168, (Math.min(width, 620) - 40) * 0.44) / letterSize;
+
   const letter = useAnimatedStyle(() => {
     if (reduceMotion) {
-      return { opacity: interpolate(t.value, [0, 220], [0, 1], Extrapolation.CLAMP), transform: [{ scale: 1 }] };
+      return { opacity: interpolate(t.value, [0, 220], [0, 1], Extrapolation.CLAMP), transform: [{ translateX: 0 }, { translateY: 0 }, { scale: 1 }] };
     }
+    const slam = interpolate(t.value, [SLAM, SLAM + 95, SLAM + 200, SLAM + 320], [3.4, 1.08, 0.96, 1], Extrapolation.CLAMP);
+    const hand = interpolate(t.value, [BARS_OUT, TOTAL], [0, 1], Extrapolation.CLAMP);
     return {
       opacity: interpolate(t.value, [SLAM - 30, SLAM + 70], [0, 1], Extrapolation.CLAMP),
-      transform: [{ scale: interpolate(t.value, [SLAM, SLAM + 95, SLAM + 200, SLAM + 320], [3.4, 1.08, 0.96, 1], Extrapolation.CLAMP) }],
+      transform: [
+        { translateX: handoffX * hand },
+        { translateY: handoffY * hand },
+        { scale: slam * (1 + (handoffScale - 1) * hand) },
+      ],
     };
   });
 
   const meta = useAnimatedStyle(() => ({
     opacity: reduceMotion
       ? interpolate(t.value, [140, 360], [0, 1], Extrapolation.CLAMP)
-      : interpolate(t.value, [SLAM + 180, SLAM + 420], [0, 1], Extrapolation.CLAMP),
+      : interpolate(t.value, [SLAM + 180, SLAM + 420, BARS_OUT, BARS_OUT + 180], [0, 1, 1, 0], Extrapolation.CLAMP),
     transform: [{ translateY: reduceMotion ? 0 : interpolate(t.value, [SLAM + 180, SLAM + 460], [14, 0], Extrapolation.CLAMP) }],
   }));
 
@@ -137,7 +149,7 @@ export function GradeReveal({ grade, color, rating, kicker, mode = 'full', reduc
 
           {reduceMotion ? null : (
             <Animated.View style={[styles.burst, { width: burstSize, height: burstSize, marginLeft: -burstSize / 2, marginTop: -burstSize / 2 }, burstStyle]} pointerEvents="none">
-              <GradeBurstView size={burstSize} color={color} progress={burst} testID="grade-burst" />
+              <GradeBurstView size={burstSize} color={color} progress={burst} particles={34} testID="grade-burst" />
             </Animated.View>
           )}
 

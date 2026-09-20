@@ -54,10 +54,13 @@ export class SimPlayer {
     const firstG = data.gps[0]?.t;
     const lastM = data.motion[data.motion.length - 1]?.t;
     const lastG = data.gps[data.gps.length - 1]?.t;
-    const firsts = [firstM, firstG].filter(isFinite);
     const lasts = [lastM, lastG].filter(isFinite);
-    this.t0 = firsts.length ? Math.min(...firsts) : 0;
+    // The MOTION stream defines the clock: `?at=` is seconds of motion data, which is also what
+    // the HUD's own clock counts (`frame.t − first frame`). Fixes that precede the first motion
+    // sample have a negative offset and are delivered straight away.
+    this.t0 = isFinite(firstM) ? firstM : isFinite(firstG) ? firstG : 0;
     this.durationS = lasts.length ? Math.max(0, Math.max(...lasts) - this.t0) : 0;
+    if (isFinite(firstG) && firstG < this.t0) this.pos = firstG - this.t0;
   }
 
   get rate(): number {

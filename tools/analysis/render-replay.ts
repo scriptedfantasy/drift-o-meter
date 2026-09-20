@@ -616,6 +616,33 @@ function speedStreaks(f: Frame): string {
   return s + '</g>';
 }
 
+/**
+ * Two-line ghost readout placed wherever it fits. The gap indicator is load-bearing, so if no
+ * candidate is free it is drawn at the last one anyway rather than leaving a mute chevron.
+ */
+function ghostLabel(col: LabelCollider, x: number, y: number, w: number, gapText: string, gapPoints: number, r = 12): string {
+  const cands: Array<[number, number, 'start' | 'end' | 'middle']> = [
+    [r + 4, 6, 'start'],
+    [-(r + 4), 6, 'end'],
+    [0, -(r + 8), 'middle'],
+    [0, r + 30, 'middle'],
+    [r + 4, -(r + 8), 'start'],
+    [-(r + 4), r + 30, 'end'],
+  ];
+  let pick = cands[cands.length - 1];
+  for (const c of cands) {
+    if (col.place(x + c[0], y + c[1], w, 28, c[2])) {
+      pick = c;
+      break;
+    }
+  }
+  const [dx, dy, anchor] = pick;
+  return (
+    text(x + dx, y + dy - 14, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3.5 }) +
+    text(x + dx, y + dy, gapText, { size: T_LABEL, fill: gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3.5 })
+  );
+}
+
 function worldLabels(f: Frame): string {
   const overview = f.mode === 'overview';
   let s = '<g>';
@@ -676,17 +703,7 @@ function worldLabels(f: Frame): string {
     const gapPts = `${g.gapPoints >= 0 ? '+' : '−'}${pts(Math.abs(g.gapPoints))} PTS`;
     if (onScreen) {
       const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
-      for (const [dx, dy, anchor] of [
-        [14, 6, 'start'],
-        [-14, 6, 'end'],
-        [0, -16, 'middle'],
-        [0, 34, 'middle'],
-      ] as Array<[number, number, 'start' | 'end' | 'middle']>) {
-        if (!col.place(gp.x + dx, gp.y + dy, gw, 28, anchor)) continue;
-        s += text(gp.x + dx, gp.y + dy - 14, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3 });
-        s += text(gp.x + dx, gp.y + dy, gapPts, { size: T_LABEL, fill: g.gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3 });
-        break;
-      }
+      s += ghostLabel(col, gp.x, gp.y, gw, gapPts, g.gapPoints);
     } else {
       const dx = gp.x - carS.x;
       const dy = gp.y - carS.y;
@@ -704,13 +721,8 @@ function worldLabels(f: Frame): string {
         s += `<circle r="13" fill="${BG}" fill-opacity="0.8" stroke="${GREEN}" stroke-width="1.2" opacity="0.85"/>`;
         s += `<g transform="rotate(${f2(ang)})"><polygon points="4,-6 11,0 4,6 6,0" fill="${GREEN}"/><path d="M -5,-4 L -1,0 L -5,4" fill="none" stroke="${GREEN}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/></g>`;
         s += '</g>';
-        const anchor: 'start' | 'end' = ex < W / 2 ? 'start' : 'end';
-        const lx = ex + (ex < W / 2 ? 20 : -20);
         const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
-        if (col.place(lx, ey + 13, gw, 28, anchor)) {
-          s += text(lx, ey - 2, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3 });
-          s += text(lx, ey + 13, gapPts, { size: T_LABEL, fill: g.gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3 });
-        }
+        s += ghostLabel(col, ex, ey, gw, gapPts, g.gapPoints, 18);
       }
     }
   }

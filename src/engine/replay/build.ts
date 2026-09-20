@@ -140,18 +140,18 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
     const af = Number.isFinite(a);
     const bf = Number.isFinite(b);
     if (af && bf) return a + (b - a) * f;
+    badScalar++;
     if (af) return a;
     if (bf) return b;
-    badScalar++;
     return last;
   };
   const pickAngle = (a: number, b: number, f: number, last: number): number => {
     const af = Number.isFinite(a);
     const bf = Number.isFinite(b);
     if (af && bf) return lerpAngle(a, b, f);
+    badScalar++;
     if (af) return wrapAngle(a);
     if (bf) return wrapAngle(b);
-    badScalar++;
     return last;
   };
   for (let k = 0; k < n; k++) {
@@ -184,7 +184,7 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
     intensity[k] = intensityOf(beta[k], opts);
   }
   if (badPos > 0) warnings.push(badPos === n ? 'no usable positions in this session (SIGNAL LOST)' : `${badPos} trail samples had no usable position`);
-  if (badScalar > 0) warnings.push(`${badScalar} non-finite speed/angle samples were held at their last good value`);
+  if (badScalar > 0) warnings.push(`${badScalar} trail samples were affected by a non-finite speed/angle input and were held steady`);
   const dist = new Float64Array(n);
   for (let k = 1; k < n; k++) dist[k] = dist[k - 1] + (0.5 * (speed[k - 1] + speed[k])) / hz;
   return {
@@ -392,6 +392,10 @@ function buildSmoke(trail: ReplayTrail, opts: ReplayOptions): SmokeParticle[] {
     const c = trail.course[k];
     const ch = Math.cos(h);
     const sh = Math.sin(h);
+    // spread is perpendicular to the DIRECTION OF TRAVEL, so the puff always leaves the tyre
+    // backwards however far the nose is turned
+    const cc = Math.cos(c);
+    const scc = Math.sin(c);
     // the outside rear tyre works hardest: β>0 (travelling left of the nose) → right rear
     const outside: 1 | -1 = b > 0 ? -1 : 1;
     // one puff per emission, biased to the outside tyre (halves the count vs both tyres and
@@ -409,8 +413,8 @@ function buildSmoke(trail: ReplayTrail, opts: ReplayOptions): SmokeParticle[] {
       birthT: t,
       x: ox,
       y: oy,
-      vx: -back * Math.cos(c) - lateral * sh,
-      vy: -back * Math.sin(c) + lateral * ch,
+      vx: -back * cc - lateral * scc,
+      vy: -back * scc + lateral * cc,
       // double the size variance
       size: (0.9 + 1.1 * inten) * (0.6 + 0.9 * s2),
       life: opts.smokeLifeS * (0.8 + 0.5 * s0),
@@ -503,7 +507,7 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
         holdS: 1.1,
         magnitude: mag,
         priority: seg.severity === 'spin' ? 90 : 60,
-        label: seg.severity === 'spin' ? 'ON THE EDGE' : `${Math.round((seg.peakAngle * 180) / Math.PI)}° ANGLE`,
+        label: seg.severity === 'spin' ? 'ON THE EDGE' : 'BIG ANGLE',
         driftId: seg.driftId,
         lapIndex: seg.lapIndex,
       });
@@ -664,15 +668,26 @@ function buildBounds(trail: ReplayTrail, track: Replay['track'], opts: ReplayOpt
   return { minX: minX - pad, maxX: maxX + pad, minY: minY - pad, maxY: maxY + pad };
 }
 
-/** First/last times the car is actually moving, so the replay does not open on a parked car. */
-function activeWindow(src: SourceSample[], opts: ReplayOptions): { start: number; end: number } {
+/**
+ * First/last times worth watching: the replay must not open on a parked car, nor keep rolling
+ * for twenty seconds after the chequered flag. On a closed circuit it ends just after the last
+ * lap's finish so the FINISH beat and the grade land on the final frame.
+ */
+function activeWindow(session: Session, src: SourceSample[], opts: ReplayOptions): { start: number; end: number } {
   const moving = (s: SourceSample) => Number.isFinite(s.speed) && s.speed > 1.5;
   let i = 0;
   while (i < src.length && !moving(src[i])) i++;
   let j = src.length - 1;
   while (j > i && !moving(src[j])) j--;
   if (i >= j) return { start: src[0].t, end: src[src.length - 1].t };
-  return { start: Math.max(src[0].t, src[i].t - opts.deadAirS), end: Math.min(src[src.length - 1].t, src[j].t + opts.deadAirS) };
+  const start = Math.max(src[0].t, src[i].t - opts.deadAirS);
+  let end = Math.min(src[src.length - 1].t, src[j].t + opts.deadAirS);
+  const laps = session.track?.laps ?? [];
+  if (session.track?.closed && laps.length > 0) {
+    const finish = Math.max(...laps.map((l) => (Number.isFinite(l.endT) ? l.endT : -Infinity)));
+    if (Number.isFinite(finish) && finish > start + 5) end = Math.min(end, finish + 2.5);
+  }
+  return { start, end };
 }
 
 /**
@@ -710,7 +725,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
       options: opts,
     };
   }
-  const window = activeWindow(src, opts);
+  const window = activeWindow(session, src, opts);
   const t0 = window.start;
   const durationS = Math.max(1 / opts.trailHz, window.end - t0);
   const trail = buildTrail(src, t0, durationS, opts, warnings);

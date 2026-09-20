@@ -24,16 +24,18 @@ export interface DriftListProps {
 }
 
 export function DriftList({ rows, sparkWidth, run, reduceMotion = false, onSeek, testID }: DriftListProps) {
-  // one y-scale for every row: 15° steps, at least up to the biggest peak (or the spin line)
-  const peak = rows.reduce((m, r) => Math.max(m, r.peakDeg), 0);
-  const spun = rows.some((r) => r.spun);
-  const maxDeg = Math.max(30, Math.ceil((Math.max(peak * 1.08, spun ? 95 : 0)) / 15) * 15);
+  // One y-scale for every row so they compare. It follows the 90th-percentile peak, not the
+  // maximum: one 118° spin would otherwise flatten every honest 40° slide into a hairline. A row
+  // above the scale clips, and its number column still prints the true peak.
+  const sorted = rows.map((r) => r.peakDeg).sort((a, b) => a - b);
+  const p90 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.9))] : 0;
+  const maxDeg = Math.max(45, Math.min(75, Math.ceil((p90 * 1.06) / 15) * 15));
 
   return (
     <View style={styles.list} testID={testID}>
       <View style={styles.legend}>
         <AppText variant="micro" color="muted">
-          |β| per slide · axis 0–{maxDeg}°
+          |β| per slide · axis 0–{maxDeg}°{rows.some((r) => r.peakDeg > maxDeg) ? ' (clipped)' : ''}
         </AppText>
         <AppText variant="micro" color="muted">
           peak · time · points
@@ -84,7 +86,7 @@ function Row({
         </View>
 
         <View style={styles.sparkCol}>
-          <Sparkline trace={row.trace} width={sparkWidth} height={34} maxDeg={maxDeg} color={row.lost ? colors.muted : colors.ember} spun={row.spun} showGuides={false} />
+          <Sparkline trace={row.trace} width={sparkWidth} height={42} maxDeg={row.spun ? Math.max(maxDeg, row.peakDeg * 1.06) : maxDeg} color={row.lost ? colors.muted : colors.ember} spun={row.spun} showGuides={false} />
           <View style={styles.tags}>
             {row.spun ? <Tag label="SPIN" color={colors.red} filled /> : null}
             {row.lost ? <Tag label="CHAIN LOST" color={colors.muted} /> : null}
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderLeftWidth: 3,
     borderRadius: radii.md,
-    paddingVertical: space[3],
+    paddingVertical: space[2],
     paddingRight: space[3],
     paddingLeft: space[3],
   },

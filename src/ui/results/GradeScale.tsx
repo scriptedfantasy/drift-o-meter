@@ -46,8 +46,8 @@ export function GradeScale({
               <AppText variant="micro" color={active ? gradeColors[b.grade] : colors.muted} style={active ? styles.active : undefined}>
                 {b.grade}
               </AppText>
-              <AppText variant="micro" color={colors.line}>
-                {b.min}
+              <AppText variant="micro" color={active ? colors.muted : colors.line} numeric>
+                {b.min === 0 ? '' : `${b.min}+`}
               </AppText>
             </View>
           );

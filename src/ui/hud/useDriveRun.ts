@@ -18,6 +18,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import type { LiveFrame } from '../../engine/pipeline';
 import { G, radToDeg, type DriftPhase, type GpsSample, type MotionSample } from '../../engine/types';
@@ -204,6 +205,9 @@ export function useDriveRun(signals: HudSignals): DriveRun {
   });
 
   const haptics = useRef({ enabled: false });
+  const prefersReducedMotion = useReducedMotion();
+  const reduceMotion = useRef(false);
+  reduceMotion.current = prefersReducedMotion;
 
   const pushEvents = useCallback((next: HudEvent[], t: number) => {
     setEvents((prev) => [...next.slice().reverse(), ...prev].filter((e) => t - e.t <= CALLOUT_HOLD_S).slice(0, MAX_CALLOUTS));
@@ -254,14 +258,23 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       const phase = f.phase;
       const wasActive = ACTIVE_PHASES.has(h.prevPhase);
       if (active && !wasActive) {
-        signals.punch.value = 1;
+        // Entry: the numeral punches to 1.08× and springs back.
+        signals.punch.value = withSequence(withTiming(1, { duration: 70 }), withSpring(0, { damping: 11, stiffness: 150, mass: 0.6 }));
         fireHaptic('entry');
       } else if (!active && wasActive) {
         fireHaptic('exit');
       }
       if (phase === 'transition' && h.prevPhase !== 'transition') {
-        signals.flash.value = 1;
-        signals.shake.value = 1;
+        // Transition: 120 ms magenta flash, 100 ms 2 px shake (dropped when reduce-motion is on).
+        signals.flash.value = withSequence(withTiming(1, { duration: 40 }), withTiming(0, { duration: 140 }));
+        if (!reduceMotion.current) {
+          signals.shake.value = withSequence(
+            withTiming(1, { duration: 24 }),
+            withTiming(-0.8, { duration: 24 }),
+            withTiming(0.5, { duration: 26 }),
+            withTiming(0, { duration: 26 }),
+          );
+        }
         fireHaptic('transition');
       }
       h.prevPhase = phase;

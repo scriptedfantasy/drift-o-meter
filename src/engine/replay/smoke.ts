@@ -3,7 +3,7 @@ import type { SmokeParticle, SmokeState } from './types';
 /** Velocity decay time constant, s: puffs stop drifting after ~1 s. */
 const SMOKE_DRAG_TAU = 0.45;
 /** Growth: radius reaches size × (1 + SMOKE_GROWTH) at end of life. */
-const SMOKE_GROWTH = 2.6;
+const SMOKE_GROWTH = 2.1;
 /** Turbulence: metres of swirl by end of life. */
 const SMOKE_TURBULENCE = 1.4;
 /** Buoyancy: slow outward/upward drift (screen-up is +y in world terms here), m/s. */

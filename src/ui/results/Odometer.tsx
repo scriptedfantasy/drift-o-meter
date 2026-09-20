@@ -5,7 +5,7 @@
  */
 import { useEffect } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming, type SharedValue } from 'react-native-reanimated';
 
 import { colors, fontFamilies } from '../theme';
 
@@ -29,18 +29,26 @@ export function Odometer({ value, run = true, durationMs = 1300, fontSize, color
   const target = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
   const text = target.toLocaleString('en-US');
   const v = useSharedValue(run ? 0 : target);
+  // 0 while the drums are turning, 1 once they have to sit still on the final digits: the carry
+  // fraction is only correct mid-count, so it is eased out at the end
+  const settle = useSharedValue(run ? 0 : 1);
   const digitH = Math.round(fontSize * 0.98);
-  const digitW = Math.round(fontSize * 0.54);
+  const digitW = Math.round(fontSize * 0.52);
 
   useEffect(() => {
     cancelAnimation(v);
+    cancelAnimation(settle);
     if (!run) {
       v.value = target;
+      settle.value = 1;
       return;
     }
+    const d = reduceMotion ? 320 : durationMs;
     v.value = 0;
-    v.value = withTiming(target, { duration: reduceMotion ? 320 : durationMs, easing: Easing.bezier(0.16, 1, 0.3, 1) });
-  }, [run, target, durationMs, reduceMotion, v]);
+    settle.value = 0;
+    v.value = withTiming(target, { duration: d, easing: Easing.bezier(0.16, 1, 0.3, 1) });
+    settle.value = withDelay(Math.max(0, d - 220), withTiming(1, { duration: 220, easing: Easing.linear }));
+  }, [run, target, durationMs, reduceMotion, v, settle]);
 
   // place exponent per character: the rightmost digit is 10^0
   const digitsAfter: number[] = [];
@@ -58,7 +66,7 @@ export function Odometer({ value, run = true, durationMs = 1300, fontSize, color
             ,
           </Text>
         ) : (
-          <Digit key={`d${i}`} place={digitsAfter[i]} v={v} digitH={digitH} digitW={digitW} fontSize={fontSize} color={color} />
+          <Digit key={`d${i}`} place={digitsAfter[i]} v={v} settle={settle} digitH={digitH} digitW={digitW} fontSize={fontSize} color={color} />
         ),
       )}
     </View>
@@ -68,13 +76,15 @@ export function Odometer({ value, run = true, durationMs = 1300, fontSize, color
 function Digit({
   place,
   v,
+  settle,
   digitH,
   digitW,
   fontSize,
   color,
 }: {
   place: number;
-  v: { value: number };
+  v: SharedValue<number>;
+  settle: SharedValue<number>;
   digitH: number;
   digitW: number;
   fontSize: number;
@@ -86,7 +96,7 @@ function Digit({
     const whole = Math.floor(pos);
     const frac = pos - whole;
     // sit still, then flip: the drum only turns in the last quarter of each count
-    const f = Math.min(1, Math.max(0, (frac - 0.72) / 0.28));
+    const f = Math.min(1, Math.max(0, (frac - 0.72) / 0.28)) * (1 - settle.value);
     const digit = ((whole % 10) + 10) % 10;
     return { transform: [{ translateY: -(digit + f) * digitH }] };
   });

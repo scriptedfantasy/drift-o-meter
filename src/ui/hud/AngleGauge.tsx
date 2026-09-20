@@ -20,7 +20,7 @@ import { colors, rgba } from '../theme';
 import type { HudSignals } from './signals';
 
 /** Half the angular width of the arc on screen, degrees (0 = straight up). */
-const HALF_SWEEP = 62;
+const HALF_SWEEP = 78;
 /** |β| at the ends of the arc. */
 const MAX_BETA = 90;
 const DEG = Math.PI / 180;
@@ -37,16 +37,19 @@ export interface AngleGaugeProps {
 
 export default function AngleGauge({ width, height, signals, testID }: AngleGaugeProps) {
   const cx = width / 2;
-  const cy = height * 0.97;
-  const r = Math.min(width * 0.47, height * 0.84);
-  const stroke = Math.max(10, r * 0.072);
-  const numeralSize = Math.min(height * 0.5, width * 0.42);
-  const baselineY = cy - r * 0.24;
-  const numeralMidY = baselineY - numeralSize * 0.33;
+  const cy = height * 0.92;
+  const r = Math.min(width * 0.47, height * 0.86);
+  const stroke = Math.max(10, r * 0.085);
+  // Sized so a two-digit numeral plus its degree sign stays inside the bowl: the block is
+  // ~1.2 em wide either side of the centre, and the arc is only r·cos(asin(x/r)) high there.
+  const numeralSize = r * 0.7;
+  /** Cap height is ~0.72 em: this centres the numeral in the bowl rather than on its baseline. */
+  const numeralMidY = cy - r * 0.5;
+  const baselineY = numeralMidY + numeralSize * 0.35;
 
   const font = useFont(NUMERAL_FONT, numeralSize);
-  const degFont = useFont(NUMERAL_FONT, numeralSize * 0.42);
-  const labelFont = useFont(LABEL_FONT, Math.max(12, Math.round(numeralSize * 0.2)));
+  const degFont = useFont(NUMERAL_FONT, numeralSize * 0.38);
+  const labelFont = useFont(LABEL_FONT, Math.max(12, Math.round(numeralSize * 0.26)));
 
   /**
    * Measured once per font: a digit's advance, the "°" width, the side letter's half width.
@@ -72,7 +75,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   }, [degFont, font, labelFont, numeralSize]);
 
   /** Distance from the centre to the L/R chevron, wide enough to clear a two-digit numeral. */
-  const chevronOffset = metrics.advance * 1.15 + metrics.deg + numeralSize * 0.22;
+  const chevronOffset = metrics.advance * 1.08 + metrics.deg * 0.8 + numeralSize * 0.1;
 
   const rect = useMemo(() => ({ x: cx - r, y: cy - r, width: 2 * r, height: 2 * r }), [cx, cy, r]);
 
@@ -92,10 +95,10 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   }, [cx, cy, r, stroke]);
 
   const needle = useMemo(() => {
-    const tip = r - stroke * 2.4;
-    const base = r * 0.16;
-    const halfBase = Math.max(3.5, r * 0.02);
-    const halfTip = Math.max(1.5, r * 0.006);
+    const tip = r - stroke * 1.0;
+    const base = r * 0.66;
+    const halfBase = Math.max(4, r * 0.038);
+    const halfTip = Math.max(1.5, r * 0.009);
     return Skia.PathBuilder.Make()
       .moveTo(cx - halfBase, cy - base)
       .lineTo(cx - halfTip, cy - tip)
@@ -121,7 +124,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
 
   /** Two stacked chevrons pointing away from the centre, drawn around (0, 0). */
   const chevron = useMemo(() => {
-    const s = numeralSize * 0.15;
+    const s = numeralSize * 0.125;
     const b = Skia.PathBuilder.Make();
     for (let i = 0; i < 2; i++) {
       const x = i * s * 0.8;
@@ -149,12 +152,12 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const dimmed = useDerivedValue(() => 0.35 + 0.65 * signals.valid.value);
 
   const numeral = useDerivedValue(() => String(Math.round(Math.min(99, signals.absDeg.value))));
-  const blockLeft = useDerivedValue(() => cx - (numeral.value.length * metrics.advance + metrics.deg) / 2);
-  const degX = useDerivedValue(() => blockLeft.value + numeral.value.length * metrics.advance + metrics.advance * 0.04);
+  const blockLeft = useDerivedValue(() => cx - (numeral.value.length * metrics.advance + metrics.deg * 1.12) / 2);
+  const degX = useDerivedValue(() => blockLeft.value + numeral.value.length * metrics.advance + metrics.advance * 0.12);
   const numeralScale = useDerivedValue(() => [{ scale: 1 + 0.08 * signals.punch.value }]);
   const chevronTransform = useDerivedValue(() => [
     { translateX: cx + signals.side.value * chevronOffset },
-    { translateY: numeralMidY - numeralSize * 0.1 },
+    { translateY: numeralMidY },
     { scaleX: signals.side.value },
   ]);
   const letterX = useDerivedValue(() => cx + signals.side.value * chevronOffset - metrics.letterHalf);
@@ -171,7 +174,9 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
 
       {/* dark track + ticks */}
       <Path path={arc} color={rgba(colors.line, 0.95)} style="stroke" strokeWidth={stroke} strokeCap="butt" />
-      <Path path={ticks} color={rgba(colors.text, 0.4)} style="stroke" strokeWidth={Math.max(1.5, r * 0.0085)} />
+      <Path path={arc} color={rgba(colors.text, 0.13)} style="stroke" strokeWidth={1} strokeCap="butt" />
+      <Path path={ticks} color={rgba(colors.text, 0.42)} style="stroke" strokeWidth={Math.max(1.5, r * 0.0085)} />
+
 
       {/* ghost tick: the peak of the drift in progress */}
       <Group origin={vec(cx, cy)} transform={peakTransform} opacity={peakOpacity}>
@@ -197,8 +202,8 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
           </Path>
           <Path path={needle} color={rgba('#FFFFFF', 0.9)} />
         </Group>
-        <Circle cx={cx} cy={cy} r={Math.max(5, r * 0.032)} color={colors.bg0} />
-        <Circle cx={cx} cy={cy} r={Math.max(5, r * 0.032)} color={hot} style="stroke" strokeWidth={2} />
+        <Circle cx={cx} cy={cy} r={Math.max(4, r * 0.026)} color={colors.bg0} />
+        <Circle cx={cx} cy={cy} r={Math.max(4, r * 0.026)} color={hot} style="stroke" strokeWidth={1.5} />
       </Group>
 
       {/* the hero numeral */}
@@ -210,7 +215,7 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
             </SkText>
           </Group>
           <SkText x={blockLeft} y={baselineY} text={numeral} font={font} color={hot} />
-          <SkText x={degX} y={baselineY - numeralSize * 0.44} text="°" font={degFont} color={hot} opacity={0.9} />
+          <SkText x={degX} y={baselineY - numeralSize * 0.36} text="°" font={degFont} color={hot} opacity={0.92} />
           <Group transform={chevronTransform}>
             <Path path={chevron} color={hot} opacity={0.95} />
           </Group>

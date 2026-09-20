@@ -307,9 +307,9 @@ function driftRows(session: Session, breakdown: SessionBreakdown): DriftRow[] {
       startT: event.startT,
       endT: event.endT,
       durationS: event.durationS,
-      // a spin stops the accumulator on the sample that tripped it, so its running peak can be
-      // 0: fall back to the event's own peak, which is what the trace shows
-      peakDeg: stats && stats.peakDeg > 0 ? stats.peakDeg : radToDeg(event.peakAngle),
+      // The accumulator stops on the sample that tripped the spin, so its running peak is
+      // truncated (or 0). The trace kept going: for a spin, report what the car actually did.
+      peakDeg: stats && stats.peakDeg > 0 && !stats.spun ? stats.peakDeg : Math.max(stats?.peakDeg ?? 0, radToDeg(event.peakAngle)),
       heldPeakDeg: stats && stats.heldPeakDeg > 0 ? stats.heldPeakDeg : radToDeg(event.peakAngle),
       entryKmh: stats ? stats.entrySpeedKmh : event.entrySpeed * 3.6,
       meanKmh: stats ? stats.meanSpeedKmh : event.meanSpeed * 3.6,

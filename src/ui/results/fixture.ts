@@ -58,7 +58,7 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
  */
 export const FIXTURES: Record<string, FixtureSpec> = {
   /** S: a hero lap — huge held angles, repeatable corner after corner. */
-  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.8, consistency: 1, blurb: 'Hero lap · grade S' },
+  hero: { ...BASE, name: 'hero', seed: 3, aggression: 1.8, consistency: 0.96, blurb: 'Hero lap · grade S' },
   /** A/B: the default, a good but human run. */
   good: { ...BASE, name: 'good', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap · grade A' },
   /** D: low angles, wandering, corners never repeated. */

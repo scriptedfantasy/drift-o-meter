@@ -64,15 +64,15 @@ function Callout({ event, depth, fromRight, size }: { event: HudEvent; depth: nu
     const scale = 1.8 - 0.8 * p;
     const slide = (1 - p) * (fromRight ? 64 : -64);
     return {
-      opacity: Math.min(1, p * 3) * (1 - 0.3 * depthV.value),
+      opacity: Math.min(1, p * 3) * (1 - 0.2 * depthV.value),
       transform: [{ translateX: slide }, { scale }],
     };
   });
 
   return (
-    <Animated.View style={[styles.callout, fromRight && styles.calloutRight, { borderColor: alpha(tone, 0.55), backgroundColor: alpha(tone, 0.14) }, style]}>
+    <Animated.View style={[styles.callout, fromRight && styles.calloutRight, { backgroundColor: alpha(tone, 0.12) }, style]}>
       <View style={[styles.bar, { backgroundColor: tone }]} />
-      <AppText numberOfLines={1} style={[styles.label, { fontSize: size, lineHeight: size * 1.02, color: tone }]}>
+      <AppText numberOfLines={1} style={[styles.label, { fontSize: size, lineHeight: size * 1.02, color: tone, textShadowColor: alpha(tone, 0.85) }]}>
         {event.label}
       </AppText>
       {event.points > 0 ? (
@@ -129,7 +129,7 @@ function Banner({ banner, size, align }: { banner: HudBanner; size: number; alig
 
   return (
     <Animated.View style={[styles.banner, align === 'right' && styles.bannerRight, style]}>
-      <AppText style={[styles.bannerText, { fontSize: size, lineHeight: size * 1.05, color: tone }]} numeric>
+      <AppText style={[styles.bannerText, { fontSize: size, lineHeight: size * 1.05, color: tone, textShadowColor: alpha(tone, 0.8) }]} numeric>
         {banked ? 'BANKED +' : 'CHAIN LOST −'}
         {shown.toLocaleString('en-US')}
       </AppText>
@@ -161,15 +161,14 @@ const styles = StyleSheet.create({
     paddingVertical: space[1],
     paddingRight: space[3],
     paddingLeft: space[2],
-    borderWidth: 1,
     borderRadius: radii.sm,
     transformOrigin: 'left center',
   },
   calloutRight: { transformOrigin: 'right center' },
   bar: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
-  label: { fontFamily: fontFamilies.display.extraboldItalic, letterSpacing: 0.4 },
+  label: { fontFamily: fontFamilies.display.extraboldItalic, letterSpacing: 0.4, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 14 },
   points: { fontFamily: fontFamilies.display.boldItalic },
   banner: { alignSelf: 'flex-start' },
   bannerRight: { alignSelf: 'flex-end' },
-  bannerText: { fontFamily: fontFamilies.display.extraboldItalic, letterSpacing: 0.5 },
+  bannerText: { fontFamily: fontFamilies.display.extraboldItalic, letterSpacing: 0.5, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18 },
 });

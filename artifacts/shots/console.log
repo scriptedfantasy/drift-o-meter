@@ -1,6 +1,4 @@
 
-===== drive-idle  http://127.0.0.1:44161/drive?sim=harbor&rate=1
+===== results-reveal  http://127.0.0.1:35117/results/fixture-hero
 
-===== drive  http://127.0.0.1:44161/drive?sim=harbor&rate=1&at=104
-
-===== drive-peak  http://127.0.0.1:44161/drive?sim=harbor&rate=1&at=114.5&hold=1
+===== results-reveal-slam  http://127.0.0.1:35117/results/fixture-hero?reveal=slam

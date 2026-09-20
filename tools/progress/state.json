@@ -32,9 +32,9 @@
       "id": "slip",
       "name": "Slip-angle estimator",
       "layer": "engine",
-      "status": "fixing",
+      "status": "critique",
       "rounds": 0,
-      "verdict": "Six targets marginally missed after the sensor rework; the lever arm and the receiver-filtered GPS course are being modelled explicitly.",
+      "verdict": "All targets met. The filter now runs its kinematics at the phone rather than the car, and learns the road camber and grade as states instead of carrying them as error. Worst case 2.24 deg while drifting, 21 ms lag, no sign errors.",
       "note": "Kalman fusion of gyro heading, lateral-g kinematics and GPS course"
     },
     {
@@ -222,7 +222,32 @@
     {
       "t": "19:05",
       "text": "Detector and integrity are green again, 51 tests, with every original target still asserted at its original value. A critic is now checking whether the four judgement modules together would agree with a human drift judge."
+    },
+    {
+      "t": "19:25",
+      "text": "Slip estimator finished and verified: 53 tests, every original target intact, and the plotted estimate hugs the truth through a full drift sequence. Three mountain-pass seeds outside the test set remain 0.2 degrees over target, disclosed rather than tuned away."
     }
   ],
-  "shots": []
+  "shots": [
+    {
+      "path": "artifacts/slip-touge.png",
+      "caption": "The estimator against ground truth on the mountain pass: initiation, hold, a 110 deg/s transition and exit, with the filter learning 11 % of road camber as it goes.",
+      "width": 560
+    },
+    {
+      "path": "artifacts/shots/home.png",
+      "caption": "Garage screen, running in the real app bundle in Chromium.",
+      "width": 240
+    },
+    {
+      "path": "artifacts/shots/drive.png",
+      "caption": "Drive screen with Skia rendering live simulated sensor data. The HUD is being rebuilt now.",
+      "width": 240
+    },
+    {
+      "path": "artifacts/replay-chase-drift.png",
+      "caption": "Replay chase camera at 52 degrees. The critic failed this frame: too empty, car too small, nothing escalates.",
+      "width": 240
+    }
+  ]
 }

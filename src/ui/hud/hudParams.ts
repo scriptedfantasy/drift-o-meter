@@ -33,7 +33,8 @@ export const DEFAULT_HUD_PARAMS: HudParams = { at: NaN, hold: false, autoRun: fa
 const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
 
 const INTEGRITY_PRESETS: Record<string, LiveFrame['integrity']> = {
-  loose: { mount: 'loose', physics: 'ok', gps: 'good', message: 'Phone is moving in the mount — tighten it' },
+  // The wording is the IntegrityMonitor's own, so the override shows what a real loose mount says.
+  loose: { mount: 'loose', physics: 'ok', gps: 'good', message: 'Phone looks hand-held — clip it into a rigid mount to score drifts' },
   suspect: { mount: 'suspect', physics: 'ok', gps: 'good', message: 'Mount is shaking — angles may read high' },
   'gps-poor': { mount: 'rigid', physics: 'ok', gps: 'poor', message: 'Weak GPS — drive into the open' },
   'gps-none': { mount: 'rigid', physics: 'ok', gps: 'none', message: 'No GPS fix — scoring is paused' },

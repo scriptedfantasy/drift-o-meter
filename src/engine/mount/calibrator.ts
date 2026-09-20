@@ -86,7 +86,12 @@ import { type GpsSample, type MotionSample, type MountCalibration, type VehicleM
  * push() is the returned sample.
  */
 export interface MountOptions {
-  /** Body-up filter time constant (slow low-pass of the inertial up), seconds. */
+  /**
+   * Body-up filter time constant (slow low-pass of the inertial up), seconds. Far longer than
+   * the 4 s gravity-lean constant AND than a corner: the up axis wanted here is the BODY's,
+   * and the world vertical swings ±3° with body roll on the flat and ±7° over the touge's
+   * off-camber banking. Averaging over half a lap is what makes those cancel.
+   */
   gravityTau: number;
   /** Low-pass on the specific force before it corrects the inertial up, seconds. */
   forceTau: number;
@@ -99,6 +104,10 @@ export interface MountOptions {
   parkedAccel: number;
   /** Knock reference: the inertial up is compared with its own low-pass of this time constant, seconds. */
   knockRefTau: number;
+  /** Memory (trust-weighted seconds) of the accelerometer-fit residual and the angle (rad) at
+   * which that residual drives the up-axis quality to 0. */
+  fitTau: number;
+  fitQualityRad: number;
   /** Gyro-invisible re-orientation cues: OS-gravity disagreement (deg, held s) and unexplained tilt (deg, held s). */
   reseedGravityDeg: number;
   reseedGravityHoldS: number;
@@ -106,10 +115,13 @@ export interface MountOptions {
   reseedTiltHoldS: number;
   /** A gap between motion samples longer than this (seconds) re-seeds the inertial up from the OS gravity. */
   gapS: number;
-  /** Trust widths: acceleration (m/s²) and |f|−g (m/s²). */
+  /** Trust widths: SUSTAINED acceleration (m/s²) and |f|−g (m/s²). */
   trustAccel: number;
   trustForce: number;
-  /** User acceleration at which the body-up filter runs at half speed (1/(1+(|a|/a0)²)). */
+  /**
+   * User acceleration at which the body-up filter runs at half speed (1/(1+(|a|/a0)²)), so it
+   * weights quiet moments — where the inertial up is freshly anchored — far above loaded ones.
+   */
   gravitySlowdownAccel: number;
   /**
    * Disagreement between the inertial up and the slow body up that counts as a knock, degrees.
@@ -119,6 +131,9 @@ export interface MountOptions {
   gravityJumpDeg: number;
   /** ...held for this long, seconds. */
   gravityJumpHoldS: number;
+  /** After a knock the body-up filter runs at this time constant for this long, seconds. */
+  knockFastTau: number;
+  knockFastS: number;
   /** Low-pass on the acceleration before event detection, seconds. */
   accelTau: number;
   /** Sustained-event threshold, m/s². */
@@ -178,6 +193,8 @@ export interface MountOptions {
   /** Memory of the road-pitch estimate, seconds of clean evidence, and its cap (radians). */
   gradeTau: number;
   gradeMaxRad: number;
+  /** Evidence (Σ w·(g·Δt)²) at which the road pitch is applied in full. */
+  gradeMinEvidence: number;
   /** Speed change over a GPS interval at which that interval is half rejected, m/s. */
   gradeDvGate: number;
   /**
@@ -198,13 +215,15 @@ export interface MountOptions {
 }
 
 export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
-  gravityTau: 9,
+  gravityTau: 30,
   forceTau: 0.25,
-  upCorrectionTau: 2,
+  upCorrectionTau: 1.5,
   upBiasGain: 0.05,
   parkedRate: 0.02,
   parkedAccel: 0.25,
   knockRefTau: 1.0,
+  fitTau: 4,
+  fitQualityRad: 0.06,
   reseedGravityDeg: 25,
   reseedGravityHoldS: 0.5,
   reseedTiltDeg: 30,
@@ -212,9 +231,11 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gapS: 0.5,
   trustAccel: 0.8,
   trustForce: 0.4,
-  gravitySlowdownAccel: 3,
-  gravityJumpDeg: 25,
+  gravitySlowdownAccel: 0.8,
+  gravityJumpDeg: 35,
   gravityJumpHoldS: 1,
+  knockFastTau: 1.5,
+  knockFastS: 8,
   accelTau: 0.1,
   eventThreshold: 1.2,
   eventMinDuration: 0.4,
@@ -241,15 +262,16 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gpsVoteTau: 12,
   gpsVoteMinEvidence: 3,
   signAcceptScore: 0.5,
-  gradeCompensation: true,
+  gradeCompensation: false,
   gradeTau: 25,
   gradeMaxRad: 0.25,
+  gradeMinEvidence: 60,
   gradeDvGate: 1,
   leverCompensation: true,
   leverTau: 0.02,
   leverHpTau: 0.3,
   leverRegressTau: 40,
-  leverRidge: 4,
+  leverRidge: 0.5,
   leverMax: 2.5,
   maxDt: 0.1,
 };
@@ -262,8 +284,11 @@ export interface MountDiagnostics {
   inertialUp: [number, number, number];
   /** Estimated forward axis (unit, phone frame). */
   forward: [number, number, number];
-  /** Up-axis steadiness: EMA of the inertial-up / body-up disagreement, degrees. */
+  /** Body attitude activity: EMA of the inertial-up / body-up disagreement, degrees. This is
+   * the car rolling and pitching, NOT a calibration error. */
   gravityDeviationDeg: number;
+  /** Accelerometer fit: trust-weighted EMA of the angle between −f̂ and the inertial up, degrees. */
+  gravityFitDeg: number;
   /** Estimated gyro bias (phone frame, rad/s) and the mean accelerometer trust since reset. */
   gyroBias: [number, number, number];
   meanTrust: number;
@@ -363,9 +388,11 @@ export class MountCalibrator {
   private by = 0;
   private bz = 1; // grade-compensated up actually used for R (unit)
   private devEma = 0; // rad
+  private fitEma = 0; // rad: trust-weighted EMA of the angle between −f̂ and the inertial up
   private upAge = 0; // seconds of gravity data since (re)start
   private jumpSince = -1;
   private stationaryUntil = -1;
+  private fastUpUntil = -1;
   private knocks = 0;
 
   // ---- acceleration (phone frame, low-passed) and yaw rate
@@ -521,6 +548,7 @@ export class MountCalibrator {
       inertialUp: [this.ix, this.iy, this.iz],
       forward: [this.fx, this.fy, this.fz],
       gravityDeviationDeg: (this.devEma * 180) / Math.PI,
+      gravityFitDeg: (this.fitEma * 180) / Math.PI,
       gyroBias: [this.gbx, this.gby, this.gbz],
       meanTrust: this.trustN > 0 ? this.trustSum / this.trustN : 0,
       upQuality: this.upQuality,
@@ -583,9 +611,11 @@ export class MountCalibrator {
     this.by = 0;
     this.bz = 1;
     this.devEma = 0;
+    this.fitEma = 0;
     this.upAge = 0;
     this.jumpSince = -1;
     this.stationaryUntil = -1;
+    this.fastUpUntil = -1;
     this.knocks = 0;
     this.innovations = 0;
     this.staleResets = 0;
@@ -715,12 +745,12 @@ export class MountCalibrator {
       if (o.gradeCompensation && this.lineValid && dT > 0.3 && dT < 2.5 && speed >= o.betaMinSpeed) {
         // ...and only over intervals whose speed barely changed. GPS speed is filtered by the
         // receiver (τ≈0.3 s) on top of the delivery latency, so Δv belongs to a window shifted
-        // by δ against ∫a dt and the mismatch is δ·Δa — worst exactly where the clean gate
-        // likes to open, at the onset of a hard corner exit, which is what dragged the pitch
-        // estimate to −5° on a flat track. At constant speed f_long IS g·sin(pitch).
+        // by δ against ∫a dt and falls short by δ·Δa — worst exactly where the clean gate
+        // likes to open, at the onset of a hard corner exit, which dragged the pitch estimate
+        // to −5° on a flat track. At near-constant speed f_long IS g·sin(pitch).
         const still = dv / o.gradeDvGate;
         const clean = clamp((cwNow - this.prevCw) / dT, 0, 1) * Math.exp(-still * still);
-        if (clean > 0.05) {
+        if (clean > 0.02) {
           const iFwd = ix * this.fx + iy * this.fy + iz * this.fz;
           const dec = Math.exp((-clean * dT) / o.gradeTau);
           this.gradeNum = this.gradeNum * dec + clean * (iFwd - dv);
@@ -857,9 +887,12 @@ export class MountCalibrator {
         const flz = this.flz;
         const fn = Math.sqrt(flx * flx + fly * fly + flz * flz);
         if (fn > 1) {
-          // Trust: the specific force is gravity when |f| ≈ g, when neither the OS nor GPS sees
-          // any sustained acceleration. Deliberately NOT a function of the calibrator's own
-          // separated acceleration: that makes a drifted û suppress its own correction.
+          // Trust: −f̂ is gravity only while the car is not accelerating. |f| − g catches big
+          // forces; the OS user acceleration (as a VECTOR low-pass — a low-pass of its
+          // MAGNITUDE never returns to zero under broadband vibration and used to halve the
+          // trust at all times) and the GPS-predicted acceleration catch the rest. On a race
+          // track this is open most of the time only on the straights, so the gyro carries the
+          // up axis between them and `upBiasGain` has to be large enough to keep its bias out.
           const ta = o.trustAccel;
           const dF = (fn - G_ACC) / o.trustForce;
           let trust = Math.exp(-dF * dF);
@@ -874,23 +907,20 @@ export class MountCalibrator {
           if (t < this.stationaryUntil) trust = 1;
           this.trustSum += trust;
           this.trustN++;
-          // Correction reference: the OS gravity vector, NOT the low-passed specific force.
-          // Core Motion's gravity is its own gyro/accelerometer attitude fusion — far better
-          // than a 0.25 s low-pass of f, which is 15° out under any real cornering — and its
-          // one defect, the lean into sustained specific force, is exactly what `trust` above
-          // rejects. Falls back to −f̂ when the platform reports no gravity vector.
-          let ux0: number;
-          let uy0: number;
-          let uz0: number;
-          if (gMag > 1) {
-            ux0 = -gx / gMag;
-            uy0 = -gy / gMag;
-            uz0 = -gz / gMag;
-          } else {
-            ux0 = -flx / fn;
-            uy0 = -fly / fn;
-            uz0 = -flz / fn;
-          }
+          // how well the up axis explains the accelerometer WHEN the accelerometer is worth
+          // believing. Unlike the inertial-vs-body disagreement (which is the car's own roll
+          // and pitch, 3° on the flat and 10° over off-camber banking, and says nothing about
+          // the calibration) this goes to zero on a good calibration and stays high on a bad one.
+          const fit = this.angleBetween(-flx, -fly, -flz, ix, iy, iz);
+          this.fitEma += (fit - this.fitEma) * clamp((trust * dt) / o.fitTau, 0, 1);
+          // Correction reference: the low-passed SPECIFIC FORCE, never the OS gravity vector.
+          // gravity + userAcceleration is the true specific force whatever the OS attitude
+          // filter believes, so −f̂ is unbiased whenever the car is not accelerating; the OS
+          // gravity is a better short-term attitude but carries the lean (up to 10° here), and
+          // there is no gate that can tell a leaned gravity from a real one.
+          const ux0 = -flx / fn;
+          const uy0 = -fly / fn;
+          const uz0 = -flz / fn;
           const k = (trust * dt) / (t < this.stationaryUntil ? 0.3 : o.upCorrectionTau);
           const ex = iy * uz0 - iz * uy0;
           const ey = iz * ux0 - ix * uz0;
@@ -977,7 +1007,7 @@ export class MountCalibrator {
         this.kz += (iz - this.kz) * kk;
 
         // ---- stage 2: body up = slow low-pass of the inertial up
-        const tau = t < this.stationaryUntil ? 0.3 : o.gravityTau;
+        const tau = t < this.stationaryUntil ? 0.3 : t < this.fastUpUntil ? o.knockFastTau : o.gravityTau;
         // hard acceleration = body roll/pitch: slow the filter down rather than chase it
         const amx = fx + G_ACC * ix;
         const amy = fy + G_ACC * iy;
@@ -1000,20 +1030,26 @@ export class MountCalibrator {
         }
       }
     }
-    const ux = this.ux;
-    const uy = this.uy;
-    const uz = this.uz;
-    // own user acceleration: specific force minus the separated gravity
-    const ax = fx + G_ACC * this.ix;
-    const ay = fy + G_ACC * this.iy;
-    const az = fz + G_ACC * this.iz;
+    // Gravity is separated with the BODY up, not the instantaneous inertial up. The inertial
+    // up is the world vertical and wanders a few degrees between the accelerometer's rare
+    // trustworthy moments; every degree of that is 0.17 m/s² of horizontal acceleration
+    // pointing in a slowly-varying direction, which rotates the forward axis by several
+    // degrees. Using the body up instead leaves G·sin(roll) and G·sin(pitch) in the residual —
+    // but body roll is proportional to a_y and pitch to a_x, so the residual lies ALONG the
+    // vehicle axes and scales them by a few percent instead of rotating them.
+    const ux = this.bx;
+    const uy = this.by;
+    const uz = this.bz;
+    const ax = fx + G_ACC * ux;
+    const ay = fy + G_ACC * uy;
+    const az = fz + G_ACC * uz;
 
-    // ---- yaw rate about the inertial up, horizontal acceleration (low-passed)
-    const r = (wx - this.gbx) * this.ix + (wy - this.gby) * this.iy + (wz - this.gbz) * this.iz;
-    const aUp = ax * this.ix + ay * this.iy + az * this.iz;
-    const hx = ax - aUp * this.ix;
-    const hy = ay - aUp * this.iy;
-    const hz = az - aUp * this.iz;
+    // ---- yaw rate about the body up, horizontal acceleration (low-passed)
+    const r = (wx - this.gbx) * ux + (wy - this.gby) * uy + (wz - this.gbz) * uz;
+    const aUp = ax * ux + ay * uy + az * uz;
+    const hx = ax - aUp * ux;
+    const hy = ay - aUp * uy;
+    const hz = az - aUp * uz;
     if (dt > 0) {
       const ka = dt / (o.accelTau + dt);
       this.ahx += (hx - this.ahx) * ka;
@@ -1343,14 +1379,20 @@ export class MountCalibrator {
     this.priorLine();
   }
 
-  /** The phone was knocked: gravity direction jumped. Snap up, discard forward. */
+  /**
+   * The phone was knocked: the up axis moved much further than the car's own attitude can.
+   * The body-up filter runs at `knockFastTau` for `knockFastS` seconds instead of SNAPPING to
+   * the current inertial up — on a banked corner that instant is up to 20° off the body's up,
+   * and snapping to it turns a false knock into a 27° calibration.
+   */
   private knock(dev: number): void {
     this.knocks++;
-    this.gsx = this.kx = this.ix;
-    this.gsy = this.ky = this.iy;
-    this.gsz = this.kz = this.iz;
-    this.updateUpFromSlow();
+    this.fastUpUntil = this.lastT + this.opts.knockFastS;
+    this.kx = this.ix;
+    this.ky = this.iy;
+    this.kz = this.iz;
     this.devEma = dev;
+    this.fitEma = Math.max(this.fitEma, dev);
     this.upAge = 0;
     this.jumpSince = -1;
     this.resetForward();
@@ -1554,7 +1596,7 @@ export class MountCalibrator {
    */
   private appliedPitch(): number {
     if (!this.opts.gradeCompensation || !this.forwardResolved || this.gradeDen <= EPS) return 0;
-    return this.pitchHat * clamp(this.gradeDen / (this.opts.gradeTau * G_ACC * 0.25), 0, 1);
+    return this.pitchHat * clamp(this.gradeDen / this.opts.gradeMinEvidence, 0, 1);
   }
 
   private yawCorrelation(): number {
@@ -1586,7 +1628,7 @@ export class MountCalibrator {
     // gyro vote does not contradict that. The phone was rotated about the vertical (gravity did
     // not move) and the long-memory line still points along the old mount: adopt the short-memory
     // line if it has anything, otherwise start over.
-    if (this.mE >= o.lineMinEvidence && this.vE >= 2 * o.gpsVoteMinEvidence && Math.abs(gpsCorr) < 0.25 && (this.wE < o.yawVoteMinEvidence || Math.abs(yawCorr) < 0.35)) {
+    if (this.mE >= o.lineMinEvidence && this.vE >= 3 * o.gpsVoteMinEvidence && Math.abs(gpsCorr) < 0.15 && (this.wE < o.yawVoteMinEvidence || Math.abs(yawCorr) < 0.25)) {
       this.staleResets++;
       const adopt = this.qE >= 0.5 * o.lineMinEvidence;
       this.m00 = adopt ? this.q00 : 0; this.m01 = adopt ? this.q01 : 0; this.m02 = adopt ? this.q02 : 0;
@@ -1611,8 +1653,8 @@ export class MountCalibrator {
   /** Recompute up (with grade compensation), forward, left, R and the quality figures. */
   private rebuildFrame(): void {
     const o = this.opts;
-    // ---- quality of the up axis: steadiness and age
-    const steady = clamp(1 - this.devEma / 0.12, 0, 1); // 0 at ≈7° average disagreement
+    // ---- quality of the up axis: accelerometer fit and age
+    const steady = clamp(1 - this.fitEma / o.fitQualityRad, 0, 1);
     const age = clamp(this.upAge / 1.5, 0, 1);
     this.upQuality = this.gravInit ? steady * (0.3 + 0.7 * age) : 0;
 

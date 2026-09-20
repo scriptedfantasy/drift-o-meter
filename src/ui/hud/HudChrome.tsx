@@ -24,15 +24,15 @@ import type { HudSnapshot } from './useDriveRun';
 const TRANSPARENT = 'rgba(255,90,31,0)';
 
 export const EdgeBloom = memo(function EdgeBloom({ signals }: { signals: HudSignals }) {
-  const bloom = useAnimatedStyle(() => ({ opacity: 0.1 + 0.9 * signals.intensity.value }));
-  const flash = useAnimatedStyle(() => ({ opacity: 0.3 * signals.flash.value }));
+  const bloom = useAnimatedStyle(() => ({ opacity: 0.06 + 0.94 * signals.intensity.value }));
+  const flash = useAnimatedStyle(() => ({ opacity: 0.22 * signals.flash.value }));
   return (
     <View style={styles.bloomClip} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, bloom]}>
-        <LinearGradient colors={[alpha(colors.ember, 0.5), TRANSPARENT]} style={[styles.bloomEdge, styles.bloomTop]} />
-        <LinearGradient colors={[TRANSPARENT, alpha(colors.ember, 0.55)]} style={[styles.bloomEdge, styles.bloomBottom]} />
-        <LinearGradient colors={[alpha(colors.ember, 0.4), TRANSPARENT]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomLeft]} />
-        <LinearGradient colors={[TRANSPARENT, alpha(colors.ember, 0.4)]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomRight]} />
+        <LinearGradient colors={[alpha(colors.ember, 0.22), TRANSPARENT]} style={[styles.bloomEdge, styles.bloomTop]} />
+        <LinearGradient colors={[TRANSPARENT, alpha(colors.ember, 0.26)]} style={[styles.bloomEdge, styles.bloomBottom]} />
+        <LinearGradient colors={[alpha(colors.ember, 0.2), TRANSPARENT]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomLeft]} />
+        <LinearGradient colors={[TRANSPARENT, alpha(colors.ember, 0.2)]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomRight]} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, styles.flash, flash]} />
     </View>
@@ -110,10 +110,10 @@ export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID 
 const styles = StyleSheet.create({
   bloomClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 46, overflow: 'hidden' },
   bloomEdge: { position: 'absolute' },
-  bloomTop: { top: 0, left: 0, right: 0, height: 120 },
-  bloomBottom: { bottom: 0, left: 0, right: 0, height: 150 },
-  bloomLeft: { top: 0, bottom: 0, left: 0, width: 86 },
-  bloomRight: { top: 0, bottom: 0, right: 0, width: 86 },
+  bloomTop: { top: 0, left: 0, right: 0, height: 86 },
+  bloomBottom: { bottom: 0, left: 0, right: 0, height: 110 },
+  bloomLeft: { top: 0, bottom: 0, left: 0, width: 54 },
+  bloomRight: { top: 0, bottom: 0, right: 0, width: 54 },
   flash: { backgroundColor: colors.magenta },
 
   strip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },

@@ -61,6 +61,63 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
 
 `testID` props in the app map to `data-testid` on web, which is what `testId` targets.
 
+## Results screen: deterministic fixtures (`/results/...`)
+
+The results screen renders a stored `Session`. For screenshots (and for development before the
+app has recorded anything) it can rebuild one from the simulator instead, deterministically:
+same URL → same session → same pixels. The numbers on screen always come from the real scorer
+(`scoreSession`) and the real cross-lap analysis (`lapConsistency`), never from a mock.
+
+```
+/results/fixture-hero                      the `hero` scenario (id form)
+/results/anything?fixture=sloppy           the `sloppy` scenario (query form)
+/results/demo                              the default scenario (the id the HUD pushes today)
+/results/<storedId>                        a real session from storage (no fixture)
+```
+
+| `?fixture=` | what it is | what the scorer says |
+| --- | --- | --- |
+| `hero`   | harbor, seed 3, aggression 1.8, consistency 0.96 | **S**, 90.4/100, 16 slides, 2 clean laps |
+| `good`   | harbor, seed 7, aggression 0.9, consistency 0.8   | **A**, 76.9/100, 18 slides |
+| `sloppy` | harbor, seed 5, aggression 0, consistency 0        | **D**, 38.7/100, wandering corners |
+| `spin`   | harbor, seed 4, the biggest slide pushed past 85°  | **B**, one spin, a chain thrown away |
+| `clean`  | harbor, driven on grip (slip angle under 5°)       | **D**, 0/100, no drifts at all |
+| `rough`  | harbor with a rattling cradle and GPS dropouts     | **B**, two integrity warnings |
+| `touge`  | the point-to-point mountain road, one lap          | **A**, no laps → no lap table |
+
+Overrides (all optional, all clamped): `track=harbor|touge`, `seed=<int>`, `laps=1..6`,
+`agg=0..2` (above 1 is a hero lap the driver model cannot normally produce), `cons=0..1`,
+`spin=1|0`, `drifts=none` (grip lap), `rough=1|0`, `source=sim|pipeline`.
+
+* `source=sim` (default) fills the session from simulator ground truth — about 200 ms.
+* `source=pipeline` pushes the simulated sensors through the **real** engine pipeline (mount
+  calibration → slip estimator → detector → scorer), which is what the phone runs. Costs about
+  a second, and the screen then shows estimator noise, real detector splits and real integrity.
+
+Reveal and motion control (they exist so a screenshot can be reproduced, and because a driver
+may have asked the system for less motion):
+
+| param | effect |
+| --- | --- |
+| `reveal=full` | default: letterbox → black beat → the grade slams in → the page settles |
+| `reveal=off` | no reveal at all; the settled page, animations already finished |
+| `reveal=hold` | FREEZES the reveal on the black-hold frame (t = 640 ms) |
+| `reveal=slam` | FREEZES it mid-slam (t = 1170 ms): shockwave half way out, embers flying |
+| `reveal=settle` | FREEZES it as the bars retract (t = 1980 ms) |
+| `motion=reduce` | forces reduce-motion: no letterbox, no shake, no embers; the letter and the numbers still arrive |
+| `motion=full` | forces full motion even when the OS asks for less (screenshots only) |
+
+A frozen reveal never completes, so the page underneath is rendered in its settled state and the
+overlay sits on top for as long as you like — which is what makes `results-reveal-slam.png`
+reproducible. With `reveal=full` the whole thing is skippable: a tap anywhere jumps to the end.
+
+Video of the reveal: `npm run shoot -- --video --only results-reveal`, then pull frames with the
+bundled ffmpeg (its filter parser is unusable in this build, so use `-r`, not `-vf fps=`):
+
+```
+/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux -i artifacts/video/results-reveal.webm -r 12 /tmp/f%03d.png
+```
+
 ## Gotchas this harness already handles (keep them in mind when extending it)
 
 - **Chromium build mismatch.** playwright 1.63 wants build 1243; the sandbox ships build 1194 under

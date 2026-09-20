@@ -37,7 +37,7 @@ function OdometerImpl({ value, columns = 6, size, color = colors.ember, tau = 0.
     'worklet';
     const dt = Math.min(0.05, Math.max(0.001, (info.timeSincePreviousFrame ?? 16) / 1000));
     const k = 1 - Math.exp(-dt / tau);
-    const target = value.value;
+    const target = Math.round(value.value);
     const next = display.value + (target - display.value) * k;
     display.value = Math.abs(target - next) < 0.05 ? target : next;
   }, true);
@@ -57,15 +57,20 @@ function Column({ place, display, rowH, colW, size, color }: { place: number; di
   const pow = Math.pow(10, place);
   const strip = useAnimatedStyle(() => {
     const v = Math.max(0, display.value);
-    // The column below this one carries the roll, so only the last tenth of a step moves this one.
-    const p = (v / pow) % 10;
+    const q = v / pow;
+    // Units roll continuously (that is the spinning wheel); every column above it sits crisply
+    // on its digit and only turns over in the last 4 % of the decade below, the way a mechanical
+    // odometer does. Wider than that and a parked score reads as half-rolled mush.
+    const p = pow === 1 ? q % 10 : (Math.floor(q) % 10) + Math.max(0, (q % 1) - 0.96) / 0.04;
     return { transform: [{ translateY: -p * rowH }] };
   });
   const fade = useAnimatedStyle(() => ({ opacity: Math.max(0, display.value) >= pow || pow === 1 ? 1 : 0.16 }));
 
+  // The clipping window is a PLAIN view: Reanimated rewrites the style attribute of the views it
+  // animates, and an inline `overflow: hidden` there does not survive on web.
   return (
-    <Animated.View style={[{ width: colW, height: rowH, overflow: 'hidden' }, fade]}>
-      <Animated.View style={strip}>
+    <View style={[styles.window, { width: colW, height: rowH }]}>
+      <Animated.View style={[styles.strip, strip, fade]}>
         {DIGITS.map((d, i) => (
           <AppText
             key={i}
@@ -77,12 +82,14 @@ function Column({ place, display, rowH, colW, size, color }: { place: number; di
           </AppText>
         ))}
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start' },
+  window: { overflow: 'hidden' },
+  strip: { position: 'absolute', top: 0, left: 0 },
   digit: { fontFamily: fontFamilies.display.extraboldItalic, textAlign: 'center', letterSpacing: -1 },
 });
 

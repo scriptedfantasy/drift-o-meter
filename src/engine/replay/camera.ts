@@ -70,7 +70,7 @@ export const CAMERA_TUNING = {
   /** Extra look-ahead as a fraction of the span while sliding, so the car leads into frame. */
   lookAheadDrift: 0.12,
   /** Overview padding fraction on each side of the bounds. */
-  overviewPad: 0.08,
+  overviewPad: 0.04,
   /** Cinematic zoom factor: 0.85 on straights → 1.6 at full drift intensity. */
   cinematicZoomIdle: 0.85,
   cinematicZoomFull: 1.6,
@@ -192,12 +192,21 @@ export class ReplayCamera {
 
   /** Snap to the target for time t (use when the user scrubs, or on a mode cut). */
   jumpTo(replay: Replay, t: number): CameraState {
+    return this.snapTo(replay, t, true);
+  }
+
+  /**
+   * `isCut` distinguishes a deliberate camera change (mode switch / scrub — the renderer
+   * cross-fades) from merely initialising on the first frame, which must NOT flash: the opening
+   * frame of a replay is not a cut.
+   */
+  private snapTo(replay: Replay, t: number, isCut: boolean): CameraState {
     const target = this.targetFor(replay, t);
     this.px.snap(target.cx);
     this.py.snap(target.cy);
     this.pz.snap(Math.log(target.zoom));
     this.pr.snap(target.rotation);
-    this.cutAt = t;
+    if (isCut) this.cutAt = t;
     this.pendingCut = false;
     this.lastT = t;
     this.state = {
@@ -207,14 +216,15 @@ export class ReplayCamera {
       rotation: wrapAngle(this.pr.x),
       w: this.viewport.w,
       h: this.viewport.h,
-      cut: true,
-      cutFade: 1,
+      cut: isCut,
+      cutFade: isCut ? 1 : 0,
     };
     return { ...this.state };
   }
 
   update(replay: Replay, t: number, dt: number): CameraState {
-    if (!this.state || !(dt > 0) || this.pendingCut) return this.jumpTo(replay, t);
+    if (!this.state) return this.snapTo(replay, t, false);
+    if (!(dt > 0) || this.pendingCut) return this.snapTo(replay, t, this.pendingCut);
     const target = this.targetFor(replay, t);
     const prev = this.state;
     const step = Math.min(dt, 1); // a stalled frame must not become a teleport
@@ -247,7 +257,7 @@ export class ReplayCamera {
     }
     const zoom = Math.exp(lz);
     this.lastT = t;
-    if (![cx, cy, zoom, rot].every(Number.isFinite)) return this.jumpTo(replay, t);
+    if (![cx, cy, zoom, rot].every(Number.isFinite)) return this.snapTo(replay, t, false);
     this.state = {
       cx,
       cy,
