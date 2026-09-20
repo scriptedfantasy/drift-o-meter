@@ -272,18 +272,18 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   ringKeepS: 120,
 
   angleCurve: [
-    [25, 0],
-    [30, 25],
-    [35, 60],
-    [39.5, 90],
-    [46, 100],
+    [24, 0],
+    [29, 30],
+    [33, 65],
+    [37, 92],
+    [43, 100],
   ],
   speedScoreCurve: [
-    [35, 0],
-    [46, 25],
-    [54, 55],
-    [62, 92],
-    [70, 100],
+    [44, 0],
+    [50, 25],
+    [55, 55],
+    [60, 92],
+    [66, 100],
   ],
   jitterCurve: [
     [0.3, 100],
@@ -296,8 +296,8 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   ],
   plateauCapCurve: [
     [0, 30],
-    [0.75, 75],
-    [2, 100],
+    [0.6, 80],
+    [1.5, 100],
   ],
   cvScale: 3.0,
   initiationSdFullM: 12,
@@ -342,11 +342,12 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
     [50, 1.0],
     [90, 1.22],
   ],
+  // Measured: the best driver holds the SAME peak angle on a linked road and on a circuit
+  // (36.7° vs 36.8°), so linkedness gets no vote on the angle expectation. It does on the
+  // things that did differ — jitter (0.39° vs 0.79°) and transitions per drift (1.33 vs 0.75).
   gapAngleCurve: [
-    [15, 1.08],
-    [30, 1.0],
-    [50, 0.93],
-    [90, 0.88],
+    [15, 1.0],
+    [90, 1.0],
   ],
   gapTransitionCurve: [
     [15, 1.25],
@@ -354,11 +355,10 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
     [50, 0.8],
     [90, 0.65],
   ],
+  // ...and the fraction of drift time spent at angle did not differ either (97 % vs 96 %).
   gapTimeAtAngleCurve: [
-    [15, 1.06],
-    [30, 1.0],
-    [50, 0.94],
-    [90, 0.88],
+    [15, 1.0],
+    [90, 1.0],
   ],
   gapJitterCurve: [
     [15, 0.95],
