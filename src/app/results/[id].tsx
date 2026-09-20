@@ -328,7 +328,7 @@ function ResultsPage({
             />
             {untrusted ? (
               <AppText variant="micro" color="red" style={styles.floorNote}>
-                A floor, not a measurement
+                {model.total > 0 ? 'A floor, not a measurement' : 'Nothing the engine counted'}
               </AppText>
             ) : (
               <View style={styles.ratingRow}>
