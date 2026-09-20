@@ -1,109 +1,45 @@
 {
-  "startedAt": "2026-09-20T19:08:46.841Z",
+  "startedAt": "2026-09-20T19:10:23.555Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "results-reveal-slam-landscape",
-      "path": "/results/fixture-hero?reveal=slam",
-      "url": "http://127.0.0.1:42423/results/fixture-hero?reveal=slam",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/results-reveal-slam-landscape.png",
-      "video": null,
-      "ms": 4000,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 147,
-        "bodyTextNodes": 207,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 4524,
-        "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.4617
-      }
-    },
-    {
-      "name": "results-landscape",
-      "path": "/results/fixture-hero?reveal=off",
-      "url": "http://127.0.0.1:42423/results/fixture-hero?reveal=off",
+      "name": "drive-idle",
+      "path": "/drive?sim=harbor&rate=1",
+      "url": "http://127.0.0.1:32909/drive?sim=harbor&rate=1",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/results-landscape.png",
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-idle.png",
       "video": null,
-      "ms": 3299,
+      "ms": 3388,
       "fonts": {
         "status": "loaded",
         "families": [
           "BarlowCondensed_600SemiBold",
           "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 145,
-        "bodyTextNodes": 203,
+        "displayTextNodes": 80,
+        "bodyTextNodes": 18,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 0,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -128,13 +64,137 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 33136,
-        "cyanPixels": 3000,
-        "textPixels": 41736,
-        "nonBgFraction": 0.4362
+        "emberPixels": 195536,
+        "cyanPixels": 16,
+        "textPixels": 33156,
+        "nonBgFraction": 0.4031
+      }
+    },
+    {
+      "name": "drive-peak",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:32909/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-peak.png",
+      "video": null,
+      "ms": 6409,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 87,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 134856,
+        "cyanPixels": 14356,
+        "textPixels": 7148,
+        "nonBgFraction": 0.6157
+      }
+    },
+    {
+      "name": "drive-bank",
+      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:32909/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "../../../../../../home/user/drift-o-meter/artifacts/shots/drive-bank.png",
+      "video": null,
+      "ms": 5884,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 88,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 120108,
+        "cyanPixels": 32692,
+        "textPixels": 5764,
+        "nonBgFraction": 0.3422
       }
     }
   ],
-  "finishedAt": "2026-09-20T19:08:54.219Z",
+  "finishedAt": "2026-09-20T19:10:39.312Z",
   "failed": 0
 }
