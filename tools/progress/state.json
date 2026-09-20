@@ -1,6 +1,6 @@
 {
   "title": "Drift-O-Meter Build Board",
-  "phase": "Phase 1 — engine, simulator, app foundation",
+  "phase": "Phase 1 \u2014 engine, simulator, app foundation",
   "updated": "",
   "summary": "Building an Expo/React Native iPhone app that judges real-world drifting from the gyroscope, accelerometer and GPS, with NFS / Tokyo Drift-grade presentation. Each piece is built by one agent and judged by a separate fresh-context critic against the running app, real sensor output and finished visualisations.",
   "verification": [
@@ -9,26 +9,155 @@
     "What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off."
   ],
   "pieces": [
-    {"id": "sim", "name": "Sensor simulator", "layer": "engine", "status": "building", "rounds": 0, "verdict": "", "note": "Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth"},
-    {"id": "mount", "name": "Mount calibration", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Phone frame → vehicle frame from gravity and forward acceleration"},
-    {"id": "slip", "name": "Slip-angle estimator", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Kalman fusion of gyro heading, lateral-g kinematics and GPS course"},
-    {"id": "detect", "name": "Drift detection", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Entry / sustain / transition / exit state machine"},
-    {"id": "score", "name": "Scoring & style", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Angle × duration × speed, multipliers, callouts, S–D grade, consistency"},
-    {"id": "track", "name": "Track & laps", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "GPS → local map, lap gate, corners, lap-to-lap consistency"},
-    {"id": "integrity", "name": "Signal integrity", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Loose-mount detection, physics plausibility, GPS quality gating"},
-    {"id": "replay", "name": "Replay scene", "layer": "engine", "status": "queued", "rounds": 0, "verdict": "", "note": "Session → timeline, glow trail, camera, ghost"},
-    {"id": "foundation", "name": "App foundation", "layer": "app", "status": "building", "rounds": 0, "verdict": "", "note": "Theme, fonts, navigation, Skia on web, sensor adapters, screenshot harness"},
-    {"id": "hud", "name": "Live drive HUD", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Angle, g-meter, speed, score combo, callouts, glow"},
-    {"id": "results", "name": "Results & grade", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Grade reveal, breakdown, best drift"},
-    {"id": "replay-ui", "name": "Replay screen", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Track map, trail, scrubber, camera modes"},
-    {"id": "calibrate-ui", "name": "Calibration flow", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Mount guidance with live sensor feedback"},
-    {"id": "garage", "name": "Garage & sessions", "layer": "app", "status": "queued", "rounds": 0, "verdict": "", "note": "Home, session list, personal bests"}
+    {
+      "id": "sim",
+      "name": "Sensor simulator",
+      "layer": "engine",
+      "status": "critique",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth"
+    },
+    {
+      "id": "mount",
+      "name": "Mount calibration",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Phone frame \u2192 vehicle frame from gravity and forward acceleration"
+    },
+    {
+      "id": "slip",
+      "name": "Slip-angle estimator",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Kalman fusion of gyro heading, lateral-g kinematics and GPS course"
+    },
+    {
+      "id": "detect",
+      "name": "Drift detection",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Entry / sustain / transition / exit state machine"
+    },
+    {
+      "id": "score",
+      "name": "Scoring & style",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Angle \u00d7 duration \u00d7 speed, multipliers, callouts, S\u2013D grade, consistency"
+    },
+    {
+      "id": "track",
+      "name": "Track & laps",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "GPS \u2192 local map, lap gate, corners, lap-to-lap consistency"
+    },
+    {
+      "id": "integrity",
+      "name": "Signal integrity",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Loose-mount detection, physics plausibility, GPS quality gating"
+    },
+    {
+      "id": "replay",
+      "name": "Replay scene",
+      "layer": "engine",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Session \u2192 timeline, glow trail, camera, ghost"
+    },
+    {
+      "id": "foundation",
+      "name": "App foundation",
+      "layer": "app",
+      "status": "building",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Theme, fonts, navigation, Skia on web, sensor adapters, screenshot harness"
+    },
+    {
+      "id": "hud",
+      "name": "Live drive HUD",
+      "layer": "app",
+      "status": "queued",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Angle, g-meter, speed, score combo, callouts, glow"
+    },
+    {
+      "id": "results",
+      "name": "Results & grade",
+      "layer": "app",
+      "status": "queued",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Grade reveal, breakdown, best drift"
+    },
+    {
+      "id": "replay-ui",
+      "name": "Replay screen",
+      "layer": "app",
+      "status": "queued",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Track map, trail, scrubber, camera modes"
+    },
+    {
+      "id": "calibrate-ui",
+      "name": "Calibration flow",
+      "layer": "app",
+      "status": "queued",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Mount guidance with live sensor feedback"
+    },
+    {
+      "id": "garage",
+      "name": "Garage & sessions",
+      "layer": "app",
+      "status": "queued",
+      "rounds": 0,
+      "verdict": "",
+      "note": "Home, session list, personal bests"
+    }
   ],
   "verdicts": [],
   "log": [
-    {"t": "13:12", "text": "Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium."},
-    {"t": "13:20", "text": "Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched."},
-    {"t": "13:27", "text": "Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected."}
+    {
+      "t": "13:12",
+      "text": "Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium."
+    },
+    {
+      "t": "13:20",
+      "text": "Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched."
+    },
+    {
+      "t": "13:27",
+      "text": "Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected."
+    },
+    {
+      "t": "13:40",
+      "text": "Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written."
+    },
+    {
+      "t": "13:41",
+      "text": "User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation."
+    }
   ],
   "shots": []
 }

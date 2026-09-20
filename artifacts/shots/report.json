@@ -1,0 +1,384 @@
+{
+  "startedAt": "2026-09-20T14:01:16.009Z",
+  "viewport": {
+    "width": 393,
+    "height": 852
+  },
+  "scale": 3,
+  "landscape": false,
+  "chromium": "141.0.7390.37",
+  "routes": [
+    {
+      "name": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:38921/",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/home.png",
+      "video": null,
+      "ms": 2276,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 6,
+        "bodyTextNodes": 7,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 216200,
+        "cyanPixels": 3340,
+        "textPixels": 144072,
+        "nonBgFraction": 0.3197
+      }
+    },
+    {
+      "name": "calibrate",
+      "path": "/calibrate",
+      "url": "http://127.0.0.1:38921/calibrate",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#07090D #07090D #130D0E #0F0C0E)"
+      ],
+      "screenshot": "artifacts/shots/calibrate.png",
+      "video": null,
+      "ms": 2070,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 14,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 19,
+            "g": 13,
+            "b": 14
+          },
+          "bottomRight": {
+            "r": 15,
+            "g": 12,
+            "b": 14
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 130276,
+        "cyanPixels": 18136,
+        "textPixels": 47764,
+        "nonBgFraction": 0.7418
+      }
+    },
+    {
+      "name": "drive",
+      "path": "/drive?sim=harbor&rate=1",
+      "url": "http://127.0.0.1:38921/drive?sim=harbor&rate=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive.png",
+      "video": null,
+      "ms": 4084,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 12,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 28680,
+        "cyanPixels": 5444,
+        "textPixels": 2272,
+        "nonBgFraction": 0.4191
+      }
+    },
+    {
+      "name": "results",
+      "path": "/results/demo",
+      "url": "http://127.0.0.1:38921/results/demo",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results.png",
+      "video": null,
+      "ms": 2032,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 15,
+        "bodyTextNodes": 26,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 88264,
+        "cyanPixels": 24892,
+        "textPixels": 29816,
+        "nonBgFraction": 0.5897
+      }
+    },
+    {
+      "name": "replay",
+      "path": "/replay/demo",
+      "url": "http://127.0.0.1:38921/replay/demo",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/replay.png",
+      "video": null,
+      "ms": 1932,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 12,
+        "bodyTextNodes": 12,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 45468,
+        "cyanPixels": 1704,
+        "textPixels": 26584,
+        "nonBgFraction": 0.382
+      }
+    },
+    {
+      "name": "settings",
+      "path": "/settings",
+      "url": "http://127.0.0.1:38921/settings",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/settings.png",
+      "video": null,
+      "ms": 1863,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 27,
+        "bodyTextNodes": 16,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 10176,
+        "cyanPixels": 8756,
+        "textPixels": 68912,
+        "nonBgFraction": 0.7235
+      }
+    }
+  ],
+  "finishedAt": "2026-09-20T14:01:30.348Z",
+  "failed": 0
+}

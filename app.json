@@ -1,18 +1,29 @@
 {
   "expo": {
-    "name": "driftometer",
-    "slug": "driftometer",
+    "name": "Drift-O-Meter",
+    "slug": "drift-o-meter",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "driftometer",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#07090D",
+    "primaryColor": "#FF5A1F",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.driftometer.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMotionUsageDescription": "Drift-O-Meter reads the gyroscope and accelerometer to measure how far the car is sliding.",
+        "NSLocationWhenInUseUsageDescription": "Drift-O-Meter uses GPS speed and direction of travel to judge your drifts and map the track.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Drift-O-Meter keeps reading GPS while a run is in progress so a locked screen does not end the session.",
+        "UIBackgroundModes": ["location"],
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.driftometer.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#07090D",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -21,16 +32,32 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#07090D",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160,
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Drift-O-Meter uses GPS speed and direction of travel to judge your drifts and map the track.",
+          "locationAlwaysAndWhenInUsePermission": "Drift-O-Meter keeps reading GPS while a run is in progress so a locked screen does not end the session.",
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Drift-O-Meter reads the gyroscope and accelerometer to measure how far the car is sliding."
         }
       ]
     ],

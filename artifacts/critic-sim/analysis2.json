@@ -1,0 +1,371 @@
+{
+ "tracker": [
+  {
+   "fromDeg": 0,
+   "toDeg": 34.377,
+   "rise10to90_s": 0.54,
+   "peakDeg": 34.516,
+   "tPeak": 1.21,
+   "overshootPct": 0.403,
+   "peakBetaDot_degps": 71.367
+  },
+  {
+   "fromDeg": 0,
+   "toDeg": 20.054,
+   "rise10to90_s": 0.54,
+   "peakDeg": 20.134,
+   "tPeak": 1.21,
+   "overshootPct": 0.403,
+   "peakBetaDot_degps": 41.631
+  },
+  {
+   "fromDeg": -28.648,
+   "toDeg": 28.648,
+   "rise10to90_s": 0.54,
+   "peakDeg": 28.878,
+   "tPeak": 1.22,
+   "overshootPct": 0.402,
+   "peakBetaDot_degps": 118.661
+  },
+  {
+   "fromDeg": 34.377,
+   "toDeg": 0,
+   "rise10to90_s": 0.91,
+   "peakDeg": 0,
+   "tPeak": 3.45,
+   "overshootPct": null,
+   "peakBetaDot_degps": 45.479
+  }
+ ],
+ "trackerIfUnderdampedHeld": {
+  "overshootPct": 11.914
+ },
+ "yawConsistency_harbor s1": {
+  "iRoll": 6452,
+  "tRoll": 64.52,
+  "rms_degps": 0.709,
+  "p95_degps": 1.497,
+  "max_degps": 14.751,
+  "integratedHeadingError_deg": {
+   "max": 1.174,
+   "min": -0.699,
+   "end": 0.381
+  }
+ },
+ "throttle_harbor s1": {
+  "seconds": 61.52,
+  "pctHardBrake_lt_m5p5": 20.871,
+  "pctHardAccel_gt_2p5": 51.479,
+  "pctCoast_abs_lt_1": 9.59,
+  "brakeAccelSwitches": 38,
+  "switchesPerMinute": 37.061
+ },
+ "speedStaircase_harbor s1": {
+  "pctSamplesWithZeroDv": 61.665,
+  "pctSamples_dv_gt_8mps2": 21.411,
+  "maxAbs_dv_dt": 29.556
+ },
+ "posVsCourseOutliers_harbor s1": {
+  "count": 4,
+  "first": [
+   {
+    "t": 3,
+    "x": 0,
+    "y": 0,
+    "v": 12.663,
+    "dirErrDeg": 0.366,
+    "speedErr": -6.332
+   },
+   {
+    "t": 64.48,
+    "x": -0.842,
+    "y": 0.198,
+    "v": 12.526,
+    "dirErrDeg": -0.019,
+    "speedErr": 5.002
+   },
+   {
+    "t": 64.49,
+    "x": -0.628,
+    "y": 0.147,
+    "v": 12.526,
+    "dirErrDeg": 0.047,
+    "speedErr": 9.513
+   },
+   {
+    "t": 64.5,
+    "x": -0.413,
+    "y": 0.097,
+    "v": 12.526,
+    "dirErrDeg": -0.106,
+    "speedErr": 9.513
+   }
+  ],
+  "worst": [
+   {
+    "t": 3,
+    "x": 0,
+    "y": 0,
+    "v": 12.663,
+    "dirErrDeg": 0.366,
+    "speedErr": -6.332
+   },
+   {
+    "t": 64.5,
+    "x": -0.413,
+    "y": 0.097,
+    "v": 12.526,
+    "dirErrDeg": -0.106,
+    "speedErr": 9.513
+   },
+   {
+    "t": 64.49,
+    "x": -0.628,
+    "y": 0.147,
+    "v": 12.526,
+    "dirErrDeg": 0.047,
+    "speedErr": 9.513
+   }
+  ]
+ },
+ "transitions_harbor s1": {
+  "swings": [
+   {
+    "t": 32.33,
+    "swing15to15_s": 0.52,
+    "fromDeg": 15.128,
+    "toDeg": -15.295,
+    "peakYaw_degps": 91.742,
+    "peakBetaDot_degps": 89.576,
+    "speedKmh": 68.929
+   }
+  ],
+  "dwellBelow5deg_s": [
+   2.38,
+   0.13,
+   17.09,
+   17.09,
+   17.09,
+   17.09,
+   17.09,
+   17.09
+  ]
+ },
+ "yawAccel_harbor s1": {
+  "p95_radps2": 1.543,
+  "p99": 5.081,
+  "max": 29.061,
+  "leverArm1m_p99_mps2": 5.081
+ },
+ "yawConsistency_touge s9": {
+  "iRoll": 8222,
+  "tRoll": 82.22,
+  "rms_degps": 0.584,
+  "p95_degps": 1.276,
+  "max_degps": 8.118,
+  "integratedHeadingError_deg": {
+   "max": 0.354,
+   "min": -0.438,
+   "end": 0.007
+  }
+ },
+ "throttle_touge s9": {
+  "seconds": 79.22,
+  "pctHardBrake_lt_m5p5": 21.156,
+  "pctHardAccel_gt_2p5": 49.003,
+  "pctCoast_abs_lt_1": 12.421,
+  "brakeAccelSwitches": 43,
+  "switchesPerMinute": 32.568
+ },
+ "speedStaircase_touge s9": {
+  "pctSamplesWithZeroDv": 68.337,
+  "pctSamples_dv_gt_8mps2": 26.6,
+  "maxAbs_dv_dt": 84.984
+ },
+ "posVsCourseOutliers_touge s9": {
+  "count": 1,
+  "first": [
+   {
+    "t": 3,
+    "x": 0,
+    "y": 0,
+    "v": 8.285,
+    "dirErrDeg": 0.738,
+    "speedErr": -4.143
+   }
+  ],
+  "worst": [
+   {
+    "t": 3,
+    "x": 0,
+    "y": 0,
+    "v": 8.285,
+    "dirErrDeg": 0.738,
+    "speedErr": -4.143
+   }
+  ]
+ },
+ "transitions_touge s9": {
+  "swings": [
+   {
+    "t": 28.54,
+    "swing15to15_s": 0.71,
+    "fromDeg": 15.146,
+    "toDeg": -15.318,
+    "peakYaw_degps": 73.497,
+    "peakBetaDot_degps": 68.479,
+    "speedKmh": 65.971
+   },
+   {
+    "t": 52.9,
+    "swing15to15_s": 1.06,
+    "fromDeg": 14.978,
+    "toDeg": -15.186,
+    "peakYaw_degps": 59.011,
+    "peakBetaDot_degps": 52.066,
+    "speedKmh": 72.609
+   },
+   {
+    "t": 64.93,
+    "swing15to15_s": 0.45,
+    "fromDeg": -15.156,
+    "toDeg": 14.902,
+    "peakYaw_degps": 81.46,
+    "peakBetaDot_degps": 82.827,
+    "speedKmh": 67.298
+   }
+  ],
+  "dwellBelow5deg_s": [
+   2.6,
+   0.17,
+   2.44,
+   0.38,
+   0.14,
+   7.45,
+   7.45
+  ]
+ },
+ "yawAccel_touge s9": {
+  "p95_radps2": 1.888,
+  "p99": 5.086,
+  "max": 19.294,
+  "leverArm1m_p99_mps2": 5.086
+ },
+ "yawConsistency_harbor s3 a1c0": {
+  "iRoll": 6168,
+  "tRoll": 61.68,
+  "rms_degps": 0.699,
+  "p95_degps": 1.419,
+  "max_degps": 13.311,
+  "integratedHeadingError_deg": {
+   "max": 0.918,
+   "min": -0.394,
+   "end": 0.354
+  }
+ },
+ "throttle_harbor s3 a1c0": {
+  "seconds": 58.68,
+  "pctHardBrake_lt_m5p5": 23.909,
+  "pctHardAccel_gt_2p5": 51.602,
+  "pctCoast_abs_lt_1": 7.771,
+  "brakeAccelSwitches": 38,
+  "switchesPerMinute": 38.855
+ },
+ "speedStaircase_harbor s3 a1c0": {
+  "pctSamplesWithZeroDv": 58.974,
+  "pctSamples_dv_gt_8mps2": 25.686,
+  "maxAbs_dv_dt": 28.7
+ },
+ "posVsCourseOutliers_harbor s3 a1c0": {
+  "count": 4,
+  "first": [
+   {
+    "t": 3,
+    "x": 0,
+    "y": 0,
+    "v": 13.313,
+    "dirErrDeg": 0.366,
+    "speedErr": -6.657
+   },
+   {
+    "t": 61.64,
+    "x": -0.875,
+    "y": 0.206,
+    "v": 13.021,
+    "dirErrDeg": -0.053,
+    "speedErr": 4.227
+   },
+   {
+    "t": 61.65,
+    "x": -0.666,
+    "y": 0.156,
+    "v": 13.168,
+    "dirErrDeg": 0.046,
+    "speedErr": 9.154
+   },
+   {
+    "t": 61.66,
+    "x": -0.44,
+    "y": 0.103,
+    "v": 13.168,
+    "dirErrDeg": -0.086,
+    "speedErr": 10
+   }
+  ],
+  "worst": [
+   {
+    "t": 3,
+    "x": 0,
+    "y": 0,
+    "v": 13.313,
+    "dirErrDeg": 0.366,
+    "speedErr": -6.657
+   },
+   {
+    "t": 61.66,
+    "x": -0.44,
+    "y": 0.103,
+    "v": 13.168,
+    "dirErrDeg": -0.086,
+    "speedErr": 10
+   },
+   {
+    "t": 61.64,
+    "x": -0.875,
+    "y": 0.206,
+    "v": 13.021,
+    "dirErrDeg": -0.053,
+    "speedErr": 4.227
+   }
+  ]
+ },
+ "transitions_harbor s3 a1c0": {
+  "swings": [
+   {
+    "t": 30.58,
+    "swing15to15_s": 0.35,
+    "fromDeg": 15.03,
+    "toDeg": -14.936,
+    "peakYaw_degps": 103.167,
+    "peakBetaDot_degps": 109.108,
+    "speedKmh": 68.375
+   }
+  ],
+  "dwellBelow5deg_s": [
+   3.16,
+   0.1,
+   17.21,
+   17.21,
+   17.21,
+   17.21,
+   17.21,
+   17.21
+  ]
+ },
+ "yawAccel_harbor s3 a1c0": {
+  "p95_radps2": 2.307,
+  "p99": 5.694,
+  "max": 39.187,
+  "leverArm1m_p99_mps2": 5.694
+ }
+}

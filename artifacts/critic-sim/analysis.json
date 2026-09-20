@@ -1,0 +1,2130 @@
+{
+ "timing": {
+  "harbor2laps_ms": 294.26,
+  "samples": 12983,
+  "harbor3laps_ms": 235.358,
+  "harbor3laps_samples": 19135,
+  "harbor3laps_durationS": 191.34
+ },
+ "kin": [
+  {
+   "label": "harbor s1 2laps",
+   "samples": 12983,
+   "dt": 0.01,
+   "heading_minus_course_plus_beta_deg": {
+    "n": 12981,
+    "mean": 0,
+    "rms": 0,
+    "maxAbs": 0,
+    "p95": 0
+   },
+   "yawRate_minus_dHeading_dt_degps": {
+    "n": 12660,
+    "mean": 0.1574,
+    "rms": 20.4326,
+    "maxAbs": 1630.9913,
+    "p95": 1.8322
+   },
+   "speedFromPos_minus_speed_mps": {
+    "n": 12660,
+    "mean": 0.0064,
+    "rms": 0.2234,
+    "maxAbs": 9.5125,
+    "p95": 0.0729
+   },
+   "dirFromPos_minus_course_deg": {
+    "n": 12660,
+    "mean": 0.0017,
+    "rms": 0.1909,
+    "maxAbs": 1.5011,
+    "p95": 0.3893
+   },
+   "ay_minus_formula_numeric": {
+    "n": 12660,
+    "mean": -0.0537,
+    "rms": 4.2888,
+    "maxAbs": 359.8116,
+    "p95": 2.4556
+   },
+   "ax_minus_formula_numeric": {
+    "n": 12660,
+    "mean": -0.0387,
+    "rms": 2.6468,
+    "maxAbs": 188.9919,
+    "p95": 4.3637
+   },
+   "ay_minus_formula_courseRate": {
+    "n": 12660,
+    "mean": -0.019,
+    "rms": 1.0912,
+    "maxAbs": 6.4193,
+    "p95": 2.4463
+   },
+   "ax_minus_vdot_straight": {
+    "n": 6661,
+    "mean": -0.0467,
+    "rms": 1.2863,
+    "maxAbs": 6.5406,
+    "p95": 3.4451
+   },
+   "yawAccel_radps2": {
+    "n": 12660,
+    "mean": -0.0021,
+    "rms": 1.2384,
+    "maxAbs": 40.0695,
+    "p95": 1.3513
+   },
+   "betaDot_radps": {
+    "n": 12660,
+    "mean": 0,
+    "rms": 0.4309,
+    "maxAbs": 29.2626,
+    "p95": 0.525
+   }
+  },
+  {
+   "label": "touge s9",
+   "samples": 8370,
+   "dt": 0.01,
+   "heading_minus_course_plus_beta_deg": {
+    "n": 8368,
+    "mean": 0,
+    "rms": 0,
+    "maxAbs": 0,
+    "p95": 0
+   },
+   "yawRate_minus_dHeading_dt_degps": {
+    "n": 8047,
+    "mean": -0.0006,
+    "rms": 0.5793,
+    "maxAbs": 8.1183,
+    "p95": 1.2685
+   },
+   "speedFromPos_minus_speed_mps": {
+    "n": 8047,
+    "mean": -0.0406,
+    "rms": 0.3628,
+    "maxAbs": 4.3387,
+    "p95": 0.0921
+   },
+   "dirFromPos_minus_course_deg": {
+    "n": 8047,
+    "mean": 0.0725,
+    "rms": 0.621,
+    "maxAbs": 5.0712,
+    "p95": 0.3648
+   },
+   "ay_minus_formula_numeric": {
+    "n": 8047,
+    "mean": -0.0003,
+    "rms": 1.0727,
+    "maxAbs": 3.4213,
+    "p95": 2.2706
+   },
+   "ax_minus_formula_numeric": {
+    "n": 8047,
+    "mean": -0.0768,
+    "rms": 2.9067,
+    "maxAbs": 39.1747,
+    "p95": 5.8179
+   },
+   "ay_minus_formula_courseRate": {
+    "n": 8047,
+    "mean": -0.0004,
+    "rms": 1.0793,
+    "maxAbs": 3.776,
+    "p95": 2.3161
+   },
+   "ax_minus_vdot_straight": {
+    "n": 1908,
+    "mean": -0.3191,
+    "rms": 3.7377,
+    "maxAbs": 39.1747,
+    "p95": 7
+   },
+   "yawAccel_radps2": {
+    "n": 8047,
+    "mean": 0.0003,
+    "rms": 1.1315,
+    "maxAbs": 19.2936,
+    "p95": 1.8623
+   },
+   "betaDot_radps": {
+    "n": 8047,
+    "mean": 0,
+    "rms": 0.2314,
+    "maxAbs": 1.4455,
+    "p95": 0.5703
+   }
+  },
+  {
+   "label": "harbor s7 aggr1 cons0.2",
+   "samples": 12433,
+   "dt": 0.01,
+   "heading_minus_course_plus_beta_deg": {
+    "n": 12431,
+    "mean": 0,
+    "rms": 0,
+    "maxAbs": 0,
+    "p95": 0
+   },
+   "yawRate_minus_dHeading_dt_degps": {
+    "n": 12110,
+    "mean": 0.1594,
+    "rms": 20.7389,
+    "maxAbs": 1618.663,
+    "p95": 1.8347
+   },
+   "speedFromPos_minus_speed_mps": {
+    "n": 12110,
+    "mean": 0.0067,
+    "rms": 0.2321,
+    "maxAbs": 10.0001,
+    "p95": 0.0734
+   },
+   "dirFromPos_minus_course_deg": {
+    "n": 12110,
+    "mean": 0.0016,
+    "rms": 0.19,
+    "maxAbs": 1.5164,
+    "p95": 0.3856
+   },
+   "ay_minus_formula_numeric": {
+    "n": 12110,
+    "mean": -0.0589,
+    "rms": 4.6029,
+    "maxAbs": 375.6018,
+    "p95": 2.8985
+   },
+   "ax_minus_formula_numeric": {
+    "n": 12110,
+    "mean": -0.0449,
+    "rms": 2.6599,
+    "maxAbs": 195.7894,
+    "p95": 4.1989
+   },
+   "ay_minus_formula_courseRate": {
+    "n": 12110,
+    "mean": -0.021,
+    "rms": 1.2437,
+    "maxAbs": 6.991,
+    "p95": 2.9147
+   },
+   "ax_minus_vdot_straight": {
+    "n": 6424,
+    "mean": -0.0496,
+    "rms": 1.4299,
+    "maxAbs": 6.5654,
+    "p95": 3.8232
+   },
+   "yawAccel_radps2": {
+    "n": 12110,
+    "mean": -0.0023,
+    "rms": 1.5681,
+    "maxAbs": 39.6369,
+    "p95": 1.944
+   },
+   "betaDot_radps": {
+    "n": 12110,
+    "mean": 0,
+    "rms": 0.4824,
+    "maxAbs": 29.0634,
+    "p95": 0.6791
+   }
+  }
+ ],
+ "drift": [
+  {
+   "label": "harbor s1 2laps a0.7 c0.7",
+   "totalS": 129.82,
+   "driftS_beta5": 56.27,
+   "driftS_flag": 57.28,
+   "vmaxKmh": 112.86,
+   "ayMaxG": 0.857,
+   "yawRateMaxDegps": 93.117,
+   "nSegs": 7,
+   "segs": [
+    {
+     "t0": 16.49,
+     "t1": 22.39,
+     "peak": 22.521,
+     "mean": 21.174,
+     "vMean": 68.915,
+     "vMin": 56.384,
+     "vMax": 79.59,
+     "rPeak": 58.094,
+     "ayPeak": 0.748,
+     "axPeak": 0.523,
+     "signChanges": 0,
+     "rise90": 0.52,
+     "overshoot": 0.079,
+     "flagLead": 0.15
+    },
+    {
+     "t0": 24.77,
+     "t1": 26.37,
+     "peak": 11.966,
+     "mean": 11.562,
+     "vMean": 75.048,
+     "vMin": 68.938,
+     "vMax": 86.269,
+     "rPeak": 33.078,
+     "ayPeak": 0.683,
+     "axPeak": 0.625,
+     "signChanges": 0,
+     "rise90": 0.37,
+     "overshoot": 0.296,
+     "flagLead": 0.25
+    },
+    {
+     "t0": 26.85,
+     "t1": 44.41,
+     "peak": 32.805,
+     "mean": 27.97,
+     "vMean": 57.096,
+     "vMin": 41.843,
+     "vMax": 76.979,
+     "rPeak": 91.742,
+     "ayPeak": 0.826,
+     "axPeak": 0.616,
+     "signChanges": 1,
+     "rise90": 0.49,
+     "overshoot": -0.004,
+     "flagLead": 0.09
+    },
+    {
+     "t0": 61.5,
+     "t1": 65.26,
+     "peak": 46.026,
+     "mean": 44.393,
+     "vMean": 44.007,
+     "vMin": 31.734,
+     "vMax": 65.867,
+     "rPeak": 93.117,
+     "ayPeak": 0.857,
+     "axPeak": 0.783,
+     "signChanges": 0,
+     "rise90": 0.49,
+     "overshoot": 0.018,
+     "flagLead": 0.08
+    },
+    {
+     "t0": 78.41,
+     "t1": 83.82,
+     "peak": 16.266,
+     "mean": 15.715,
+     "vMean": 68.171,
+     "vMin": 56.384,
+     "vMax": 79.507,
+     "rPeak": 47.378,
+     "ayPeak": 0.697,
+     "axPeak": 0.524,
+     "signChanges": 0,
+     "rise90": 0.81,
+     "overshoot": 0.015,
+     "flagLead": 0.19
+    },
+    {
+     "t0": 86.45,
+     "t1": 105.9,
+     "peak": 34.386,
+     "mean": 26.381,
+     "vMean": 58.769,
+     "vMin": 41.843,
+     "vMax": 82.78,
+     "rPeak": 81.915,
+     "ayPeak": 0.832,
+     "axPeak": 0.647,
+     "signChanges": 1,
+     "rise90": 0.41,
+     "overshoot": -0.099,
+     "flagLead": 0.23
+    },
+    {
+     "t0": 123.25,
+     "t1": 126.03,
+     "peak": 46.466,
+     "mean": 44.674,
+     "vMean": 40.829,
+     "vMin": 31.734,
+     "vMax": 60.531,
+     "rPeak": 72.243,
+     "ayPeak": 0.856,
+     "axPeak": 0.748,
+     "signChanges": 0,
+     "rise90": 0.65,
+     "overshoot": null,
+     "flagLead": 0.1
+    }
+   ],
+   "transitions15to15_s": [],
+   "transitionPeakYaw_degps": []
+  },
+  {
+   "label": "harbor s2 a0 c1",
+   "totalS": 147.7,
+   "driftS_beta5": 61.55,
+   "driftS_flag": 62.9,
+   "vmaxKmh": 86.4,
+   "ayMaxG": 0.713,
+   "yawRateMaxDegps": 61.163,
+   "nSegs": 6,
+   "segs": [
+    {
+     "t0": 19.52,
+     "t1": 25.59,
+     "peak": 13.241,
+     "mean": 13.19,
+     "vMean": 59.834,
+     "vMin": 49.332,
+     "vMax": 69.565,
+     "rPeak": 39.807,
+     "ayPeak": 0.564,
+     "axPeak": 0.564,
+     "signChanges": 0,
+     "rise90": 0.4,
+     "overshoot": 0.003,
+     "flagLead": 0.22
+    },
+    {
+     "t0": 28.84,
+     "t1": 50.75,
+     "peak": 24.612,
+     "mean": 20.02,
+     "vMean": 51.257,
+     "vMin": 36.61,
+     "vMax": 72.076,
+     "rPeak": 61.163,
+     "ayPeak": 0.651,
+     "axPeak": 0.627,
+     "signChanges": 1,
+     "rise90": 0.35,
+     "overshoot": 0.153,
+     "flagLead": 0.27
+    },
+    {
+     "t0": 70.75,
+     "t1": 74.26,
+     "peak": 32.843,
+     "mean": 32.503,
+     "vMean": 36.337,
+     "vMin": 27.766,
+     "vMax": 53.369,
+     "rPeak": 59.532,
+     "ayPeak": 0.708,
+     "axPeak": 0.7,
+     "signChanges": 0,
+     "rise90": 0.51,
+     "overshoot": 0.003,
+     "flagLead": 0.11
+    },
+    {
+     "t0": 90.21,
+     "t1": 96.29,
+     "peak": 13.241,
+     "mean": 13.19,
+     "vMean": 59.839,
+     "vMin": 49.332,
+     "vMax": 69.565,
+     "rPeak": 39.797,
+     "ayPeak": 0.563,
+     "axPeak": 0.564,
+     "signChanges": 0,
+     "rise90": 0.4,
+     "overshoot": 0.003,
+     "flagLead": 0.22
+    },
+    {
+     "t0": 99.54,
+     "t1": 121.44,
+     "peak": 24.612,
+     "mean": 20.023,
+     "vMean": 51.247,
+     "vMin": 36.61,
+     "vMax": 72.076,
+     "rPeak": 61.082,
+     "ayPeak": 0.649,
+     "axPeak": 0.627,
+     "signChanges": 1,
+     "rise90": 0.35,
+     "overshoot": 0.178,
+     "flagLead": 0.27
+    },
+    {
+     "t0": 141.45,
+     "t1": 144.38,
+     "peak": 32.843,
+     "mean": 32.621,
+     "vMean": 35.195,
+     "vMin": 27.766,
+     "vMax": 53.369,
+     "rPeak": 59.776,
+     "ayPeak": 0.713,
+     "axPeak": 0.698,
+     "signChanges": 0,
+     "rise90": 0.51,
+     "overshoot": 0.003,
+     "flagLead": 0.11
+    }
+   ],
+   "transitions15to15_s": [],
+   "transitionPeakYaw_degps": []
+  },
+  {
+   "label": "harbor s3 a1 c0",
+   "totalS": 124.32,
+   "driftS_beta5": 53.75,
+   "driftS_flag": 54.66,
+   "vmaxKmh": 124.2,
+   "ayMaxG": 0.907,
+   "yawRateMaxDegps": 149.793,
+   "nSegs": 6,
+   "segs": [
+    {
+     "t0": 15.78,
+     "t1": 21.31,
+     "peak": 20.172,
+     "mean": 17.948,
+     "vMean": 72.031,
+     "vMin": 59.149,
+     "vMax": 83.406,
+     "rPeak": 56.238,
+     "ayPeak": 0.774,
+     "axPeak": 0.57,
+     "signChanges": 0,
+     "rise90": 0.32,
+     "overshoot": 0.095,
+     "flagLead": 0.16
+    },
+    {
+     "t0": 24.47,
+     "t1": 42.43,
+     "peak": 47.539,
+     "mean": 32.021,
+     "vMean": 61.005,
+     "vMin": 43.894,
+     "vMax": 81.546,
+     "rPeak": 103.167,
+     "ayPeak": 0.902,
+     "axPeak": 0.696,
+     "signChanges": 1,
+     "rise90": 0.17,
+     "overshoot": -0.197,
+     "flagLead": 0.21
+    },
+    {
+     "t0": 59.64,
+     "t1": 62.39,
+     "peak": 54.565,
+     "mean": 44.988,
+     "vMean": 42.482,
+     "vMin": 33.29,
+     "vMax": 57.383,
+     "rPeak": 149.793,
+     "ayPeak": 0.883,
+     "axPeak": 0.699,
+     "signChanges": 0,
+     "rise90": 0.46,
+     "overshoot": 0.212,
+     "flagLead": 0.07
+    },
+    {
+     "t0": 74.46,
+     "t1": 80.09,
+     "peak": 22.277,
+     "mean": 17.816,
+     "vMean": 72.115,
+     "vMin": 59.149,
+     "vMax": 83.406,
+     "rPeak": 47.471,
+     "ayPeak": 0.783,
+     "axPeak": 0.572,
+     "signChanges": 0,
+     "rise90": 0.4,
+     "overshoot": 0.11,
+     "flagLead": 0.2
+    },
+    {
+     "t0": 81.94,
+     "t1": 101.13,
+     "peak": 43.633,
+     "mean": 32.307,
+     "vMean": 62.455,
+     "vMin": 43.894,
+     "vMax": 93.068,
+     "rPeak": 96.003,
+     "ayPeak": 0.907,
+     "axPeak": 0.684,
+     "signChanges": 1,
+     "rise90": 0.45,
+     "overshoot": 0.504,
+     "flagLead": 0.24
+    },
+    {
+     "t0": 117,
+     "t1": 120.35,
+     "peak": 55.401,
+     "mean": 48.845,
+     "vMean": 47.964,
+     "vMin": 33.29,
+     "vMax": 77.321,
+     "rPeak": 126.508,
+     "ayPeak": 0.896,
+     "axPeak": 0.734,
+     "signChanges": 0,
+     "rise90": 0.53,
+     "overshoot": 0.122,
+     "flagLead": 0.07
+    }
+   ],
+   "transitions15to15_s": [],
+   "transitionPeakYaw_degps": []
+  },
+  {
+   "label": "touge s9 a0.7 c0.7",
+   "totalS": 83.69,
+   "driftS_beta5": 58.57,
+   "driftS_flag": 59.29,
+   "vmaxKmh": 90.288,
+   "ayMaxG": 0.83,
+   "yawRateMaxDegps": 81.46,
+   "nSegs": 4,
+   "segs": [
+    {
+     "t0": 9.81,
+     "t1": 16.92,
+     "peak": 31.98,
+     "mean": 30.159,
+     "vMean": 58.174,
+     "vMin": 44.609,
+     "vMax": 81.544,
+     "rPeak": 75.073,
+     "ayPeak": 0.83,
+     "axPeak": 0.622,
+     "signChanges": 0,
+     "rise90": 0.53,
+     "overshoot": 0.058,
+     "flagLead": 0.12
+    },
+    {
+     "t0": 19.52,
+     "t1": 40.44,
+     "peak": 29.3,
+     "mean": 24.607,
+     "vMean": 60.995,
+     "vMin": 42.414,
+     "vMax": 77.638,
+     "rPeak": 73.497,
+     "ayPeak": 0.808,
+     "axPeak": 0.622,
+     "signChanges": 1,
+     "rise90": 0.54,
+     "overshoot": 0.051,
+     "flagLead": 0.12
+    },
+    {
+     "t0": 42.88,
+     "t1": 67.27,
+     "peak": 31.377,
+     "mean": 22.213,
+     "vMean": 61.287,
+     "vMin": 40.842,
+     "vMax": 76.493,
+     "rPeak": 81.46,
+     "ayPeak": 0.821,
+     "axPeak": 0.63,
+     "signChanges": 2,
+     "rise90": 0.9,
+     "overshoot": 0.046,
+     "flagLead": 0.12
+    },
+    {
+     "t0": 68,
+     "t1": 74.77,
+     "peak": 23.342,
+     "mean": 22.304,
+     "vMean": 63.139,
+     "vMin": 48.459,
+     "vMax": 78.689,
+     "rPeak": 52.58,
+     "ayPeak": 0.774,
+     "axPeak": 0.536,
+     "signChanges": 0,
+     "rise90": 0.76,
+     "overshoot": 0.038,
+     "flagLead": 0.14
+    }
+   ],
+   "transitions15to15_s": [],
+   "transitionPeakYaw_degps": []
+  },
+  {
+   "label": "touge s11 a1 c0.3",
+   "totalS": 80.09,
+   "driftS_beta5": 55.86,
+   "driftS_flag": 56.5,
+   "vmaxKmh": 99.36,
+   "ayMaxG": 0.888,
+   "yawRateMaxDegps": 106.953,
+   "nSegs": 3,
+   "segs": [
+    {
+     "t0": 10.15,
+     "t1": 16.17,
+     "peak": 26.759,
+     "mean": 23.267,
+     "vMean": 59,
+     "vMin": 46.796,
+     "vMax": 73.931,
+     "rPeak": 73.842,
+     "ayPeak": 0.836,
+     "axPeak": 0.614,
+     "signChanges": 0,
+     "rise90": 0.45,
+     "overshoot": 0.143,
+     "flagLead": 0.13
+    },
+    {
+     "t0": 18.74,
+     "t1": 38.86,
+     "peak": 34.231,
+     "mean": 27.529,
+     "vMean": 63.915,
+     "vMin": 44.494,
+     "vMax": 78.621,
+     "rPeak": 106.953,
+     "ayPeak": 0.878,
+     "axPeak": 0.64,
+     "signChanges": 1,
+     "rise90": 0.37,
+     "overshoot": 0.044,
+     "flagLead": 0.12
+    },
+    {
+     "t0": 41.21,
+     "t1": 71.66,
+     "peak": 41.595,
+     "mean": 20.439,
+     "vMean": 64.86,
+     "vMin": 42.845,
+     "vMax": 84.817,
+     "rPeak": 86.407,
+     "ayPeak": 0.888,
+     "axPeak": 0.682,
+     "signChanges": 2,
+     "rise90": 0.43,
+     "overshoot": -0.056,
+     "flagLead": 0.11
+    }
+   ],
+   "transitions15to15_s": [],
+   "transitionPeakYaw_degps": []
+  }
+ ],
+ "sensors": [
+  {
+   "label": "harbor s1 rigid vib1",
+   "idle_gyro_degps": [
+    {
+     "mean": -0.43,
+     "rms": 0.458
+    },
+    {
+     "mean": 0.132,
+     "rms": 0.206
+    },
+    {
+     "mean": -0.413,
+     "rms": 0.453
+    }
+   ],
+   "idle_accel_mps2": [
+    {
+     "mean": -0.0037,
+     "rms": 0.045
+    },
+    {
+     "mean": 0.0006,
+     "rms": 0.0465
+    },
+    {
+     "mean": -0.0007,
+     "rms": 0.0439
+    }
+   ],
+   "idle_gravMag": {
+    "n": 251,
+    "mean": 9.8065,
+    "rms": 9.8065,
+    "maxAbs": 9.8314,
+    "p95": 9.8213
+   },
+   "atSpeed_accelResidual_vehicle_rms": {
+    "x": 0.104,
+    "y": 0.218,
+    "z": 0.286
+   },
+   "atSpeed_gyro_vehicle_degps": {
+    "rollRms": 1.419,
+    "pitchRms": 2.456,
+    "yawResidualMean": 0.127,
+    "yawResidualRms": 0.225
+   },
+   "gravityTiltDeg": {
+    "n": 12983,
+    "mean": 1.7264,
+    "rms": 1.9138,
+    "maxAbs": 4.1527,
+    "p95": 3.2617
+   },
+   "gravityMag": {
+    "n": 12983,
+    "mean": 9.8067,
+    "rms": 9.8067,
+    "maxAbs": 9.8433,
+    "p95": 9.8232
+   },
+   "gravGyroConsistency": {
+    "rms_dg_plus_wxg": 0.268,
+    "rms_dg_minus_wxg": 0.722,
+    "rms_dg": 0.412
+   }
+  },
+  {
+   "label": "harbor s1 looseness1",
+   "idle_gyro_degps": [
+    {
+     "mean": -2.71,
+     "rms": 47.401
+    },
+    {
+     "mean": 2.08,
+     "rms": 18.306
+    },
+    {
+     "mean": 1.106,
+     "rms": 89.582
+    }
+   ],
+   "idle_accel_mps2": [
+    {
+     "mean": -0.0037,
+     "rms": 0.0442
+    },
+    {
+     "mean": 0.0006,
+     "rms": 0.0459
+    },
+    {
+     "mean": -0.0007,
+     "rms": 0.0441
+    }
+   ],
+   "idle_gravMag": {
+    "n": 251,
+    "mean": 9.8065,
+    "rms": 9.8065,
+    "maxAbs": 9.8315,
+    "p95": 9.8215
+   },
+   "atSpeed_accelResidual_vehicle_rms": {
+    "x": 0.352,
+    "y": 0.471,
+    "z": 1.093
+   },
+   "atSpeed_gyro_vehicle_degps": {
+    "rollRms": 77.948,
+    "pitchRms": 51.88,
+    "yawResidualMean": -0.252,
+    "yawResidualRms": 29.252
+   },
+   "gravityTiltDeg": {
+    "n": 6831,
+    "mean": 14.1814,
+    "rms": 16.2118,
+    "maxAbs": 32.7354,
+    "p95": 28.3708
+   },
+   "gravityMag": {
+    "n": 6831,
+    "mean": 9.8067,
+    "rms": 9.8067,
+    "maxAbs": 9.8424,
+    "p95": 9.8229
+   },
+   "gravGyroConsistency": {
+    "rms_dg_plus_wxg": 16.325,
+    "rms_dg_minus_wxg": 2.047,
+    "rms_dg": 8.2
+   }
+  },
+  {
+   "label": "harbor s1 vib0",
+   "idle_gyro_degps": [
+    {
+     "mean": -0.43,
+     "rms": 0.458
+    },
+    {
+     "mean": 0.132,
+     "rms": 0.206
+    },
+    {
+     "mean": -0.413,
+     "rms": 0.453
+    }
+   ],
+   "idle_accel_mps2": [
+    {
+     "mean": -0.0038,
+     "rms": 0.0359
+    },
+    {
+     "mean": 0.0005,
+     "rms": 0.0393
+    },
+    {
+     "mean": -0.0007,
+     "rms": 0.0421
+    }
+   ],
+   "idle_gravMag": {
+    "n": 251,
+    "mean": 9.8065,
+    "rms": 9.8065,
+    "maxAbs": 9.8314,
+    "p95": 9.8213
+   },
+   "atSpeed_accelResidual_vehicle_rms": {
+    "x": 0.04,
+    "y": 0.04,
+    "z": 0.058
+   },
+   "atSpeed_gyro_vehicle_degps": {
+    "rollRms": 1.448,
+    "pitchRms": 2.416,
+    "yawResidualMean": 0.206,
+    "yawResidualRms": 0.268
+   },
+   "gravityTiltDeg": {
+    "n": 6831,
+    "mean": 1.4295,
+    "rms": 1.5693,
+    "maxAbs": 3.3528,
+    "p95": 2.6711
+   },
+   "gravityMag": {
+    "n": 6831,
+    "mean": 9.8066,
+    "rms": 9.8066,
+    "maxAbs": 9.8393,
+    "p95": 9.8231
+   },
+   "gravGyroConsistency": {
+    "rms_dg_plus_wxg": 0.161,
+    "rms_dg_minus_wxg": 0.671,
+    "rms_dg": 0.341
+   }
+  },
+  {
+   "label": "harbor s1 vib2",
+   "idle_gyro_degps": [
+    {
+     "mean": -0.43,
+     "rms": 0.458
+    },
+    {
+     "mean": 0.132,
+     "rms": 0.206
+    },
+    {
+     "mean": -0.413,
+     "rms": 0.453
+    }
+   ],
+   "idle_accel_mps2": [
+    {
+     "mean": -0.0036,
+     "rms": 0.0682
+    },
+    {
+     "mean": 0.0008,
+     "rms": 0.0635
+    },
+    {
+     "mean": -0.0007,
+     "rms": 0.0484
+    }
+   ],
+   "idle_gravMag": {
+    "n": 251,
+    "mean": 9.8065,
+    "rms": 9.8065,
+    "maxAbs": 9.8315,
+    "p95": 9.8213
+   },
+   "atSpeed_accelResidual_vehicle_rms": {
+    "x": 0.195,
+    "y": 0.432,
+    "z": 0.787
+   },
+   "atSpeed_gyro_vehicle_degps": {
+    "rollRms": 1.441,
+    "pitchRms": 2.456,
+    "yawResidualMean": 0.206,
+    "yawResidualRms": 0.276
+   },
+   "gravityTiltDeg": {
+    "n": 6831,
+    "mean": 2.0304,
+    "rms": 2.2854,
+    "maxAbs": 4.9553,
+    "p95": 3.9514
+   },
+   "gravityMag": {
+    "n": 6831,
+    "mean": 9.8066,
+    "rms": 9.8066,
+    "maxAbs": 9.8451,
+    "p95": 9.8229
+   },
+   "gravGyroConsistency": {
+    "rms_dg_plus_wxg": 0.383,
+    "rms_dg_minus_wxg": 0.755,
+    "rms_dg": 0.486
+   }
+  },
+  {
+   "label": "touge s5 flat-console",
+   "idle_gyro_degps": [
+    {
+     "mean": -1.094,
+     "rms": 3.919
+    },
+    {
+     "mean": 0.35,
+     "rms": 0.39
+    },
+    {
+     "mean": 0.08,
+     "rms": 0.281
+    }
+   ],
+   "idle_accel_mps2": [
+    {
+     "mean": 0.004,
+     "rms": 0.0442
+    },
+    {
+     "mean": 0.0004,
+     "rms": 0.0566
+    },
+    {
+     "mean": -0.0023,
+     "rms": 0.0464
+    }
+   ],
+   "idle_gravMag": {
+    "n": 251,
+    "mean": 9.807,
+    "rms": 9.807,
+    "maxAbs": 9.8347,
+    "p95": 9.8229
+   },
+   "atSpeed_accelResidual_vehicle_rms": {
+    "x": 0.221,
+    "y": 0.104,
+    "z": 0.216
+   },
+   "atSpeed_gyro_vehicle_degps": {
+    "rollRms": 1.384,
+    "pitchRms": 1.953,
+    "yawResidualMean": 0.153,
+    "yawResidualRms": 0.234
+   },
+   "gravityTiltDeg": {
+    "n": 8370,
+    "mean": 3.1818,
+    "rms": 3.58,
+    "maxAbs": 8.0896,
+    "p95": 6.1152
+   },
+   "gravityMag": {
+    "n": 8370,
+    "mean": 9.8066,
+    "rms": 9.8066,
+    "maxAbs": 9.8408,
+    "p95": 9.823
+   },
+   "gravGyroConsistency": {
+    "rms_dg_plus_wxg": 0.313,
+    "rms_dg_minus_wxg": 0.738,
+    "rms_dg": 0.431
+   }
+  },
+  {
+   "label": "touge s5 random",
+   "idle_gyro_degps": [
+    {
+     "mean": 0.814,
+     "rms": 2
+    },
+    {
+     "mean": 0.304,
+     "rms": 0.493
+    },
+    {
+     "mean": -0.888,
+     "rms": 3.421
+    }
+   ],
+   "idle_accel_mps2": [
+    {
+     "mean": 0.0013,
+     "rms": 0.049
+    },
+    {
+     "mean": 0.0035,
+     "rms": 0.0499
+    },
+    {
+     "mean": 0.0031,
+     "rms": 0.0378
+    }
+   ],
+   "idle_gravMag": {
+    "n": 251,
+    "mean": 9.8075,
+    "rms": 9.8075,
+    "maxAbs": 9.8382,
+    "p95": 9.824
+   },
+   "atSpeed_accelResidual_vehicle_rms": {
+    "x": 0.175,
+    "y": 0.099,
+    "z": 0.325
+   },
+   "atSpeed_gyro_vehicle_degps": {
+    "rollRms": 1.353,
+    "pitchRms": 1.978,
+    "yawResidualMean": 0.365,
+    "yawResidualRms": 0.409
+   },
+   "gravityTiltDeg": {
+    "n": 8370,
+    "mean": 3.1901,
+    "rms": 3.5791,
+    "maxAbs": 7.3643,
+    "p95": 6.1927
+   },
+   "gravityMag": {
+    "n": 8370,
+    "mean": 9.8068,
+    "rms": 9.8068,
+    "maxAbs": 9.8463,
+    "p95": 9.8232
+   },
+   "gravGyroConsistency": {
+    "rms_dg_plus_wxg": 0.322,
+    "rms_dg_minus_wxg": 0.731,
+    "rms_dg": 0.431
+   }
+  }
+ ],
+ "gps": [
+  {
+   "label": "harbor s1 default",
+   "fixes": 130,
+   "noCourse": 3,
+   "gaps_s": {
+    "min": 0.649,
+    "max": 1.304,
+    "mean": 1.001,
+    "over1p5": 0
+   },
+   "latencyEst_s": {
+    "n": 126,
+    "mean": 0.5096,
+    "rms": 0.5299,
+    "maxAbs": 0.8412,
+    "p95": 0.7324
+   },
+   "posErr_m": {
+    "n": 126,
+    "mean": 1.3416,
+    "rms": 1.7257,
+    "maxAbs": 4.9722,
+    "p95": 3.4714
+   },
+   "posErrAutocorr": [
+    {
+     "L": 1,
+     "x": 0.827,
+     "y": 0.768
+    },
+    {
+     "L": 2,
+     "x": 0.653,
+     "y": 0.604
+    },
+    {
+     "L": 5,
+     "x": 0.363,
+     "y": 0.159
+    },
+    {
+     "L": 10,
+     "x": 0.288,
+     "y": -0.032
+    }
+   ],
+   "speedErr_mps": {
+    "n": 126,
+    "mean": 0.0467,
+    "rms": 0.5079,
+    "maxAbs": 1.7793,
+    "p95": 0.9117
+   },
+   "courseErr_atFix_deg": {
+    "n": 126,
+    "mean": -0.4075,
+    "rms": 2.4253,
+    "maxAbs": 8.4454,
+    "p95": 4.8429
+   },
+   "courseErr_vsCourseAtDelivery_deg": {
+    "n": 126,
+    "mean": -2.9396,
+    "rms": 6.9705,
+    "maxAbs": 18.8095,
+    "p95": 11.7667
+   },
+   "hAcc": {
+    "n": 130,
+    "mean": 4.1573,
+    "rms": 4.2518,
+    "maxAbs": 7.8043,
+    "p95": 5.7965
+   }
+  },
+  {
+   "label": "harbor s1 latency1.0",
+   "fixes": 67,
+   "noCourse": 3,
+   "gaps_s": {
+    "min": 0.649,
+    "max": 1.304,
+    "mean": 1.001,
+    "over1p5": 0
+   },
+   "latencyEst_s": {
+    "n": 65,
+    "mean": 1.0132,
+    "rms": 1.0253,
+    "maxAbs": 1.3412,
+    "p95": 1.2243
+   },
+   "posErr_m": {
+    "n": 65,
+    "mean": 0.8225,
+    "rms": 0.944,
+    "maxAbs": 1.9265,
+    "p95": 1.653
+   },
+   "posErrAutocorr": [
+    {
+     "L": 1,
+     "x": 0.748,
+     "y": 0.501
+    },
+    {
+     "L": 2,
+     "x": 0.604,
+     "y": 0.362
+    },
+    {
+     "L": 5,
+     "x": 0.216,
+     "y": 0.124
+    },
+    {
+     "L": 10,
+     "x": -0.181,
+     "y": -0.15
+    }
+   ],
+   "speedErr_mps": {
+    "n": 65,
+    "mean": -0.1285,
+    "rms": 1.6054,
+    "maxAbs": 12.4953,
+    "p95": 0.788
+   },
+   "courseErr_atFix_deg": {
+    "n": 64,
+    "mean": -0.172,
+    "rms": 2.3689,
+    "maxAbs": 7.1711,
+    "p95": 4.7428
+   },
+   "courseErr_vsCourseAtDelivery_deg": {
+    "n": 64,
+    "mean": -5.9602,
+    "rms": 13.4457,
+    "maxAbs": 37.769,
+    "p95": 22.2929
+   },
+   "hAcc": {
+    "n": 67,
+    "mean": 4.341,
+    "rms": 4.4659,
+    "maxAbs": 7.8043,
+    "p95": 6.1831
+   }
+  },
+  {
+   "label": "harbor s1 latency0.2",
+   "fixes": 68,
+   "noCourse": 3,
+   "gaps_s": {
+    "min": 0.649,
+    "max": 1.304,
+    "mean": 1.004,
+    "over1p5": 0
+   },
+   "latencyEst_s": {
+    "n": 64,
+    "mean": 0.2258,
+    "rms": 0.2577,
+    "maxAbs": 0.5412,
+    "p95": 0.4243
+   },
+   "posErr_m": {
+    "n": 64,
+    "mean": 0.8273,
+    "rms": 0.9496,
+    "maxAbs": 1.9265,
+    "p95": 1.653
+   },
+   "posErrAutocorr": [
+    {
+     "L": 1,
+     "x": 0.743,
+     "y": 0.508
+    },
+    {
+     "L": 2,
+     "x": 0.601,
+     "y": 0.364
+    },
+    {
+     "L": 5,
+     "x": 0.211,
+     "y": 0.106
+    },
+    {
+     "L": 10,
+     "x": -0.183,
+     "y": -0.16
+    }
+   ],
+   "speedErr_mps": {
+    "n": 64,
+    "mean": 0.0657,
+    "rms": 0.4227,
+    "maxAbs": 1.3305,
+    "p95": 0.7847
+   },
+   "courseErr_atFix_deg": {
+    "n": 64,
+    "mean": -0.1487,
+    "rms": 2.379,
+    "maxAbs": 7.1711,
+    "p95": 4.7428
+   },
+   "courseErr_vsCourseAtDelivery_deg": {
+    "n": 64,
+    "mean": -1.0965,
+    "rms": 3.4543,
+    "maxAbs": 8.6499,
+    "p95": 6.5747
+   },
+   "hAcc": {
+    "n": 68,
+    "mean": 4.3376,
+    "rms": 4.4609,
+    "maxAbs": 7.8043,
+    "p95": 6.1831
+   }
+  },
+  {
+   "label": "harbor s1 dropouts",
+   "fixes": 114,
+   "noCourse": 3,
+   "gaps_s": {
+    "min": 0.698,
+    "max": 6.018,
+    "mean": 1.123,
+    "over1p5": 4
+   },
+   "latencyEst_s": {
+    "n": 111,
+    "mean": 0.5044,
+    "rms": 0.5182,
+    "maxAbs": 0.8312,
+    "p95": 0.6508
+   },
+   "posErr_m": {
+    "n": 111,
+    "mean": 1.0055,
+    "rms": 1.2787,
+    "maxAbs": 3.7334,
+    "p95": 2.5838
+   },
+   "posErrAutocorr": [
+    {
+     "L": 1,
+     "x": 0.578,
+     "y": 0.646
+    },
+    {
+     "L": 2,
+     "x": 0.418,
+     "y": 0.406
+    },
+    {
+     "L": 5,
+     "x": 0.145,
+     "y": 0.121
+    },
+    {
+     "L": 10,
+     "x": 0.012,
+     "y": 0.086
+    }
+   ],
+   "speedErr_mps": {
+    "n": 111,
+    "mean": -0.0613,
+    "rms": 0.4082,
+    "maxAbs": 1.3062,
+    "p95": 0.8742
+   },
+   "courseErr_atFix_deg": {
+    "n": 111,
+    "mean": -0.1306,
+    "rms": 2.2015,
+    "maxAbs": 8.295,
+    "p95": 3.7199
+   },
+   "courseErr_vsCourseAtDelivery_deg": {
+    "n": 111,
+    "mean": -2.4816,
+    "rms": 7.1734,
+    "maxAbs": 19.0439,
+    "p95": 13.363
+   },
+   "hAcc": {
+    "n": 114,
+    "mean": 4.3679,
+    "rms": 4.4971,
+    "maxAbs": 8.5296,
+    "p95": 6.5093
+   }
+  },
+  {
+   "label": "harbor s1 5Hz",
+   "fixes": 339,
+   "noCourse": 15,
+   "gaps_s": {
+    "min": -0.144,
+    "max": 0.657,
+    "mean": 0.2,
+    "over1p5": 0
+   },
+   "latencyEst_s": {
+    "n": 319,
+    "mean": 0.4984,
+    "rms": 0.5095,
+    "maxAbs": 0.7978,
+    "p95": 0.6703
+   },
+   "posErr_m": {
+    "n": 319,
+    "mean": 1.3837,
+    "rms": 1.6996,
+    "maxAbs": 4.388,
+    "p95": 3.1368
+   },
+   "posErrAutocorr": [
+    {
+     "L": 1,
+     "x": 0.827,
+     "y": 0.747
+    },
+    {
+     "L": 2,
+     "x": 0.743,
+     "y": 0.643
+    },
+    {
+     "L": 5,
+     "x": 0.563,
+     "y": 0.372
+    },
+    {
+     "L": 10,
+     "x": 0.228,
+     "y": 0.115
+    }
+   ],
+   "speedErr_mps": {
+    "n": 319,
+    "mean": 0.0043,
+    "rms": 0.4147,
+    "maxAbs": 1.4739,
+    "p95": 0.8527
+   },
+   "courseErr_atFix_deg": {
+    "n": 319,
+    "mean": -0.0614,
+    "rms": 2.07,
+    "maxAbs": 7.5999,
+    "p95": 4.0003
+   },
+   "courseErr_vsCourseAtDelivery_deg": {
+    "n": 319,
+    "mean": -2.8818,
+    "rms": 7.0335,
+    "maxAbs": 20.6727,
+    "p95": 12.6364
+   },
+   "hAcc": {
+    "n": 339,
+    "mean": 4.1746,
+    "rms": 4.2689,
+    "maxAbs": 7.3385,
+    "p95": 5.8974
+   }
+  }
+ ],
+ "mounts": [
+  {
+   "preset": "portrait-vent",
+   "det": 1,
+   "orth": [
+    0,
+    0,
+    0
+   ],
+   "norms": [
+    1,
+    1,
+    1
+   ],
+   "phoneX_inVehicle": [
+    0,
+    -1,
+    0
+   ],
+   "phoneY_inVehicle": [
+    -0.257,
+    0,
+    0.966
+   ],
+   "phoneZ_inVehicle": [
+    -0.966,
+    0,
+    -0.257
+   ]
+  },
+  {
+   "preset": "landscape-dash",
+   "det": 1,
+   "orth": [
+    0,
+    0,
+    0
+   ],
+   "norms": [
+    1,
+    1,
+    1
+   ],
+   "phoneX_inVehicle": [
+    -0.199,
+    0,
+    0.98
+   ],
+   "phoneY_inVehicle": [
+    0,
+    1,
+    0
+   ],
+   "phoneZ_inVehicle": [
+    -0.98,
+    0,
+    -0.199
+   ]
+  },
+  {
+   "preset": "flat-console",
+   "det": 1,
+   "orth": [
+    0,
+    0,
+    0
+   ],
+   "norms": [
+    1,
+    1,
+    1
+   ],
+   "phoneX_inVehicle": [
+    0,
+    -0.999,
+    -0.05
+   ],
+   "phoneY_inVehicle": [
+    1,
+    0,
+    0
+   ],
+   "phoneZ_inVehicle": [
+    0,
+    -0.05,
+    0.999
+   ]
+  },
+  {
+   "preset": "random",
+   "det": 1,
+   "orth": [
+    0,
+    0,
+    0
+   ],
+   "norms": [
+    1,
+    1,
+    1
+   ],
+   "phoneX_inVehicle": [
+    0.257,
+    0.264,
+    0.93
+   ],
+   "phoneY_inVehicle": [
+    -0.817,
+    0.573,
+    0.063
+   ],
+   "phoneZ_inVehicle": [
+    -0.516,
+    -0.776,
+    0.363
+   ]
+  }
+ ],
+ "deterministic": true,
+ "seedsDiffer": true,
+ "edge": {
+  "laps0": {
+   "motion": 6831,
+   "gps": 67,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    68.3
+   ],
+   "endT": 68.3
+  },
+  "idle0": {
+   "motion": 12683,
+   "gps": 126,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    0,
+    61.52,
+    126.82
+   ],
+   "endT": 126.82
+  },
+  "rate50": {
+   "motion": 6491,
+   "gps": 129,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    64.52,
+    129.8
+   ],
+   "endT": 129.8
+  },
+  "rate10": {
+   "motion": 1298,
+   "gps": 129,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    64.6,
+    129.7
+   ],
+   "endT": 129.7
+  },
+  "aggr0cons0": {
+   "motion": 14771,
+   "gps": 147,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    73.7,
+    147.7
+   ],
+   "endT": 147.7
+  },
+  "aggr1cons1": {
+   "motion": 12433,
+   "gps": 124,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    61.68,
+    124.32
+   ],
+   "endT": 124.32
+  },
+  "lat0": {
+   "motion": 12983,
+   "gps": 130,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    64.52,
+    129.82
+   ],
+   "endT": 129.82
+  },
+  "gps10Hz": {
+   "motion": 12983,
+   "gps": 1293,
+   "nan": false,
+   "tMono": true,
+   "gMono": false,
+   "lapTimes": [
+    3,
+    64.52,
+    129.82
+   ],
+   "endT": 129.82
+  },
+  "vib0loose1": {
+   "motion": 12983,
+   "gps": 129,
+   "nan": false,
+   "tMono": true,
+   "gMono": true,
+   "lapTimes": [
+    3,
+    64.52,
+    129.82
+   ],
+   "endT": 129.82
+  }
+ },
+ "rollout": [
+  {
+   "t": 125.42,
+   "v": 10.414,
+   "truthAx": 5.723,
+   "sensAx": 5.665,
+   "truthAy": 0.717,
+   "sensAy": 0.8,
+   "truthYaw": 26.921,
+   "sensYaw": 27.041,
+   "truthBeta": -46.312,
+   "heading": 21.974
+  },
+  {
+   "t": 125.82,
+   "v": 11.815,
+   "truthAx": 4.965,
+   "sensAx": 4.919,
+   "truthAy": 0.155,
+   "sensAy": 0.181,
+   "truthYaw": -18.993,
+   "sensYaw": -18.653,
+   "truthBeta": -44.403,
+   "heading": 28.109
+  },
+  {
+   "t": 126.22,
+   "v": 12.343,
+   "truthAx": -4,
+   "sensAx": -1.706,
+   "truthAy": 0,
+   "sensAy": 2.768,
+   "truthYaw": 0,
+   "sensYaw": 12.77,
+   "truthBeta": 0,
+   "heading": -10.26
+  },
+  {
+   "t": 126.62,
+   "v": 11.338,
+   "truthAx": -4,
+   "sensAx": -3.039,
+   "truthAy": 0,
+   "sensAy": 1.625,
+   "truthYaw": 0,
+   "sensYaw": 7.754,
+   "truthBeta": 0,
+   "heading": -6.22
+  },
+  {
+   "t": 127.02,
+   "v": 10.04,
+   "truthAx": -4,
+   "sensAx": -3.357,
+   "truthAy": 0,
+   "sensAy": 1.01,
+   "truthYaw": 0,
+   "sensYaw": 4.501,
+   "truthBeta": 0,
+   "heading": -3.907
+  },
+  {
+   "t": 127.42,
+   "v": 8.667,
+   "truthAx": -4,
+   "sensAx": -3.521,
+   "truthAy": 0,
+   "sensAy": 0.378,
+   "truthYaw": 0,
+   "sensYaw": 3.288,
+   "truthBeta": 0,
+   "heading": -2.454
+  },
+  {
+   "t": 127.82,
+   "v": 7.273,
+   "truthAx": -4,
+   "sensAx": -3.536,
+   "truthAy": 0,
+   "sensAy": 0.084,
+   "truthYaw": 0,
+   "sensYaw": 2.048,
+   "truthBeta": 0,
+   "heading": -1.491
+  },
+  {
+   "t": 128.22,
+   "v": 5.875,
+   "truthAx": -4,
+   "sensAx": -3.487,
+   "truthAy": 0,
+   "sensAy": 0.09,
+   "truthYaw": 0,
+   "sensYaw": 1.399,
+   "truthBeta": 0,
+   "heading": -0.837
+  },
+  {
+   "t": 128.62,
+   "v": 4.476,
+   "truthAx": -4,
+   "sensAx": -3.495,
+   "truthAy": 0,
+   "sensAy": 0.122,
+   "truthYaw": 0,
+   "sensYaw": 1.042,
+   "truthBeta": 0,
+   "heading": -0.392
+  },
+  {
+   "t": 129.02,
+   "v": 3.076,
+   "truthAx": -4,
+   "sensAx": -3.574,
+   "truthAy": 0,
+   "sensAy": 0.113,
+   "truthYaw": 0,
+   "sensYaw": 0.719,
+   "truthBeta": 0,
+   "heading": -0.101
+  },
+  {
+   "t": 129.42,
+   "v": 1.676,
+   "truthAx": -4,
+   "sensAx": -3.547,
+   "truthAy": 0,
+   "sensAy": -0.024,
+   "truthYaw": 0,
+   "sensYaw": 0.545,
+   "truthBeta": 0,
+   "heading": 0.069
+  },
+  {
+   "t": 129.82,
+   "v": 0.276,
+   "truthAx": -4,
+   "sensAx": -3.555,
+   "truthAy": 0,
+   "sensAy": -0.033,
+   "truthYaw": 0,
+   "sensYaw": -0.038,
+   "truthBeta": 0,
+   "heading": 0.137
+  }
+ ],
+ "headingJumps": [
+  {
+   "i": 12604,
+   "t": 126.04,
+   "jumpDeg": 32.768,
+   "betaBefore": -32.92,
+   "betaAfter": 0
+  }
+ ],
+ "corners_harbor": {
+  "length": 1269,
+  "corners": [
+   {
+    "startS": 354,
+    "endS": 440.5,
+    "apexS": 424,
+    "dir": 1,
+    "R": 68.938
+   },
+   {
+    "startS": 518.5,
+    "endS": 531,
+    "apexS": 521,
+    "dir": -1,
+    "R": 79.926
+   },
+   {
+    "startS": 549,
+    "endS": 595,
+    "apexS": 570,
+    "dir": -1,
+    "R": 41.452
+   },
+   {
+    "startS": 613.5,
+    "endS": 626.5,
+    "apexS": 617,
+    "dir": -1,
+    "R": 61.019
+   },
+   {
+    "startS": 643,
+    "endS": 812,
+    "apexS": 697.5,
+    "dir": 1,
+    "R": 47.964
+   },
+   {
+    "startS": 1246.5,
+    "endS": 1268.5,
+    "apexS": 1255,
+    "dir": 1,
+    "R": 21.609
+   }
+  ],
+  "segments": [
+   {
+    "startS": 333.29,
+    "endS": 435.661,
+    "betaDeg": -21.162,
+    "linked": false
+   },
+   {
+    "startS": 497.323,
+    "endS": 525.79,
+    "betaDeg": 12.266,
+    "linked": true
+   },
+   {
+    "startS": 545.114,
+    "endS": 591.248,
+    "betaDeg": 32.116,
+    "linked": true
+   },
+   {
+    "startS": 596.781,
+    "endS": 621.948,
+    "betaDeg": 23.033,
+    "linked": true
+   },
+   {
+    "startS": 631.125,
+    "endS": 807.964,
+    "betaDeg": -30.803,
+    "linked": false
+   },
+   {
+    "startS": 1231.772,
+    "endS": 1265.5,
+    "betaDeg": -45.909,
+    "linked": false
+   }
+  ],
+  "vTargetMaxKmh": 112.86,
+  "vTargetMinKmh": 31.332
+ },
+ "corners_touge": {
+  "length": 1415,
+  "corners": [
+   {
+    "startS": 158.5,
+    "endS": 250,
+    "apexS": 178,
+    "dir": 1,
+    "R": 49.557
+   },
+   {
+    "startS": 321,
+    "endS": 452.5,
+    "apexS": 438,
+    "dir": -1,
+    "R": 55.001
+   },
+   {
+    "startS": 470.5,
+    "endS": 624,
+    "apexS": 483,
+    "dir": 1,
+    "R": 55.455
+   },
+   {
+    "startS": 638.5,
+    "endS": 656,
+    "apexS": 643,
+    "dir": 1,
+    "R": 62.458
+   },
+   {
+    "startS": 723,
+    "endS": 832.5,
+    "apexS": 741.5,
+    "dir": -1,
+    "R": 48.483
+   },
+   {
+    "startS": 844.5,
+    "endS": 862,
+    "apexS": 849.5,
+    "dir": -1,
+    "R": 55.628
+   },
+   {
+    "startS": 887,
+    "endS": 1047.5,
+    "apexS": 897.5,
+    "dir": 1,
+    "R": 63.114
+   },
+   {
+    "startS": 1061,
+    "endS": 1081.5,
+    "apexS": 1067,
+    "dir": 1,
+    "R": 52.99
+   },
+   {
+    "startS": 1102.5,
+    "endS": 1119,
+    "apexS": 1111,
+    "dir": -1,
+    "R": 53.827
+   },
+   {
+    "startS": 1157,
+    "endS": 1251.5,
+    "apexS": 1172,
+    "dir": -1,
+    "R": 54.618
+   }
+  ],
+  "segments": [
+   {
+    "startS": 140.146,
+    "endS": 245.897,
+    "betaDeg": -32.141,
+    "linked": false
+   },
+   {
+    "startS": 302.665,
+    "endS": 448.178,
+    "betaDeg": 23.853,
+    "linked": true
+   },
+   {
+    "startS": 464.733,
+    "endS": 619.66,
+    "betaDeg": -24.183,
+    "linked": true
+   },
+   {
+    "startS": 621.61,
+    "endS": 651.394,
+    "betaDeg": -22.218,
+    "linked": false
+   },
+   {
+    "startS": 711.055,
+    "endS": 828.442,
+    "betaDeg": 30.509,
+    "linked": true
+   },
+   {
+    "startS": 824.532,
+    "endS": 857.653,
+    "betaDeg": 26.637,
+    "linked": true
+   },
+   {
+    "startS": 872.821,
+    "endS": 1042.87,
+    "betaDeg": -21.612,
+    "linked": true
+   },
+   {
+    "startS": 1044.629,
+    "endS": 1077.258,
+    "betaDeg": -28.525,
+    "linked": true
+   },
+   {
+    "startS": 1087.988,
+    "endS": 1114.724,
+    "betaDeg": 26.423,
+    "linked": true
+   },
+   {
+    "startS": 1148.797,
+    "endS": 1247.193,
+    "betaDeg": 23.808,
+    "linked": false
+   }
+  ],
+  "vTargetMaxKmh": 90.288,
+  "vTargetMinKmh": 1.8
+ }
+}

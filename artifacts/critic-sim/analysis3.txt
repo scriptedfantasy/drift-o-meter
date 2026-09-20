@@ -1,0 +1,14 @@
+A. sway sign (parked, looseness 1, vib 0): rms|dg/dt + w x g| = 32.956  rms|dg/dt - w x g| = 1.904  rms|dg/dt| = 16.468  (correct physics => first ~0)
+   sway gyro |w| peak deg/s 190.256  gravity tilt peak deg 32.933
+A2. parked rigid: gyro x,y rms deg/s = 0.258 (pure noise 0.003 rad/s = 0.17 deg/s => the +-1.5deg 0.2 Hz cradle wobble (peak rate 1.9 deg/s) is NOT in the gyro)
+B. harbor total turning =  360 deg (positive = CCW loop, all net left)
+   "long right-hand sweeper" region (s 350-450): {"sRange":[350,450],"kappaAtMaxAbs":0.023,"minRadius":44.413,"at":[297.687,142.409]}
+   "hairpin right at the top" region (s 680-780): {"sRange":[680,780],"kappaAtMaxAbs":0.038,"minRadius":26.046,"at":[270.268,338.965]}
+   "left-right chicane" region (s 500-640): {"sRange":[500,640],"kappaAtMaxAbs":-0.041,"minRadius":24.506,"at":[200.12,240.787]} signs: [ -1 ]
+   tightest corner on the whole lap: {"sRange":[0,1269],"kappaAtMaxAbs":0.072,"minRadius":13.94,"at":[-12.758,6.123]}
+   touge tightest: {"s":741.5,"minRadius":23.317}  banking at that kappa (deg): 2.387 (negative roll = left side down = banked INTO a left turn, comment says off-camber)
+C. motion/truth aligned by t: true len 6831
+   sim.test latency assertion gps[10].t > 9 with gpsLatency=0: true (t = 10.887 ) => assertion cannot fail
+   first moving sample: t 2.99999999999998 speed jumps 0 -> 12.663 m/s ( 45.587 km/h) in one 10 ms step; truth.ax there = 3.44
+   GPS speeds 2..6 s: 2.295:1.06km/h 3.257:0km/h 4.256:56.068km/h 5.409:68.386km/h 6.268:80.157km/h
+   peak yaw acceleration in the run (4-60 s): 21.898 rad/s^2 = 1254.652 deg/s^2 at t 32.07

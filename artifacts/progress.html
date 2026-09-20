@@ -54,15 +54,15 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <div class="wrap">
 <header>
   <div><h1>Drift-<span>O</span>-Meter <span>Build Board</span></h1><div class="phase">Phase 1 — engine, simulator, app foundation</div></div>
-  <div class="updated">Updated 2026-09-20 13:30 UTC</div>
+  <div class="updated">Updated 2026-09-20 13:36 UTC</div>
 </header>
 <p class="summary">Building an Expo/React Native iPhone app that judges real-world drifting from the gyroscope, accelerometer and GPS, with NFS / Tokyo Drift-grade presentation. Each piece is built by one agent and judged by a separate fresh-context critic against the running app, real sensor output and finished visualisations.</p>
 <div class="strip">
   <div class="tile"><b>14</b><span>pieces</span></div>
   <div class="tile pass"><b>0</b><span>passed critic</span></div>
-  <div class="tile crit"><b>0</b><span>in critique</span></div>
-  <div class="tile build"><b>2</b><span>building / fixing</span></div>
-  <div class="tile"><b>12</b><span>queued</span></div>
+  <div class="tile crit"><b>1</b><span>in critique</span></div>
+  <div class="tile build"><b>8</b><span>building / fixing</span></div>
+  <div class="tile"><b>5</b><span>queued</span></div>
 </div>
 <h2>Pieces</h2>
 <div class="tablewrap"><table>
@@ -71,7 +71,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Sensor simulator</span><span class="note">Kinematic drift driver on two tracks, phone-mount model, gyro bias, vibration, GPS latency/noise, ground truth</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip building">Building</span></td>
+      <td><span class="chip critique">In critique</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -79,7 +79,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Mount calibration</span><span class="note">Phone frame → vehicle frame from gravity and forward acceleration</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -87,7 +87,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Slip-angle estimator</span><span class="note">Kalman fusion of gyro heading, lateral-g kinematics and GPS course</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -95,7 +95,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Drift detection</span><span class="note">Entry / sustain / transition / exit state machine</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -103,7 +103,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Scoring &amp; style</span><span class="note">Angle × duration × speed, multipliers, callouts, S–D grade, consistency</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -111,7 +111,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Track &amp; laps</span><span class="note">GPS → local map, lap gate, corners, lap-to-lap consistency</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -119,7 +119,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Signal integrity</span><span class="note">Loose-mount detection, physics plausibility, GPS quality gating</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -127,7 +127,7 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
     <tr>
       <td class="name"><span class="piece">Replay scene</span><span class="note">Session → timeline, glow trail, camera, ghost</span></td>
       <td><span class="layer">engine</span></td>
-      <td><span class="chip queued">Queued</span></td>
+      <td><span class="chip building">Building</span></td>
       <td class="num">0</td>
       <td class="num">–</td>
       <td class="verdict"><span class="dim">no verdict yet</span></td>
@@ -187,5 +187,5 @@ ol.log time { color:var(--ember); font-variant-numeric:tabular-nums; font-weight
 <h2>How things are verified</h2>
 <ul class="verif"><li>This build machine is Linux: it cannot compile or run the iOS binary. The engine is pure TypeScript and is exercised by tests against a physics simulator with ground truth.</li><li>The UI is the real app bundle, built for web, run in Chromium and screenshotted by the harness; critics judge those screenshots and videos, never the builder&#x27;s summary.</li><li>What only a phone can verify (real CoreMotion units, haptics, 100 Hz timing, GPS latency in the field) is listed as on-device checks in the final hand-off.</li></ul>
 <h2>Log</h2>
-<ol class="log"><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
+<ol class="log"><li><time>13:41</time><span>User pointed at driftmeter.app: its stack (phone-only sensors, stationary zeroing, 60 Hz, EKF gyro+GPS course, physics-signature validation) confirms the estimator design; we go to 100 Hz, full mount-rotation calibration and a signal-integrity module, with a video-game presentation.</span></li><li><time>13:40</time><span>Six engine agents launched in parallel: mount calibration, slip estimator, drift detector, scorer, track model, replay scene. Critic protocol written.</span></li><li><time>13:27</time><span>Simulator producing 100 Hz phone-frame IMU + 1 Hz GPS with latency for two tracks; first plots inspected.</span></li><li><time>13:20</time><span>Shared engine contracts written (types, unit conventions, frames). App-foundation agent launched.</span></li><li><time>13:12</time><span>Environment checked: Linux, no Swift toolchain and Swift downloads blocked; npm and PyPI reachable. Stack decided: Expo SDK 57 + TypeScript engine + Skia, verified via web build in Chromium.</span></li></ol>
 </div>

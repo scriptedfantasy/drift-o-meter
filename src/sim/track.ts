@@ -49,30 +49,36 @@ export const TRACKS: Record<'harbor' | 'touge', TrackDef> = {
     originLat: 35.6205,
     originLon: 139.7745,
     vTop: 30,
+    // Counter-clockwise. Start/finish (points[0]) sits mid-way along the main straight so
+    // every run starts and ends on a straight. Comments name the corner as driven.
     points: [
-      [0, 0],
-      [90, 0],
-      [180, 0],
-      [250, 8],
-      [300, 40], // long right-hand sweeper (turning clockwise → κ<0)
-      [320, 90],
-      [300, 140],
-      [250, 170], // exits into a left–right chicane
-      [215, 200],
-      [200, 240],
-      [225, 275],
-      [260, 300],
-      [270, 340], // hairpin right at the top
-      [240, 370],
-      [195, 360],
-      [165, 320],
-      [140, 270],
-      [100, 235], // long left-hander back toward the straight
-      [50, 215],
-      [5, 190],
-      [-30, 140],
-      [-35, 80],
-      [-20, 25],
+      [60, 0], // start/finish, main straight heading east
+      [140, 0],
+      [185, 8],
+      [215, 40], // T1: long LEFT sweeper, R≈45 m
+      [228, 85],
+      [222, 130], // short run north
+      [205, 160], // chicane: LEFT
+      [200, 190],
+      [215, 220], // then RIGHT
+      [240, 245],
+      [250, 280], // approach to the hairpin, heading north
+      [252, 310],
+      [240, 335], // hairpin: tight LEFT, R≈17 m
+      [218, 338],
+      [203, 318],
+      [200, 290], // heading south out of the hairpin
+      [195, 255],
+      [175, 232], // RIGHT sweeper onto the back section heading west
+      [140, 222],
+      [95, 222], // back straight (west)
+      [55, 210],
+      [25, 180], // long LEFT, R≈40 m, heading south
+      [8, 140],
+      [0, 95],
+      [-5, 55],
+      [5, 20], // final LEFT onto the main straight
+      [30, 3],
     ],
   },
   touge: {
@@ -113,7 +119,7 @@ export const TRACKS: Record<'harbor' | 'touge', TrackDef> = {
       [340, 725],
     ],
     grade: (s) => -0.06 + 0.04 * Math.sin(s / 140),
-    banking: (_s, kappa) => -0.25 * kappa * 8, // slight off-camber (banks away from the turn)
+    banking: (_s, kappa) => 2 * kappa, // off-camber: the road banks AWAY from the turn (left turn → left side down)
   },
 };
 
@@ -123,7 +129,8 @@ function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): 
   return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
 }
 
-export function buildPath(def: TrackDef, ds = 0.5): Path {
+export function buildPath(def: TrackDef, dsRequested = 0.5): Path {
+  let ds = dsRequested;
   const pts = def.points;
   const n = pts.length;
   const segs = def.closed ? n : n - 1;
@@ -149,6 +156,9 @@ export function buildPath(def: TrackDef, ds = 0.5): Path {
   }
   const length = cum[cum.length - 1];
   const count = Math.floor(length / ds);
+  // closed loops: use a spacing that divides the perimeter exactly so the closing segment
+  // is the same length as every other one
+  if (def.closed) ds = length / count;
   const samples: PathSample[] = [];
   let j = 0;
   for (let i = 0; i < count; i++) {
@@ -212,8 +222,13 @@ export function buildPath(def: TrackDef, ds = 0.5): Path {
       let ss = s;
       if (def.closed) {
         ss = ((s % total) + total) % total;
+      } else if (s > samples[m - 1].s) {
+        // run-off: continue straight along the final tangent
+        const last = samples[m - 1];
+        const d = s - last.s;
+        return { s, x: last.x + Math.cos(last.chi) * d, y: last.y + Math.sin(last.chi) * d, chi: last.chi, kappa: 0 };
       } else {
-        ss = Math.min(Math.max(s, 0), samples[m - 1].s);
+        ss = Math.max(s, 0);
       }
       const fi = ss / ds;
       const i0 = Math.floor(fi);
