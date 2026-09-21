@@ -445,9 +445,12 @@ export const defaultRoutes = [
   // MOUNT LOOKS UNSTEADY. Measured across seeds with
   // `npx tsx tools/analysis/calibration-sweep.ts suspect`.
   { name: 'calibrate-shaking', path: '/calibrate?sim=touge&looseness=0.2&at=40&hold=1', waitMs: 2400, expectCanvas: true },
-  // Two seconds into a genuinely hand-held recording: inside the 4 s mount warm-up, so the
-  // monitor has NOT decided. Step 01 used to be struck through with a green tick here while the
-  // mount light beside it still read "Listening".
+  // Two seconds into a genuinely hand-held recording. Step 01 used to be struck through with a
+  // green tick here while the mount light beside it still read "Listening". The mount cues
+  // reach `loose` first at looseness 1 (0.67–1.25 s measured), so this frame is now the
+  // monitor having DECIDED — the un-decided state is the first two seconds of a rigid
+  // recording, where `mountConfident` is false until the cues have a full window (2.02 s on
+  // `sim=harbor&seed=1`) and `calibrate-nothing` / `calibrate` photograph it.
   { name: 'calibrate-early', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1', waitMs: 2400, expectCanvas: true },
   // ---- drive display, appended ------------------------------------------------------------
   // BETWEEN slides with the chain still open: 48.5 s, 10 528 points at risk, two slides done.

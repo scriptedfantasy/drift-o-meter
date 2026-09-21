@@ -52,6 +52,10 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
   waitMs: 2600,                           // settle time after load + fonts (default 800)
   expectCanvas: true,                     // fail unless a <canvas> (Skia) is present
   minEmber: 2000,                         // fail unless this many ember-coloured pixels are visible
+  regions: [                              // "at most / at least N pixels of colour C inside R"
+    { name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, max: 120 },
+    { name: 'stage', colour: 'ember', rect: { x: 0, y: 0.1, w: 1, h: 0.5 }, min: 400 },
+  ],
   fullPage: false,
   actions: [                              // optional, run before the screenshot
     { type: 'tap', testId: 'cta-drive' }, // or { selector } / { text, exact }
@@ -67,6 +71,32 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
 ```
 
 `testID` props in the app map to `data-testid` on web, which is what `testId` targets.
+
+### Colours, and why a floor cannot certify an absence
+
+`minEmber` proves something drew. It cannot prove something did NOT draw, and several routes
+exist precisely to show that a screen stays quiet — a hand-held run, a slide the scorer paid
+nothing for, a lap with nothing in it. Those need a ceiling, and the ceiling has to be measured
+in the part of the screen the claim is about: a loose-run peak frame drew 63,983 ember pixels
+*inside the gauge* on a run worth zero points, and passed every floor in this file.
+
+So a route may carry `regions`. Each entry names one colour and one rectangle and gives a `max`,
+a `min`, or both; a violation fails the route and the message quotes the count and the box.
+
+* `colour` — `ember`, `gold`, `red`, `magenta`, `cyan`, `green`, `text`, `muted`. These are HUE
+  BANDS with a saturation and a brightness floor (`tools/harness/pixels.mjs`), not RGB boxes.
+  The old `isEmber` was a box, and it counted the red `#FF3B3B` warning banner and every
+  antialiased gold pip as ember — so `drive-loose`'s "30,591 ember pixels" were mostly the two
+  elements that are supposed to be loud. Re-derive any threshold you inherit from before that.
+* `testId` — the element the region is about. Preferred over `rect`, because the harness measures
+  the element and the check therefore means the same thing portrait, landscape and at any
+  `--scale`. `padFrac` grows the box by that fraction of the viewport, to take in a glow that
+  spills past the element's own bounds.
+* `rect` — `{ x, y, w, h }` in FRACTIONS of the image, when there is no element to name.
+
+Chromium renders DOM text with subpixel antialiasing, which leaves a few hundred warm fringe
+pixels along glyph edges anywhere on the screen. Set a ceiling above that noise floor; a Skia
+canvas (the gauge, the map, the replay stage) has no such fringe and measures 0.
 
 ## Garage: seeding the session list (`/?demo=...`)
 

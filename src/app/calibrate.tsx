@@ -95,62 +95,77 @@ export default function CalibrateScreen() {
     return (
       <View style={styles.root} testID="screen-calibrate">
         <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-          {/* `flexGrow: 1` with a centred, non-shrinking middle: with room to spare the fault
-              fills the frame and centres itself (it used to sit at the top of a scroller and
-              leave the bottom half black); with no room — 393 pt of landscape — it scrolls
-              instead of laying the body underneath the buttons. */}
-          <ScrollView style={styles.flex} contentContainerStyle={styles.faultPage} showsVerticalScrollIndicator={false}>
+          {/* BOTTOM-WEIGHTED, not centred. Centring put a void above the statement AND another
+              between it and the buttons — a third of the frame on `unsupported`, which has the
+              least to say and no Try again. A fault has one statement and one action, so they
+              sit together in the lower half and the space above them is a single band of
+              asphalt with the red wash rising through it, which is composition rather than
+              what is left over. With no room — 393 pt of landscape — it scrolls instead of
+              laying the body underneath the buttons. */}
+          <ScrollView style={styles.flex} contentContainerStyle={[styles.faultPage, landscape && styles.faultPageLandscape]} showsVerticalScrollIndicator={false}>
             <TopBar kicker="Mount calibration" right={source} />
-            <View style={styles.faultCentre}>
-              {/* Atmosphere, not an object: a solid box with a box-shadow drew a lit pill
-                  behind the title. A wash that is transparent at both ends has no edge. */}
-              <LinearGradient
-                colors={['transparent', alpha(colors.red, 0.16), 'transparent']}
-                locations={[0, 0.45, 1]}
-                start={{ x: 0.5, y: 0 }}
-                end={{ x: 0.5, y: 1 }}
-                style={styles.bloom}
-                pointerEvents="none"
-              />
-              <View style={styles.kickerRow}>
-                <View style={[styles.slab, { backgroundColor: colors.red }]} />
-                <Micro color="red">Cannot calibrate</Micro>
-              </View>
-              <AppText variant="title" color="red" style={styles.faultTitle} accessibilityRole="header">
-                {fault.title}
-              </AppText>
-              <Small color={colors.text} style={styles.faultBody}>
-                {fault.body}
-              </Small>
-            </View>
-            {/* The consequence, the rule and the buttons are ONE group at the foot.
-                They used to be three: the body and its consequence sat in a centred block and
-                the buttons were pinned to the bottom, so a fault with nothing else to say left
-                a third of the frame empty between them — worst on `unsupported`, which has no
-                Try again. Composed, the flexible space is breathing room around a centred
-                statement with a footer under it, which is what the rest of the app does. */}
-            <View style={styles.faultFoot}>
-              <View style={styles.rule} />
-              {/* The old note said "none of this stops you driving — the run records either
-                  way". It does not: /drive opens the same sensors and stops on the same error.
-                  A reassurance that is false is worse than no reassurance. */}
-              <Small style={styles.faultBody} testID="calibrate-fault-consequence">
-                {fault.kind === 'unsupported'
-                  ? 'Driving will stop here too — it opens these same sensors. The simulated source runs a full recording through the real judge in the meantime.'
-                  : 'Driving will stop here too: DRIVE opens these same sensors and ends on this same message. Nothing is recorded until it is fixed.'}
-              </Small>
-              <View style={styles.faultActions}>
-                {/* One action gets the slab. On a retryable fault that is Try again; on
-                    `unsupported`, where retrying cannot work, it is the one thing that can. */}
-                {fault.retryable ? <Button label="Try again" size="lg" onPress={retry} testID="cta-retry" /> : null}
-                <Button
-                  label={fault.actionLabel}
-                  size={fault.retryable ? 'md' : 'lg'}
-                  variant={fault.retryable ? 'secondary' : 'primary'}
-                  onPress={openAction}
-                  testID="cta-settings"
+            {/* Landscape is a ROW, the same rail-and-column this screen uses everywhere else.
+                Stacked, a fault ran to 515 px of a 393 px frame and both buttons sat under the
+                fold; side by side the whole thing ends at ~350 px and nothing scrolls. */}
+            <View style={landscape ? styles.faultRow : styles.flexNone}>
+              <View style={[styles.faultCentre, landscape && styles.faultCentreLandscape]}>
+                {/* Atmosphere, not an object: a solid box with a box-shadow drew a lit pill
+                    behind the title. A wash that is transparent at both ends has no edge. */}
+                <LinearGradient
+                  colors={['transparent', alpha(colors.red, 0.2), 'transparent']}
+                  locations={[0, 0.55, 1]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  // Two things change in landscape. The wash is shorter, because 393 pt is shorter
+                  // than a 460 pt bloom and the page corners stay asphalt (docs/DESIGN.md). And it
+                  // reaches past the action rail on its right, because a gradient that fades only
+                  // vertically meets its own left and right edges at full strength — clipped to
+                  // this column it drew a vertical seam down the middle of the page.
+                  style={[styles.bloom, landscape && styles.bloomLandscape]}
+                  pointerEvents="none"
                 />
-                <Button label="Back to the garage" variant="ghost" onPress={() => router.replace('/')} testID="cta-garage" />
+                <View style={styles.kickerRow}>
+                  <View style={[styles.slab, { backgroundColor: colors.red }]} />
+                  <Micro color="red">Cannot calibrate</Micro>
+                </View>
+                <AppText variant="title" color="red" style={styles.faultTitle} accessibilityRole="header">
+                  {fault.title}
+                </AppText>
+                {/* `body`, not `small`: on every other screen a paragraph is a caption under a
+                    number, and here it is the only thing the page has to say. */}
+                <AppText variant="body" color={colors.text} style={styles.faultBody}>
+                  {fault.body}
+                </AppText>
+              </View>
+              {/* The consequence, the rule and the buttons are ONE group at the foot.
+                  They used to be three: the body and its consequence sat in a centred block and
+                  the buttons were pinned to the bottom, so a fault with nothing else to say left
+                  a third of the frame empty between them — worst on `unsupported`, which has no
+                  Try again. Composed, the flexible space is breathing room around a centred
+                  statement with a footer under it, which is what the rest of the app does. */}
+              <View style={[styles.faultFoot, landscape && styles.faultFootLandscape]}>
+                <View style={styles.rule} />
+                {/* The old note said "none of this stops you driving — the run records either
+                    way". It does not: /drive opens the same sensors and stops on the same error.
+                    A reassurance that is false is worse than no reassurance. */}
+                <Small style={styles.faultBody} testID="calibrate-fault-consequence">
+                  {fault.kind === 'unsupported'
+                    ? 'Driving will stop here too — it opens these same sensors. The simulated source runs a full recording through the real judge in the meantime.'
+                    : 'Driving will stop here too: DRIVE opens these same sensors and ends on this same message. Nothing is recorded until it is fixed.'}
+                </Small>
+                <View style={styles.faultActions}>
+                  {/* One action gets the slab. On a retryable fault that is Try again; on
+                      `unsupported`, where retrying cannot work, it is the one thing that can. */}
+                  {fault.retryable ? <Button label="Try again" size="lg" onPress={retry} testID="cta-retry" /> : null}
+                  <Button
+                    label={fault.actionLabel}
+                    size={fault.retryable ? 'md' : 'lg'}
+                    variant={fault.retryable ? 'secondary' : 'primary'}
+                    onPress={openAction}
+                    testID="cta-settings"
+                  />
+                  <Button label="Back to the garage" variant="ghost" onPress={() => router.replace('/')} testID="cta-garage" />
+                </View>
               </View>
             </View>
           </ScrollView>
@@ -361,10 +376,18 @@ const styles = StyleSheet.create({
   actions: { gap: space[2] },
   leaveNote: { maxWidth: 460 },
 
+  flexNone: { flexGrow: 1, flexShrink: 0 },
   faultPage: { flexGrow: 1, paddingHorizontal: gutter, paddingBottom: space[4], width: '100%', maxWidth: 820, alignSelf: 'center' },
-  faultCentre: { flexGrow: 1, flexShrink: 0, justifyContent: 'center', gap: space[2], paddingVertical: space[3] },
-  bloom: { position: 'absolute', left: -gutter - 24, right: -gutter - 24, top: '6%', height: 270 },
-  faultTitle: { fontSize: 44, lineHeight: 45 },
+  faultPageLandscape: { maxWidth: 1100 },
+  faultRow: { flexGrow: 1, flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: space[5] },
+  faultCentreLandscape: { flex: 1, minWidth: 0, paddingBottom: 0, paddingTop: 0, justifyContent: 'center' },
+  faultFootLandscape: { width: 300, paddingBottom: 0 },
+  faultCentre: { flexGrow: 1, flexShrink: 0, justifyContent: 'flex-end', gap: space[2], paddingBottom: space[4], paddingTop: space[3] },
+  // rises behind the headline, which now sits low: anchored to the block's own bottom
+  bloom: { position: 'absolute', left: -gutter - 24, right: -gutter - 24, bottom: -40, height: 460 },
+  // right: past the 300 pt rail, its gap and the page gutter, so the wash has no edge on screen
+  bloomLandscape: { bottom: -20, height: 230, right: -(300 + space[5] + gutter + 24) },
+  faultTitle: { fontSize: 46, lineHeight: 47 },
   faultBody: { maxWidth: 520 },
   rule: { height: 1, backgroundColor: colors.line, marginBottom: space[3], maxWidth: 520 },
   faultFoot: { flexShrink: 0, gap: space[2], paddingBottom: space[3] },

@@ -123,14 +123,19 @@ export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snaps
   // An untrusted reading gets untrusted numbers: same values, no colour claiming they are good.
   const trusted = snapshot.trust > 0;
   if (!live) {
+    // BETWEEN SLIDES THE RUN IS THE SUBJECT, so its two numbers are set at the size of a value
+    // rather than of a footnote: on a portrait idle frame this band and the mini-map beside it
+    // are the only things on the screen between the gauge and the speed row, and at 20 px they
+    // left it reading as empty.
     return (
       <View style={styles.stripStack} testID={testID}>
         <View style={styles.stripRow}>
-          <StripCell label="Slides" value={String(snapshot.driftCount)} tone={snapshot.driftCount > 0 ? colors.text : colors.muted} />
+          <StripCell label="Slides" value={String(snapshot.driftCount)} tone={snapshot.driftCount > 0 ? colors.text : colors.muted} big />
           <StripCell
             label="Best"
             value={snapshot.runPeakDeg >= 1 ? `${Math.round(snapshot.runPeakDeg)}°` : '—'}
             tone={snapshot.runPeakDeg >= 1 ? colors.gold : colors.muted}
+            big
             last
           />
         </View>
@@ -149,11 +154,11 @@ export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snaps
   );
 });
 
-function StripCell({ label, value, tone, last }: { label: string; value: string; tone: string; last?: boolean }) {
+function StripCell({ label, value, tone, last, big }: { label: string; value: string; tone: string; last?: boolean; big?: boolean }) {
   return (
     <View style={[styles.cell, !last && styles.cellBorder]}>
       <Micro>{label}</Micro>
-      <AppText numeric style={[styles.cellValue, { color: tone }]}>
+      <AppText numeric style={[styles.cellValue, big && styles.cellValueBig, { color: tone }]}>
         {value}
       </AppText>
     </View>
@@ -220,6 +225,7 @@ const styles = StyleSheet.create({
   cell: { flexDirection: 'row', alignItems: 'baseline', gap: space[2], paddingRight: space[3] },
   cellBorder: { borderRightWidth: 1, borderRightColor: colors.line },
   cellValue: { fontFamily: fontFamilies.display.boldItalic, fontSize: 20, lineHeight: 22 },
+  cellValueBig: { fontSize: 34, lineHeight: 36 },
   // 17 px, not the 11 px micro: this is the only coaching line on the display, and it appears
   // exactly when the driver has something to do about it.
   hint: { fontFamily: fontFamilies.display.bold, fontSize: 17, lineHeight: 20, letterSpacing: 1.2 },

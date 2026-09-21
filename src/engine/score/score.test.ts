@@ -656,5 +656,5 @@ describe('simulator-derived sessions', () => {
     // process.stdout.write, never the console: vitest 5 swallows console output by default
     process.stdout.write('\n' + rows.join('\n') + '\n');
     expect(rows.length).toBe(25);
-  });
+  }, 120_000);
 });

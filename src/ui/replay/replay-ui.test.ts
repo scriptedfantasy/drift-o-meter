@@ -588,14 +588,20 @@ describe('safeFrame: the car never leaves the band the viewer can see', () => {
 
   it.each(SCREENS)('$name: raw camera vs the frame the renderer draws', (screen) => {
     const lay = replayLayout(screen.w, screen.h, { top: 0, bottom: 0, left: 0, right: 0 }, 2);
+    const act = lay.action;
     let rawWorst = 0;
     let rawFrames = 0;
+    let frames = 0;
+    // Violations are COLLECTED and asserted once. Four `expect`s on each of ~74 000 frames is a
+    // couple of seconds of assertion bookkeeping and nothing else, and a sweep that only fits
+    // inside the default 5 s timeout when the machine is quiet is a red check waiting to happen.
+    const off: string[] = [];
     for (const name of Object.keys(FIXTURES)) {
       const r = built.get(name)!.replay;
       for (const mode of ['chase', 'cinematic'] as CameraMode[]) {
-        const act = lay.action;
         const cam = new ReplayCamera(mode, act);
         for (let t = 0; t <= r.durationS; t += dt) {
+          frames++;
           const st = cam.update(r, t, dt);
           const p = poseAt(r, t);
           // what the raw camera would have put on screen, centred on the action rect
@@ -608,20 +614,19 @@ describe('safeFrame: the car never leaves the band the viewer can see', () => {
           // what the renderer actually draws
           const sf = safeFrame(st, p.x, p.y, act);
           const sp = worldToScreen(sf, p.x, p.y);
-          expect(sp.x, `${name} ${mode} t=${t.toFixed(2)} x`).toBeGreaterThanOrEqual(act.x);
-          expect(sp.x, `${name} ${mode} t=${t.toFixed(2)} x`).toBeLessThanOrEqual(act.x + act.w);
-          expect(sp.y, `${name} ${mode} t=${t.toFixed(2)} y`).toBeGreaterThanOrEqual(act.y);
-          expect(sp.y, `${name} ${mode} t=${t.toFixed(2)} y`).toBeLessThanOrEqual(act.y + act.h);
+          const out = Math.max(act.x - sp.x, sp.x - (act.x + act.w), act.y - sp.y, sp.y - (act.y + act.h));
+          if (out > 0 && off.length < 6) off.push(`${name}/${mode} t=${t.toFixed(2)}: ${out.toFixed(1)} pt outside`);
         }
       }
     }
+    expect(off.join('\n'), `${frames} frames`).toBe('');
     // and the thing being guarded against is real on this grid, not hypothetical: in portrait
     // the raw camera leaves the rectangle, which is why the frame is held
     if (screen.name === 'portrait') {
-      expect(rawFrames).toBeGreaterThan(0);
+      expect(rawFrames, `${frames} frames`).toBeGreaterThan(0);
       expect(rawWorst).toBeGreaterThan(20);
     }
-  });
+  }, 120_000);
 
   it('holds the car inside the fraction it promises, and moves nothing else', () => {
     const lay = replayLayout(393, 852, { top: 0, bottom: 0, left: 0, right: 0 }, 2);

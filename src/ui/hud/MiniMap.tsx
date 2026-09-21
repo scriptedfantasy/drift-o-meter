@@ -112,9 +112,28 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
     return Skia.RRectXY(r, 6, 6);
   }, [height, width]);
 
+  /**
+   * A graticule, at quarters. It is not decoration: it gives the trail a scale to be read
+   * against, and it is what stops the box being a black rectangle before there is a trail at
+   * all. Measured on the idle frame, the map band was the longest unlit run left on the portrait
+   * screen once the void below it was closed. Faint enough (`line` at 45 %) that the ember trail
+   * still owns the box the moment there is one.
+   */
+  const grid = useMemo(() => {
+    const b = Skia.PathBuilder.Make();
+    for (let i = 1; i <= 3; i++) {
+      const x = Math.round((i * width) / 4) + 0.5;
+      const y = Math.round((i * height) / 4) + 0.5;
+      b.moveTo(x, 2).lineTo(x, height - 2);
+      b.moveTo(2, y).lineTo(width - 2, y);
+    }
+    return b.detach();
+  }, [height, width]);
+
   return (
     <Canvas style={{ width, height }} testID={testID}>
       <RoundedRect rect={frame} color={rgba(colors.bg1, 0.55)} />
+      <Path path={grid} color={rgba(colors.line, 0.45)} style="stroke" strokeWidth={1} />
       <RoundedRect rect={frame} color={rgba(colors.line, 0.9)} style="stroke" strokeWidth={1} />
       <Group transform={worldTransform}>
         <Path path={paths.cold} color={coldColor} style="stroke" strokeWidth={lineW} strokeCap="round" strokeJoin="round" />

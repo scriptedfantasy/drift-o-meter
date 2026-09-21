@@ -134,7 +134,7 @@ export default function DriveScreen() {
 
                 {/* Middle band: what the slide is doing (strip), what it just earned (callouts)
                     and where it is happening (map). Nothing here is decoration. */}
-                <View style={styles.stage}>
+                <View style={[styles.stage, { marginTop: -Math.round(gauge.h * 0.18) }]}>
                   {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
                   <View style={styles.stageRow} onLayout={onStageLayout}>
                     <View style={styles.stageCallouts}>
@@ -307,6 +307,13 @@ const styles = StyleSheet.create({
 
   // The middle band absorbs whatever the fixed rows do not use, so the frame's `space-between`
   // has no slack left to pool into one gap. See the note on `map` above.
+  //
+  // It is also pulled UP into the gauge's own empty bottom. The arc is a shallow bowl in a
+  // square-ish canvas: the pivot sits at 0.92 of the canvas height and the arc's ends are at
+  // ±78°, so the lowest thing drawn is at about 0.74 of it and the last quarter of the canvas is
+  // transparent but for the soft pool glow. Measured on the idle frame, that empty strip was the
+  // longest dead run left on the screen once the big void below the map was closed. The drift
+  // strip now sits inside it, tight under the arc, where it reads as part of the instrument.
   stage: { alignSelf: 'stretch', flex: 1, justifyContent: 'flex-start', gap: space[2] },
   stageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3], flex: 1 },
   // `overflow: 'hidden'` for the same reason the landscape column has it: a callout SLAMS in at

@@ -164,7 +164,9 @@ describe('fixture', () => {
     // the gold S chip and the muted D chip must both be reachable, or the grade colour is dead
     expect(grades.has('S') || grades.has('A')).toBe(true);
     expect(grades.has('D') || grades.has('C')).toBe(true);
-  });
+    // 16 simulated runs through the scorer: comfortably over the 5 s default on a loaded machine,
+    // and a timeout is a red check that says nothing about the code
+  }, 120_000);
 });
 
 describe('buildReplay', () => {
