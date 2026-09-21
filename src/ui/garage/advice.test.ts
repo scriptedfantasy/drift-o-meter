@@ -8,8 +8,19 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { calibrationBand } from '../../engine/integrity';
 import type { SessionIndexEntry } from '../../platform';
 import { mountAdvice } from './advice';
+
+/**
+ * Qualities picked by asking the engine which band they are in, not by writing thresholds down
+ * here. That is the whole point of `calibrationBand`: a screen — or its test — that knows where
+ * an edge is can invent a fourth one.
+ */
+function qualityIn(band: ReturnType<typeof calibrationBand>): number {
+  for (let q = 0; q <= 1.0001; q += 0.01) if (calibrationBand(q, true) === band) return Math.round(q * 100) / 100;
+  throw new Error(`no quality lands in "${band}"`);
+}
 
 function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
   return {
@@ -27,7 +38,8 @@ function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
     spins: 0,
     slides: [],
     mount: 'rigid',
-    calibrationQuality: 0.8,
+    calibrationQuality: qualityIn('sharp'),
+    calibrationForwardResolved: true,
     integrityMessage: '',
     ...over,
   };
@@ -61,11 +73,25 @@ describe('mountAdvice', () => {
     expect(a?.level).toBe('bad');
   });
 
-  it('reports an unresolved forward axis with the confidence it reached', () => {
-    const a = mountAdvice(entry({ calibrationQuality: 0.21 }));
+  it('says so when the forward axis was never resolved, whatever the confidence', () => {
+    const a = mountAdvice(entry({ calibrationQuality: qualityIn('sharp'), calibrationForwardResolved: false }));
     expect(a?.concern).toBe('unresolved');
     expect(a?.level).toBe('warn');
-    expect(a?.body).toContain('21%');
+    expect(a?.title).toMatch(/which way the car points/i);
+  });
+
+  it('reports a mount the engine could not make sense of, with the confidence it reached', () => {
+    const q = qualityIn('unusable');
+    const a = mountAdvice(entry({ calibrationQuality: q }));
+    expect(a?.concern).toBe('unresolved');
+    expect(a?.body).toContain(`${Math.round(q * 100)}%`);
+  });
+
+  it('does NOT disown a run the engine was willing to score', () => {
+    // The screen used to carry its own 0.4. Anything the engine calls scorable is scored here.
+    for (const band of ['trusted', 'sharp'] as const) {
+      expect(mountAdvice(entry({ calibrationQuality: qualityIn(band) }))).toBeNull();
+    }
   });
 
   it('mentions an unsteady mount last, and quietly', () => {
@@ -75,15 +101,17 @@ describe('mountAdvice', () => {
   });
 
   it('prefers the worse finding when a run has more than one', () => {
-    expect(mountAdvice(entry({ trusted: false, mount: 'loose', calibrationQuality: 0.05 }))?.concern).toBe('rejected');
-    expect(mountAdvice(entry({ mount: 'loose', calibrationQuality: 0.05 }))?.concern).toBe('loose');
-    expect(mountAdvice(entry({ mount: 'suspect', calibrationQuality: 0.05 }))?.concern).toBe('unresolved');
+    const bad = qualityIn('unusable');
+    expect(mountAdvice(entry({ trusted: false, mount: 'loose', calibrationQuality: bad }))?.concern).toBe('rejected');
+    expect(mountAdvice(entry({ mount: 'loose', calibrationQuality: bad }))?.concern).toBe('loose');
+    expect(mountAdvice(entry({ mount: 'suspect', calibrationQuality: bad }))?.concern).toBe('unresolved');
   });
 
   it('claims nothing about calibration it does not know', () => {
-    // An entry written before the field existed carries −1, not 0. 0 would mean "never
-    // calibrated" and would put a warning over every run a driver already had.
-    expect(mountAdvice(entry({ calibrationQuality: -1 }))).toBeNull();
+    // An entry written before the fields existed carries −1, not 0. 0 with an unresolved axis
+    // would read as "never calibrated" and would put a warning over every run a driver already
+    // had — including the runs the engine happily scored before the fields were added.
+    expect(mountAdvice(entry({ calibrationQuality: -1, calibrationForwardResolved: false }))).toBeNull();
     expect(mountAdvice(entry({ calibrationQuality: 0 }))?.concern).toBe('unresolved');
   });
 });

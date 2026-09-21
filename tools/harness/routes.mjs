@@ -437,4 +437,16 @@ export const defaultRoutes = [
   // The hand-held card's own numbers, one viewport down: angle, slides and points all `--` on a
   // run the monitor did not believe, over a trace drawn hollow and captioned as a recording.
   { name: 'garage-flagged-stats', path: '/?demo=flagged', waitMs: 8000, actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }] },
+
+  // THE SPIN, which is the whole reason the replay and the results screen disagreed. The engine
+  // marks drift #6 of the `spin` fixture as a spin and the scorer takes its chain away; these
+  // three frames are where that has to be visible. 97.55 s is inside the spin beat's hold
+  // (LOST IT 118°, red); 98.10 s is inside the exit beat that follows it (CHAIN LOST −N, fired a
+  // beat later exactly as the live HUD fires it); and the last frame carries the grade and the
+  // total, which must be the number the results screen prints for the same session.
+  { name: 'replay-spin', path: '/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0', waitMs: 3200, expectCanvas: true, minEmber: 400 },
+  { name: 'replay-chain-lost', path: '/replay/fixture-spin?cam=chase&t=98.1&play=0&ui=0', waitMs: 3200, expectCanvas: true, minEmber: 400 },
+  // no `minEmber`: this run grades B, the reveal's letter and label are CYAN, and the world
+  // behind them is dimmed to 42 % for the slam — an ember floor would be a check on the grade
+  { name: 'replay-spin-end', path: '/replay/fixture-spin?cam=overview&t=999&play=0&ui=0', waitMs: 3200, expectCanvas: true },
 ];

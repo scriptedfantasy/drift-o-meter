@@ -16,6 +16,7 @@
  * Everything here comes from the session INDEX. It used to need the newest run's body, which
  * cost 5.48 MB and 25.5 ms of `JSON.parse` on mount for 70 bytes of text.
  */
+import { bandIsScorable, calibrationBand } from '../../engine/integrity';
 import type { SessionIndexEntry } from '../../platform';
 
 export type MountConcern = 'rejected' | 'loose' | 'unresolved' | 'suspect';
@@ -30,12 +31,6 @@ export interface MountAdvice {
   body: string;
   action: string;
 }
-
-/**
- * Calibration confidence below which the results screen calls a run's mount uncalibrated
- * (`integrityNotes`: under 0.4, or an unresolved forward axis, is "Mount never calibrated").
- */
-const UNCALIBRATED = 0.4;
 
 export function mountAdvice(entry: SessionIndexEntry | null): MountAdvice | null {
   if (!entry) return null;
@@ -62,14 +57,23 @@ export function mountAdvice(entry: SessionIndexEntry | null): MountAdvice | null
     };
   }
 
-  // Negative means the entry predates the field: unknown, so nothing is claimed about it.
-  if (entry.calibrationQuality >= 0 && entry.calibrationQuality < UNCALIBRATED) {
+  // WHICH BAND, never which number. This screen used to carry its own `UNCALIBRATED = 0.4`
+  // while the calibration screen carried 0.75 and the results screen wrote both as literals, so
+  // one run at 0.33 was "ready to measure" on one screen and "never calibrated" on this one.
+  // `calibrationBand` is the only thing that knows where the edges are, and its lower edge is
+  // the monitor's own veto — so the garage can no longer disown a run the engine scored.
+  // A negative quality means the entry predates the field: unknown, so nothing is claimed.
+  const band = entry.calibrationQuality >= 0 ? calibrationBand(entry.calibrationQuality, entry.calibrationForwardResolved) : null;
+  if (band !== null && !bandIsScorable(band)) {
+    const unresolved = band === 'unresolved';
     return {
       concern: 'unresolved',
       level: 'warn',
-      title: 'Last run never worked out which way the car points',
+      title: unresolved ? 'Last run never worked out which way the car points' : 'Last run never made sense of the mount',
       quote: null,
-      body: `Calibration settled at ${Math.round(entry.calibrationQuality * 100)}%. Without that, a slide and a lane change look alike — one hard pull in a straight line fixes it.`,
+      body: unresolved
+        ? 'Gravity says which way is up; which way the car points comes from one hard pull in a straight line, and that never arrived. Without it a slide and a lane change look alike.'
+        : `Confidence in the mount settled at ${Math.round(entry.calibrationQuality * 100)}%, under the bar the engine will judge a slide on.`,
       action: 'Check the mount',
     };
   }

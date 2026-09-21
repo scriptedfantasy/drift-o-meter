@@ -29,6 +29,7 @@ function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
     slides: [],
     mount: 'rigid',
     calibrationQuality: 0.74,
+    calibrationForwardResolved: true,
     integrityMessage: '',
     ...over,
   };

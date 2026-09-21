@@ -20,6 +20,7 @@ function at(id: string, iso: string): SessionIndexEntry {
     slides: [],
     mount: 'rigid',
     calibrationQuality: 1,
+    calibrationForwardResolved: true,
     integrityMessage: '',
   };
 }

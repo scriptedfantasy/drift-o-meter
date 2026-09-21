@@ -64,8 +64,17 @@ export interface SessionIndexEntry {
   slides: SlideMark[];
   /** What the integrity monitor made of the mount. */
   mount: MountVerdict;
-  /** 0..1 from `Session.calibration`. **Negative means unknown** — an entry written before this field existed claims nothing. */
+  /**
+   * 0..1 from `Session.calibration`. **Negative means unknown** — an entry written before this
+   * field existed claims nothing, and a screen must not read that as "never calibrated".
+   */
   calibrationQuality: number;
+  /**
+   * Whether the mount calibrator ever worked out which way the car points. Not a low number but
+   * a MISSING FACT, which is why it travels beside the quality rather than inside it: see
+   * `calibrationBand` in `src/engine/integrity`, the one place that turns the pair into a verdict.
+   */
+  calibrationForwardResolved: boolean;
   /** `IntegrityMonitor`'s own sentence about why the run was not believed. Empty when it was. */
   integrityMessage: string;
 }
@@ -239,6 +248,7 @@ export function summarizeSession(s: Session): SessionIndexEntry {
     slides: slideMarks(s),
     mount: MOUNTS.includes(integrity?.mount as MountVerdict) ? integrity.mount : 'rigid',
     calibrationQuality: num(s.calibration?.quality, -1),
+    calibrationForwardResolved: s.calibration?.forwardResolved === true,
     integrityMessage: integrity?.scoreTrusted === false ? String(integrity.message ?? '') : '',
   };
 }
@@ -272,6 +282,7 @@ function normalise(e: SessionIndexEntry): SessionIndexEntry {
     slides: normaliseSlides(e.slides),
     mount: MOUNTS.includes(e.mount) ? e.mount : 'rigid',
     calibrationQuality: num(e.calibrationQuality, -1),
+    calibrationForwardResolved: e.calibrationForwardResolved === true,
     integrityMessage: typeof e.integrityMessage === 'string' ? e.integrityMessage : '',
   };
 }

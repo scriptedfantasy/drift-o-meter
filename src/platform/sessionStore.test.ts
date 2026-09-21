@@ -139,6 +139,7 @@ describe('session store (memory backend)', () => {
     // NOT 0: a legacy entry knows nothing about calibration, and 0 would read as "never
     // calibrated" and put a warning on the garage for every run stored before the field existed.
     expect(e.calibrationQuality).toBeLessThan(0);
+    expect(e.calibrationForwardResolved).toBe(false);
   });
 
   it('an index that will not parse is a fault, not an empty garage', async () => {
@@ -182,7 +183,7 @@ describe('session store (memory backend)', () => {
     expect(s).toEqual({
       id: 'z', name: 'Run z', startedAt: 7, durationS: 120, total: 42, grade: 'B', drifts: 0, track: 'Harbor',
       trusted: true, heldPeakDeg: 0, longestChainPoints: 0, spins: 0, slides: [], mount: 'rigid',
-      calibrationQuality: 0, integrityMessage: '',
+      calibrationQuality: 0, calibrationForwardResolved: false, integrityMessage: '',
     });
   });
 
