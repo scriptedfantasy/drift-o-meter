@@ -11,6 +11,7 @@
  */
 import { BlurStyle, FilterMode, PaintStyle, Skia, StrokeCap, StrokeJoin, TileMode, type SkColor, type SkFont, type SkPaint, type SkPathEffect, type SkPoint, type SkShader } from '@shopify/react-native-skia';
 
+import { SEVERITY_EDGES } from '../../engine/replay';
 import { colors } from '../theme';
 
 export interface SceneResources {
@@ -153,12 +154,25 @@ export function createSceneResources(): SceneResources {
     true,
   );
   // bottom (y = 1) is the calm end of the ribbon, the top (y = 0) is a spin
+  //
+  // BELOW THE HOLD EDGE THE RIBBON IS GREY, because below it the engine says the car is not
+  // sliding, and ember is the colour that says it is. The calm end used to be ember at 0.25
+  // alpha, so a lap whose peak was 4.18° — footer: 0 DRIFTS — drew 34,426 ember pixels, 88 % of
+  // them in this band. `heat()` already returns MUTED under the same edge for everything drawn in
+  // the world; this shader is the one place the rule was not applied, because it paints a
+  // gradient rather than asking for a colour.
+  //
+  // The stop is DERIVED, not chosen. `ribbonScale` is fixed at the spin edge, so the hold edge
+  // sits at a known fraction of the band and moves with the engine if either edge does.
+  const holdStop = 1 - SEVERITY_EDGES.hold / SEVERITY_EDGES.spin;
   const ribbon = gradient(
     [
       [0, colors.red, 0.95],
       [0.2, colors.gold, 0.9],
       [0.45, colors.ember, 0.8],
-      [1, colors.ember, 0.25],
+      [holdStop, colors.ember, 0.34],
+      [Math.min(1, holdStop + 0.015), colors.muted, 0.3],
+      [1, colors.muted, 0.22],
     ],
     false,
   );
