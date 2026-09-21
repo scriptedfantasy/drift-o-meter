@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "Drift-O-Mania",
-    "slug": "drift-o-mania",
+    "slug": "drift-o-meter",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "driftomania",
+    "scheme": "driftometer",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#070D18",
     "primaryColor": "#8AF606",
     "ios": {
-      "bundleIdentifier": "com.driftomania.app",
+      "bundleIdentifier": "com.driftometer.app",
       "supportsTablet": false,
       "infoPlist": {
         "NSMotionUsageDescription": "Drift-O-Mania reads the gyroscope and accelerometer to measure how far the car is sliding.",
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.driftomania.app",
+      "package": "com.driftometer.app",
       "adaptiveIcon": {
         "backgroundColor": "#070D18",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

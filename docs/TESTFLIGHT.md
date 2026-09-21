@@ -150,6 +150,6 @@ car actually did. Bring the numbers back and they can be fixed.
 
 Copy the whole error and bring it back. Almost every failure at this stage is one of four things:
 a missing Apple Developer membership, an expired certificate, a bundle identifier already taken
-by someone else (`com.driftomania.app` — if Apple says it is in use, any other reverse-domain
+by someone else (`com.driftometer.app` — if Apple says it is in use, any other reverse-domain
 string works), or a version number Apple has already seen. All four are quick to fix and none of
 them means the app is broken.
