@@ -13,15 +13,12 @@ import { angleScore, resolveOptions, speedScore, steadinessScore, NEUTRAL_TRACK,
  */
 export interface ScoredDrift extends DriftScore {
   id: number;
-  /** True when the points of this drift were discarded because its chain was lost to a spin. */
-  lost: boolean;
   /** Ordinal inside its chain (1 = first). */
   chainIndex: number;
   /** Multiplier when the drift ended (what a chained follower inherits). */
   multiplierEnd: number;
   peakMultiplier: number;
   transitions: number;
-  spun: boolean;
   cleanExit: boolean;
   stats: DriftStats;
 }

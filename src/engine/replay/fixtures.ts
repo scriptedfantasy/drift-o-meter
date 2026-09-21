@@ -294,6 +294,11 @@ function scoreDrift(d: DriftEvent, truth: TruthSample[], opt: FixtureOptions): D
     multiplier,
     bonus,
     total,
+    // This stand-in scorer has no chain model, so it cannot take a drift's points away — but the
+    // contract makes it say so rather than leaving a consumer to guess. `spun` is the detector's
+    // flag, which is the most this fixture knows; the real scorer's rule is broader.
+    lost: false,
+    spun: d.spin,
     angle: clamp((d.peakAngle / degToRad(50)) * 100, 0, 100),
     consistency: clamp(100 - (d.angleStdDev * 180) / Math.PI * 8, 0, 100),
     speed: clamp((d.meanSpeed / 30) * 100, 0, 100),

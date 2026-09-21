@@ -219,8 +219,30 @@ export interface DriftScore {
   multiplier: number;
   /** Bonus points from callouts. */
   bonus: number;
-  /** base × multiplier + bonus. */
+  /**
+   * base × multiplier + bonus — AND ZERO IS A REAL ANSWER.
+   *
+   * A drift the integrity monitor refused to believe scores 0 here, with base 0 and bonus 0.
+   * That is the scorer saying "this earned nothing", not the scorer saying nothing. A consumer
+   * that treats `total > 0` as "the scorer spoke" and substitutes its own estimate is overriding
+   * a refusal with an invention: the replay did exactly that, and on 22 of 98 measured runs it
+   * drew points for slides the engine had paid nothing for. Test `Number.isFinite`, or test
+   * whether the entry exists at all — never its value.
+   */
   total: number;
+  /**
+   * True when a spin took this drift's points away before they banked.
+   *
+   * PUBLISHED so that no screen re-derives it, because the obvious re-derivation is wrong.
+   * `DriftEvent.spin` is the detector's flag; the scorer's rule is broader — a drift also counts
+   * as spun when any sample inside it passes `spinAngleDeg`, which the detector's peak can miss.
+   * The replay read `DriftEvent.spin` alone and disagreed with the scorer about which drifts
+   * banked, so one screen paid out points the other had taken away. The rule lives in the
+   * scorer; everyone else reads the answer.
+   */
+  lost: boolean;
+  /** The scorer's own spin verdict, broader than `DriftEvent.spin`. See `lost`. */
+  spun: boolean;
   /** 0..100 component scores used for the results breakdown. */
   angle: number;
   consistency: number;
