@@ -27,10 +27,12 @@ export interface ComponentBarsProps {
 export function ComponentBars({ rows, run, reduceMotion = false, unmeasured = false, testID }: ComponentBarsProps) {
   return (
     <View style={styles.list} testID={testID}>
+      {/* One line, not a paragraph. WHY the run was not scored is the hero's disclosure, and that
+          the spin count and the points are gone is the line under the hero's stats; repeating
+          either here made the refusal the longest reading on the screen. */}
       {unmeasured ? (
         <AppText variant="small" color="red">
-          Not published. The engine could not believe enough of this run to score it, so these five components have no number — only what the recording contains. Spins are not counted here either:
-          they are read from the same angles the monitor would not believe.
+          Not published: these five describe what the recording contains, not what it was worth.
         </AppText>
       ) : null}
       {rows.map((row, i) => (

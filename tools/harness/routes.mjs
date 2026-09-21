@@ -278,4 +278,130 @@ export const defaultRoutes = [
   // A point-to-point stage: no laps, so no lap ticks and no ghost — STAGE, not LAP 1/2.
   { name: 'replay-touge', path: '/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
   { name: 'settings', path: '/settings', waitMs: 900 },
+
+  // ---- /sound: the feel lab ---------------------------------------------------------------
+  // Every clip in the bank drawn and playable, the continuous layer on a slider, the mixer's own
+  // decision log. A browser will not start an AudioContext before the page is touched, so the
+  // first frame is the LOCKED state — which is the state that must not put anything in the
+  // console. The second shoots it after a real tap on a play button: the context resumes, the
+  // clip is dispatched and the decision log names what happened to it.
+  { name: 'sound', path: '/sound', waitMs: 2600 },
+  {
+    name: 'sound-played',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'tap', testId: 'play-transition', timeout: 30000 },
+      { type: 'wait', ms: 400 },
+      { type: 'tap', testId: 'seq-mud', timeout: 30000 },
+      { type: 'wait', ms: 900 },
+      { type: 'scroll', y: 260 },
+      { type: 'wait', ms: 600 },
+    ],
+  },
+  // The bank itself, scrolled to the clip rows: waveform, levels, priority, haptic, rationale.
+  { name: 'sound-bank', path: '/sound', waitMs: 2600, actions: [{ type: 'scroll', y: 1500 }, { type: 'wait', ms: 700 }] },
+  // The continuous layer open: 40 degrees of slip held, the two bed gains on their meters.
+  {
+    name: 'sound-slide',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'bed-40' },
+      { type: 'eval', js: "document.querySelector('[data-testid=\"bed-40\"]').click()" },
+      { type: 'wait', ms: 1400 },
+      { type: 'tap', testId: 'bed-40', timeout: 30000 },
+      { type: 'wait', ms: 800 },
+    ],
+  },
+  // The gate, on screen: sound switched off, then a cue that the mixer refuses.
+  {
+    name: 'sound-muted',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'lab-sound' },
+      // A plain `.click()` on the OFF segment: react-native-web's Pressable installs a click
+      // handler for accessibility roles, and a synthetic mousedown/mouseup pair does NOT reach
+      // it (verified against this page — the setting did not move).
+      { type: 'eval', js: "document.querySelectorAll('[data-testid=\"lab-sound\"] [role=\"radio\"]')[1].click()" },
+      { type: 'wait', ms: 500 },
+      { type: 'tap', testId: 'seq-flick', timeout: 30000 },
+      { type: 'wait', ms: 700 },
+      // Back to the top, where the status panel names what the mixer did with that cue.
+      { type: 'scroll', y: -4000 },
+      { type: 'wait', ms: 600 },
+    ],
+  },
+
+  // ---- results in landscape ---------------------------------------------------------------
+  // Shoot these with `--landscape`. The verdict screen is not one column stretched wide there:
+  // the grade, the total, the scale and the three actions dock in a fixed rail on the left and
+  // the report scrolls in the column beside it (`src/ui/results/layout.ts`). That column is
+  // narrower than a portrait page, so the same section sits at a different scroll depth — hence
+  // these entries rather than reusing `results-best` / `results-drifts` / `results-laps` with
+  // the flag. In portrait they land a little further down the same page and are still valid
+  // frames, just not the ones they are named for.
+  { name: 'results-wide-breakdown', path: '/results/fixture-hero?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }] },
+  { name: 'results-wide-best', path: '/results/fixture-hero?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 1080 }, { type: 'wait', ms: 900 }] },
+  { name: 'results-wide-drifts', path: '/results/fixture-spin?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 2150 }, { type: 'wait', ms: 900 }] },
+  { name: 'results-wide-laps', path: '/results/fixture-sloppy?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 3000 }, { type: 'wait', ms: 900 }] },
+  // The handoff frame: the reveal's letter on its way to the hero letter's place, which is in
+  // the rail in landscape and at the top of the column in portrait.
+  { name: 'results-reveal-settle', path: '/results/fixture-hero?reveal=settle', waitMs: 2000 },
+  // The refusal with its reasoning opened. The screen leads with the one line the driver can act
+  // on and the recording; every integrity note is still there, verbatim, one tap behind this
+  // control — these two frames are the proof that nothing was softened, only reordered.
+  { name: 'results-why-open', path: '/results/fixture-handheld?reveal=off', waitMs: 3600, actions: [{ type: 'tap', testId: 'why-unscored', timeout: 30000 }, { type: 'wait', ms: 800 }] },
+  {
+    name: 'results-why-foot',
+    path: '/results/fixture-handheld?reveal=off',
+    waitMs: 3600,
+    actions: [{ type: 'tap', testId: 'why-unscored', timeout: 30000 }, { type: 'wait', ms: 800 }, { type: 'scroll', y: 480 }, { type: 'wait', ms: 700 }],
+  },
+  // ---- calibrate: the states the 6.5/10 critique named ------------------------------------
+  // Appended, not inserted: the block above is what other agents' reports already point at.
+  // A location permission that was DENIED is not a motion permission that was denied. The one
+  // `permission-denied` code sent this frame to "Motion access is off / Turn on Motion &
+  // Fitness" — the driver told to fix the sensor that already works.
+  { name: 'calibrate-fault-location', path: '/calibrate?fault=location', waitMs: 1200 },
+  // The mount is shaking but not loose: everything else has resolved and the confidence sits in
+  // the low thirties. This frame read CALIBRATED / "Ready to measure" directly above a gold
+  // MOUNT LOOKS UNSTEADY. Measured across seeds with
+  // `npx tsx tools/analysis/calibration-sweep.ts suspect`.
+  { name: 'calibrate-shaking', path: '/calibrate?sim=touge&looseness=0.2&at=40&hold=1', waitMs: 2400, expectCanvas: true },
+  // Two seconds into a genuinely hand-held recording: inside the 4 s mount warm-up, so the
+  // monitor has NOT decided. Step 01 used to be struck through with a green tick here while the
+  // mount light beside it still read "Listening".
+  { name: 'calibrate-early', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1', waitMs: 2400, expectCanvas: true },
+  // ---- garage: the state the run list cannot be read in ------------------------------------
+  // Appended, not inserted. With one perfectly readable recording on disk and a TRUNCATED index,
+  // the garage used to draw "THE GARAGE · EMPTY · FIRST RUN · NOTHING TO BEAT YET" — and the next
+  // save wrote a fresh one-entry index over the top and orphaned every stored body permanently.
+  // Seed one real run, truncate the index, then load `/` with no `?demo=` so nothing re-seeds.
+  {
+    name: 'garage-index-broken',
+    path: '/?demo=first',
+    waitMs: 6000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/' },
+      { type: 'wait', ms: 1800 },
+    ],
+  },
+  // ... and the repair: the rebuild reads the recordings themselves and writes a new list.
+  {
+    name: 'garage-index-rebuilt',
+    path: '/?demo=first',
+    waitMs: 6000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/' },
+      { type: 'wait', ms: 1500 },
+      { type: 'tap', testId: 'cta-rebuild-index', timeout: 30000 },
+      { type: 'wait', ms: 2000 },
+    ],
+  },
 ];

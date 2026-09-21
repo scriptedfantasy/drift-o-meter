@@ -37,6 +37,10 @@ export function GradeScale({
         ))}
         <View style={[styles.marker, { left: `${shown}%`, backgroundColor: colors.text }]} />
       </View>
+      {/* Each band carries its own letter on the left and the NEXT band's threshold on the
+          right, which is the number printed where that next grade begins — so the pair a driver
+          reads ("75+ A") is the one that is true. It also leaves the 10 %-wide S band nothing but
+          its letter, which is the only way the row fits the landscape rail. */}
       <View style={styles.labels}>
         {GRADE_SCALE.map((b, i) => {
           const next = GRADE_SCALE[i + 1];
@@ -48,7 +52,7 @@ export function GradeScale({
                 {b.grade}
               </AppText>
               <AppText variant="micro" color="muted" numeric>
-                {b.min === 0 ? '' : `${b.min}+`}
+                {next ? `${next.min}+` : ''}
               </AppText>
             </View>
           );

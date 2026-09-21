@@ -81,11 +81,14 @@ export function resultsLayout(width: number, height: number, untrusted = false):
     contentWidth,
     railWidth,
     heroWidth: railWidth,
-    // shorter than portrait's: the letter shares the rail with the score, the scale and the
-    // actions, and a 393 dp frame has no height to spare
-    letterSize: Math.min(146, railWidth * 0.44, height * 0.38),
+    // The letter shares the rail with the score, the scale and the three actions, so it is
+    // bounded by the rail's HEIGHT as much as its width: 134 dp on a landscape phone, and it
+    // grows with the frame on a tablet instead of leaving the rail empty.
+    letterSize: Math.min(railWidth * 0.5, height * 0.34),
     washInset: gutter,
-    washHeight: Math.min(320, height * 0.62),
+    // the rail IS the hero here, so the wash lights most of it — but never the last band, where
+    // the corner pixels the harness checks live
+    washHeight: height * 0.72,
     scoreSize: Math.min(untrusted ? 38 : 48, railWidth * (untrusted ? 0.12 : 0.16)),
     sparkWidth: Math.max(80, contentWidth - 190),
   };

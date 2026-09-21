@@ -13,8 +13,9 @@ import Animated, { cancelAnimation, Easing, Extrapolation, interpolate, runOnJS,
 
 import type { Grade } from '../../engine/types';
 import { AppText } from '../Text';
-import { alpha, colors, fontFamilies, space } from '../theme';
+import { alpha, colors, fontFamilies, gutter, space } from '../theme';
 import GradeBurstView from './skia/GradeBurstView';
+import { resultsLayout } from './layout';
 import { gradeWord } from './palette';
 
 /** `full` plays it; `off` skips it; the rest freeze a frame for the screenshot harness. */
@@ -54,9 +55,18 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
   const frozenAt = FROZEN[mode];
   const total = reduceMotion ? RM_TOTAL : TOTAL;
   const t = useSharedValue(frozenAt ?? 0);
-  const letterSize = Math.min(width * 0.62, height * 0.34);
-  const burstSize = Math.min(width * 1.5, height * 0.9);
-  const barH = Math.round(height * 0.18);
+  // The page behind decides the shape of the reveal too. A wide frame is not a tall one with the
+  // sides painted black: the letter is sized off the HEIGHT it has, the word and the rating sit
+  // beside each other on one line instead of stacking, the shockwave is wide enough to run off
+  // both ends of the stage, and the letterbox is the bar a 2.4:1 frame wants rather than the deep
+  // one a portrait page can afford.
+  const L = resultsLayout(width, height);
+  const wide = L.landscape;
+  // wide: everything between the two bars has to fit BETWEEN them — letter, rule, word, rating
+  // and kicker — so the letter takes a little over half the height and the meta closes up under it
+  const letterSize = wide ? Math.min(width * 0.28, height * 0.54) : Math.min(width * 0.62, height * 0.34);
+  const burstSize = wide ? Math.min(width * 0.78, height * 1.7) : Math.min(width * 1.5, height * 0.9);
+  const barH = Math.round(height * (wide ? 0.13 : 0.18));
 
   useEffect(() => {
     cancelAnimation(t);
@@ -104,10 +114,11 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
   });
 
   // Where the page's own hero letter sits, so the reveal can hand the grade over to it instead
-  // of cutting: the overlay letter flies up-left and shrinks to the hero's size as it fades.
-  const handoffX = width * 0.28 - width / 2;
-  const handoffY = height * 0.19 - height / 2;
-  const handoffScale = Math.min(168, (Math.min(width, 620) - 40) * 0.44) / letterSize;
+  // of cutting: the overlay letter flies to it and shrinks to its size as it fades. In landscape
+  // the hero letter is in the verdict rail, well up and to the left of a portrait page's.
+  const handoffX = (wide ? gutter + L.letterSize * 0.35 : width * 0.28) - width / 2;
+  const handoffY = (wide ? space[12] + L.letterSize * 0.5 : height * 0.19) - height / 2;
+  const handoffScale = L.letterSize / letterSize;
 
   const letter = useAnimatedStyle(() => {
     if (reduceMotion) {
@@ -163,24 +174,28 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
             accessibilityRole="header"
             style={[
               styles.letter,
-              { color, fontSize: letterSize, lineHeight: letterSize * 1.02, textShadowColor: alpha(color, 0.65) },
+              // a wide stage is short: the line box is tightened to the cap height so the letter
+              // and the line under it are one object rather than two things sharing a screen
+              { color, fontSize: letterSize, lineHeight: letterSize * (wide ? 0.88 : 1.02), textShadowColor: alpha(color, 0.65) },
               letter,
             ]}>
             {grade}
           </Animated.Text>
 
-          <Animated.View style={[styles.meta, meta]}>
-            <View style={[styles.ratingRule, { backgroundColor: alpha(color, 0.5) }]} />
-            <AppText variant="heading" color={color} uppercase style={styles.word}>
-              {gradeWord(grade, drifts)}
-            </AppText>
-            <AppText variant="telemetry" color="text" numeric style={styles.rating}>
-              {Number.isFinite(rating) ? rating.toFixed(1) : '--'}
-              <AppText variant="label" color="muted">
-                {'  '}/ 100
+          <Animated.View style={[styles.meta, wide && styles.metaWide, meta]}>
+            <View style={[styles.ratingRule, { backgroundColor: alpha(color, 0.5) }, wide && styles.ruleWide]} />
+            <View style={wide ? styles.metaRow : undefined}>
+              <AppText variant="heading" color={color} uppercase style={styles.word}>
+                {gradeWord(grade, drifts)}
               </AppText>
-            </AppText>
-            <AppText variant="micro" color="muted" style={styles.kicker}>
+              <AppText variant="telemetry" color="text" numeric style={wide ? undefined : styles.rating}>
+                {Number.isFinite(rating) ? rating.toFixed(1) : '--'}
+                <AppText variant="label" color="muted">
+                  {'  '}/ 100
+                </AppText>
+              </AppText>
+            </View>
+            <AppText variant="micro" color="muted" style={wide ? styles.kickerWide : styles.kicker}>
               {kicker}
             </AppText>
           </Animated.View>
@@ -191,7 +206,9 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
             </AppText>
           </Animated.View>
 
-          <Animated.View style={[styles.skipHint, hint]} pointerEvents="none">
+          {/* Wide: the meta line ends where a bottom-centred hint would sit, so the hint moves to
+              the top-right of the stage — clear of the letter, the meta and the letterbox. */}
+          <Animated.View style={[wide ? [styles.skipHintWide, { top: barH + space[3] }] : styles.skipHint, hint]} pointerEvents="none">
             <AppText variant="micro" color="muted">
               Tap to skip
             </AppText>
@@ -224,12 +241,17 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   meta: { alignItems: 'center', gap: space[1], marginTop: space[2], zIndex: 2 },
+  metaWide: { marginTop: 0 },
+  metaRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[5] },
   ratingRule: { width: 64, height: 2, marginBottom: space[3] },
+  ruleWide: { width: 180, marginBottom: space[1] },
   word: { letterSpacing: 2 },
   rating: { marginTop: space[1] },
   kicker: { marginTop: space[2] },
+  kickerWide: { marginTop: space[1] },
   hint: { position: 'absolute', top: '22%' },
   skipHint: { position: 'absolute', bottom: '14%' },
+  skipHintWide: { position: 'absolute', right: gutter },
   // Pure black on purpose, and the only place this screen leaves the palette: the bars have to
   // read as bars against the bg0 stage between them, which they cannot do in bg0. It is the same
   // letterbox device the replay uses, and it is why the harness warns that the corner pixels of

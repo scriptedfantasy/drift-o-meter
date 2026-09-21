@@ -18,7 +18,11 @@ import type { IntegrityNote } from './model';
 export interface WhyUnscoredProps {
   /** Every integrity note the model produced — shown verbatim, nothing summarised away. */
   notes: IntegrityNote[];
-  /** The scorer's own reason, when its message carried one ahead of the remedy. */
+  /**
+   * The scorer's own reason, when its message carried one ahead of the remedy. It is spoken as
+   * part of the control's label — a screen reader hears WHY before deciding to open it — and it
+   * is not printed a second time above the notes, which quote it word for word.
+   */
   reason?: string | null;
   run: boolean;
   reduceMotion?: boolean;
@@ -37,7 +41,7 @@ export function WhyUnscored({ notes, reason, run, reduceMotion = false, initiall
         hitSlop={8}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={open ? 'Hide why this run was not scored' : 'Why this run was not scored'}
+        accessibilityLabel={`${open ? 'Hide why this run was not scored' : 'Why this run was not scored'}${reason ? `. ${reason}` : ''}`}
         testID="why-unscored"
         style={({ pressed }) => [styles.toggle, open && styles.toggleOpen, pressed && styles.pressed]}>
         <AppText variant="micro" color={colors.red}>
@@ -53,11 +57,6 @@ export function WhyUnscored({ notes, reason, run, reduceMotion = false, initiall
 
       {open ? (
         <View style={styles.body}>
-          {reason ? (
-            <AppText variant="small" color="muted">
-              {reason}
-            </AppText>
-          ) : null}
           <IntegrityPanel notes={notes} run={run} reduceMotion={reduceMotion} testID="integrity" />
         </View>
       ) : null}
