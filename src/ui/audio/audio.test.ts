@@ -24,7 +24,7 @@ import { MIN_GAP_SLACK_S, REWIND_MARGIN_S } from '../../platform/audioTypes';
 import { simulateRun, type TrackId } from '../../sim';
 import { toneFor } from '../callouts';
 import { AUDIO_FILES, BED_HIGH, BED_LOW, CALLOUT_SOUND, EXIT_SETTLE_S, gradeCueFor, SOUND_BANK, specFor, voiceLifetimeS, type SoundId, type SoundSpec } from './bank';
-import { DriftFeel, trustIn } from './mixer';
+import { DriftFeel, sequenceInstants, trustIn } from './mixer';
 import { SOUND_SEQUENCES } from './sequences';
 import { CLIP_MEASUREMENTS, TIER_TARGETS } from './waveforms';
 
@@ -275,6 +275,44 @@ describe('the sound bank covers the event stream', () => {
       if (spec.id === 'initiation') continue;
       expect(CLIP_MEASUREMENTS[spec.id].rmsDb, `${spec.id} should not be quieter than initiation`).toBeGreaterThan(CLIP_MEASUREMENTS.initiation.rmsDb);
     }
+  });
+
+  it('says nothing in prose that the measurements contradict', () => {
+    // THE ONE FIELD NOTHING COULD FAIL ON. `why` is rendered verbatim on `/sound`, under the
+    // row's own measured numbers, and it was the only part of the bank no test read. BANKED's
+    // read "Tier A and the loudest thing in a run" for a whole round after BANKED was moved to
+    // tier B — four lines under the same card printing "RMS -20.6 DB · TIER B", with SPIN
+    // (-17.4) and GRADE (-17.1) two rows below it. The file's own header said tier B. The half
+    // that renders said tier A.
+    //
+    // So every claim in `why` that the measurements can settle is settled here: the tier a row
+    // names, and the three superlatives the bank makes about itself.
+    const rms = (id: SoundId) => CLIP_MEASUREMENTS[id].rmsDb;
+    const loudest = CLIPS.reduce((a, b) => (rms(a.id) >= rms(b.id) ? a : b)).id;
+    const quietest = CLIPS.reduce((a, b) => (rms(a.id) <= rms(b.id) ? a : b)).id;
+    const brightest = CLIPS.reduce((a, b) => (CLIP_MEASUREMENTS[a.id].centroidHz >= CLIP_MEASUREMENTS[b.id].centroidHz ? a : b)).id;
+
+    let tiersChecked = 0;
+    for (const spec of SOUND_BANK) {
+      expect(spec.why.length, `${spec.id} has no rationale`).toBeGreaterThan(40);
+
+      // "Tier X" / "tier X" anywhere in a row's own rationale is a claim about THAT row.
+      for (const m of spec.why.matchAll(/\btier\s+([ABCD])\b/gi)) {
+        tiersChecked++;
+        const claimed = m[1].toUpperCase();
+        const actual = CLIP_MEASUREMENTS[spec.id]?.tier ?? '—';
+        expect(claimed, `${spec.id}'s why says "${m[0]}" and waveforms.ts measures tier ${actual}`).toBe(actual);
+      }
+
+      // The superlatives, against the ladder rather than against memory.
+      const w = spec.why.toLowerCase();
+      if (/\bloudest\b/.test(w)) expect(spec.id, `${spec.id} calls itself the loudest; ${loudest} is (${rms(loudest).toFixed(1)} dBFS)`).toBe(loudest);
+      if (/\bquietest\b/.test(w)) expect(spec.id, `${spec.id} calls itself the quietest; ${quietest} is (${rms(quietest).toFixed(1)} dBFS)`).toBe(quietest);
+      if (/\bbrightest\b/.test(w)) expect(spec.id, `${spec.id} calls itself the brightest; ${brightest} is`).toBe(brightest);
+    }
+    // The regression itself: BANKED must still name a tier, and it must be the one it is on.
+    expect(specFor('banked')!.why.toLowerCase()).toContain('tier b');
+    expect(tiersChecked, 'no row names a tier any more — this test would then be checking nothing').toBeGreaterThan(0);
   });
 
   it('never lets a clip meet a player that is still being rewound', () => {
@@ -1155,5 +1193,105 @@ describe('a real run, through the real pipeline', () => {
     // 20 Hz ceiling over a 65 s lap, and in practice far under it because the gain has to move.
     expect(r.beds.length).toBeLessThan(65 * 20);
     expect(r.beds.length).toBeGreaterThan(20);
+  });
+});
+
+// ── 5. the lab's own replay path ──────────────────────────────────────────────────────────────
+/**
+ * THE LAB EXISTS SO THE MIXER CAN BE JUDGED WITHOUT A CAR, and for a round the one rule it
+ * advertised was the one rule it could not show. `/sound`'s THE SPIN button is captioned "CHAIN
+ * LOST and SPIN fire on the SAME frame — the cause outranks the consequence, so you hear one",
+ * and pressing it scheduled one `feelCue` per step: the OUTSIDE-the-frame-stream door, which has
+ * no family slots behind it. Both clips started 0.1 ms apart and the log read `SPIN played` /
+ * `LOST played`. The claim was true of the pipeline and false of the button under it.
+ *
+ * The suite could not catch that, either: `replays moments that really happened` checks the same
+ * sequence against the PIPELINE, which is the only place the lab was not using it.
+ *
+ * These drive `sequenceInstants` + `DriftFeel.offerAll` — literally the two functions
+ * `src/app/sound.tsx`'s `runSequence` calls — over the committed `SOUND_SEQUENCES`.
+ */
+describe("the /sound lab's replay path", () => {
+  function lab() {
+    const c = clock();
+    const r = recorder();
+    const feel = new DriftFeel({ now: c.now, maxVoices: 2 });
+    feel.attach(r.sound, r.haptic);
+    feel.setSettings(true, true);
+    /** Exactly what `runSequence` does, minus the setTimeout that carries it. */
+    const press = (steps: ReadonlyArray<{ id: SoundId; atS: number }>) => {
+      for (const { atS, ids } of sequenceInstants(steps)) {
+        c.state.t = atS;
+        feel.offerAll(ids);
+      }
+    };
+    return { c, r, feel, press };
+  }
+
+  it('makes THE SPIN sound like its caption: two cues on one frame, one clip', () => {
+    const seq = SOUND_SEQUENCES.find((s) => s.key === 'lost');
+    expect(seq, 'the lab must still carry the spin sequence').toBeDefined();
+    expect(seq!.note).toContain('SAME frame');
+    expect(seq!.steps.map((x) => x.atS), 'both cues must be on one instant for the rule to apply').toEqual([0, 0]);
+
+    const { r, feel, press } = lab();
+    press(seq!.steps);
+
+    expect(r.played, 'the cause is heard and the consequence is not').toEqual(['spin']);
+    const lost = feel.decisions.filter((d) => d.id === 'lost');
+    expect(lost).toHaveLength(1);
+    expect(lost[0].outcome, "the log must read 'family' so the lab can show the rule").toBe('family');
+    expect(lost[0].against).toBe('spin');
+    // And only the cause's haptic: a stolen cue is silent in both channels.
+    expect(r.haptics).toEqual(['error']);
+  });
+
+  it('never gates a replay: the lab has seen no frames, and a button press is not a reading', () => {
+    // `offerAll` runs the family and voice rules but NOT the belief gate — the same reasoning
+    // `cue()` states. Without that, a lab whose mixer has never been handed a frame (so
+    // `believable` is false) would drop every gated clip and fire FAULT at the first press.
+    for (const seq of SOUND_SEQUENCES) {
+      const { r, feel, press } = lab();
+      expect(feel.believes, 'a fresh mixer believes nothing until a frame says so').toBe(false);
+      press(seq.steps);
+      const gated = feel.decisions.filter((d) => d.outcome === 'gated');
+      expect(gated.map((d) => d.id), `${seq.key} dropped cues to the belief gate`).toEqual([]);
+      expect(r.played, `${seq.key} made no sound at all`).not.toEqual([]);
+      expect(r.played, `${seq.key} raised a fault`).not.toContain('fault');
+    }
+  });
+
+  it('replays every step the lab lists, or logs the rule that swallowed it', () => {
+    // Nothing may vanish: each step either sounds, is felt, or has a decision naming what beat it.
+    for (const seq of SOUND_SEQUENCES) {
+      const { feel, press } = lab();
+      press(seq.steps);
+      for (const step of seq.steps) {
+        const d = feel.decisions.filter((x) => x.id === step.id);
+        expect(d.length, `${seq.key}: ${step.id} produced no decision at all`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('shows the voice budget on THREE AT ONCE, which is what that button is for', () => {
+    const seq = SOUND_SEQUENCES.find((s) => s.key === 'mud');
+    expect(seq).toBeDefined();
+    const { r, press } = lab();
+    press(seq!.steps);
+    // Three cues, two voices: the third takes the weakest one, and the port is told to stop it.
+    expect(r.played).toEqual(['long', 'lap', 'spin']);
+    expect(r.stopped).toEqual(['lap']);
+  });
+
+  it('applies the flick rule to a replayed frame too', () => {
+    const { r, feel, press } = lab();
+    press([
+      { id: 'transition', atS: 0 },
+      { id: 'initiation', atS: 0 },
+    ]);
+    expect(r.played).toEqual(['transition']);
+    const chirp = feel.decisions.find((d) => d.id === 'initiation');
+    expect(chirp?.outcome).toBe('flick');
+    expect(chirp?.against).toBe('transition');
   });
 });

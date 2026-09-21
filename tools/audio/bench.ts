@@ -13,8 +13,9 @@
  *     is the same path the drive display's flash and haptic already take, and everything after
  *     it belongs to the OS audio stack.
  *  2. THE 100 Hz BUDGET — the cost of a frame that fires nothing, which is the common case.
- *  3. THE RUN, AS HEARD — every decision the mixer took, in order, so the taxonomy and the
- *     voice stealing can be read rather than trusted.
+ *  3. WHAT THE DRIVER GOT and THE RUN, AS HEARD — every clip that sounded, every cue that was
+ *     only felt, and then every decision the mixer took, in order, at the second of the run it
+ *     happened, so the taxonomy and the voice stealing can be read rather than trusted.
  *  4. SEQUENCES — the real moments the `/sound` lab replays, FOUND in the run rather than typed
  *     out beside it, with the absolute time they happened at and the gaps between their cues.
  *
@@ -31,10 +32,15 @@
  * They were unverifiable all the same, and this file is why: the run log kept only the last 64
  * decisions and then printed them as "+X s" from the first one it still HELD, so the offsets a
  * reader saw were measured from a shifted origin — 11.61 s late on that run, which turns 42.01
- * into 30.40, 100.08 into 88.47 and 47.75 into 36.14. Anyone checking the screen against this
- * command got three numbers that looked wrong and were not. Both halves are fixed: the log is
- * unbounded here, the times printed are absolute, and the lab's numbers come out of the search
- * with the command that reproduces each one beside them.
+ * into 30.40, 100.08 into 88.47 and 47.75 into 36.14.
+ *
+ * AND ONLY ONE OF THOSE TWO HALVES WAS ACTUALLY FIXED. The log became unbounded and this header
+ * claimed both were done, while the print stayed `+(d.t - decisions[0].t)` — and `decisions[0]`
+ * is the first decision of the RUN, 11.61 s in, not the first sample. So the identical 11.61 s
+ * shift was still on screen, under a comment saying it was gone: `+30.40 s transition` for the
+ * frame the SEQUENCES block of the same command dates at 42.01 s. The log now prints `d.t`
+ * itself, which is the number the SEQUENCES block and `sequences.ts` both carry, and the
+ * comparison a reader wants to make is a comparison of equals.
  *
  * Nothing here is mocked except the two ports: the pipeline, the scorer, the detector, the bank
  * and the mixer are the ones the app ships.
@@ -177,29 +183,51 @@ console.log(`  cues offered ${feel.stats.cues}   played ${feel.stats.played}   d
 console.log(`  port: play ${playCount}  stop ${stopCount}  setBed ${bedPushes} (${(bedPushes / durationS).toFixed(1)}/s)`);
 console.log(`  haptics: ${Object.entries(hapticCount).map(([k, v]) => `${k}=${v}`).join(' ') || 'none'}`);
 
+/**
+ * WHAT THE DRIVER GOT, heard AND felt.
+ *
+ * This census was built from `SoundPort.play()` calls alone, and the bank's headline addition —
+ * EXIT EDGE, the landing beat, which by design has no file and never reaches `play()` — was
+ * therefore reported as "never fired on this run" three lines above a log showing eight
+ * `exit-edge felt haptic:light` entries. Anyone auditing "does the landing beat fire?" with the
+ * tool the lab names was told no. `coverage.ts` has always counted a felt-only cue as a beat;
+ * this now does too, straight off the mixer's own decisions, which is the same source the log
+ * below prints.
+ */
 const byClip: Record<string, number> = {};
 for (const p of played) byClip[p.id] = (byClip[p.id] ?? 0) + 1;
-console.log(`\nCLIPS PLAYED  (${drifts} drifts completed)`);
+const feltBy: Record<string, number> = {};
+for (const d of feel.decisions) if (d.outcome === 'felt') feltBy[d.id] = (feltBy[d.id] ?? 0) + 1;
+
+console.log(`\nWHAT THE DRIVER GOT  (${drifts} drifts completed; 'felt' is a cue with no clip — it never reaches SoundPort.play())`);
+console.log(`  ${'clip'.padEnd(11)} ${'heard'.padStart(5)} ${'felt'.padStart(5)}   ${'cadence'.padEnd(14)} ${'per drift'.padEnd(11)} tier  prio  haptic`);
 for (const spec of SOUND_BANK) {
-  const n = byClip[spec.id] ?? 0;
+  const heard = byClip[spec.id] ?? 0;
+  const felt = feltBy[spec.id] ?? 0;
+  const n = heard + felt;
   if (n === 0) continue;
-  const perDrift = drifts > 0 ? (n / drifts).toFixed(2) : '—';
+  const perDrift = drifts > 0 ? `${(n / drifts).toFixed(2)}/drift` : '—';
   console.log(
-    `  ${spec.id.padEnd(11)} x${String(n).padStart(3)}   every ${(durationS / n).toFixed(1)} s   ${perDrift}/drift   tier ${CLIP_MEASUREMENTS[spec.id]?.tier ?? '—'}   prio ${spec.priority}   ${spec.haptic ?? '—'}`,
+    `  ${spec.id.padEnd(11)} ${String(heard).padStart(5)} ${String(felt).padStart(5)}   ${`every ${(durationS / n).toFixed(1)} s`.padEnd(14)} ${perDrift.padEnd(11)} ${(CLIP_MEASUREMENTS[spec.id]?.tier ?? '—').padEnd(5)} ${String(spec.priority).padEnd(5)} ${spec.haptic ?? '—'}`,
   );
 }
-const silent = SOUND_BANK.filter((s) => (byClip[s.id] ?? 0) === 0).map((s) => s.id);
-if (silent.length > 0) console.log(`  never fired on this run: ${silent.join(', ')}`);
+const silent = SOUND_BANK.filter((s) => (byClip[s.id] ?? 0) + (feltBy[s.id] ?? 0) === 0).map((s) => s.id);
+if (silent.length > 0) console.log(`  never fired on this run, heard or felt: ${silent.join(', ')}`);
 
 if ((opts.log ?? 1) > 0) {
-  console.log('\nTHE RUN, AS HEARD  (first 60 decisions)');
-  const t0 = feel.decisions.length > 0 ? feel.decisions[0].t : 0;
+  // THE RECORDING SECOND EACH DECISION HAPPENED AT, not an offset from the first one printed.
+  // This is the half of the defect rule 11 was written about that survived the first fix: the
+  // log became unbounded and the times stayed relative to `decisions[0]`, which on `harbor 1 2`
+  // is 11.61 s in — so the flick this same command's SEQUENCES block dates at 42.01 s printed as
+  // `+30.40`, and a critic checking the lab's citation against the tool it cites got the same
+  // wrong-looking number that cost a round. These are the numbers the SEQUENCES block prints.
+  console.log('\nTHE RUN, AS HEARD  (first 60 decisions, at the second of the run they happened)');
   for (const d of feel.decisions.slice(0, 60)) {
     const spec = specFor(d.id);
     const against = d.against ? ` vs ${d.against}` : '';
-    console.log(`  +${(d.t - t0).toFixed(2).padStart(7)} s  ${d.id.padEnd(11)} ${d.outcome.padEnd(9)}${against.padEnd(16)} ${d.haptic ? `haptic:${d.haptic}` : ''}  ${spec ? `prio ${spec.priority}` : ''}`);
+    console.log(`  ${d.t.toFixed(2).padStart(8)} s  ${d.id.padEnd(11)} ${d.outcome.padEnd(9)}${against.padEnd(16)} ${d.haptic ? `haptic:${d.haptic}` : ''}  ${spec ? `prio ${spec.priority}` : ''}`);
   }
-  if (feel.decisions.length > 60) console.log(`  … ${feel.decisions.length - 60} more (the log keeps the last 64)`);
+  if (feel.decisions.length > 60) console.log(`  … ${feel.decisions.length - 60} more (nothing is dropped: logLimit is Infinity here)`);
 }
 
 // ── 4. the sequences the `/sound` lab replays ─────────────────────────────────────────────────

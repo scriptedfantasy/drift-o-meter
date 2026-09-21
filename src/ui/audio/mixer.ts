@@ -714,6 +714,24 @@ export class DriftFeel {
   }
 }
 
+/**
+ * A replayed sequence's steps, collapsed into the INSTANTS they land on.
+ *
+ * `sequences.ts` records a moment as steps with an offset each, and two steps with the same
+ * offset are two events on one frame — which is the only interesting case the mixer has. The
+ * `/sound` lab schedules one `offerAll` per group so a replay resolves the way the run did; it
+ * lives here rather than in the screen so the test can drive the same function the lab drives.
+ */
+export function sequenceInstants(steps: ReadonlyArray<{ id: SoundId; atS: number }>): Array<{ atS: number; ids: SoundId[] }> {
+  const out: Array<{ atS: number; ids: SoundId[] }> = [];
+  for (const step of steps) {
+    const at = out.find((g) => g.atS === step.atS);
+    if (at) at.ids.push(step.id);
+    else out.push({ atS: step.atS, ids: [step.id] });
+  }
+  return out;
+}
+
 function emit(port: HapticPort, shape: HapticShape): void {
   if (shape === 'success' || shape === 'warning' || shape === 'error') port.notify(shape);
   else port.impact(shape);

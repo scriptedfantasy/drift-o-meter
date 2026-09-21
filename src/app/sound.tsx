@@ -34,6 +34,8 @@ import {
   CLIP_MEASUREMENTS,
   DriftFeel,
   feelCue,
+  feelCues,
+  sequenceInstants,
   SOUND_BANK,
   SOUND_SEQUENCES,
   TIER_TARGETS,
@@ -128,11 +130,22 @@ export default function SoundLabScreen() {
     [feel],
   );
 
+  /**
+   * Replay a measured moment — THROUGH THE FRAME-SHAPED PATH, which is the whole point.
+   *
+   * Steps that share an `atS` are ONE instant, and they are handed to the mixer together so the
+   * family rule, the flick rule, the priority order and the two voices all run on them exactly as
+   * they run on a live frame. This used to schedule one `feelCue` per step, which is the
+   * single-event door with no slots behind it — so THE SPIN, whose caption reads "CHAIN LOST and
+   * SPIN fire on the SAME frame … so you hear one", started both clips 0.1 ms apart and logged
+   * `SPIN played` / `LOST played`. The rule the lab exists to show was the one rule it could not
+   * show. It now logs `lost · family · vs spin`, and one clip sounds.
+   */
   const runSequence = useCallback(
     (steps: ReadonlyArray<{ id: SoundId; atS: number }>) => {
       void feel.unlock().then(() => {
         for (const t of timers.current) clearTimeout(t);
-        timers.current = steps.map((step) => setTimeout(() => feelCue(step.id), step.atS * 1000));
+        timers.current = sequenceInstants(steps).map(({ atS, ids }) => setTimeout(() => feelCues(ids), atS * 1000));
       });
     },
     [feel],
@@ -289,7 +302,11 @@ export default function SoundLabScreen() {
             {SOUND_SEQUENCES.map((seq) => (
               <View key={seq.key} style={styles.sequence}>
                 <LabButton label={seq.label} color={colors.magenta} testID={`seq-${seq.key}`} onPress={() => runSequence(seq.steps)} wide />
-                <Micro style={styles.sequenceNote}>{seq.note}</Micro>
+                {/* Sentence-case body, the same treatment the bank rows' `why` gets. These three
+                    sentences are the measurements the panel exists to make checkable, and they
+                    were set in letter-spaced all-caps Micro — the least readable text on a page
+                    whose whole argument is "read this and check it". */}
+                <Small style={styles.sequenceNote}>{seq.note}</Small>
                 {seq.command ? <Small style={styles.command}>{seq.command}</Small> : null}
               </View>
             ))}
@@ -521,7 +538,7 @@ const styles = StyleSheet.create({
   meterTrack: { height: 5, borderRadius: 3, backgroundColor: colors.bg2, overflow: 'hidden' },
   meterFill: { height: '100%', borderRadius: 3 },
   sequence: { gap: 4, marginTop: space[2] },
-  sequenceNote: { lineHeight: 15 },
+  sequenceNote: { lineHeight: 19 },
   // The command is meant to be read and retyped, so it keeps its own case and its slashes.
   command: { fontSize: 12, lineHeight: 16 },
   decision: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: 3, borderBottomWidth: 1, borderBottomColor: colors.line },

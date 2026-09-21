@@ -174,7 +174,18 @@ export interface SoundSpec {
   haptic: HapticShape | null;
   /** A second haptic this long after the first. Only the grade reveal earns one. */
   hapticThen?: { shape: HapticShape; delayS: number };
-  /** Why this sound is the way it is. Shown in the lab so the design is auditable, not asserted. */
+  /**
+   * Why this sound is the way it is. Shown verbatim in the `/sound` lab, under the row's own
+   * measured numbers, so the design is auditable rather than asserted.
+   *
+   * IT IS PROSE AND IT IS STILL CHECKED. This was the one field nothing read, and BANKED's said
+   * "Tier A and the loudest thing in a run" for a whole round after BANKED became tier B — on
+   * the same card that printed TIER B four lines above it. `audio.test.ts` now reads every
+   * sentence here: a "tier X" must be the tier `waveforms.ts` measured for THIS row, and a bare
+   * "loudest" / "quietest" / "brightest" is taken as a claim about THIS row and checked against
+   * the ladder. A row may therefore only name its OWN tier: to talk about where another sound
+   * sits, name the sound ("only SPIN and the grade reveal are mixed above it"), not the letter.
+   */
   why: string;
 }
 
@@ -372,7 +383,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     minGapS: 1.02,
     gated: true,
     haptic: 'success',
-    why: 'A riser pulling up for 300 ms, a thunk on the beat, a gold shimmer paying out. Tier B, with the rest of the drift beats: measured through the real pipeline it fires 0.50 to 1.11 times per drift (npx tsx tools/audio/coverage.ts, eight runs over both tracks), and by the rule in callouts.ts an event on every drift carries no news however good the news is. The loudest tier is kept for SPIN and the grade reveal, which happen once in a run or not at all.',
+    why: 'A riser pulling up for 300 ms, a thunk on the beat, a gold shimmer paying out. Tier B, with the rest of the drift beats: measured through the real pipeline it fires 0.50 to 1.11 times per drift (npx tsx tools/audio/coverage.ts, eight runs over both tracks), and by the rule in callouts.ts an event on every drift carries no news however good the news is. Only SPIN and the grade reveal are mixed above it, and those happen once in a run or not at all.',
   },
   {
     id: 'lost',

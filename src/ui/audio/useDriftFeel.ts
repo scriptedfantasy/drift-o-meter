@@ -74,12 +74,66 @@ export function feelFrame(frame: LiveFrame): void {
   if (driftFeel.stats.cues !== before) driftFeel.noteDispatch(nowMs() - t0);
 }
 
-/** One cue from outside the frame stream: the STOP control, the grade reveal, the lab. */
-export function feelCue(id: SoundId): void {
-  if (!attached) return;
+/**
+ * One cue from outside the frame stream: the STOP control, the grade reveal, the lab.
+ *
+ * RETURNS WHETHER THE CUE WAS TAKEN, and that return value is the whole of a defect. Until the
+ * ports exist this is a no-op, and the one call site in the app with a hard deadline —
+ * `GradeReveal`'s slam, 900 ms after mount — used to latch "heard" BEFORE calling it, so a
+ * reveal that arrived before the bank had decoded got exactly one attempt and then never tried
+ * again. Measured on the shipped web export with `**\/*.wav` delayed 2.5 s: the 21st decode
+ * finished at 3083 ms, the reveal slammed at ~1900 ms, and NO clip started for the rest of the
+ * page. Callers with a deadline latch on `true` and use `feelCueWhenReady` for the rest.
+ */
+export function feelCue(id: SoundId): boolean {
+  if (!attached) return false;
   const t0 = nowMs();
   driftFeel.cue(id);
   driftFeel.noteDispatch(nowMs() - t0);
+  return true;
+}
+
+/**
+ * Several cues landing on ONE instant, through the frame-shaped path: families, the flick rule,
+ * priority order, two voices. `cue()` has none of that — it is the single-event door — so the
+ * `/sound` lab replaying "CHAIN LOST and SPIN on the same frame" through it started both clips
+ * under a caption saying you hear one. See `DriftFeel.offerAll`.
+ */
+export function feelCues(ids: readonly SoundId[]): boolean {
+  if (!attached) return false;
+  const t0 = nowMs();
+  driftFeel.offerAll(ids);
+  driftFeel.noteDispatch(nowMs() - t0);
+  return true;
+}
+
+/**
+ * ONE cue held until the ports attach, for a call site that cannot wait and cannot repeat.
+ *
+ * The grade reveal is the only one: on native the garage never mounts `useDriftFeel`, so the 21
+ * players do not start loading until `/results` mounts, and the reveal's slam is 900 ms after
+ * that. Queueing rather than polling, so nothing spins; ONE slot rather than a queue, because
+ * two cues held across a cold start would arrive as a pile the moment the bank lands.
+ *
+ * Returns true when it played NOW and false when it is being held — which is information, not a
+ * failure. A caller that must not ask twice can latch on either.
+ *
+ * WHAT BOUNDS THE HOLD is the screen, not a timer: `useDriftFeel`'s unmount drops it, so a cue
+ * queued on `/results` cannot arrive over `/replay`. It is deliberately NOT bound to the widget
+ * that queued it — the grade reveal lives 2.28 s and the wait it covers was measured at 3.0–3.3 s.
+ */
+export function feelCueWhenReady(id: SoundId): boolean {
+  if (feelCue(id)) return true;
+  pendingCue = id;
+  return false;
+}
+
+let pendingCue: SoundId | null = null;
+
+function flushPendingCue(): void {
+  const id = pendingCue;
+  pendingCue = null;
+  if (id !== null) feelCue(id);
 }
 
 /** Forget the previous run's phase edges and close the bed. Called when a run starts. */
@@ -229,6 +283,9 @@ function ensurePorts(): Promise<void> {
     driftFeel.attach(port, hapticPort);
     attached = true;
     hookUnload();
+    // A cue that arrived before this moment gets its one attempt now, in the order it was asked
+    // for: the ports are attached, so `feelCue` will take it.
+    flushPendingCue();
     publish();
 
     void (async () => {
@@ -247,6 +304,7 @@ function ensurePorts(): Promise<void> {
  */
 export function releaseFeel(): void {
   attached = false;
+  pendingCue = null;
   driftFeel.attach(null, null);
   driftFeel.release();
   soundPort?.release();
@@ -293,6 +351,8 @@ export function useDriftFeel(): FeelStatus {
       // and the fault latch are dropped — so a slide in progress cannot drone into the next
       // screen, while every decoded clip and the audio session survive.
       driftFeel.reset();
+      // And a cue this screen was still waiting to be able to play belongs to this screen.
+      pendingCue = null;
     };
   }, []);
 

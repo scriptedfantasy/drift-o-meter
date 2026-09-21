@@ -27,6 +27,7 @@ export {
   BED_RELEASE_TAU,
   BED_SPAN_DEG,
   DriftFeel,
+  sequenceInstants,
   trustIn,
   type CueDecision,
   type CueOutcome,
@@ -35,6 +36,6 @@ export {
   type HapticPort,
   type SoundPort,
 } from './mixer';
-export { driftFeel, feelCue, feelFrame, feelReset, useDriftFeel, type FeelStatus } from './useDriftFeel';
+export { driftFeel, feelCue, feelCues, feelCueWhenReady, feelFrame, feelReset, useDriftFeel, type FeelStatus } from './useDriftFeel';
 export { CLIP_MEASUREMENTS, TIER_TARGETS, type ClipMeasurement } from './waveforms';
 export { SOUND_SEQUENCES, type SoundSequence } from './sequences';
