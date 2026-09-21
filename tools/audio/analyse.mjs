@@ -31,7 +31,12 @@ const TONE_RGB = {
   muted: [0x8a, 0x93, 0xa6],
 };
 
-/** Clip → tone. Kept in step with `src/ui/audio/bank.ts`; the test asserts they agree. */
+/**
+ * Clip → tone. A DRAWING-only duplication of `src/ui/audio/bank.ts` (this is a script, that is
+ * TypeScript), so a clip added to the bank and not to this table would be tinted the wrong
+ * colour on the contact sheet without anyone noticing. `measure()` therefore refuses to draw a
+ * clip that is not in here, rather than falling back to ember.
+ */
 const TONES = {
   initiation: 'muted',
   transition: 'magenta',
@@ -49,6 +54,9 @@ const TONES = {
   spin: 'red',
   stop: 'muted',
   grade: 'gold',
+  'grade-low': 'muted',
+  fault: 'red',
+  recovered: 'green',
   'bed-low': 'ember',
   'bed-high': 'ember',
 };
@@ -70,6 +78,9 @@ const ORDER = [
   'spin',
   'stop',
   'grade',
+  'grade-low',
+  'fault',
+  'recovered',
   'bed-low',
   'bed-high',
 ];
@@ -263,6 +274,7 @@ function main() {
   const rows = [];
   let bytes = 0;
   for (const id of ids) {
+    if (!TONES[id]) throw new Error(`${id}.wav has no tone in tools/audio/analyse.mjs — add it beside its row in src/ui/audio/bank.ts`);
     const m = measure(path.join(dir, `${id}.wav`));
     bytes += m.bytes;
     rows.push({ id, ...m, peakDb: dB(m.peak), rmsDb: dB(m.rms) });

@@ -11,10 +11,10 @@
  * because the map has to be a literal: a computed `require('../../../assets/audio/' + id)` is
  * not statically analysable and the files would not be bundled at all.
  */
-import type { SoundId } from './bank';
+import type { ClipId } from './bank';
 
 /** Asset module ids. A Metro asset `require` evaluates to a number. */
-export const AUDIO_SOURCES: Record<SoundId, number> = {
+export const AUDIO_SOURCES: Record<ClipId, number> = {
   initiation: require('../../../assets/audio/initiation.wav'),
   transition: require('../../../assets/audio/transition.wav'),
   manji: require('../../../assets/audio/manji.wav'),
@@ -31,6 +31,9 @@ export const AUDIO_SOURCES: Record<SoundId, number> = {
   spin: require('../../../assets/audio/spin.wav'),
   stop: require('../../../assets/audio/stop.wav'),
   grade: require('../../../assets/audio/grade.wav'),
+  'grade-low': require('../../../assets/audio/grade-low.wav'),
+  fault: require('../../../assets/audio/fault.wav'),
+  recovered: require('../../../assets/audio/recovered.wav'),
   'bed-low': require('../../../assets/audio/bed-low.wav'),
   'bed-high': require('../../../assets/audio/bed-high.wav'),
 };

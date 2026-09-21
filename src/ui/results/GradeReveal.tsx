@@ -14,7 +14,7 @@ import Animated, { cancelAnimation, Easing, Extrapolation, interpolate, runOnJS,
 import type { Grade } from '../../engine/types';
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies, gutter, space } from '../theme';
-import { feelCue } from '../audio';
+import { feelCue, gradeCueFor } from '../audio';
 import GradeBurstView from './skia/GradeBurstView';
 import { resultsLayout } from './layout';
 import { gradeWord } from './palette';
@@ -73,6 +73,12 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
   // effect runs: the impact is at sample 0 of the clip, so SLAM is the cue time. It is NOT tied to
   // reduce-motion — sound is information, and a driver who has asked for less movement has not
   // asked to be told less.
+  //
+  // WHICH cue is the letter's own business, and `gradeCueFor` is the only place that decides.
+  // The screen paints the letter with `gradeColors` — gold for S, ember for A, cyan for B, plain
+  // text for C, MUTED for D — and the bank holds two renders of the same 1.65 s figure so the ear
+  // can agree with it. A single gold fanfare with a Success notification under a grey "Rough" is
+  // the two channels telling the driver different things about the same run.
   const gradeCue = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gradeHeard = useRef(false);
   const hearGrade = () => {
@@ -80,7 +86,7 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
     gradeHeard.current = true;
     if (gradeCue.current) clearTimeout(gradeCue.current);
     gradeCue.current = null;
-    feelCue('grade');
+    feelCue(gradeCueFor(grade));
   };
 
   useEffect(() => {

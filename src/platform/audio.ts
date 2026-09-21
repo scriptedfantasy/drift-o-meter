@@ -34,18 +34,21 @@
  * so the whole session configuration is readable in one place.
  *
  * ── Latency ───────────────────────────────────────────────────────────────────────────────────
- * One `AudioPlayer` per clip, all created at screen mount: ".d.ts: The player will start loading
+ * One `AudioPlayer` per clip, all created ONCE for the life of the app (see `useDriftFeel.ts` —
+ * the port is a module singleton, not a per-screen object): ".d.ts: The player will start loading
  * the audio source immediately upon creation." `play()` is synchronous, so the cue path is one
  * property read and one call. Nothing is created, decoded or awaited in it. The rewind that a
- * finished AVPlayer needs is scheduled by a timer for `duration + 60 ms` after the play, which is
- * always earlier than the clip's own `minGapS` (the bank guarantees it, and `audio.test.ts`
- * asserts it), so no cue ever meets a player that still needs seeking.
+ * finished AVPlayer needs is scheduled by a timer for `duration + REWIND_MARGIN_S` after the
+ * play, which is always earlier than the clip's own `minGapS` — the bank guarantees it and
+ * `audio.test.ts` asserts it against `REWIND_MARGIN_S` itself rather than against a number
+ * retyped in the test, which is how the assertion came to sit 10 ms on the wrong side of it.
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
-import type { PreparedSoundPort, SoundPortSources } from './audioTypes';
+import { REWIND_MARGIN_S, type PreparedSoundPort, type SoundPortSources } from './audioTypes';
 
 export type { PreparedSoundPort, SoundPort, SoundPortSources, SoundPortState } from './audioTypes';
+export { MIN_GAP_SLACK_S, REWIND_MARGIN_S } from './audioTypes';
 
 /**
  * Configure the audio session. Safe to call more than once; it is idempotent and cheap.
@@ -60,9 +63,6 @@ export async function configureAudioSession(): Promise<void> {
     shouldRouteThroughEarpiece: false,
   });
 }
-
-/** Rewind margin after a clip's own length, so the timer never lands on a still-playing player. */
-const REWIND_MARGIN_S = 0.06;
 
 export async function createSoundPort(sources: SoundPortSources): Promise<PreparedSoundPort> {
   try {

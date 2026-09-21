@@ -26,11 +26,23 @@
  * is a mix rather than a design. The four tiers ARE the design — how much news the event carries,
  * exactly as `src/ui/callouts.ts` assigns colour by how much news the event carries:
  *
- *   A  −17.0 dBFS RMS   the run's biggest moments: banked, spin, the grade
- *   B  −20.5 dBFS RMS   the drift beats: the flick, the gold angle, the exit verdict, the loss
+ *   A  −17.0 dBFS RMS   what happens ONCE in a run, or not at all: the spin, the grade
+ *   B  −20.5 dBFS RMS   the drift beats: the flick, the gold angle, the exit verdict, the bank,
+ *                       the loss
  *   C  −24.0 dBFS RMS   accents: link, long, smooth, speed, the lap gate, the stop
- *   D  −27.5 dBFS RMS   the event that fires on EVERY drift: initiation
+ *   D  −27.5 dBFS RMS   the routine and the asides: the event that fires on EVERY drift
+ *                       (initiation) and the two that report on the instrument rather than the
+ *                       drive (fault, recovered)
  *   L  −26.0 dBFS RMS   the continuous bed layers, which are under everything by definition
+ *
+ * TIER A IS A BUDGET, not a compliment. It was measured as being spent wrongly: `banked` is
+ * tier A in name only if it fires 0.75–0.88 times per drift — measured through the real pipeline
+ * on harbour seeds 1/2/3, 7/6/7 banks over 8 drifts, one every 18.6–21.7 s — which makes the
+ * app's loudest sound the one a driver hears 35–40 times in a ten-lap session. `callouts.ts`
+ * states the rule ("an event that fires on every drift carries no news") and it applies to
+ * loudness exactly as it applies to colour, so BANKED is tier B with the other drift beats and
+ * tier A now holds only clips that fire once a run at most. `audio.test.ts` drives real runs and
+ * asserts it.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -47,6 +59,7 @@ import {
   dB,
   dcBlock,
   dcOf,
+  decodeWav,
   encodeWav,
   fadeIn,
   fadeOut,
@@ -310,12 +323,20 @@ const CLIPS = {
   },
 
   /**
-   * BANKED — the money. Tier A: a riser pulling up for 300 ms, a thunk landing on the beat, then
-   * a gold shimmer paying out. This is the loudest thing that happens during a run, and it
-   * should be: it is the only moment where points stop being at risk.
+   * BANKED — the money. A riser pulling up for 300 ms, a thunk landing on the beat, then a gold
+   * shimmer paying out.
+   *
+   * TIER B, NOT A, and the reason is a measurement rather than a taste. It was tier A — the
+   * loudest clip in the bank — until the real pipeline was asked how often it fires: harbour
+   * seeds 1/2/3 over two laps bank 7, 6 and 7 times across 8 drifts, 0.75–0.88 per drift, one
+   * every 18.6–21.7 s. That is the same cadence as INITIATION (0.75–1.00 per drift), which is
+   * the quietest clip in the bank BECAUSE of that cadence. An event on every drift carries no
+   * news, and a bank is a drift beat: it sits with the flick, the gold angle and the exit
+   * verdict. It is still the brightest, longest figure in tier B, so it still reads as the good
+   * news of the run — it just no longer shouts 35–40 times a session.
    */
   banked: {
-    tier: 'A',
+    tier: 'B',
     durS: 0.9,
     render() {
       const out = buffer(0.9);
@@ -430,6 +451,91 @@ const CLIPS = {
   },
 
   /**
+   * GRADE LOW — the same reveal, in the dark. C and D only.
+   *
+   * `src/ui/theme.ts` paints the letter gold for S, ember for A, cyan for B, text for C and
+   * MUTED for D, and the results screen draws it in that colour. A single gold fanfare under
+   * all five is the one place the feel layer walked away from the discipline in
+   * `src/ui/callouts.ts` that the rest of it is built on: on a D the screen said grey and
+   * "Rough" while the ear said gold. So below the B threshold the reveal is a SECOND RENDER of
+   * the same figure rather than a different sound — same impact, same sub drop, same shockwave,
+   * same chord bloom, so the moment still lands — with the gold taken out of it: no bell, no
+   * 1568 Hz shimmer, the shockwave swept from 3.4 kHz instead of 7, the chord closed an octave
+   * lower and its major octave replaced by a minor third. It is not a sadder sound, it is an
+   * unlit one.
+   */
+  'grade-low': {
+    tier: 'A',
+    durS: 1.65,
+    render() {
+      const out = buffer(1.65);
+      const inn = secondsToSamples(0.18);
+      mix(out, apply(biquad(noise(inn, 2020), 'lp', 1900, 0.8), ad(inn, 0.001, 0.05, 1.4)), 0.9, 0);
+      const dn = secondsToSamples(0.5);
+      mix(out, apply(sine(dn, ramp(dn, 140, 36, 2.0)), ad(dn, 0.001, 0.16, 1.1)), 1.0, 0);
+      const sn = secondsToSamples(0.5);
+      mix(out, apply(biquad(noise(sn, 2121), 'bp', ramp(sn, 3400, 150, 2.2), ramp(sn, 1.2, 4)), ad(sn, 0.004, 0.16)), 0.65, 0.02);
+      const chn = secondsToSamples(1.3);
+      const chord = add(saw(chn, 98), saw(chn, 98.4), apply(saw(chn, 116.54), 0.7), apply(saw(chn, 146.83), 0.6));
+      mix(out, apply(biquad(chord, 'lp', ramp3(chn, 400, 1500, 700, 0.25, 0.7), 2.0), ad(chn, 0.06, 0.42)), 0.6, 0.1);
+      return room(out, 0.26);
+    },
+  },
+
+  /**
+   * FAULT — the engine has stopped believing the reading, and the feel layer is about to go
+   * quiet for a reason.
+   *
+   * Measured: a hand-held recording (harbour seed 1, 2 laps, looseness 1, GPS dropouts) offers
+   * the mixer 56 cues and plays NONE of them, with no haptic either, while the detector is still
+   * firing 44 entry edges. Silence is the correct answer to every one of those cues and the
+   * wrong answer to the driver, whose eyes are on the road. So one sound reports the CAUSE.
+   *
+   * It has to be unmistakably not a drift beat: two dull pitched pulses falling a whole tone,
+   * through a band of noise that CLOSES — the exact opposite gesture to BANKED's riser — with
+   * nothing metallic and nothing bright. Tier D, because it is an aside about the instrument,
+   * not news about the driving, and because a fault that shouted would be worse than the silence
+   * it replaces. RED, the colour the drive display's own integrity banner wears for a severe
+   * fault.
+   */
+  fault: {
+    tier: 'D',
+    durS: 0.44,
+    render() {
+      const out = buffer(0.44);
+      const pn = secondsToSamples(0.15);
+      const pulse = (f) => apply(biquad(add(saw(pn, f), saw(pn, f * 0.996)), 'lp', 780, 1.1), ad(pn, 0.01, 0.042, 1.2));
+      mix(out, pulse(220), 0.95, 0);
+      mix(out, pulse(174.61), 0.95, 0.165);
+      const nn = secondsToSamples(0.36);
+      mix(out, apply(biquad(noise(nn, 3131), 'bp', ramp(nn, 900, 230, 0.8), 1.5), ad(nn, 0.03, 0.11)), 0.28, 0.01);
+      return biquad(room(out, 0.1), 'lp', 1900, 0.7);
+    },
+  },
+
+  /**
+   * RECOVERED — its inverse, and the only reason FAULT is allowed to be a latch rather than a
+   * nag. The same two pulses the other way up, a whole tone RISING, with the band opening
+   * instead of closing. Same tier, same family, same restraint: it says "you can trust what you
+   * hear again" and then gets out of the way. GREEN, which in `callouts.ts` is the colour of
+   * something being right.
+   */
+  recovered: {
+    tier: 'D',
+    durS: 0.44,
+    render() {
+      const out = buffer(0.44);
+      const pn = secondsToSamples(0.15);
+      const pulse = (f) => apply(biquad(add(saw(pn, f), saw(pn, f * 0.996)), 'lp', 900, 1.1), ad(pn, 0.01, 0.042, 1.2));
+      mix(out, pulse(174.61), 0.95, 0);
+      mix(out, pulse(220), 0.95, 0.165);
+      const nn = secondsToSamples(0.36);
+      mix(out, apply(biquad(noise(nn, 3232), 'bp', ramp(nn, 260, 1000, 1.2), 1.5), ad(nn, 0.06, 0.12)), 0.26, 0.01);
+      return biquad(room(out, 0.12), 'lp', 2400, 0.7);
+    },
+  },
+
+  /**
    * BED LOW — the continuous layer at small angles: a dark tyre scrub with a rumble under it.
    * Every modulation period divides the loop length exactly, and the last 120 ms cross-fades into
    * the head, so the loop has no seam to hear. This is the layer you hear at 10 degrees.
@@ -517,10 +623,55 @@ function seamless(buf, loopS, fadeS = 0.12) {
   return out;
 }
 
+/**
+ * Flatten a LOOP's short-term level, so the loop stops announcing itself.
+ *
+ * MEASURED: `bed-low` ran a 5.6 dB arch over its 1.6 s cycle (100 ms circular RMS: −29.2 dB at
+ * 1.34 s up to −23.6 dB at 0.39 s) and `bed-high` a 2.6 dB one with a 1.64 dB head-to-tail step.
+ * The SEAM was already clean — head and tail matched to 0.19 dB — so this was never a cross-fade
+ * problem; it was the loop's own content. Below about 15° of slip the cross-fade is almost
+ * entirely the dark layer (at 12°, low:high ≈ 20:1), so a driver holding a modest slide heard a
+ * 5 dB swell at 0.625 Hz, over and over. That is the classic loop tell: the thing nobody notices
+ * on lap one and nobody can un-notice on lap ten.
+ *
+ * The correction is a circular gain curve: the moving RMS over `windowS`, computed AROUND the
+ * loop rather than along the buffer, divided into the loop's own mean, then smoothed over the
+ * same window so it takes out the arch and leaves the grain. Because both passes are circular
+ * the curve is continuous across the wrap, which is what keeps the seam the cross-fade produced.
+ * Applied BEFORE `levelTo`, so the tier gain is the last word on loudness.
+ */
+function flattenLoopRms(buf, windowS = 0.1) {
+  const n = buf.length;
+  const w = Math.min(n, Math.max(2, Math.round(windowS * SAMPLE_RATE)));
+  const half = Math.floor(w / 2);
+  /** Circular moving mean of `src` over `w` samples, centred. */
+  const circularMean = (src) => {
+    // Three copies so a centred window can never run off either end, and one prefix sum over it.
+    const pre = new Float64Array(3 * n + 1);
+    for (let j = 0; j < 3 * n; j++) pre[j + 1] = pre[j] + src[j % n];
+    const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = n + i - half;
+      out[i] = (pre[a + w] - pre[a]) / w;
+    }
+    return out;
+  };
+  const sq = new Float64Array(n);
+  for (let i = 0; i < n; i++) sq[i] = buf[i] * buf[i];
+  const meanSq = rmsOf(buf) ** 2;
+  const local = circularMean(sq);
+  const raw = new Float64Array(n);
+  for (let i = 0; i < n; i++) raw[i] = Math.sqrt(meanSq / Math.max(1e-12, local[i]));
+  const gain = circularMean(raw);
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) out[i] = buf[i] * gain[i];
+  return out;
+}
+
 function renderOne(id, def) {
   let buf = def.render();
   buf = dcBlock(buf);
-  if (def.loop) buf = seamless(buf, def.durS);
+  if (def.loop) buf = flattenLoopRms(seamless(buf, def.durS));
   else {
     buf = fadeIn(buf, 0.0015);
     buf = fadeOut(buf, 0.012);
@@ -568,18 +719,27 @@ function main() {
     const file = path.join(outDir, `${id}.wav`);
     writeFileSync(file, wav);
     totalBytes += wav.length;
+    // MEASURE THE FILE, NOT THE BUFFER. `waveforms.ts` is read by the app and by the `/sound`
+    // lab as a description of what ships, and what ships is 16-bit dithered PCM — not the
+    // float buffer above it. Measuring `buf` put this file and `tools/audio/analyse.mjs` (which
+    // reads the committed WAVs) 7 % apart on the spectral centroid of the quietest clip
+    // (initiation 844 vs 903 Hz), because broadband TPDF dither is a bigger share of a
+    // −27.9 dBFS clip than of a −17 dBFS one. Same `centroid()`, different signal. Decoding the
+    // bytes back makes the two agree by construction rather than by luck, and it is the same
+    // decoder `analyse.mjs` and the app's asset pipeline see.
+    const shipped = decodeWav(wav).samples;
     rows.push({
       id,
       tier: def.tier,
       loop: !!def.loop,
-      durationS: Math.round((buf.length / SAMPLE_RATE) * 1000) / 1000,
+      durationS: Math.round((shipped.length / SAMPLE_RATE) * 1000) / 1000,
       bytes: wav.length,
-      activeS: Math.round(activeDuration(buf) * 1000) / 1000,
-      peakDb: Math.round(dB(peakOf(buf)) * 10) / 10,
-      rmsDb: Math.round(dB(rmsOf(buf)) * 10) / 10,
-      dc: Math.round(dcOf(buf) * 1e6) / 1e6,
-      centroidHz: Math.round(centroid(buf)),
-      peaks: peaks(buf, 96),
+      activeS: Math.round(activeDuration(shipped) * 1000) / 1000,
+      peakDb: Math.round(dB(peakOf(shipped)) * 10) / 10,
+      rmsDb: Math.round(dB(rmsOf(shipped)) * 10) / 10,
+      dc: Math.round(dcOf(shipped) * 1e6) / 1e6,
+      centroidHz: Math.round(centroid(shipped)),
+      peaks: peaks(shipped, 96),
     });
   }
 

@@ -11,7 +11,20 @@
  * every drift carries no news". That is why INITIATION is painted muted there, and it is why
  * INITIATION here is the quietest clip in the bank (tier D, −27.9 dBFS RMS), has the lowest
  * priority, is the first voice to be stolen, and is suppressed outright whenever the same frame
- * carries a flick or a link. Measured over a real 130 s harbour run it fires on 8 of 8 drifts.
+ * carries a flick or a link.
+ *
+ * It applies to LOUDNESS as much as to colour, and for two rounds it was applied to one event
+ * and broken on another. Measured through the real pipeline (`npx tsx tools/audio/coverage.ts`),
+ * harbour seeds 1/2/3 over two laps: BANKED fired 7, 6 and 7 times across 8 drifts — 0.75 to
+ * 0.88 per drift, one every 18.6–21.7 s — while INITIATION fired 0.75 to 1.00 per drift. The
+ * same cadence. One of them was tier A, the loudest clip in the bank, and the other tier D
+ * because of that cadence. BANKED is now tier B with the rest of the drift beats, and tier A
+ * holds only what happens once in a run or not at all: SPIN and the GRADE reveal.
+ *
+ * INITIATION, precisely. It rides the PHASE EDGE, not the callout, and harbour seed 1 over two
+ * laps has 14 of those: 8 drifts plus 6 re-entries after a flick. Seven are played, six are
+ * swallowed by the flick rule and one loses its family to LINK. "8 of 8 drifts" was the old
+ * wording and it was measuring the wrong thing.
  *
  * ── What is deliberately SILENT ───────────────────────────────────────────────────────────────
  * Two callout kinds map to no clip at all, because a second sound for the same instant is not
@@ -27,17 +40,39 @@
  *                 the edge and the callout is silent. MANJI, which fires on the same frame as
  *                 the callout, is the badge landing and keeps its own sound.
  *
+ * ── What is deliberately FELT and never heard ─────────────────────────────────────────────────
+ * One row — EXIT EDGE — has no file at all. docs/DESIGN.md § Motion language gives the exit a
+ * "haptic light" and no sound of its own: the bed's 240 ms release IS the sound of the car
+ * straightening. But the haptic was missing, and with it the only beat a driver gets at the end
+ * of a slide without looking. Measured over 18 runs on both tracks, 102 slides really ended and
+ * the exit family spoke for 5 of 14 of them on harbour seed 1 and 0 of 6 on touge seed 7,
+ * because the only exit-family row was bound to the `perfect-exit` callout, which the scorer
+ * withholds on most slides. So the edge gets a beat of its own, felt and silent.
+ *
+ * IT WAITS `EXIT_SETTLE_S`, and that is a measurement too. The phase edge fires on the dip in
+ * the middle of a flick as well as at the end of a slide: across those 18 runs, 95 of 197 exit
+ * edges were followed by a re-entry inside a second, 82 of them inside 150 ms. A beat on each
+ * would turn a manji into a stutter of light-medium-light-medium. Holding the beat for 200 ms
+ * and cancelling it if the car goes again drops 84 of those 95 and keeps all 102 real endings —
+ * and the 11 that survive are slides that really did straighten before going again, which is
+ * worth a beat. The detector's own verdict is no help here: `completed` arrives 0.99–1.01 s
+ * after the edge, far too late to be the feeling of a landing.
+ *
  * ── Levels ────────────────────────────────────────────────────────────────────────────────────
  * Clips are rendered to an RMS tier, not peak-normalised — see `tools/audio/render.mjs`. The
- * ladder runs −27.9 dBFS (initiation) to −17.1 dBFS (banked, grade), 10.8 dB across four tiers,
- * with clips inside a tier matched to better than 0.5 dB. So this module applies NO runtime gain
- * to one-shots: the mix is in the files, where it can be measured.
+ * ladder runs −27.9 dBFS (initiation) to −17.1 dBFS (grade), 10.8 dB across four tiers, with
+ * clips inside a tier matched to 0.55 dB or better (tier B is the widest: manji −21.04 to
+ * exit/cleanlap −20.49). So this module applies NO runtime gain to one-shots: the mix is in the
+ * files, where it can be measured.
  */
 import type { StyleCalloutKind } from '../../engine/types';
 import type { EventTone } from '../callouts';
 import { CLIP_MEASUREMENTS } from './waveforms';
 
-/** Every clip in `assets/audio/`. */
+/**
+ * Every cue the bank can fire. All but one name a clip in `assets/audio/`; `exit-edge` is felt
+ * and never heard — see "What is deliberately FELT" above.
+ */
 export type SoundId =
   | 'initiation'
   | 'transition'
@@ -46,6 +81,7 @@ export type SoundId =
   | 'long'
   | 'smooth'
   | 'exit'
+  | 'exit-edge'
   | 'speed'
   | 'link'
   | 'lap'
@@ -53,14 +89,27 @@ export type SoundId =
   | 'banked'
   | 'lost'
   | 'spin'
+  | 'fault'
+  | 'recovered'
   | 'stop'
   | 'grade'
+  | 'grade-low'
   | 'bed-low'
   | 'bed-high';
 
+/** The ids that name a file, which is every id but the one that is only felt. */
+export type ClipId = Exclude<SoundId, 'exit-edge'>;
+
 /** The two continuous layers. They are cross-faded by |β| and never take a one-shot voice. */
-export const BED_LOW: SoundId = 'bed-low';
-export const BED_HIGH: SoundId = 'bed-high';
+export const BED_LOW: ClipId = 'bed-low';
+export const BED_HIGH: ClipId = 'bed-high';
+
+/**
+ * How long the exit beat waits on the phase edge before it is felt, and the window in which a
+ * re-entry cancels it. 200 ms: see the header — it drops 84 of the 95 measured flick dips and
+ * keeps every one of the 102 measured slide endings.
+ */
+export const EXIT_SETTLE_S = 0.2;
 
 /**
  * The haptic vocabulary, named for what it means rather than for the platform enum, so the pure
@@ -73,12 +122,12 @@ export type HapticShape = 'light' | 'medium' | 'heavy' | 'soft' | 'rigid' | 'suc
  * A cue family. At most ONE cue per family survives a single frame — the highest priority one —
  * because the events inside a family are the same moment described twice.
  */
-export type CueFamily = 'entry' | 'flick' | 'angle' | 'accent' | 'exit' | 'chain' | 'lap' | 'lapverdict' | 'run';
+export type CueFamily = 'entry' | 'flick' | 'angle' | 'accent' | 'exit' | 'chain' | 'lap' | 'lapverdict' | 'fault' | 'run';
 
 export interface SoundSpec {
   id: SoundId;
-  /** File under `assets/audio/`. */
-  file: string;
+  /** File under `assets/audio/`, or `null` for a cue that is only ever felt. */
+  file: string | null;
   /** What the driver is being told, in the HUD's own words where there is one. */
   label: string;
   /** Which event in the stream fires it. Shown in the `/sound` lab. */
@@ -91,13 +140,20 @@ export interface SoundSpec {
   /**
    * Minimum wall seconds between two plays of this clip.
    *
-   * Never below the clip's own length plus a margin, and `audio.test.ts` asserts it. That is not
-   * a taste decision: it is what lets the native port keep ONE `AudioPlayer` per clip. A finished
-   * AVPlayer has to be seeked back to 0 before it will play again, and doing that in the cue path
-   * would put an un-awaited promise between the event and the sound. With this invariant the
-   * rewind is a timer scheduled for `duration + 60 ms` after each play, which always lands before
-   * the next possible retrigger — so a cue never meets a player that still needs seeking, and
-   * a clip can never talk over itself.
+   * Never below the clip's own length plus the port's rewind margin plus slack, and
+   * `audio.test.ts` asserts it against `REWIND_MARGIN_S` itself. That is not a taste decision: it
+   * is what lets the native port keep ONE `AudioPlayer` per clip. A finished AVPlayer has to be
+   * seeked back to 0 before it will play again, and doing that in the cue path would put an
+   * un-awaited promise between the event and the sound. With this invariant the rewind is a timer
+   * scheduled for `duration + REWIND_MARGIN_S` after each play, which always lands before the next
+   * possible retrigger — so a cue never meets a player that still needs seeking, and a clip can
+   * never talk over itself.
+   *
+   * THE TEST USED TO ASSERT THE WRONG NUMBER. It required `durationS + 0.05`, which is 10 ms
+   * BEFORE the rewind timer fires, so it would have passed a bank entry that breaks the port's
+   * own guarantee — and the tightest row, `transition`, left 20 ms between an issued async
+   * `seekTo(0)` and the next possible `play()`. Every row now clears `durationS +
+   * REWIND_MARGIN_S + MIN_GAP_SLACK_S`, and the numbers below were widened to do it.
    */
   minGapS: number;
   /**
@@ -121,10 +177,12 @@ export interface SoundSpec {
  * sounding keeps the floor, so the ladder only has to answer "if these two land together, which
  * one does the driver need?":
  *
- *   100 grade      the results screen, alone on stage
+ *   100 grade/grade-low  the results screen, alone on stage
  *    98 stop       the driver's own action ending the run
  *    95 spin       it fires on the same frame as CHAIN LOST; the spin is the cause and the lost
  *                  chain only its consequence, so the cause wins
+ *    90 fault/recovered  the instrument, not the drive: the one thing the driver cannot work out
+ *                  from the silence itself is WHY it is silent
  *    88 lost       the chain is gone: money, and bad news
  *    85 banked     money, and good news
  *    75 manji      the milestone the design names
@@ -132,6 +190,7 @@ export interface SoundSpec {
  *    70 transition the move with its own flash, shake and haptic
  *    68 cleanlap   a lap driven without a spin
  *    65 exit       the verdict on how the slide ended
+ *    64 exit-edge  the landing itself, 600 ms earlier and felt rather than heard
  *    60 link       a chain is building — and it beats INITIATION on the frame they share
  *    45 long/smooth/speed   accents: they colour the run, they do not change it
  *    40 lap        the gate, which fires every lap
@@ -159,7 +218,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'magenta',
     priority: 70,
     family: 'flick',
-    minGapS: 0.42,
+    minGapS: 0.46,
     gated: true,
     haptic: 'medium',
     why: 'The flick: a whip, a crack and a magenta stab. It rides the phase edge, with the 120 ms flash, the 2 px shake and the medium haptic — the callout that names it arrives 410 ms later and is deliberately silent.',
@@ -172,7 +231,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'magenta',
     priority: 75,
     family: 'flick',
-    minGapS: 0.6,
+    minGapS: 0.62,
     gated: true,
     haptic: 'rigid',
     why: 'Three whips in a triplet — the same magenta timbre as TRANSITION so the family is obvious. Rigid rather than Medium: a tight, crisp tick on top of the flick that is already being felt, not a second thump.',
@@ -185,7 +244,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'gold',
     priority: 72,
     family: 'angle',
-    minGapS: 0.75,
+    minGapS: 0.76,
     gated: true,
     haptic: 'rigid',
     why: 'Gold. A resonant sweep climbing with a detuned fifth under it and one metallic glint — hot rather than congratulatory, because the driver is at 48 degrees and busy. Rigid haptic: a hard edge, the feeling of a limit.',
@@ -198,7 +257,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'ember',
     priority: 45,
     family: 'accent',
-    minGapS: 0.55,
+    minGapS: 0.58,
     gated: true,
     haptic: null,
     why: 'A warm ember swell with a 45 ms attack and no transient at all, so it reads as held rather than happened. No haptic: an accent that buzzed the phone would make the three accents into a stutter.',
@@ -211,7 +270,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'green',
     priority: 45,
     family: 'accent',
-    minGapS: 0.5,
+    minGapS: 0.54,
     gated: true,
     haptic: null,
     why: 'Green is cleanliness, and cleanliness is the absence of drama: breath and two quiet notes a fifth apart, no attack worth the name. No haptic, for the same reason as LONG DRIFT.',
@@ -224,7 +283,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'cyan',
     priority: 45,
     family: 'accent',
-    minGapS: 0.5,
+    minGapS: 0.54,
     gated: true,
     haptic: null,
     why: 'Cyan, matching the telemetry it is read beside: cold air climbing, one thin sine on top, the brightest clip in the bank at 5.2 kHz. Nothing warm, nothing low, no haptic.',
@@ -237,7 +296,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'ember',
     priority: 60,
     family: 'entry',
-    minGapS: 0.55,
+    minGapS: 0.56,
     gated: true,
     haptic: 'heavy',
     why: 'Two ember stabs a fourth apart — the only rising two-note figure in the bank, because a chain building is the one thing in a run that promises more. It shares the `entry` family with INITIATION and outranks it, so on the frame they both fire the driver hears the news and not the routine.',
@@ -250,10 +309,23 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'green',
     priority: 65,
     family: 'exit',
-    minGapS: 0.65,
+    minGapS: 0.68,
     gated: true,
     haptic: 'soft',
     why: 'The only figure in the bank that resolves downward: tyres hooking up, then a two-note settle. It is the scorer\'s verdict, not the moment the car straightened — the bed\'s own 240 ms release covers that. Soft haptic: a cushioned landing, the physical opposite of SPIN.',
+  },
+  {
+    id: 'exit-edge',
+    file: null,
+    label: 'EXIT',
+    trigger: 'phase edge active → idle, held 0.20 s in case the car goes again',
+    tone: 'green',
+    priority: 64,
+    family: 'exit',
+    minGapS: 0.45,
+    gated: true,
+    haptic: 'light',
+    why: 'The landing, felt. docs/DESIGN.md gives the exit a light haptic and no sound of its own — the bed\'s 240 ms release is the sound — and this is the row that finally delivers it. It has no clip on purpose: a driver with the phone on silent, or with sound off, still gets a beat at the end of every slide, which is the one moment of a drift that has no visual event either. It waits 200 ms so the dip in the middle of a flick cannot turn a manji into a stutter.',
   },
   {
     id: 'lap',
@@ -289,7 +361,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'ember',
     priority: 85,
     family: 'chain',
-    minGapS: 1.0,
+    minGapS: 1.02,
     gated: true,
     haptic: 'success',
     why: 'A riser pulling up for 300 ms, a thunk on the beat, a gold shimmer paying out. Tier A and the loudest thing in a run, because it is the only moment where points stop being at risk.',
@@ -302,7 +374,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'red',
     priority: 88,
     family: 'chain',
-    minGapS: 0.85,
+    minGapS: 0.86,
     gated: true,
     haptic: 'warning',
     why: 'Two saws detuned enough to beat against each other, sliding down a minor third into a closing filter, and never resolving. Nothing metallic, nothing bright: a loss should not sparkle. Warning rather than Error — the chain is gone, the run is not.',
@@ -315,10 +387,36 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     tone: 'red',
     priority: 95,
     family: 'chain',
-    minGapS: 1.05,
+    minGapS: 1.06,
     gated: true,
     haptic: 'error',
     why: 'The only genuinely unpleasant sound in the bank: a long scrub with the wheel juddering through it at 23 Hz, a squeal falling away, a crunch. It outranks CHAIN LOST on the frame they share because the spin is the cause and the lost chain only its consequence. Error notification, the strongest negative the API has.',
+  },
+  {
+    id: 'fault',
+    file: 'fault.wav',
+    label: 'NOT BELIEVED',
+    trigger: 'the belief gate drops a cue for the first time',
+    tone: 'red',
+    priority: 90,
+    family: 'fault',
+    minGapS: 0.56,
+    gated: false,
+    haptic: 'warning',
+    why: 'The one thing a driver cannot work out from silence is why it is silent. Measured on a hand-held recording (harbour seed 1, 2 laps, looseness 1, dropouts): 56 cues offered, 0 played, 0 haptics, while the detector fired 44 entry edges — the feel layer said nothing for two laps to a driver whose eyes are on the road. It fires when the gate actually COSTS something, not on the belief flag itself: a clean run is unbelievable for its first 5.3 s while the calibrator finds forward, offers no cues in that time, and so is never told off for it. Ungated by definition, and latched — once per fault, never a nag.',
+  },
+  {
+    id: 'recovered',
+    file: 'recovered.wav',
+    label: 'BELIEVED AGAIN',
+    trigger: 'the engine believes the reading again, after a FAULT',
+    tone: 'green',
+    priority: 90,
+    family: 'fault',
+    minGapS: 0.56,
+    gated: false,
+    haptic: 'success',
+    why: 'FAULT\'s inverse, and the reason FAULT is allowed to be a latch: the same two pulses rising instead of falling, so the driver knows the channel is back without having to test it. It can only fire after a FAULT, so a run that was believed all along never hears it.',
   },
   {
     id: 'stop',
@@ -345,7 +443,20 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     gated: false,
     haptic: 'heavy',
     hapticThen: { shape: 'success', delayS: 0.14 },
-    why: 'The most cinematic 1.6 s in the app: an impact, a shockwave sweeping 7 kHz down to the floor, an ember chord blooming behind it with one gold bell — the letterbox slam, the shockwave ring and the ember particles, in sound. Two haptics 140 ms apart because the API has no "boom": Heavy is the letter landing, Success is the ring going out.',
+    why: 'The most cinematic 1.6 s in the app: an impact, a shockwave sweeping 7 kHz down to the floor, an ember chord blooming behind it with one gold bell — the letterbox slam, the shockwave ring and the ember particles, in sound. Two haptics 140 ms apart because the API has no "boom": Heavy is the letter landing, Success is the ring going out. S, A and B only — see `gradeCueFor`.',
+  },
+  {
+    id: 'grade-low',
+    file: 'grade-low.wav',
+    label: 'GRADE (C/D)',
+    trigger: 'the grade reveal on /results, below the B threshold',
+    tone: 'muted',
+    priority: 100,
+    family: 'run',
+    minGapS: 2,
+    gated: false,
+    haptic: 'heavy',
+    why: 'The same 1.65 s figure with the gold taken out of it: same impact, same sub drop, same shockwave (swept from 3.4 kHz instead of 7), same chord bloom an octave lower with a minor third where the octave was — and no bell, no shimmer, no Success notification. `src/ui/theme.ts` paints a D muted and a C plain text, and the results screen draws the letter in that colour; a gold fanfare and a Success buzz under the word "Rough" is the screen and the feel layer telling the driver two different things. Heavy alone: the letter still lands.',
   },
 ];
 
@@ -355,17 +466,38 @@ export function specFor(id: SoundId): SoundSpec | undefined {
   return BY_ID.get(id);
 }
 
-/** Every file the bank needs, one-shots and beds. */
-export const AUDIO_FILES: readonly string[] = [...SOUND_BANK.map((s) => s.file), 'bed-low.wav', 'bed-high.wav'];
+/** Every file the bank needs, one-shots and beds. `exit-edge` has none: it is only felt. */
+export const AUDIO_FILES: readonly string[] = [
+  ...SOUND_BANK.map((s) => s.file).filter((f): f is string => f !== null),
+  'bed-low.wav',
+  'bed-high.wav',
+];
 
 /**
  * How long a clip holds its voice, in seconds — the last instant it is above −40 dB relative to
  * its own peak, measured off the rendered WAV. Not the file length: an exponential tail means
  * `extreme` is a 0.640 s file whose last 0.124 s is inaudible, and holding a voice for silence
  * drops cues that should have played.
+ *
+ * A cue with no file takes no voice at all, so its lifetime is zero.
  */
 export function voiceLifetimeS(id: SoundId): number {
+  if (specFor(id)?.file === null) return 0;
   return CLIP_MEASUREMENTS[id]?.activeS ?? 0.5;
+}
+
+/**
+ * Which reveal a grade gets, and the one place the feel layer is allowed to know about letters.
+ *
+ * `src/ui/theme.ts` paints S gold, A ember, B cyan, C plain text and D muted, and the results
+ * screen draws the letter in that colour. The bank has two renders of the same 1.65 s figure so
+ * the ear can agree with it: the gold one above the B threshold, the unlit one below. This is a
+ * mapping, not a threshold copied from somewhere else — the letters are the engine's own
+ * (`Grade` in `src/engine/types.ts`) and the split is the same one `gradeColors` makes when it
+ * stops using an accent colour.
+ */
+export function gradeCueFor(grade: 'S' | 'A' | 'B' | 'C' | 'D'): SoundId {
+  return grade === 'C' || grade === 'D' ? 'grade-low' : 'grade';
 }
 
 /**

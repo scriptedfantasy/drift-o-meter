@@ -44,12 +44,26 @@
  *      sample" — and is false at every red light and between every pair of slides. A BANKED
  *      lands about two seconds after a drift ends, so gating it on `counting` would swallow the
  *      loudest moment in the run.
+ *   6. THE FAULT REPORT.  Rule 5's silence is correct and, on its own, indistinguishable from a
+ *      broken app. Measured: a hand-held recording offers 56 cues and plays none of them for two
+ *      whole laps. So the FIRST time the gate actually drops a cue, one quiet clip and a warning
+ *      haptic say why — once, latched, never repeated — and RECOVERED says when it is over.
+ *
+ *      It hangs off the DROPPED CUE, not off the belief flag, and that is a measurement rather
+ *      than a preference: every clean run is unbelievable for its first 5.0–5.5 s while the
+ *      calibrator finds forward (harbour s1 5.3 s, s2 5.0 s, touge s1 5.3 s), so a report on the
+ *      flag alone would fire at the start of every single drive. In those seconds the car is
+ *      standing still and the gate drops nothing at all — measured zero gated cues on every
+ *      believable run tried — so hanging it off the drop makes it fire exactly when the silence
+ *      costs the driver something.
+ *   7. THE LANDING.  The exit phase edge gets a light haptic and no clip (see `bank.ts`), held
+ *      `EXIT_SETTLE_S` and cancelled if the car goes again, so a flick does not stutter.
  */
 import type { LiveFrame } from '../../engine/pipeline';
 import { radToDeg, type DriftPhase } from '../../engine/types';
 import type { HapticPort, SoundPort } from '../../platform/audioTypes';
 import { now as monotonicNow } from '../../platform/clock';
-import { BED_HIGH, BED_LOW, CALLOUT_SOUND, specFor, voiceLifetimeS, type CueFamily, type HapticShape, type SoundId, type SoundSpec } from './bank';
+import { BED_HIGH, BED_LOW, CALLOUT_SOUND, EXIT_SETTLE_S, specFor, voiceLifetimeS, type CueFamily, type HapticShape, type SoundId, type SoundSpec } from './bank';
 
 /**
  * What the mixer needs from a platform to make a noise. Both ports may be absent — with neither
@@ -59,7 +73,7 @@ import { BED_HIGH, BED_LOW, CALLOUT_SOUND, specFor, voiceLifetimeS, type CueFami
 export type { HapticPort, SoundPort } from '../../platform/audioTypes';
 
 /** Why a cue did or did not reach the speaker. The `/sound` lab shows the last 24 of these. */
-export type CueOutcome = 'played' | 'stole' | 'busy' | 'family' | 'flick' | 'debounce' | 'gated' | 'muted' | 'silent' | 'unknown';
+export type CueOutcome = 'played' | 'stole' | 'felt' | 'busy' | 'family' | 'flick' | 'debounce' | 'gated' | 'muted' | 'silent' | 'unknown';
 
 export interface CueDecision {
   id: SoundId;
@@ -91,9 +105,37 @@ export interface FeelOptions {
   maxVoices?: number;
   /** Keep a decision log for the lab. */
   log?: boolean;
+  /**
+   * How many decisions the log keeps. 64 is what the `/sound` lab needs and all a phone should
+   * ever hold; `tools/audio/bench.ts` raises it so it can print a whole run instead of printing
+   * "the first 60" of a window that had already rotated past them.
+   */
+  logLimit?: number;
 }
 
 const ACTIVE_PHASES: ReadonlySet<DriftPhase> = new Set<DriftPhase>(['entry', 'drifting', 'transition']);
+
+/**
+ * How much of the reading the engine stands behind, 0..1 — and the ONE implementation of it.
+ *
+ * The drive display's ember glow and this module's continuous bed are two answers to a single
+ * question, "how much does the engine trust this reading", and they used to give different ones:
+ * the glow multiplied its target by this degree while the bed was a plain open/closed, so through
+ * a GPS dropout or on a suspect mount the screen dimmed to 65 % and the bed played at 100 %. A
+ * threshold copied into a second file is the defect class this project has been burned by more
+ * than once, so there is no second copy — `useDriveRun.ts` imports this.
+ *
+ * It lives here because this module is the pure one: no React, no React Native, no Expo, so a
+ * hook can import it and a test can call it.
+ *
+ * 0.65 is not a second opinion, it is a DEGREE: the engine believes the reading and says the
+ * input is degraded — a shaking mount, a weak fix, or β dead-reckoned through a dropout.
+ */
+export function trustIn(integrity: LiveFrame['integrity']): number {
+  if (!integrity.believable) return 0;
+  const degraded = integrity.mount === 'suspect' || integrity.gps === 'poor' || integrity.gps === 'none';
+  return degraded ? 0.65 : 1;
+}
 
 /** Bed envelope, deliberately the same two constants the drive display uses for the ember glow. */
 const BED_ATTACK_TAU = 0.09;
@@ -148,13 +190,13 @@ interface Slot {
   priority: number;
 }
 
-const FAMILIES: readonly CueFamily[] = ['entry', 'flick', 'angle', 'accent', 'exit', 'chain', 'lap', 'lapverdict', 'run'];
+const FAMILIES: readonly CueFamily[] = ['entry', 'flick', 'angle', 'accent', 'exit', 'chain', 'lap', 'lapverdict', 'fault', 'run'];
 
 /**
  * Family → index into the preallocated slot array. A `Map` would be tidier, but iterating one
  * allocates an iterator object, and this is walked twice per frame at 100 Hz.
  */
-const FAMILY_INDEX: Record<CueFamily, number> = { entry: 0, flick: 1, angle: 2, accent: 3, exit: 4, chain: 5, lap: 6, lapverdict: 7, run: 8 };
+const FAMILY_INDEX: Record<CueFamily, number> = { entry: 0, flick: 1, angle: 2, accent: 3, exit: 4, chain: 5, lap: 6, lapverdict: 7, fault: 8, run: 9 };
 
 export class DriftFeel {
   private sound: SoundPort | null = null;
@@ -162,6 +204,7 @@ export class DriftFeel {
   private readonly now: () => number;
   private readonly maxVoices: number;
   private readonly keepLog: boolean;
+  private readonly logLimit: number;
 
   /** Both settings, read at the moment of play. Never read from storage in the hot path. */
   private soundOn = true;
@@ -174,6 +217,13 @@ export class DriftFeel {
   /** Frame-to-frame scratch. Never reallocated. */
   private prevPhase: DriftPhase = 'idle';
   private believable = false;
+  /**
+   * Recording seconds at which a pending exit beat is due, or NaN. See `EXIT_SETTLE_S`: the beat
+   * is armed on the exit phase edge and disarmed if the car goes active again before it lands.
+   */
+  private exitDueAt = NaN;
+  /** True once FAULT has been reported for the current stretch of disbelief. Cleared by RECOVERED. */
+  private faulted = false;
   private bedGain = 0;
   private bedMix = 0;
   private bedPushedLow = -1;
@@ -194,6 +244,7 @@ export class DriftFeel {
     this.now = opts.now ?? monotonicNow;
     this.maxVoices = opts.maxVoices ?? 2;
     this.keepLog = opts.log ?? true;
+    this.logLimit = opts.logLimit ?? 64;
   }
 
   // ── wiring ────────────────────────────────────────────────────────────────────────────────
@@ -217,6 +268,8 @@ export class DriftFeel {
   reset(): void {
     this.prevPhase = 'idle';
     this.believable = false;
+    this.exitDueAt = NaN;
+    this.faulted = false;
     this.lastFrameT = NaN;
     this.lastWallT = NaN;
     this.playRate = 1;
@@ -271,6 +324,18 @@ export class DriftFeel {
       // Candidates. Cleared in place; `clearSlots` touches nine preallocated objects.
       this.clearSlots();
 
+      // THE LANDING. The exit phase edge arms a beat rather than firing one: across 18 measured
+      // runs, 95 of 197 exit edges were the dip in the middle of a flick (82 of them re-entered
+      // within 150 ms), and a beat on each turns a manji into a stutter. Going active again
+      // disarms it; surviving `EXIT_SETTLE_S` fires it. `f.completed` is no use here — the
+      // detector publishes it 0.99–1.01 s after the edge, which is a verdict, not a landing.
+      if (!active && wasActive) this.exitDueAt = ft + EXIT_SETTLE_S;
+      else if (active) this.exitDueAt = NaN;
+      if (Number.isFinite(this.exitDueAt) && ft >= this.exitDueAt) {
+        this.exitDueAt = NaN;
+        this.offer('exit-edge', t);
+      }
+
       // The flick takes the phase edge, 410 ms ahead of the callout that names it.
       if (flick) this.offer('transition', t);
       // The entry chirp takes the phase edge too. It is offered even on a flick frame and then
@@ -295,12 +360,23 @@ export class DriftFeel {
       this.flushSlots(t, flick);
     }
 
+    // The other half of rule 6: once the engine believes again, say so. Not gated, not offered —
+    // a recovery has no family to lose to and nothing to be sceptical about.
+    if (!this.scrubbing && this.faulted && this.believable) {
+      this.faulted = false;
+      const back = specFor('recovered');
+      if (back) this.dispatch(back, t, false);
+    }
+
     // ── the continuous layer ────────────────────────────────────────────────────────────────
     const absDeg = Math.abs(radToDeg(f.state.beta));
-    // The same condition the drive display's ember glow uses, from the same field: a slide the
-    // engine does not believe gets no bloom, so it gets no bed either.
-    const open = active && f.integrity.believable;
-    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) : 0;
+    // THE SAME NUMBER the drive display's ember glow uses, from the same function: `trustIn` is
+    // 0 when the engine will not stand behind the reading and 0.65 when it believes it but calls
+    // the input degraded. The bed used to be a plain open/closed, so through a dropout the glow
+    // dimmed to 65 % and the bed played at full — two channels answering one question differently.
+    const trust = trustIn(f.integrity);
+    const open = active && trust > 0;
+    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) * trust : 0;
     const tau = target > this.bedGain ? BED_ATTACK_TAU : BED_RELEASE_TAU;
     this.bedGain += (target - this.bedGain) * (1 - Math.exp(-dt / tau));
     const mixTarget = clamp01((absDeg - BED_MIX_FLOOR_DEG) / BED_MIX_SPAN_DEG);
@@ -384,10 +460,32 @@ export class DriftFeel {
   private dispatch(spec: SoundSpec, t: number, fromFrame: boolean): CueOutcome {
     this.stats.cues++;
 
-    if (fromFrame && spec.gated && !this.believable) return this.record(spec.id, t, 'gated', null, null);
+    if (fromFrame && spec.gated && !this.believable) {
+      // The silence is right; being unable to tell it from a broken app is not. The FIRST drop
+      // reports itself, once, and nothing after it does until the engine believes again.
+      if (!this.faulted) {
+        this.faulted = true;
+        const fault = specFor('fault');
+        if (fault) this.dispatch(fault, t, false);
+      }
+      return this.record(spec.id, t, 'gated', null, null);
+    }
 
     const last = this.lastPlayed.get(spec.id);
     if (last !== undefined && t - last < spec.minGapS) return this.record(spec.id, t, 'debounce', null, null);
+
+    // A row with no file is felt and never heard — it takes no voice, steals none and is not
+    // stopped by anything. `exit-edge` is the only one, and the whole point of it is that a
+    // driver with the phone on silent still gets a beat at the end of every slide.
+    if (spec.file === null) {
+      const only = this.fireHaptic(spec);
+      // It debounces either way, so a driver with haptics off cannot be machine-gunned the
+      // moment they turn them back on mid-slide.
+      this.lastPlayed.set(spec.id, t);
+      if (only === null) return this.record(spec.id, t, 'muted', null, null);
+      this.stats.played++;
+      return this.record(spec.id, t, 'felt', null, only);
+    }
 
     // The haptic has its own setting and its own budget: it fires even with sound off, and it
     // is NOT subject to voice stealing, because a phone can only make one buzz at a time anyway
@@ -525,9 +623,9 @@ export class DriftFeel {
    * elapsed time since the last call, and goes through exactly the same envelope and cross-fade
    * the run uses — the lab demonstrates the real thing, not a re-implementation of it.
    */
-  bedFromAngle(absDeg: number, dt: number, open = true): { low: number; high: number; gain: number } {
+  bedFromAngle(absDeg: number, dt: number, open = true, trust = 1): { low: number; high: number; gain: number } {
     const t = this.now();
-    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) : 0;
+    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) * trust : 0;
     const tau = target > this.bedGain ? BED_ATTACK_TAU : BED_RELEASE_TAU;
     this.bedGain += (target - this.bedGain) * (1 - Math.exp(-Math.max(0, dt) / tau));
     const mixTarget = clamp01((absDeg - BED_MIX_FLOOR_DEG) / BED_MIX_SPAN_DEG);
@@ -545,7 +643,7 @@ export class DriftFeel {
   private record(id: SoundId, t: number, outcome: CueOutcome, against: SoundId | null, haptic: HapticShape | null): CueOutcome {
     if (this.keepLog) {
       this.decisions.push({ id, t, outcome, against, haptic });
-      if (this.decisions.length > 64) this.decisions.splice(0, this.decisions.length - 64);
+      if (this.decisions.length > this.logLimit) this.decisions.splice(0, this.decisions.length - this.logLimit);
     }
     return outcome;
   }

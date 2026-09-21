@@ -9,6 +9,26 @@
 /** A clip id. Kept as a plain string here so this file stays free of UI imports. */
 export type ClipId = string;
 
+/**
+ * How long after a play the native port waits before rewinding the clip's single `AudioPlayer`.
+ *
+ * It lives here rather than in `audio.ts` because it is part of the PORT'S CONTRACT and the bank
+ * has to clear it: a finished AVPlayer must be seeked back to 0 before it will play again, the
+ * port does that on a timer at `duration + REWIND_MARGIN_S`, and a cue that arrives before the
+ * timer has fired would meet a player mid-seek. `audio.test.ts` asserts every row's `minGapS`
+ * against THIS constant plus `MIN_GAP_SLACK_S`, instead of against a number typed out beside it
+ * — the old assertion used `duration + 0.05`, which is 10 ms EARLIER than the timer and would
+ * therefore have passed a bank that breaks the guarantee.
+ */
+export const REWIND_MARGIN_S = 0.06;
+
+/**
+ * How much clear air a bank row must leave between the rewind landing and the next possible
+ * play. 50 ms: enough that an `AudioPlayer.seekTo(0)` promise issued on the timer has resolved
+ * on a phone that is also drawing a 100 Hz HUD.
+ */
+export const MIN_GAP_SLACK_S = 0.05;
+
 /** The two continuous layers are addressed through `setBed`, never through `play`. */
 export interface SoundPort {
   /** Start `id` from the top. False when nothing was audible (locked, unloaded, no device). */

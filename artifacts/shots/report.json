@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T01:05:05.902Z",
+  "startedAt": "2026-09-21T01:28:13.266Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -659,8 +659,138 @@
         "textPixels": 41972,
         "nonBgFraction": 0.861
       }
+    },
+    {
+      "name": "home",
+      "path": "/",
+      "url": "http://127.0.0.1:38625/",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/home.png",
+      "video": null,
+      "ms": 2711,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 27,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 350284,
+        "cyanPixels": 3676,
+        "textPixels": 99584,
+        "nonBgFraction": 0.7513
+      },
+      "shotAt": "2026-09-21T01:28:17.793Z"
+    },
+    {
+      "name": "settings",
+      "path": "/settings",
+      "url": "http://127.0.0.1:38625/settings",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/settings.png",
+      "video": null,
+      "ms": 1753,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 46,
+        "bodyTextNodes": 35,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 7304,
+        "cyanPixels": 13492,
+        "textPixels": 67064,
+        "nonBgFraction": 0.7366
+      },
+      "shotAt": "2026-09-21T01:28:17.793Z"
     }
   ],
-  "finishedAt": "2026-09-21T01:06:33.956Z",
-  "failed": 0
+  "finishedAt": "2026-09-21T01:28:17.793Z",
+  "failed": 0,
+  "failedAll": 0,
+  "shotThisRun": [
+    "home",
+    "settings"
+  ]
 }

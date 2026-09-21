@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
-import { feelCue, feelFrame, feelReset } from '../audio';
+import { feelCue, feelFrame, feelReset, trustIn } from '../audio';
 import { toneFor, type EventTone } from '../callouts';
 
 // Re-exported so the callout components keep one import site for the run's own types.
@@ -285,12 +285,14 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       // used to re-derive it (`mount === 'loose' || physics === 'implausible' || !valid`) and so
       // kept a second copy that disagreed with `score.counting` by construction; two verdicts
       // for one question is how a scorer paying for slides it did not believe stayed hidden.
-      // 0.65 is not a second opinion but a degree: the engine believes the reading and says the
-      // input is degraded (shaking mount, weak fix, β dead-reckoned through a dropout).
+      //
+      // And there were still two copies of the DEGREE, one here and one absent: the glow scaled
+      // by it while the feel layer's continuous bed did not, so through a dropout the screen
+      // dimmed to 65 % and the bed played at 100 %. `trustIn` is now the only implementation and
+      // both channels read it — see `src/ui/audio/mixer.ts`.
       const integrity = params.integrity ?? f.integrity;
       if (integrity.gps === 'good') h.gpsEverGood = true;
-      const degraded = integrity.mount === 'suspect' || integrity.gps === 'poor' || integrity.gps === 'none';
-      h.trust = !integrity.believable ? 0 : degraded ? 0.65 : 1;
+      h.trust = trustIn(integrity);
 
       // Running peak of the drift in progress (the detector publishes its own only after entry).
       if (f.live) {

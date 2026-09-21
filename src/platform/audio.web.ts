@@ -28,12 +28,22 @@
  * Every clip is a decoded `AudioBuffer` held in memory. A cue allocates one `AudioBufferSourceNode`
  * — the only object Web Audio will let you start — connects it and calls `start()`. No fetch, no
  * decode, no await, no promise in the cue path.
+ *
+ * ── One context for the life of the app ───────────────────────────────────────────────────────
+ * `release()` closes the `AudioContext`, which kills every source node attached to it — including
+ * one that is still sounding. This port used to be built and released PER SCREEN, and the cost
+ * was measured on the shipped export with instrumented Web Audio: the STOP clip started at
+ * t = 6151.7 ms with `dur=0.52` and the context closed at t = 6367.3 ms, 215 ms in, because
+ * `router.replace` unmounted `/drive` while the sound the driver had just asked for was still
+ * playing. `useDriftFeel.ts` now keeps ONE port for the whole app and only releases it when the
+ * page goes away, so nothing here changed except who calls `release()` and when.
  */
 import { Asset } from 'expo-asset';
 
 import type { PreparedSoundPort, SoundPortSources, SoundPortState } from './audioTypes';
 
 export type { PreparedSoundPort, SoundPort, SoundPortSources, SoundPortState } from './audioTypes';
+export { MIN_GAP_SLACK_S, REWIND_MARGIN_S } from './audioTypes';
 
 /** Matches the native port's signature; on web the audio session has nothing to configure. */
 export async function configureAudioSession(): Promise<void> {

@@ -19,57 +19,14 @@ import Svg, { Rect } from 'react-native-svg';
 import { useSettings } from '@/platform';
 import { AppText, alpha, colors, gutter, Micro, Panel, Segmented, Small, space, TopBar } from '@/ui';
 import { toneColor } from '@/ui/callouts';
-import { CLIP_MEASUREMENTS, DriftFeel, feelCue, SOUND_BANK, TIER_TARGETS, useDriftFeel, type CueDecision, type SoundId, type SoundSpec } from '@/ui/audio';
-
-/**
- * Two real moments from `harbor seed=1 laps=2`, at the offsets the engine actually produced
- * (printed by `npx tsx tools/audio/bench.ts harbor 1 2`). They are the point of this control:
- * the flick's whip lands on the phase edge and MANJI lands 410 ms later where the callout does,
- * and that gap is audible only in sequence.
- */
-const SEQUENCES: Array<{ key: string; label: string; note: string; steps: Array<{ id: SoundId; atS: number }> }> = [
-  {
-    key: 'flick',
-    label: 'The flick',
-    note: 'lap 2 at 100.08 s: the whip on the phase edge, MANJI 410 ms later with the callout, gold at 750 ms',
-    steps: [
-      { id: 'transition', atS: 0 },
-      { id: 'manji', atS: 0.41 },
-      { id: 'extreme', atS: 0.75 },
-    ],
-  },
-  {
-    key: 'bank',
-    label: 'The bank',
-    note: '47.75 s: the exit verdict, the chain banking 2.0 s later, then the next drift opening as a LINK',
-    steps: [
-      { id: 'exit', atS: 0 },
-      { id: 'banked', atS: 2.01 },
-      { id: 'link', atS: 2.88 },
-    ],
-  },
-  {
-    key: 'lost',
-    label: 'The spin',
-    note: '65.60 s: CHAIN LOST and SPIN fire on the SAME frame — the cause outranks the consequence, so you hear one',
-    steps: [
-      { id: 'lost', atS: 0 },
-      { id: 'spin', atS: 0 },
-    ],
-  },
-  {
-    key: 'mud',
-    label: 'Three at once',
-    note: 'what the mixer is for: three cues inside 150 ms, two voices — read the decisions below',
-    steps: [
-      { id: 'long', atS: 0 },
-      { id: 'lap', atS: 0.07 },
-      { id: 'spin', atS: 0.14 },
-    ],
-  },
-];
+import { CLIP_MEASUREMENTS, DriftFeel, feelCue, SOUND_BANK, SOUND_SEQUENCES, TIER_TARGETS, useDriftFeel, type CueDecision, type SoundId, type SoundSpec } from '@/ui/audio';
 
 const ANGLES = [0, 12, 25, 40, 55];
+
+/** The two bed layers' measured brightness, so the meters can never go stale after a re-render. */
+const BED_LOW_HZ = Math.round(CLIP_MEASUREMENTS['bed-low']?.centroidHz ?? 0);
+const BED_HIGH_HZ = Math.round(CLIP_MEASUREMENTS['bed-high']?.centroidHz ?? 0);
+const hz = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)} kHz` : `${v} Hz`);
 
 /**
  * Everything the page draws from the live mixer, copied into a FRESH object every tick.

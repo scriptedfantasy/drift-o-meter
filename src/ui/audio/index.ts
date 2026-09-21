@@ -15,11 +15,13 @@
  *   src/ui/audio/useDriftFeel.ts the screen lifecycle and the one-line call sites
  *   src/ui/audio/sources.ts      the `require()`d WAVs (Metro only)
  *   src/ui/audio/waveforms.ts    generated: measured levels + peak envelopes
+ *   src/ui/audio/sequences.ts    generated: real moments the lab replays, and where they happened
  *   src/platform/audio.ts|.web   expo-audio / Web Audio
  *   src/platform/haptics.ts|.web expo-haptics / a recorder
  *   tools/audio/render.mjs       the synthesiser that produces assets/audio/*.wav
  */
 export * from './bank';
-export { DriftFeel, type CueDecision, type CueOutcome, type FeelOptions, type FeelStats, type HapticPort, type SoundPort } from './mixer';
+export { DriftFeel, trustIn, type CueDecision, type CueOutcome, type FeelOptions, type FeelStats, type HapticPort, type SoundPort } from './mixer';
 export { driftFeel, feelCue, feelFrame, feelReset, useDriftFeel, type FeelStatus } from './useDriftFeel';
 export { CLIP_MEASUREMENTS, TIER_TARGETS, type ClipMeasurement } from './waveforms';
+export { SOUND_SEQUENCES, type SoundSequence } from './sequences';
