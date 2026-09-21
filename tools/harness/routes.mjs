@@ -374,36 +374,6 @@ export const defaultRoutes = [
   // monitor has NOT decided. Step 01 used to be struck through with a green tick here while the
   // mount light beside it still read "Listening".
   { name: 'calibrate-early', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1', waitMs: 2400, expectCanvas: true },
-  // ---- garage: the state the run list cannot be read in ------------------------------------
-  // Appended, not inserted. With one perfectly readable recording on disk and a TRUNCATED index,
-  // the garage used to draw "THE GARAGE · EMPTY · FIRST RUN · NOTHING TO BEAT YET" — and the next
-  // save wrote a fresh one-entry index over the top and orphaned every stored body permanently.
-  // Seed one real run, truncate the index, then load `/` with no `?demo=` so nothing re-seeds.
-  {
-    name: 'garage-index-broken',
-    path: '/?demo=first',
-    waitMs: 6000,
-    actions: [
-      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
-      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
-      { type: 'goto', path: '/' },
-      { type: 'wait', ms: 1800 },
-    ],
-  },
-  // ... and the repair: the rebuild reads the recordings themselves and writes a new list.
-  {
-    name: 'garage-index-rebuilt',
-    path: '/?demo=first',
-    waitMs: 6000,
-    actions: [
-      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
-      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
-      { type: 'goto', path: '/' },
-      { type: 'wait', ms: 1500 },
-      { type: 'tap', testId: 'cta-rebuild-index', timeout: 30000 },
-      { type: 'wait', ms: 2000 },
-    ],
-  },
   // ---- drive display, appended ------------------------------------------------------------
   // BETWEEN slides with the chain still open: 48.5 s, 10 528 points at risk, two slides done.
   // The middle band is the one that used to go dark here (0.71 % lit on an idle frame), and the
@@ -419,4 +389,44 @@ export const defaultRoutes = [
   // through to the lab. A switch is a stronger claim than a label, so this screen has to be able
   // to make good on it without a drive.
   { name: 'settings-feedback', path: '/settings', waitMs: 900, actions: [{ type: 'scroll', y: 900 }, { type: 'wait', ms: 700 }] },
+  // ---- garage: the state the run list cannot be read in, appended --------------------------
+  // With one perfectly readable recording on disk and a TRUNCATED index, the garage used to draw
+  // "THE GARAGE · EMPTY · FIRST RUN · NOTHING TO BEAT YET" — and the next save then wrote a fresh
+  // one-entry index over the top and orphaned every stored body permanently. Seed one real run,
+  // truncate the index, then load `/` with no `?demo=` so nothing re-seeds over the evidence.
+  {
+    name: 'garage-index-broken',
+    path: '/?demo=first',
+    waitMs: 6000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/' },
+      { type: 'wait', ms: 1800 },
+    ],
+  },
+  // ... and the repair, which reads the recordings themselves and writes a new list.
+  {
+    name: 'garage-index-rebuilt',
+    path: '/?demo=first',
+    waitMs: 6000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/' },
+      { type: 'wait', ms: 1500 },
+      { type: 'tap', testId: 'cta-rebuild-index', timeout: 30000 },
+      { type: 'wait', ms: 2000 },
+    ],
+  },
+  // The run list at LANDSCAPE depth. `garage-runs` scrolls 1400 px, which is right in portrait and
+  // lands on the demo bay in landscape, where the two-column layout is barely half as tall — so
+  // the run list had no landscape frame at all. 1020 px puts the rows at the top of both.
+  { name: 'garage-runs-wide', path: '/?demo=night', waitMs: 8000, actions: [{ type: 'scroll', y: 1020 }, { type: 'wait', ms: 900 }] },
+
+  // THE VERDICT LANDING. The grade reveal is a motion beat — the letter slams 2.2 → 1.0 with a
+  // shockwave ring and ember particles over the last 1.1 s of the run — so it only exists as
+  // frames. Quarter speed from just before it starts, `play=1`, and the run stops itself at the
+  // end: shoot with --video (and --scale 1, like the other motion routes) to resolve the slam.
+  { name: 'replay-grade', path: '/replay/demo?cam=overview&t=118.2&rate=0.25&play=1&ui=0', waitMs: 11000, expectCanvas: true, minEmber: 800 },
 ];
