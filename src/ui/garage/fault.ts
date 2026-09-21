@@ -76,3 +76,37 @@ export function storedRuns(entries: readonly unknown[], d: StorageDiagnosis | nu
   if (d && d.index === 'unreadable') return { count: d.recordings, counted: 'recordings' };
   return { count: entries.length, counted: 'index' };
 }
+
+/** "6 stored runs." — or, when the list is the thing at fault, what is actually on the device. */
+export function storedRunsText(runs: StoredRuns): string {
+  const { count, counted } = runs;
+  if (counted === 'recordings') {
+    if (count === null) return 'The recordings on this device cannot be counted from here.';
+    if (count === 0) return 'No recordings on this device.';
+    return count === 1 ? '1 recording on this device, in a run list that could not be read.' : `${count} recordings on this device, in a run list that could not be read.`;
+  }
+  if (count === 1) return '1 stored run.';
+  return `${count ?? 0} stored runs.`;
+}
+
+/** The line under "Delete every run?" — how much is about to go. */
+export function deleteAllDetail(runs: StoredRuns): string {
+  const { count, counted } = runs;
+  if (count === null) return 'Every recording on this device will be deleted';
+  const noun = counted === 'recordings' ? 'recording' : 'run';
+  return count === 1 ? `1 ${noun} will be deleted` : `${count} ${noun}s will be deleted`;
+}
+
+/**
+ * Whether DELETE ALL RUNS has anything to do.
+ *
+ * It must stay live when the index is UNREADABLE, whatever the list says. `clearSessions` was
+ * written for exactly that case — it deletes every body the device can name, index or no index,
+ * "otherwise 'empty the garage' leaves orphans behind exactly when the index is the thing at
+ * fault" — and it rewrites the index, which repairs it. Deriving the button's state from a list
+ * that threw switched off the one repair the store offers in the one case it was built for.
+ */
+export function canDeleteAll(entryCount: number, d: StorageDiagnosis | null): boolean {
+  if (d === null) return entryCount > 0;
+  return d.index === 'unreadable' || entryCount > 0 || (d.recordings ?? 0) > 0;
+}

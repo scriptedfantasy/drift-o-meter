@@ -150,6 +150,15 @@ export default function GarageScreen() {
   const openRecord = useCallback((record: BestRecord) => openRun({ id: record.id } as SessionIndexEntry), [openRun]);
 
   const hasRuns = garage.entries.length > 0;
+  /**
+   * The storage fault, and where it goes. In landscape with nothing in the list, the right
+   * column held two words ("THE GARAGE · UNREADABLE") in an otherwise empty half-screen while
+   * YOUR RUN LIST COULD NOT BE READ started at 70 % viewport height under DRIVE and REBUILD THE
+   * LIST was clipped off the bottom edge — the app's most urgent state, below the fold, beside
+   * a void. When there is no list to show, the fault takes the column the list would have had.
+   */
+  const faultNotice = garage.fault ? <FaultNotice fault={garage.fault} busy={garage.rebuilding} onAct={() => void garage.rebuild()} /> : null;
+  const faultInColumn = wide && !hasRuns && faultNotice !== null;
   // The one thing that earns a calibration prompt: the last run said something was wrong.
   const advice = useMemo(() => mountAdvice(garage.last), [garage.last]);
   const nights = useMemo(() => groupByNight(garage.earlier), [garage.earlier]);
@@ -180,11 +189,7 @@ export default function GarageScreen() {
           <MountNotice advice={advice} onPress={() => openCalibrate(advice.concern)} testID="mount-notice" />
         </View>
       ) : null}
-      {garage.fault ? (
-        <View style={styles.notice}>
-          <FaultNotice fault={garage.fault} busy={garage.rebuilding} onAct={() => void garage.rebuild()} />
-        </View>
-      ) : null}
+      {faultNotice && !faultInColumn ? <View style={styles.notice}>{faultNotice}</View> : null}
       {garage.seeding ? (
         <View style={styles.seeding} testID="garage-seeding">
           <Micro color="cyan">
@@ -203,7 +208,7 @@ export default function GarageScreen() {
   const lastRun = !hasRuns ? (
     <>
       <SectionHead title="The garage" right={unreadable ? 'Unreadable' : garage.loading ? 'Reading' : 'Empty'} />
-      {unreadable ? null : garage.loading ? <View style={styles.skeletonCard} testID="garage-loading" /> : <EmptyGarage testID="garage-empty" />}
+      {faultInColumn ? faultNotice : unreadable ? null : garage.loading ? <View style={styles.skeletonCard} testID="garage-loading" /> : <EmptyGarage testID="garage-empty" />}
     </>
   ) : (
     <>

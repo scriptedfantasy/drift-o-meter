@@ -4,6 +4,14 @@
  *
  * `Alert.alert` is a no-op on web, so the wipe uses the app's own confirmation (`ConfirmDialog`)
  * on every platform rather than silently deleting a night's driving in a browser.
+ *
+ * THE DATA SECTION COUNTS WHAT IS THERE, not what the list says. `useSessionIndex` returns
+ * `entries: []` AND an error when `listSessions()` throws, so `entries.length` read 0 over six
+ * real recordings: the section said "0 stored runs" and greyed out DELETE ALL RUNS — which is
+ * the one repair `clearSessions` was written for, since it deletes every body the device can
+ * name whether or not the index still names it. It now asks storage itself
+ * (`useStorageDiagnosis`) and says the same thing the garage says about the same runs
+ * (`src/ui/garage/fault.ts`), including offering the rebuild.
  */
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
@@ -11,10 +19,10 @@ import { useCallback, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { clearSessions, useSessionIndex, useSettings } from '@/platform';
+import { clearSessions, rebuildSessionIndex, useSessionIndex, useSettings, useStorageDiagnosis } from '@/platform';
 import { listTracks } from '@/sim';
 import { AppText, colors, gutter, Micro, Panel, Segmented, type SegmentOption, Small, space, TopBar } from '@/ui';
-import { ConfirmDialog, forgetDetails } from '@/ui/garage';
+import { canDeleteAll, ConfirmDialog, deleteAllDetail, faultFor, FaultNotice, forgetDetails, storedRuns, storedRunsText } from '@/ui/garage';
 
 const TRACK_OPTIONS = listTracks().map((t) => ({ value: t.id, label: t.name }));
 const RATE_OPTIONS: SegmentOption<number>[] = [
@@ -30,6 +38,10 @@ export default function SettingsScreen() {
   const sessions = useSessionIndex();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
+  // Bumped whenever this screen changes storage, so the diagnosis under it is taken again.
+  const [revision, setRevision] = useState(0);
+  const diagnosis = useStorageDiagnosis(!sessions.loading, `${revision}:${sessions.error ?? ''}`);
   const isWeb = Platform.OS === 'web';
 
   const wipe = useCallback(async () => {
@@ -41,10 +53,26 @@ export default function SettingsScreen() {
     } finally {
       setBusy(false);
       setAsking(false);
+      setRevision((n) => n + 1);
     }
   }, [sessions]);
 
-  const stored = sessions.entries.length;
+  const rebuild = useCallback(async () => {
+    setRebuilding(true);
+    try {
+      await rebuildSessionIndex();
+      await sessions.refresh();
+    } catch {
+      // The notice is redrawn from the fresh diagnosis below; a failed rebuild leaves it standing.
+    } finally {
+      setRebuilding(false);
+      setRevision((n) => n + 1);
+    }
+  }, [sessions]);
+
+  const stored = storedRuns(sessions.entries, diagnosis);
+  const fault = faultFor(diagnosis, sessions.error);
+  const deletable = canDeleteAll(sessions.entries.length, diagnosis);
 
   return (
     <View style={styles.root} testID="screen-settings">
@@ -156,13 +184,14 @@ export default function SettingsScreen() {
           </Section>
 
           <Section title="Data" hint="Everything this app stores stays on this device.">
-            <Small>{stored === 1 ? '1 stored run.' : `${stored} stored runs.`}</Small>
+            <Small testID="setting-stored">{storedRunsText(stored)}</Small>
+            {fault ? <FaultNotice fault={fault} busy={rebuilding} onAct={() => void rebuild()} testID="setting-fault" /> : null}
             <Pressable
-              disabled={busy || stored === 0}
+              disabled={busy || !deletable}
               onPress={() => setAsking(true)}
               accessibilityRole="button"
               testID="setting-wipe"
-              style={({ pressed }) => [styles.wipe, (busy || stored === 0) && styles.wipeOff, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.wipe, (busy || !deletable) && styles.wipeOff, pressed && styles.pressed]}>
               <AppText variant="subheading" color="red" style={styles.wipeLabel}>
                 Delete all runs
               </AppText>
@@ -185,7 +214,7 @@ export default function SettingsScreen() {
         <ConfirmDialog
           title="Delete every run?"
           body="Every recording, score and replay on this device goes. There is no undo and nothing is backed up anywhere."
-          detail={stored === 1 ? '1 run will be deleted' : `${stored} runs will be deleted`}
+          detail={deleteAllDetail(stored)}
           confirmLabel="Delete everything"
           busy={busy}
           onConfirm={() => void wipe()}

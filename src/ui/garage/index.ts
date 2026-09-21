@@ -12,7 +12,7 @@ export { DEMO_SETS, DEMO_NAMES, clearDemoSessions, demoSetPresent, resolveDemoRe
 export type { DemoRun, SeedProgress } from './demo';
 export { useGarage } from './useGarage';
 export type { Garage } from './useGarage';
-export { faultFor, storedRuns } from './fault';
+export { canDeleteAll, deleteAllDetail, faultFor, storedRuns, storedRunsText } from './fault';
 export type { GarageFault, StoredRuns } from './fault';
 export { FaultNotice } from './FaultNotice';
 export { gradeStateOf, gradeStateColor } from './grade';
