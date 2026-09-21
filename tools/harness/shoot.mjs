@@ -3,7 +3,7 @@
  * Drift-O-Meter verification harness.
  *
  *   node tools/harness/shoot.mjs [--no-build] [--video] [--landscape] [--routes file] [--only a,b]
- *                                [--out dir] [--video-dir dir] [--port n] [--no-font-check] [--full-page] [--scale n]
+ *                                [--out dir] [--video-dir dir] [--port n] [--no-font-check] [--full-page] [--scale n] [--fresh]
  *
  * Builds the web export (unless --no-build), serves dist/ on a free port, drives the real app in
  * headless Chromium with an iPhone 15 Pro profile, screenshots every route into
@@ -49,6 +49,9 @@ function parseArgs(argv) {
     // ENOENT on index.html. Three separate agents lost runs to that and each invented the same
     // workaround by hand. `--dist <dir>` makes a private copy first-class instead.
     dist: DEFAULT_DIST,
+    // A partial run MERGES into whatever console.log / report.json are already in `--out`
+    // (see `mergeAggregates`). `--fresh` throws the old ones away instead.
+    fresh: false,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -71,6 +74,7 @@ function parseArgs(argv) {
       case '--no-font-check': args.fontCheck = false; break;
       case '--full-page': args.fullPage = true; break;
       case '--scale': args.scale = Number(next()); break;
+      case '--fresh': args.fresh = true; break;
       case '-h':
       case '--help': args.help = true; break;
       default: throw new Error(`Unknown argument: ${a} (try --help)`);
@@ -86,6 +90,82 @@ async function loadRoutes(file) {
   const routes = mod.default ?? mod.routes ?? mod.defaultRoutes;
   if (!Array.isArray(routes)) throw new Error(`${file} must export an array of routes (default export or "routes")`);
   return routes;
+}
+
+/**
+ * WHY A PARTIAL SHOOT MERGES.
+ *
+ * `console.log` and `report.json` are the evidence a critic reads: they are how anyone knows a
+ * frame was captured without a page error, a failed request or a missing font. They are also
+ * ONE file each for the whole app, while almost every capture run is `--only <one screen>`.
+ * Rewriting them wholesale meant the last agent to shoot silently erased every other screen's
+ * record, leaving an aggregate that looks complete and covers one screen. One agent noticed and
+ * restored the files from git by hand after every pass; the rest is the failure nobody noticed.
+ *
+ * So a run now replaces only the routes it actually shot and keeps the rest, in place. `--fresh`
+ * is the old behaviour, for a full run that should start from nothing.
+ */
+const BLOCK = /^===== (\S+)/;
+
+/** Split an existing console.log into `name -> block`, preserving order. */
+function consoleBlocks(text) {
+  const out = new Map();
+  let name = null;
+  let buf = [];
+  for (const line of text.split('\n')) {
+    const m = BLOCK.exec(line);
+    if (m) {
+      if (name !== null) out.set(name, buf.join('\n'));
+      name = m[1];
+      buf = [line];
+    } else if (name !== null) {
+      buf.push(line);
+    }
+  }
+  if (name !== null) out.set(name, buf.join('\n'));
+  return out;
+}
+
+function mergeConsole(args, shot, lines) {
+  const fresh = lines.join('\n');
+  const file = path.join(args.out, 'console.log');
+  if (args.fresh || !existsSync(file)) return fresh;
+  let prior;
+  try {
+    prior = consoleBlocks(readFileSync(file, 'utf8'));
+  } catch {
+    return fresh;
+  }
+  const now = consoleBlocks(fresh);
+  // Replace in place what we re-shot; append what is new; leave everything else untouched.
+  for (const [name, block] of now) prior.set(name, block);
+  const kept = [...prior.keys()].filter((n) => !shot.includes(n)).length;
+  if (kept > 0) console.log(`[shoot] merged into console.log: ${now.size} re-shot, ${kept} other route(s) kept`);
+  return [...prior.values()].join('\n');
+}
+
+function mergeReport(args, shot, report) {
+  const file = path.join(args.out, 'report.json');
+  for (const r of report.routes) r.shotAt = report.finishedAt;
+  if (args.fresh || !existsSync(file)) return report;
+  let prior;
+  try {
+    prior = JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return report;
+  }
+  if (!Array.isArray(prior.routes)) return report;
+  const byName = new Map(prior.routes.map((r) => [r.name, r]));
+  for (const r of report.routes) byName.set(r.name, r);
+  const merged = [...byName.values()];
+  return {
+    ...report,
+    // `failed` counts THIS run; `failedAll` counts the aggregate, which is what a reader of the
+    // file cares about. Both are stated so neither can be mistaken for the other.
+    failedAll: merged.filter((r) => r.ok === false).length,
+    shotThisRun: shot,
+    routes: merged,
+  };
 }
 
 function build(dist) {
@@ -325,8 +405,9 @@ async function main() {
 
   report.finishedAt = new Date().toISOString();
   report.failed = failed;
-  writeFileSync(path.join(args.out, 'console.log'), consoleLines.join('\n') + '\n');
-  writeFileSync(path.join(args.out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+  const shot = routes.map((r) => `${r.name}${suffix}`);
+  writeFileSync(path.join(args.out, 'console.log'), mergeConsole(args, shot, consoleLines) + '\n');
+  writeFileSync(path.join(args.out, 'report.json'), JSON.stringify(mergeReport(args, shot, report), null, 2) + '\n');
   console.log(`\n[shoot] screenshots -> ${path.relative(ROOT, args.out)}/  console -> ${path.relative(ROOT, path.join(args.out, 'console.log'))}  report -> report.json`);
   if (failed > 0) {
     console.error(`\n[shoot] FAILED: ${failed} of ${routes.length} routes had errors. See ${path.relative(ROOT, path.join(args.out, 'console.log'))}`);

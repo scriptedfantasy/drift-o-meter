@@ -206,7 +206,7 @@ export type StyleCalloutKind =
 export interface StyleCallout {
   t: number;
   kind: StyleCalloutKind;
-  /** Short uppercase label for the HUD, e.g. "TRANSITION x3". */
+  /** Short uppercase label for the HUD, e.g. "TRANSITION ×3". */
   label: string;
   /** Points awarded by this callout (already included in the running score). */
   points: number;

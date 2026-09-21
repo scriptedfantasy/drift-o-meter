@@ -17,14 +17,21 @@ npm run assets:render         # regenerate assets/images/*.png (icon, splash gly
 
 Flags: `--no-build`, `--video`, `--landscape`, `--routes <file.json|.mjs>`, `--only a,b`,
 `--out <dir>` (default `artifacts/shots`), `--video-dir <dir>` (default `artifacts/video`),
-`--port <n>`, `--no-font-check`, `--full-page`, `--scale <n>` (device pixel ratio, default 3).
+`--port <n>`, `--no-font-check`, `--full-page`, `--scale <n>` (device pixel ratio, default 3),
+`--fresh` (rewrite the aggregates instead of merging into them).
 
 ## Outputs
 
 - `artifacts/shots/<name>.png` (or `<name>-landscape.png`)
 - `artifacts/shots/console.log`: every console message, page error, failed request and HTTP >= 400,
-  grouped per route
-- `artifacts/shots/report.json`: per route, the fonts that loaded, how many text nodes render in
+  grouped per route. **A partial run (`--only`) merges**: it replaces the blocks for the routes it
+  actually shot and keeps every other route's, because this file is one aggregate for the whole
+  app while almost every run covers one screen. Without that, the last agent to shoot silently
+  erased everyone else's record and left a file that looks complete and covers one screen.
+  `--fresh` rewrites it from nothing, for a full run that should start clean.
+- `artifacts/shots/report.json`: merged the same way, and it distinguishes `failed` (this run)
+  from `failedAll` (the whole aggregate) and lists `shotThisRun`, so neither can be read as the
+  other. Each route carries `shotAt`, so a stale entry is visible rather than implied. Per route, the fonts that loaded, how many text nodes render in
   Barlow Condensed / Barlow / anything else, `<canvas>` count, WebGL + CanvasKit availability,
   pixel statistics (corner colours, ember / cyan / text pixel counts, non-background fraction)
 - `artifacts/video/<name>.webm` with `--video`
