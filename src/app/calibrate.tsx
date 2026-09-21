@@ -95,9 +95,11 @@ export default function CalibrateScreen() {
     return (
       <View style={styles.root} testID="screen-calibrate">
         <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-          {/* Not a scroll: a fault has one screenful of content, and letting it sit at the top
-              of a scroller left the bottom half of the frame empty and black. */}
-          <View style={styles.faultPage}>
+          {/* `flexGrow: 1` with a centred, non-shrinking middle: with room to spare the fault
+              fills the frame and centres itself (it used to sit at the top of a scroller and
+              leave the bottom half black); with no room — 393 pt of landscape — it scrolls
+              instead of laying the body underneath the buttons. */}
+          <ScrollView style={styles.flex} contentContainerStyle={styles.faultPage} showsVerticalScrollIndicator={false}>
             <TopBar kicker="Mount calibration" right={source} />
             <View style={styles.faultCentre}>
               {/* Atmosphere, not an object: a solid box with a box-shadow drew a lit pill
@@ -135,7 +137,7 @@ export default function CalibrateScreen() {
               <Button label={fault.actionLabel} variant="secondary" onPress={openAction} testID="cta-settings" />
               <Button label="Back to the garage" variant="ghost" onPress={() => router.replace('/')} testID="cta-garage" />
             </View>
-          </View>
+          </ScrollView>
         </SafeAreaView>
       </View>
     );
@@ -333,8 +335,8 @@ const styles = StyleSheet.create({
   actions: { gap: space[2] },
   leaveNote: { maxWidth: 460 },
 
-  faultPage: { flex: 1, paddingHorizontal: gutter, width: '100%', maxWidth: 820, alignSelf: 'center' },
-  faultCentre: { flex: 1, justifyContent: 'center', gap: space[2] },
+  faultPage: { flexGrow: 1, paddingHorizontal: gutter, paddingBottom: space[4], width: '100%', maxWidth: 820, alignSelf: 'center' },
+  faultCentre: { flexGrow: 1, flexShrink: 0, justifyContent: 'center', gap: space[2], paddingVertical: space[4] },
   bloom: { position: 'absolute', left: -gutter - 24, right: -gutter - 24, top: '6%', height: 270 },
   faultTitle: { fontSize: 40, lineHeight: 42 },
   faultBody: { maxWidth: 520 },

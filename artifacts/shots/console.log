@@ -1,28 +1,22 @@
 
-===== calibrate-nothing  http://127.0.0.1:45573/calibrate?sim=harbor&hold=1
+===== home-landscape  http://127.0.0.1:45939/
 
-===== calibrate  http://127.0.0.1:45573/calibrate?sim=harbor&at=0.5&hold=1
+===== garage-landscape  http://127.0.0.1:45939/?demo=night
 
-===== calibrate-level  http://127.0.0.1:45573/calibrate?sim=harbor&at=3&hold=1
+===== garage-bests-landscape  http://127.0.0.1:45939/?demo=night
 
-===== calibrate-ready  http://127.0.0.1:45573/calibrate?sim=harbor&at=12&hold=1
+===== garage-runs-landscape  http://127.0.0.1:45939/?demo=night
 
-===== calibrate-loose  http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
+===== garage-bests-harbor-landscape  http://127.0.0.1:45939/?demo=harbor
 
-===== calibrate-flat  http://127.0.0.1:45573/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
+===== garage-simbay-landscape  http://127.0.0.1:45939/?demo=first
 
-===== calibrate-rejected  http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected
+===== garage-flagged-landscape  http://127.0.0.1:45939/?demo=flagged
 
-===== calibrate-fault-permission  http://127.0.0.1:45573/calibrate?fault=permission
+===== garage-delete-landscape  http://127.0.0.1:45939/?demo=first
 
-===== calibrate-fault-unsupported  http://127.0.0.1:45573/calibrate?fault=unsupported
+===== settings-landscape  http://127.0.0.1:45939/settings
 
-===== calibrate-fault-services  http://127.0.0.1:45573/calibrate?fault=services
+===== garage-index-broken-landscape  http://127.0.0.1:45939/?demo=first
 
-===== calibrate-fault-failed  http://127.0.0.1:45573/calibrate?fault=failed
-
-===== calibrate-fault-location  http://127.0.0.1:45573/calibrate?fault=location
-
-===== calibrate-shaking  http://127.0.0.1:45573/calibrate?sim=touge&looseness=0.2&at=40&hold=1
-
-===== calibrate-early  http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1
+===== garage-index-rebuilt-landscape  http://127.0.0.1:45939/?demo=first

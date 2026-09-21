@@ -414,4 +414,9 @@ export const defaultRoutes = [
   // shot again, and it is where the chain bar and the integrity note appear TOGETHER (a note
   // used to replace the bar, taking AT RISK off the screen exactly when it mattered).
   { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect', waitMs: 2800, expectCanvas: true, minEmber: 1000 },
+  // ---- the feel layer's settings, appended ------------------------------------------------
+  // The Feedback section, which is below the fold on `settings`: the two switches and the way
+  // through to the lab. A switch is a stronger claim than a label, so this screen has to be able
+  // to make good on it without a drive.
+  { name: 'settings-feedback', path: '/settings', waitMs: 900, actions: [{ type: 'scroll', y: 900 }, { type: 'wait', ms: 700 }] },
 ];

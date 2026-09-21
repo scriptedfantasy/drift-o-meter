@@ -1,23 +1,23 @@
 {
-  "startedAt": "2026-09-21T00:33:58.644Z",
+  "startedAt": "2026-09-21T00:34:32.082Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "calibrate-nothing",
-      "path": "/calibrate?sim=harbor&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&hold=1",
+      "name": "home-landscape",
+      "path": "/",
+      "url": "http://127.0.0.1:45939/",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-nothing.png",
+      "screenshot": "artifacts/shots/home-landscape.png",
       "video": null,
-      "ms": 4191,
+      "ms": 3344,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -25,445 +25,10 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
         "displayTextNodes": 21,
-        "bodyTextNodes": 52,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 4900,
-        "cyanPixels": 26492,
-        "textPixels": 27272,
-        "nonBgFraction": 0.5299
-      }
-    },
-    {
-      "name": "calibrate",
-      "path": "/calibrate?sim=harbor&at=0.5&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&at=0.5&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate.png",
-      "video": null,
-      "ms": 3820,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 52,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 4900,
-        "cyanPixels": 46928,
-        "textPixels": 27272,
-        "nonBgFraction": 0.5323
-      }
-    },
-    {
-      "name": "calibrate-level",
-      "path": "/calibrate?sim=harbor&at=3&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&at=3&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-level.png",
-      "video": null,
-      "ms": 3687,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 52,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 27816,
-        "cyanPixels": 29316,
-        "textPixels": 28776,
-        "nonBgFraction": 0.5326
-      }
-    },
-    {
-      "name": "calibrate-ready",
-      "path": "/calibrate?sim=harbor&at=12&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&at=12&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-ready.png",
-      "video": null,
-      "ms": 4661,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 53,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 254604,
-        "cyanPixels": 14568,
-        "textPixels": 4364,
-        "nonBgFraction": 0.6492
-      }
-    },
-    {
-      "name": "calibrate-loose",
-      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-loose.png",
-      "video": null,
-      "ms": 4436,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 51,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 35032,
-        "cyanPixels": 16284,
-        "textPixels": 40876,
-        "nonBgFraction": 0.5538
-      }
-    },
-    {
-      "name": "calibrate-flat",
-      "path": "/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-flat.png",
-      "video": null,
-      "ms": 4331,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 22,
-        "bodyTextNodes": 54,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 254712,
-        "cyanPixels": 12400,
-        "textPixels": 17972,
-        "nonBgFraction": 0.7273
-      }
-    },
-    {
-      "name": "calibrate-rejected",
-      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-rejected.png",
-      "video": null,
-      "ms": 4063,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 22,
-        "bodyTextNodes": 52,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 55032,
-        "cyanPixels": 16272,
-        "textPixels": 44908,
-        "nonBgFraction": 0.6038
-      }
-    },
-    {
-      "name": "calibrate-fault-permission",
-      "path": "/calibrate?fault=permission",
-      "url": "http://127.0.0.1:45573/calibrate?fault=permission",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-fault-permission.png",
-      "video": null,
-      "ms": 2205,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 27,
         "otherTextNodes": 0
       },
       "skia": {
@@ -472,8 +37,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -498,22 +63,22 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 250636,
-        "cyanPixels": 1676,
-        "textPixels": 26212,
-        "nonBgFraction": 0.4319
+        "emberPixels": 394672,
+        "cyanPixels": 3616,
+        "textPixels": 99644,
+        "nonBgFraction": 0.4796
       }
     },
     {
-      "name": "calibrate-fault-unsupported",
-      "path": "/calibrate?fault=unsupported",
-      "url": "http://127.0.0.1:45573/calibrate?fault=unsupported",
+      "name": "garage-landscape",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:45939/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-fault-unsupported.png",
+      "screenshot": "artifacts/shots/garage-landscape.png",
       "video": null,
-      "ms": 2970,
+      "ms": 10943,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -521,259 +86,10 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 19,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 51244,
-        "cyanPixels": 1436,
-        "textPixels": 18980,
-        "nonBgFraction": 0.3297
-      }
-    },
-    {
-      "name": "calibrate-fault-services",
-      "path": "/calibrate?fault=services",
-      "url": "http://127.0.0.1:45573/calibrate?fault=services",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-fault-services.png",
-      "video": null,
-      "ms": 3124,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 259464,
-        "cyanPixels": 1696,
-        "textPixels": 25132,
-        "nonBgFraction": 0.4311
-      }
-    },
-    {
-      "name": "calibrate-fault-failed",
-      "path": "/calibrate?fault=failed",
-      "url": "http://127.0.0.1:45573/calibrate?fault=failed",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-fault-failed.png",
-      "video": null,
-      "ms": 2692,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 256808,
-        "cyanPixels": 1060,
-        "textPixels": 16256,
-        "nonBgFraction": 0.4281
-      }
-    },
-    {
-      "name": "calibrate-fault-location",
-      "path": "/calibrate?fault=location",
-      "url": "http://127.0.0.1:45573/calibrate?fault=location",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-fault-location.png",
-      "video": null,
-      "ms": 2397,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 20,
-        "bodyTextNodes": 22,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 0,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 253380,
-        "cyanPixels": 1752,
-        "textPixels": 24280,
-        "nonBgFraction": 0.4305
-      }
-    },
-    {
-      "name": "calibrate-shaking",
-      "path": "/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-shaking.png",
-      "video": null,
-      "ms": 4214,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
-        ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 53,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
         "otherTextNodes": 0
       },
       "skia": {
@@ -782,8 +98,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -808,22 +124,388 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5744,
-        "cyanPixels": 13224,
-        "textPixels": 18984,
-        "nonBgFraction": 0.5795
+        "emberPixels": 440548,
+        "cyanPixels": 3616,
+        "textPixels": 38816,
+        "nonBgFraction": 0.479
       }
     },
     {
-      "name": "calibrate-early",
-      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
-      "url": "http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
+      "name": "garage-bests-landscape",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:45939/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
-      "screenshot": "artifacts/shots/calibrate-early.png",
+      "screenshot": "artifacts/shots/garage-bests-landscape.png",
       "video": null,
-      "ms": 4249,
+      "ms": 11033,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 30876,
+        "cyanPixels": 8760,
+        "textPixels": 12208,
+        "nonBgFraction": 0.5516
+      }
+    },
+    {
+      "name": "garage-runs-landscape",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:45939/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-runs-landscape.png",
+      "video": null,
+      "ms": 10821,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "cyanPixels": 34284,
+        "textPixels": 508,
+        "nonBgFraction": 0.9014
+      }
+    },
+    {
+      "name": "garage-bests-harbor-landscape",
+      "path": "/?demo=harbor",
+      "url": "http://127.0.0.1:45939/?demo=harbor",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-bests-harbor-landscape.png",
+      "video": null,
+      "ms": 10054,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 15216,
+        "cyanPixels": 8760,
+        "textPixels": 12200,
+        "nonBgFraction": 0.5863
+      }
+    },
+    {
+      "name": "garage-simbay-landscape",
+      "path": "/?demo=first",
+      "url": "http://127.0.0.1:45939/?demo=first",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-simbay-landscape.png",
+      "video": null,
+      "ms": 8626,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 29,
+        "bodyTextNodes": 42,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "cyanPixels": 16824,
+        "textPixels": 0,
+        "nonBgFraction": 0.5763
+      }
+    },
+    {
+      "name": "garage-flagged-landscape",
+      "path": "/?demo=flagged",
+      "url": "http://127.0.0.1:45939/?demo=flagged",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-flagged-landscape.png",
+      "video": null,
+      "ms": 11306,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 429468,
+        "cyanPixels": 3616,
+        "textPixels": 55328,
+        "nonBgFraction": 0.6179
+      }
+    },
+    {
+      "name": "garage-delete-landscape",
+      "path": "/?demo=first",
+      "url": "http://127.0.0.1:45939/?demo=first",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-delete-landscape.png",
+      "video": null,
+      "ms": 10437,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 29,
+        "bodyTextNodes": 42,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 26168,
+        "cyanPixels": 0,
+        "textPixels": 5828,
+        "nonBgFraction": 0.6466
+      }
+    },
+    {
+      "name": "settings-landscape",
+      "path": "/settings",
+      "url": "http://127.0.0.1:45939/settings",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/settings-landscape.png",
+      "video": null,
+      "ms": 2084,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -834,18 +516,18 @@
           "Barlow_500Medium",
           "Barlow_600SemiBold"
         ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 52,
+        "displayTextNodes": 45,
+        "bodyTextNodes": 35,
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 0,
         "webgl": true,
         "canvasKit": true
       },
       "pixels": {
-        "width": 1179,
-        "height": 2556,
+        "width": 2556,
+        "height": 1179,
         "corners": {
           "topLeft": {
             "r": 7,
@@ -870,13 +552,135 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 4900,
-        "cyanPixels": 49040,
-        "textPixels": 27272,
-        "nonBgFraction": 0.5416
+        "emberPixels": 3216,
+        "cyanPixels": 4636,
+        "textPixels": 50932,
+        "nonBgFraction": 0.4599
+      }
+    },
+    {
+      "name": "garage-index-broken-landscape",
+      "path": "/?demo=first",
+      "url": "http://127.0.0.1:45939/?demo=first",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-index-broken-landscape.png",
+      "video": null,
+      "ms": 10776,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 29,
+        "bodyTextNodes": 42,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 409708,
+        "cyanPixels": 3620,
+        "textPixels": 55304,
+        "nonBgFraction": 0.3751
+      }
+    },
+    {
+      "name": "garage-index-rebuilt-landscape",
+      "path": "/?demo=first",
+      "url": "http://127.0.0.1:45939/?demo=first",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/garage-index-rebuilt-landscape.png",
+      "video": null,
+      "ms": 12491,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 29,
+        "bodyTextNodes": 42,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 438056,
+        "cyanPixels": 3616,
+        "textPixels": 22896,
+        "nonBgFraction": 0.515
       }
     }
   ],
-  "finishedAt": "2026-09-21T00:34:49.781Z",
+  "finishedAt": "2026-09-21T00:36:14.099Z",
   "failed": 0
 }

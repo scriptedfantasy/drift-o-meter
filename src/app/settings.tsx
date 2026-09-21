@@ -134,6 +134,18 @@ export default function SettingsScreen() {
                 testID="setting-sound"
               />
             </Field>
+            {/* A switch is a stronger claim than a label, so this screen has to be able to make
+                good on it without a drive: the lab plays every clip in the bank and shows what
+                the mixer did with each one, including what this switch does to it. */}
+            <Pressable
+              onPress={() => router.push('/sound')}
+              accessibilityRole="button"
+              testID="setting-sound-lab"
+              style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+              <AppText variant="subheading" color="magenta" style={styles.linkLabel}>
+                Hear every sound →
+              </AppText>
+            </Pressable>
           </Section>
 
           <Section title="Data" hint="Everything this app stores stays on this device.">
