@@ -6,6 +6,7 @@
  * reached, criticism cites the corner, the drift or the number it came from, and a session
  * that was sloppy is told so — a review pull quote, not a participation ribbon.
  */
+import { calibrationBand, calibrationHeadroom } from '../../engine/integrity';
 import { DEFAULT_SCORE_OPTIONS, medianCornerRadiusM, trackFactorFor, type Curve } from '../../engine/score';
 import type { StyleCalloutKind, TrackCorner } from '../../engine/types';
 import { colors } from '../theme';
@@ -260,31 +261,48 @@ export function verdictFor(model: ResultsBase): string {
 
   // Short of a refusal, a mount that never calibrated still comes first: praising or blaming the
   // driving on top of it would be a verdict on the cradle, not the driver.
+  //
+  // WHICH RUNS THOSE ARE IS THE ENGINE'S CALL, NOT THIS FILE'S. This line held `quality < 0.4`
+  // for two rounds after the consolidation that was supposed to delete it — a threshold 0.1 above
+  // the monitor's own veto, so a run at 0.377 that the engine scored a B and published 25,163
+  // points for was opening with "the mount calibration never got past 38%", while the garage
+  // called the same run merely unsteady. Three separate critics found it independently. The band
+  // decides now; the headroom only shades the wording.
   const cal = model.session.calibration;
   const calPct = Math.round((cal?.quality ?? 0) * 100);
-  if (!cal || cal.quality < 0.4) {
+  const calBand = calibrationBand(cal?.quality ?? NaN, cal?.forwardResolved ?? false);
+  if (!cal || calBand === 'unresolved' || calBand === 'unusable') {
     const rest = flaws[0] ?? `${b.drifts} ${plural(b.drifts, 'slide')} were logged for ${model.total.toLocaleString('en-US')} points`;
-    return `Judge the data before the driving — the mount calibration never got past ${calPct}%, and on that footing ${rest}.`;
+    const why = calBand === 'unresolved' ? 'the app never worked out which way the car points' : `the mount calibration never got past ${calPct}%`;
+    return `Judge the data before the driving — ${why}, and on that footing ${rest}.`;
   }
+
+  // A run the engine scored keeps its verdict; a thin calibration is a caveat appended to it, not
+  // a substitute for it. Below the halfway mark of the scorable range the mount is worth saying
+  // out loud, and `calibrationHeadroom` is the engine's own scale for that, so no edge lives here.
+  const calCaveat =
+    calibrationHeadroom(cal.quality, cal.forwardResolved) < 0.5
+      ? ` (at ${calPct}% mount confidence, a couple of degrees of every angle here belong to the cradle)`
+      : '';
 
   if (sloppy) {
     // the first clause often already carries an "and"; a second one turns the sentence to mush
-    if (flaws.length >= 2) return `${capitalize(flaws[0])}${flaws[0].includes(' and ') ? '; ' : ', and '}${flaws[1]}.`;
-    if (flaws.length === 1) return `${capitalize(flaws[0])}.`;
-    return `${b.drifts} slides, ${model.total.toLocaleString('en-US')} points, and nothing in them the scorer could reward.`;
+    if (flaws.length >= 2) return `${capitalize(flaws[0])}${flaws[0].includes(' and ') ? '; ' : ', and '}${flaws[1]}${calCaveat}.`;
+    if (flaws.length === 1) return `${capitalize(flaws[0])}${calCaveat}.`;
+    return `${b.drifts} slides, ${model.total.toLocaleString('en-US')} points, and nothing in them the scorer could reward${calCaveat}.`;
   }
 
-  if (praise && flaws.length) return `${capitalize(praise)}, but ${flaws[0]}.`;
+  if (praise && flaws.length) return `${capitalize(praise)}, but ${flaws[0]}${calCaveat}.`;
   if (praise) {
     const best = model.best;
     const named = best?.corner ? praise.includes(cornerLabel(best.corner)) : false;
     const closer = best
       ? `${best.points.toLocaleString('en-US')} of the ${model.total.toLocaleString('en-US')} came from one ${round(best.durationS, 1)} s slide${best.corner && !named ? ` through ${cornerLabel(best.corner)}` : ''}`
       : `${model.total.toLocaleString('en-US')} points with nothing thrown away`;
-    return `${capitalize(praise)}, and ${closer}.`;
+    return `${capitalize(praise)}, and ${closer}${calCaveat}.`;
   }
-  if (flaws.length) return `${capitalize(flaws[0])}.`;
-  return `${b.drifts} slides, ${model.total.toLocaleString('en-US')} points: nothing went wrong, and nothing went spectacular either.`;
+  if (flaws.length) return `${capitalize(flaws[0])}${calCaveat}.`;
+  return `${b.drifts} slides, ${model.total.toLocaleString('en-US')} points: nothing went wrong, and nothing went spectacular either${calCaveat}.`;
 }
 
 const FLAIR_KINDS: StyleCalloutKind[] = ['transition', 'extreme-angle', 'long-drift', 'smooth', 'high-speed', 'manji', 'link', 'perfect-exit', 'clean-lap'];
