@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T13:17:55.159Z",
+  "startedAt": "2026-09-21T13:34:52.223Z",
   "viewport": {
     "width": 852,
     "height": 393
@@ -1278,13 +1278,13 @@
     {
       "name": "drive-open",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open.png",
       "video": null,
-      "ms": 4280,
+      "ms": 4151,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1332,22 +1332,22 @@
         "redPixels": 14396,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.1122,
+        "nonBgFraction": 0.1129,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
             "pixels": 0,
             "max": 120,
@@ -1356,18 +1356,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-start",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 4249,
+      "ms": 4176,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1415,22 +1415,22 @@
         "redPixels": 14396,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.1122,
+        "nonBgFraction": 0.1129,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
             "pixels": 0,
             "max": 120,
@@ -1439,18 +1439,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 6350,
+      "ms": 6146,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1493,47 +1493,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 162808,
-        "goldPixels": 1052,
-        "redPixels": 15656,
+        "emberPixels": 191228,
+        "goldPixels": 1720,
+        "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 2936,
-        "nonBgFraction": 0.5627,
+        "textPixels": 3208,
+        "nonBgFraction": 0.6166,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 160500,
-            "min": 60000,
+            "pixels": 156124,
+            "min": 70000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 5047,
+      "ms": 4815,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1576,47 +1576,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 121464,
-        "goldPixels": 2492,
+        "emberPixels": 123928,
+        "goldPixels": 2488,
         "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 2932,
-        "nonBgFraction": 0.5999,
+        "textPixels": 3212,
+        "nonBgFraction": 0.6235,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 60288,
-            "min": 15000,
+            "pixels": 63340,
+            "min": 40000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-transition",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 5052,
+      "ms": 4857,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1659,47 +1659,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 176832,
+        "emberPixels": 169336,
         "goldPixels": 0,
         "redPixels": 15712,
         "cyanPixels": 0,
-        "textPixels": 2932,
-        "nonBgFraction": 0.5691,
+        "textPixels": 3196,
+        "nonBgFraction": 0.59,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 172400,
-            "min": 60000,
+            "pixels": 164836,
+            "min": 70000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-bank",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank.png",
       "video": null,
-      "ms": 4976,
+      "ms": 4676,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1742,47 +1742,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 52952,
+        "emberPixels": 46720,
         "goldPixels": 24,
         "redPixels": 14412,
         "cyanPixels": 0,
-        "textPixels": 2932,
-        "nonBgFraction": 0.2201,
+        "textPixels": 3196,
+        "nonBgFraction": 0.2269,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 52460,
+            "pixels": 46564,
             "min": 20000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-loose",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose.png",
       "video": null,
-      "ms": 4641,
+      "ms": 4459,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1829,23 +1829,23 @@
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 2980,
-        "nonBgFraction": 0.1292,
+        "textPixels": 3252,
+        "nonBgFraction": 0.1273,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
             "pixels": 0,
             "max": 120,
@@ -1854,18 +1854,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-lost",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost.png",
       "video": null,
-      "ms": 4646,
+      "ms": 4429,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1912,23 +1912,23 @@
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 2956,
-        "nonBgFraction": 0.1301,
+        "textPixels": 3224,
+        "nonBgFraction": 0.1284,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
             "pixels": 0,
             "max": 120,
@@ -1937,18 +1937,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-gps",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps.png",
       "video": null,
-      "ms": 4730,
+      "ms": 4568,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1991,47 +1991,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 62876,
+        "emberPixels": 59368,
         "goldPixels": 1060,
         "redPixels": 14476,
         "cyanPixels": 0,
-        "textPixels": 2908,
-        "nonBgFraction": 0.4105,
+        "textPixels": 3188,
+        "nonBgFraction": 0.4104,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 62320,
-            "min": 20000,
+            "pixels": 59200,
+            "min": 25000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-discarded",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded.png",
       "video": null,
-      "ms": 5453,
+      "ms": 5333,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -2079,21 +2079,21 @@
         "redPixels": 14076,
         "cyanPixels": 0,
         "textPixels": 32376,
-        "nonBgFraction": 0.3032,
+        "nonBgFraction": 0.3085,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-savefail",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail.png",
       "video": null,
-      "ms": 6658,
+      "ms": 6387,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -2136,15 +2136,15 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 68764,
-        "goldPixels": 28,
+        "emberPixels": 68836,
+        "goldPixels": 68,
         "redPixels": 49876,
         "cyanPixels": 8768,
         "textPixels": 3132,
-        "nonBgFraction": 0.6358,
+        "nonBgFraction": 0.6637,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "results-reveal",
@@ -5378,13 +5378,13 @@
     {
       "name": "drive-chain",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain.png",
       "video": null,
-      "ms": 4849,
+      "ms": 4307,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5427,47 +5427,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 35192,
+        "emberPixels": 30596,
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 2896,
-        "nonBgFraction": 0.1545,
+        "textPixels": 3168,
+        "nonBgFraction": 0.1601,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 34996,
+            "pixels": 30452,
             "min": 12000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 5085,
+      "ms": 4809,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5510,37 +5510,37 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 22680,
+        "emberPixels": 23504,
         "goldPixels": 2384,
         "redPixels": 14540,
         "cyanPixels": 0,
-        "textPixels": 2904,
-        "nonBgFraction": 0.5286,
+        "textPixels": 3176,
+        "nonBgFraction": 0.5374,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
-            "pixels": 22472,
-            "max": 27000,
-            "min": 4000,
+            "pixels": 23104,
+            "max": 35000,
+            "min": 6000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "settings-feedback",
@@ -7157,13 +7157,13 @@
     {
       "name": "drive-savefail-untrusted",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted.png",
       "video": null,
-      "ms": 6459,
+      "ms": 6197,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7211,21 +7211,21 @@
         "redPixels": 52156,
         "cyanPixels": 0,
         "textPixels": 3132,
-        "nonBgFraction": 0.4134,
+        "nonBgFraction": 0.4161,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "drive-loose-peak",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:37087/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak.png",
       "video": null,
-      "ms": 4834,
+      "ms": 4631,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7272,23 +7272,23 @@
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 2984,
-        "nonBgFraction": 0.1292,
+        "textPixels": 3252,
+        "nonBgFraction": 0.1275,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.25936619718309856,
+              "y": 0.22938160211267605,
               "w": 1,
-              "h": 0.48126760563380283
+              "h": 0.54121845657277
             },
             "box": {
               "x0": 0,
-              "y0": 663,
+              "y0": 586,
               "x1": 1179,
-              "y1": 1893
+              "y1": 1970
             },
             "pixels": 0,
             "max": 120,
@@ -7317,7 +7317,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:17:43.437Z"
+      "shotAt": "2026-09-21T13:34:51.414Z"
     },
     {
       "name": "sound-banked",
@@ -9124,13 +9124,13 @@
     {
       "name": "drive-open-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open-landscape.png",
       "video": null,
-      "ms": 4331,
+      "ms": 4156,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9173,27 +9173,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 0,
+        "emberPixels": 224,
         "goldPixels": 0,
-        "redPixels": 14528,
+        "redPixels": 14352,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.0873,
+        "nonBgFraction": 0.0876,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
             "pixels": 0,
             "max": 120,
@@ -9202,18 +9202,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-start-landscape",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start-landscape.png",
       "video": null,
-      "ms": 4294,
+      "ms": 4236,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9256,27 +9256,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 0,
+        "emberPixels": 224,
         "goldPixels": 0,
-        "redPixels": 14528,
+        "redPixels": 14352,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.0873,
+        "nonBgFraction": 0.0876,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
             "pixels": 0,
             "max": 120,
@@ -9285,18 +9285,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-landscape",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-landscape.png",
       "video": null,
-      "ms": 6444,
+      "ms": 6140,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9339,47 +9339,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 110388,
-        "goldPixels": 868,
-        "redPixels": 15332,
+        "emberPixels": 136020,
+        "goldPixels": 888,
+        "redPixels": 15124,
         "cyanPixels": 0,
-        "textPixels": 1944,
-        "nonBgFraction": 0.6046,
+        "textPixels": 2172,
+        "nonBgFraction": 0.6091,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 108384,
-            "min": 60000,
+            "pixels": 130000,
+            "min": 70000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-peak-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak-landscape.png",
       "video": null,
-      "ms": 4994,
+      "ms": 4885,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9422,47 +9422,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 102356,
-        "goldPixels": 2252,
-        "redPixels": 14828,
+        "emberPixels": 126632,
+        "goldPixels": 2312,
+        "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 1960,
-        "nonBgFraction": 0.6399,
+        "textPixels": 2164,
+        "nonBgFraction": 0.633,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 32604,
-            "min": 15000,
+            "pixels": 58812,
+            "min": 40000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-transition-landscape",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition-landscape.png",
       "video": null,
-      "ms": 4955,
+      "ms": 4866,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9505,47 +9505,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 117324,
+        "emberPixels": 123388,
         "goldPixels": 0,
-        "redPixels": 15368,
+        "redPixels": 15124,
         "cyanPixels": 0,
-        "textPixels": 1948,
-        "nonBgFraction": 0.6067,
+        "textPixels": 2156,
+        "nonBgFraction": 0.5966,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 114820,
-            "min": 60000,
+            "pixels": 119900,
+            "min": 70000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-bank-landscape",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank-landscape.png",
       "video": null,
-      "ms": 4806,
+      "ms": 4703,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9588,47 +9588,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 35496,
+        "emberPixels": 33140,
         "goldPixels": 16,
-        "redPixels": 14576,
+        "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 1940,
-        "nonBgFraction": 0.2057,
+        "textPixels": 2172,
+        "nonBgFraction": 0.2182,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 35768,
+            "pixels": 32876,
             "min": 20000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-loose-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-landscape.png",
       "video": null,
-      "ms": 4532,
+      "ms": 4505,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9671,27 +9671,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 0,
+        "emberPixels": 224,
         "goldPixels": 0,
-        "redPixels": 14528,
+        "redPixels": 14352,
         "cyanPixels": 0,
-        "textPixels": 1996,
-        "nonBgFraction": 0.1,
+        "textPixels": 2204,
+        "nonBgFraction": 0.0994,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
             "pixels": 0,
             "max": 120,
@@ -9700,18 +9700,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-lost-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost-landscape.png",
       "video": null,
-      "ms": 4586,
+      "ms": 4490,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9754,27 +9754,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 0,
+        "emberPixels": 224,
         "goldPixels": 0,
-        "redPixels": 14528,
+        "redPixels": 14352,
         "cyanPixels": 0,
-        "textPixels": 1972,
-        "nonBgFraction": 0.101,
+        "textPixels": 2180,
+        "nonBgFraction": 0.1006,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
             "pixels": 0,
             "max": 120,
@@ -9783,18 +9783,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-gps-landscape",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps-landscape.png",
       "video": null,
-      "ms": 4664,
+      "ms": 4713,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9837,47 +9837,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 41740,
-        "goldPixels": 872,
-        "redPixels": 14620,
+        "emberPixels": 40716,
+        "goldPixels": 888,
+        "redPixels": 14504,
         "cyanPixels": 0,
-        "textPixels": 1940,
-        "nonBgFraction": 0.4481,
+        "textPixels": 2068,
+        "nonBgFraction": 0.4316,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 41732,
-            "min": 20000,
+            "pixels": 40532,
+            "min": 25000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-discarded-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded-landscape.png",
       "video": null,
-      "ms": 5393,
+      "ms": 5418,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9920,26 +9920,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 61840,
+        "emberPixels": 63252,
         "goldPixels": 0,
-        "redPixels": 14188,
+        "redPixels": 13976,
         "cyanPixels": 0,
         "textPixels": 32432,
-        "nonBgFraction": 0.3284,
+        "nonBgFraction": 0.3435,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-savefail-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-landscape.png",
       "video": null,
-      "ms": 6607,
+      "ms": 6574,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9982,15 +9982,15 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 69248,
-        "goldPixels": 0,
-        "redPixels": 49216,
+        "emberPixels": 70200,
+        "goldPixels": 36,
+        "redPixels": 49204,
         "cyanPixels": 8768,
         "textPixels": 3132,
-        "nonBgFraction": 0.7225,
+        "nonBgFraction": 0.7614,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "results-reveal-landscape",
@@ -13218,13 +13218,13 @@
     {
       "name": "drive-chain-landscape",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain-landscape.png",
       "video": null,
-      "ms": 4714,
+      "ms": 4708,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -13267,47 +13267,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 23292,
+        "emberPixels": 20728,
         "goldPixels": 0,
-        "redPixels": 14528,
+        "redPixels": 14356,
         "cyanPixels": 0,
-        "textPixels": 1984,
-        "nonBgFraction": 0.1194,
+        "textPixels": 2052,
+        "nonBgFraction": 0.1244,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 23224,
+            "pixels": 20564,
             "min": 12000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-warn-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn-landscape.png",
       "video": null,
-      "ms": 4903,
+      "ms": 5006,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -13350,37 +13350,37 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 10020,
-        "goldPixels": 2004,
-        "redPixels": 14700,
+        "emberPixels": 17672,
+        "goldPixels": 2028,
+        "redPixels": 14516,
         "cyanPixels": 0,
-        "textPixels": 1940,
-        "nonBgFraction": 0.5789,
+        "textPixels": 2132,
+        "nonBgFraction": 0.5617,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
-            "pixels": 9800,
-            "max": 27000,
-            "min": 4000,
+            "pixels": 17068,
+            "max": 35000,
+            "min": 6000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "settings-feedback-landscape",
@@ -14996,13 +14996,13 @@
     {
       "name": "drive-savefail-untrusted-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted-landscape.png",
       "video": null,
-      "ms": 6361,
+      "ms": 6358,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -15050,21 +15050,21 @@
         "redPixels": 51496,
         "cyanPixels": 0,
         "textPixels": 3132,
-        "nonBgFraction": 0.4631,
+        "nonBgFraction": 0.4827,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "drive-loose-peak-landscape",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:46009/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:33693/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak-landscape.png",
       "video": null,
-      "ms": 4688,
+      "ms": 4728,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -15107,27 +15107,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 0,
+        "emberPixels": 224,
         "goldPixels": 0,
-        "redPixels": 14528,
+        "redPixels": 14352,
         "cyanPixels": 0,
-        "textPixels": 2012,
-        "nonBgFraction": 0.1001,
+        "textPixels": 2144,
+        "nonBgFraction": 0.0997,
         "regions": [
           {
             "name": "dial",
             "colour": "ember",
             "rect": {
-              "x": 0.30044600938967136,
-              "y": 0.079058524173028,
-              "w": 0.39910798122065727,
-              "h": 0.841882951653944
+              "x": 0.06836340962441315,
+              "y": 0.02053435114503817,
+              "w": 0.4032709800469484,
+              "h": 0.9589312977099237
             },
             "box": {
-              "x0": 768,
-              "y0": 93,
-              "x1": 1788,
-              "y1": 1086
+              "x0": 175,
+              "y0": 24,
+              "x1": 1205,
+              "y1": 1155
             },
             "pixels": 0,
             "max": 120,
@@ -15156,7 +15156,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:19:11.529Z"
+      "shotAt": "2026-09-21T13:36:07.797Z"
     },
     {
       "name": "sound-banked-landscape",
@@ -15697,7 +15697,7 @@
       "shotAt": "2026-09-21T07:54:17.472Z"
     }
   ],
-  "finishedAt": "2026-09-21T13:19:11.529Z",
+  "finishedAt": "2026-09-21T13:36:07.797Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [

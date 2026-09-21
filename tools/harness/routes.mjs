@@ -178,12 +178,23 @@ export const defaultRoutes = [
   // `gGlow`) scales with `signals.trust`. Measured inside `hud-dial-box` at the identical instant
   // of the identical run:
   //                              portrait   landscape
-  //   trusted (peak, below)        60 288      32 604
-  //   suspect (the warn route)     22 472       9 800
+  //   trusted (peak, below)        63 340      58 812
+  //   suspect (the warn route)     23 104      17 068
   //   refused (the loose route)         0           0
-  // The landscape dial is smaller — it is capped by the height a landscape phone has least of —
-  // so a pixel count is not comparable across orientations and every floor below is set under
-  // the LANDSCAPE figure, which is the smaller of the two for every route.
+  //
+  // THE TWO ORIENTATIONS NEARLY AGREE NOW, and that is a change worth naming. The landscape dial
+  // used to be squeezed to 315 pt by a centred layout clearing a full-width STOP dock, so it
+  // measured half of portrait's count and a threshold had to fit a 15 % window between them.
+  // Given its own column beside STOP it comes out within 8 % of the portrait one, and the band
+  // below has a 2.5× window to sit in.
+  //
+  // WHICH IS WHY `drive-peak` CARRIES A FLOOR OF 40 000 rather than a token one. It is not only
+  // "the dial drew": it is above BOTH doubted figures, so a regression that stopped the dial
+  // dimming all the way — leaving it permanently at suspect brightness — fails this route as well
+  // as the band on `drive-warn`. A floor of 15 000 stood here while the doubted landscape figure
+  // was 9 800, and caught that bug by accident; once the orientations closed up it stopped
+  // catching anything, and nothing about the screen had changed. Every other floor below is set under the
+  // smaller of the two orientations, with margin in the thousands.
   //
   // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
   // this is the first frame of a live run — needle at rest, radar at zero, nothing claimed.
@@ -198,13 +209,13 @@ export const defaultRoutes = [
   // This is the one drive route that is NOT held, so its count moves shot to shot: 148 548,
   // 151 260 and 169 268 on three consecutive runs. The floor is set well under the lowest of
   // them rather than near any of them, because the number it is measuring is a moving frame.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [dialIsHot(60000)] },
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [dialIsHot(70000)] },
   // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48 deg right, needle hard
   // over, the R chevron lit. The engine is still banking points and still timing the hold behind
   // it — what changed is that the screen no longer prints them.
-  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(15000)] },
+  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(40000)] },
   // HELD 190 ms after TRANSITION x2, mid-swing through zero: 40 deg left, chevron flipped.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(60000)] },
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(70000)] },
   // HELD 0.46 s after a 10,259-point chain banked.
   //
   // IT USED TO PHOTOGRAPH the bank banner rising over 900 ms, and there is no banner now. What it
@@ -233,7 +244,7 @@ export const defaultRoutes = [
   // neither of which is the fix — so the dial stays lit, and this floor says so. GPS LOST used to be spelled out in the status
   // strip; it is not spelled out anywhere on this screen now, and the reason it needn't be is
   // that the reading it would qualify has not changed.
-  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(20000)] },
+  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(25000)] },
   // STOP on a run that never left walking pace: it is the walk to the car, not a session, so the
   // HUD says so instead of filing it or dropping the driver into the garage with no word.
   {
@@ -513,27 +524,22 @@ export const defaultRoutes = [
   // `integrity=suspect` at the exact instant of `drive-peak`: same run, same warp, same hold, so
   // the two frames differ in nothing but how far the engine believes the reading. Held side by
   // side they look alike at a glance — the arc, the needle, the numeral, the chevron and the g
-  // vector are all drawn — and they are not alike: 22 472 ember pixels inside the dial against
-  // `drive-peak`'s 60 288 portrait, 9 800 against 32 604 landscape, because `trust` multiplies
+  // dot are all drawn — and they are not alike: 23 104 ember pixels inside the dial against
+  // `drive-peak`'s 63 340 portrait, 17 068 against 58 812 landscape, because `trust` multiplies
   // every opacity in the instrument.
   //
   // Hence a BAND and not a floor. The floor says it still drew; the ceiling says it drew dimmer
   // than the trusted twin, and without the ceiling this route would pass on a bug that threw the
-  // doubt away and lit the dial at full.
-  //
-  // THE CEILING IS ORIENTATION-COUPLED and the window is the whole of what is available: one
-  // route entry is shot at both orientations, the landscape dial is smaller, so 27 000 has to
-  // clear portrait's doubted 22 472 while staying under landscape's trusted 32 604. It catches a
-  // full-trust regression at both orientations, which is what it is for. What catches the other
-  // direction — a dial that stopped dimming a little rather than a lot — is `drive-peak`'s own
-  // floor of 15 000, which landscape's doubted 9 800 would fail. Both figures are stable:
+  // doubt away and lit the dial at full. 35 000 clears portrait's doubted 23 104 with half again
+  // to spare and sits at 55 % of the portrait trusted figure and 60 % of the landscape one — a window the earlier
+  // layout could not offer, when the same two numbers were 15 % apart. Both figures are stable:
   // consecutive runs of each route returned them unchanged, because `hold=1` freezes the frame.
   {
     name: 'drive-warn',
     path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect',
     waitMs: 2800,
     expectCanvas: true,
-    regions: [{ name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, min: 4000, max: 27000 }],
+    regions: [{ name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, min: 6000, max: 35000 }],
   },
 
   // ---- the feel layer's settings, appended ------------------------------------------------

@@ -1,6 +1,6 @@
 /**
- * Engine axes → g-meter face. One implementation, because a sign convention is the thing that
- * silently flips.
+ * Engine axes → the g radar's face. One implementation, because a sign convention is the thing
+ * that silently flips.
  *
  * The engine's frame (`VehicleMotionSample` in `src/engine/types.ts`): `ax` is + accelerating
  * FORWARD, `ay` is + to the LEFT. The face's frame is a screen canvas: x grows right, y grows
@@ -45,19 +45,4 @@ export function gToFace(ayG: number, axG: number, fullScaleG: number): GVector {
   const m = Math.sqrt(x * x + y * y);
   if (m <= 1) return { x, y, mag: m };
   return { x: x / m, y: y / m, mag: 1 };
-}
-
-/**
- * The vector's heading in radians for a Skia `rotate`, measured from 12 o'clock turning
- * clockwise — which is what a rotate transform does to a line drawn straight up.
- *
- * Zero acceleration has no heading; it returns 0 (straight up), and the caller draws nothing at
- * all because `mag` is 0.
- */
-export function gHeading(ayG: number, axG: number): number {
-  'worklet';
-  if (!Number.isFinite(ayG) || !Number.isFinite(axG)) return 0;
-  // Rotating (0, −1) by θ gives (sin θ, −cos θ); the face wants (−ay, −ax), so sin θ = −ay and
-  // cos θ = ax, i.e. θ = atan2(−ay, ax).
-  return Math.atan2(-ayG, axG);
 }

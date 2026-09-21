@@ -23,7 +23,7 @@ import { nextDisplayTotal, TAU_S } from './odometerValue';
 import { readIntegrity, CALIBRATION_GRACE_S } from './integrityView';
 import { createTrail, fitTrail, pushTrail, resetTrail } from './trail';
 import { DEFAULT_HUD_PARAMS, parseHudParams } from './hudParams';
-import { gHeading, gToFace } from './gVector';
+import { gToFace } from './gVector';
 import type { HudSnapshot } from './useDriveRun';
 
 // ── the odometer ───────────────────────────────────────────────────────────────────────────
@@ -491,16 +491,6 @@ describe('hud params', () => {
 
 describe('g-meter geometry', () => {
   const FS = 1.0;
-  /** Where the vector's tip actually lands on screen, from the two things the renderer uses:
-      the heading it rotates a straight-up line by, and the fraction of the radius it trims to.
-      If these ever disagree with `gToFace`, the dot and the line it grows from point different
-      ways — which is a defect no unit test on either one alone can see. */
-  function tipFromRenderer(ayG: number, axG: number) {
-    const th = gHeading(ayG, axG);
-    const m = gToFace(ayG, axG, FS).mag;
-    return { x: Math.sin(th) * m, y: -Math.cos(th) * m };
-  }
-
   it('puts a right-hand push right, throttle up and braking down', () => {
     // ay is + to the LEFT, so a RIGHT-hand acceleration is ay < 0. ax is + forward.
     const at = (ayG: number, axG: number) => {
@@ -514,16 +504,14 @@ describe('g-meter geometry', () => {
     expect(at(0, -0.5)).toEqual({ x: 0, y: 0.5 });
   });
 
-  it('agrees with the heading the renderer spins the line by, all the way round the face', () => {
+  it('sweeps a circle, not a square: 0.6 g at every heading lands 0.6 of the way out', () => {
+    // the property the face depends on and the one a per-axis bug breaks first — a reading of a
+    // fixed magnitude must sit at a fixed radius whatever direction it points
     for (let deg = 0; deg < 360; deg += 5) {
       const a = (deg * Math.PI) / 180;
-      // an acceleration of 0.6 g at every heading, in ENGINE axes
-      const ayG = 0.6 * Math.cos(a);
-      const axG = 0.6 * Math.sin(a);
-      const face = gToFace(ayG, axG, FS);
-      const tip = tipFromRenderer(ayG, axG);
-      expect(tip.x, `x at ${deg}\u00b0`).toBeCloseTo(face.x, 10);
-      expect(tip.y, `y at ${deg}\u00b0`).toBeCloseTo(face.y, 10);
+      const f = gToFace(0.6 * Math.cos(a), 0.6 * Math.sin(a), FS);
+      expect(Math.hypot(f.x, f.y), `radius at ${deg}\u00b0`).toBeCloseTo(0.6, 12);
+      expect(f.mag, `mag at ${deg}\u00b0`).toBeCloseTo(0.6, 12);
     }
   });
 
@@ -552,7 +540,6 @@ describe('g-meter geometry', () => {
     for (const bad of [NaN, Infinity, -Infinity]) {
       expect(gToFace(bad, 0.3, FS)).toEqual({ x: 0, y: 0, mag: 0 });
       expect(gToFace(0.3, bad, FS)).toEqual({ x: 0, y: 0, mag: 0 });
-      expect(gHeading(bad, 0.3)).toBe(0);
     }
     expect(gToFace(0.3, 0.3, 0)).toEqual({ x: 0, y: 0, mag: 0 });
   });

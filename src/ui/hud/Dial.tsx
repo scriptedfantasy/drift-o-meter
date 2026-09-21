@@ -19,17 +19,32 @@
  * 6 o'clock is not a scale gap: it is the far end of both directions, and the two ends of the
  * scale meeting there is the correct reading of ±70°.
  *
- * ── the middle ─────────────────────────────────────────────────────────────────────────────
- * The g radar: concentric rings, crosshairs, and the acceleration vector drawn out of the
- * centre. Right is a right-hand push, up is throttle, down is brake — the same convention the
- * needle uses, which is the whole reason they can share one face. `gVector.ts` owns that
- * conversion and is swept in `hud.test.ts`.
+ * ── the middle ──────────────────────────────────────────────────────────────────────
+ * The g radar, concentric with the scale: rings, crosshairs, and ONE DOT at the tip of the
+ * acceleration vector. Right is a right-hand push, up is throttle, down is brake — the same
+ * convention the needle uses, which is the whole reason they can share one face. `gVector.ts`
+ * owns that conversion and is swept in `hud.test.ts`.
  *
- * ── what is NOT on it ──────────────────────────────────────────────────────────────────────
- * No side letter beside the chevron (an arrow and an "R" are one fact twice), no number beside
- * the g vector (its length IS the magnitude), no peak ring on the radar (measured out: across
- * 88 drifts the per-drift peak |g| has a MINIMUM of 0.645 g and 39.8 % of drifts reach full
- * scale, so the ring never leaves the outer third and reads as a second rim).
+ * THE DOT USED TO TRAIL A LINE BACK TO THE CENTRE, and the line is gone. It was there to say
+ * that the middle is zero and that the reading has a direction as well as a size — true, and
+ * both facts the rings and the crosshairs already carry. What it actually looked like, once it
+ * was on a frame beside a needle on the same face, was a joystick: a stick with a knob on the
+ * end, which is a control you push, not a reading you take. A free dot on a gridded field is
+ * the thing every g-meter in every car is, and it reads as one.
+ *
+ * ── under it ─────────────────────────────────────────────────────────────────────────
+ * The |β|° numeral and the direction chevron, BELOW the circle rather than inside it. Inside,
+ * they took the lower half of the face and pushed the radar off-centre to make room; out, the
+ * radar is concentric with the scale — which is what a radar inside a ring should be — and the
+ * numeral gets a band of its own and grows. The canvas is therefore taller than it is wide;
+ * `DIAL_ASPECT` is the ratio, and the drive screen sizes the dial with it.
+ *
+ * ── what is NOT on it ───────────────────────────────────────────────────────────────
+ * No side letter beside the chevron (an arrow pointing right and an "R" are one fact twice), no
+ * number beside the dot (its distance from the middle IS the magnitude), no peak ring on the
+ * radar (measured out: across 88 drifts the per-drift peak |g| has a MINIMUM of 0.645 g and
+ * 39.8 % of drifts reach full scale, so the ring never leaves the outer third and reads as a
+ * second rim).
  *
  * Nothing here re-renders: every moving part is a Reanimated shared value written by the sample
  * callback (see `useDriveRun`) and read on the UI thread — including the numeral's TEXT, which
@@ -43,7 +58,7 @@ import { useMemo } from 'react';
 import { interpolateColor, useDerivedValue } from 'react-native-reanimated';
 
 import { colors, rgba } from '../theme';
-import { gHeading, gToFace } from './gVector';
+import { gToFace } from './gVector';
 import type { HudSignals } from './signals';
 
 /** Half the angular width of the scale on screen, degrees (0 = straight up). */
@@ -74,8 +89,22 @@ export const FULL_SCALE_G = 1.0;
 
 const NUMERAL_FONT = require('@expo-google-fonts/barlow-condensed/800ExtraBold_Italic/BarlowCondensed_800ExtraBold_Italic.ttf');
 
+/**
+ * How far the numeral's band reaches BELOW the circle's box, as a fraction of it.
+ *
+ * Small, because the numeral does not hang off the bottom of the dial — it sits IN THE OPENING.
+ * The scale stops at ±150°, which leaves 60° of empty face at six o'clock and a 1.0 R-wide gap
+ * between the two ends of the arc; the numeral is about 0.6 R wide, so it drops into that gap
+ * and reads as part of the instrument. Set flush under the box instead, it floated 92 pt clear
+ * of the arc's ends with nothing between, and looked like a caption.
+ */
+const NUMERAL_BAND = 0.13;
+/** Canvas height ÷ width. The drive screen divides the height it has by this to get `size`. */
+export const DIAL_ASPECT = 1 + NUMERAL_BAND;
+
 export interface DialProps {
-  /** The dial is square; `size` is the side of its canvas. */
+  /** The side of the dial's CIRCLE. The canvas is `size` wide and `size * DIAL_ASPECT` tall,
+      because the numeral sits in a band under it. */
   size: number;
   signals: HudSignals;
   testID?: string;
@@ -84,17 +113,19 @@ export interface DialProps {
 export default function Dial({ size, signals, testID }: DialProps) {
   const cx = size / 2;
   const cy = size / 2;
-  /** The scale's radius. The rest of the canvas is the glow's room to fade out in rather than be
+  const canvasH = size * DIAL_ASPECT;
+  /** The scale's radius. The rest of the square is the glow's room to fade out in rather than be
       clipped — a glow that ends in a hard edge reads as a rendering bug. */
   const R = size * 0.44;
   const stroke = Math.max(9, R * 0.095);
 
-  // The three things that share the face, laid out so none of them touches another. The radar
-  // sits above centre and the numeral below it, because the needle's own busiest region is the
-  // top of the dial (small angles) and the quietest part of a round face is its lower middle.
-  const radar = useMemo(() => ({ cy: cy - R * 0.25, r: R * 0.4 }), [cy, R]);
-  const numeralSize = R * 0.5;
-  const numeralMidY = cy + R * 0.46;
+  /** The radar is CONCENTRIC with the scale, now that the numeral is not sharing the face. That
+      is not only tidier: the needle's base sits at a fixed 0.68 R from the centre, so a radar on
+      the same centre keeps the same clearance from it at every angle, where an off-centre one
+      was closest at 12 o'clock — the exact spot the needle spends small slip angles in. */
+  const radar = useMemo(() => ({ cy, r: R * 0.56 }), [cy, R]);
+  const numeralSize = size * 0.2;
+  const numeralMidY = size * 0.97;
   const baselineY = numeralMidY + numeralSize * 0.35;
 
   const font = useFont(NUMERAL_FONT, numeralSize);
@@ -215,19 +246,15 @@ export default function Dial({ size, signals, testID }: DialProps) {
 
   const radarHairs = useMemo(() => {
     const b = Skia.PathBuilder.Make();
-    const e = radar.r * 1.16;
+    // 1.05, not 1.16: the needle's base sits at 0.68 R and the radar now reaches 0.56 R, so a
+    // longer hair would cross it. The hairs still run past the outer ring, which is what makes a
+    // set of concentric circles read as a measuring field rather than as a target.
+    const e = radar.r * 1.05;
     b.moveTo(cx - e, radar.cy).lineTo(cx + e, radar.cy);
     b.moveTo(cx, radar.cy - e).lineTo(cx, radar.cy + e);
     return b.detach();
   }, [cx, radar.cy, radar.r]);
 
-  /** The vector is ONE STATIC PATH — a full-length line straight up out of the radar's centre —
-      spun to the heading and trimmed to the magnitude, exactly the way the scale fills its arc
-      with `start`/`end`. Building a two-point path per frame would allocate a native Skia object
-      100 times a second, and trimming rather than scaling keeps the line's WIDTH constant: a
-      `scale` transform would make it a hairline at 0.2 g and a slab at 1 g, which is the one
-      thing a magnitude readout must not do. */
-  const spoke = useMemo(() => Skia.PathBuilder.Make().moveTo(cx, radar.cy).lineTo(cx, radar.cy - radar.r).detach(), [cx, radar.cy, radar.r]);
   const dotR = Math.max(5, radar.r * 0.155);
 
   // ── everything below moves on the UI thread ────────────────────────────────────────
@@ -258,7 +285,6 @@ export default function Dial({ size, signals, testID }: DialProps) {
   // reads a LARGER g than the car does, not a smaller one.
   const face = useDerivedValue(() => gToFace(signals.ayG.value, signals.axG.value, FULL_SCALE_G));
   const gMag = useDerivedValue(() => face.value.mag);
-  const spokeTransform = useDerivedValue(() => [{ rotate: gHeading(signals.ayG.value, signals.axG.value) }]);
   const dotTransform = useDerivedValue(() => [{ translateX: face.value.x * radar.r }, { translateY: face.value.y * radar.r }]);
   const gHot = useDerivedValue(() =>
     signals.trust.value <= 0
@@ -286,11 +312,10 @@ export default function Dial({ size, signals, testID }: DialProps) {
   const sideOpacity = useDerivedValue(() => 0.95 * Math.max(0, Math.min(1, (Math.abs(signals.betaDeg.value) - 1.5) / 2.5)));
 
   const centre = useMemo(() => vec(cx, cy), [cx, cy]);
-  const radarCentre = useMemo(() => vec(cx, radar.cy), [cx, radar.cy]);
   const numeralOrigin = useMemo(() => vec(cx, numeralMidY), [cx, numeralMidY]);
 
   return (
-    <Canvas style={{ width: size, height: size }} testID={testID}>
+    <Canvas style={{ width: size, height: canvasH }} testID={testID}>
       {/* the face: ember light pooling inside the ring, fading to nothing before the rim */}
       <Circle cx={cx} cy={cy} r={R * 0.82} opacity={bowlOpacity}>
         <RadialGradient
@@ -336,11 +361,6 @@ export default function Dial({ size, signals, testID }: DialProps) {
       <Path path={radarHairs} color={rgba(colors.text, 0.22)} style="stroke" strokeWidth={Math.max(1, R * 0.005)} />
       <Path path={radarRings} color={rgba(colors.text, 0.17)} style="stroke" strokeWidth={Math.max(1, R * 0.006)} />
       <Group opacity={gGlow}>
-        <Group origin={radarCentre} transform={spokeTransform}>
-          <Path path={spoke} color={gHot} style="stroke" strokeWidth={dotR * 1.1} strokeCap="round" start={0} end={gMag}>
-            <BlurMask blur={dotR} style="normal" />
-          </Path>
-        </Group>
         <Group transform={dotTransform}>
           <Circle cx={cx} cy={radar.cy} r={dotR * 1.7} color={gHot}>
             <BlurMask blur={dotR * 1.2} style="normal" />
@@ -348,9 +368,6 @@ export default function Dial({ size, signals, testID }: DialProps) {
         </Group>
       </Group>
       <Group opacity={dimmed}>
-        <Group origin={radarCentre} transform={spokeTransform}>
-          <Path path={spoke} color={gHot} style="stroke" strokeWidth={dotR * 0.5} strokeCap="round" start={0} end={gMag} />
-        </Group>
         <Group transform={dotTransform}>
           <Circle cx={cx} cy={radar.cy} r={dotR} color={gHot} />
           <Circle cx={cx} cy={radar.cy} r={dotR * 0.3} color={rgba('#FFFFFF', 0.9)} />

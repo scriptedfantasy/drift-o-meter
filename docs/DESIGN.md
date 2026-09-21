@@ -63,10 +63,22 @@ ONE DIAL AND ONE CONTROL. The dial is round and fills the frame: its **rim is th
 zero at 12 o'clock, the needle sweeping left for a left-hand slide and right for a right-hand one
 over ±150° of travel, ticks every 10°, a ghost tick holding the drift's peak, the arc filling out
 of the top and shifting ember→gold past 40°; its **middle is the g radar** — concentric rings,
-crosshairs, and the acceleration vector drawn out of the centre, right for a right-hand push, up
-for throttle, down for brake. The |β|° numeral sits in the quiet lower half of the face with a
-chevron for the direction. STOP is docked at the bottom where a hand finds it without looking.
-Nothing else.
+crosshairs, and one dot at the tip of the acceleration vector, right for a right-hand push, up for
+throttle, down for brake. The |β|° numeral sits **below the circle**, dropped into the 60° opening
+the scale leaves at six o'clock, with a chevron for the direction. STOP is docked at the bottom
+where a hand finds it without looking. Nothing else.
+
+THE DOT HAS NO STICK. It trailed a line back to the centre for one build, to say that the middle
+is zero and that the reading has a direction as well as a size — both true, and both facts the
+rings and crosshairs already carry. On a frame, beside a needle on the same face, it read as a
+JOYSTICK: a stick with a knob on the end, which is a control you push rather than a reading you
+take. A free dot on a gridded field is what every g-meter in every car is, and it reads as one.
+
+THE NUMERAL MOVED OUT OF THE FACE for the same kind of reason. Inside, it took the lower half and
+pushed the radar off-centre to make room — and an off-centre radar sits closest to the needle at
+12 o'clock, which is exactly where the needle spends small slip angles. Out, the radar is
+concentric with the scale, its clearance from the needle is the same at every angle, and the
+numeral drops into the scale's own opening instead of floating under the dial like a caption.
 
 IT USED TO BE NINE THINGS: a status row (clock, lap, integrity pill, GPS pill), an integrity
 banner, a peak/held/flicks strip, a callout stack, a speed and lateral-g row, a score line
@@ -85,6 +97,11 @@ shallow ±78° bowl because eight other elements needed the space under it, and 
 such tenant, so the same ±70° of slip now spends nearly twice the travel and a spin drives the
 needle to the bottom of the dial, which is the one place a needle has obviously run out of road.
 
+Landscape keeps the dial in the left half rather than centring it. The numeral's band costs
+height, height is the one thing a landscape phone has none of, and a centred dial would also have
+to clear a STOP dock spanning the bottom. Off to the left, the dial owns a column and STOP owns
+the other, and the circle comes out larger than a centred one could be.
+
 NOTHING IS TURNED OFF BEHIND IT. The engine still takes ~100 samples a second, the scorer still
 scores, the integrity monitor still judges, the session is still saved, and the verdict screen
 still publishes the same grade. What changed is what the driver spends attention on mid-run. The
@@ -99,7 +116,7 @@ never leaves the outer third of the face and reads as a second rim.
 
 THE DIAL TELLS THE TRUTH ABOUT ITSELF, and this is the one non-furniture thing it does. Every
 opacity in `Dial.tsx` scales with `signals.trust`, so rim and radar fade together as the engine's
-doubt grows: measured inside its own box, 60,288 ember pixels trusted, 22,472 doubted, 0 refused
+doubt grows: measured inside its own box, 63,340 ember pixels trusted, 23,104 doubted, 0 refused
 — at one identical instant of one identical run. (Those are grid estimates to about ±1 %, not
 exact counts; the harness samples every second pixel. See `tools/harness/routes.mjs`.) A refused reading is drawn in grey with no glow
 at all, so the screen never celebrates an angle the scorer has already thrown away. The words that

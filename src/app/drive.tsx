@@ -37,6 +37,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, Body, Button, colors, fontFamilies, formatDuration, gradeColors, gutter, Micro, Panel, radii, space } from '@/ui';
 import { useDriftFeel } from '@/ui/audio';
+import { DIAL_ASPECT } from '@/ui/hud/Dial';
 import DialView from '@/ui/hud/DialView';
 import { EdgeBloom } from '@/ui/hud/HudChrome';
 import { useHudSignals } from '@/ui/hud/signals';
@@ -58,11 +59,18 @@ export default function DriveScreen() {
   // The display is live from the moment the screen opens: there is no pre-run state to render.
   const live = run.status !== 'error';
 
-  // The dial is SQUARE and takes the largest square that fits with the STOP dock clear of it.
-  // Portrait that is the frame's width; landscape it is the height, which is the dimension a
-  // landscape phone has least of — and the reason the dial is the right shape for this screen at
-  // all, because a wide shallow arc wasted the height portrait and the width landscape.
-  const dial = Math.min(width - (landscape ? gutter * 2 : 0), height - STOP_DOCK_H - space[4]);
+  // `dial` is the CIRCLE's diameter; the canvas under it is `DIAL_ASPECT` times as tall, because
+  // the numeral sits in a band below the circle. So the height available is divided by the aspect
+  // and the width is not.
+  //
+  // Landscape keeps the dial in the LEFT half rather than centring it, which is worth a note: the
+  // numeral band costs height, height is the one thing a landscape phone has none of, and a
+  // centred dial would also have to clear the STOP dock's full width at the bottom. Off to the
+  // left, the dial owns its own column and STOP owns the other, and the circle comes out larger
+  // than a centred one could be.
+  const dial = landscape
+    ? Math.min(width * STOP_DOCK_LEFT - gutter * 2, (height - space[3] * 2) / DIAL_ASPECT)
+    : Math.min(width, (height - STOP_DOCK_H - space[4]) / DIAL_ASPECT);
 
   return (
     <View style={styles.root} testID="screen-drive">
@@ -74,7 +82,7 @@ export default function DriveScreen() {
               does not forward its own testID to the DOM, and a ceiling like "at most N ember
               pixels inside the dial" has to be measured on the element rather than on the
               frame, where the edge bloom would clear any floor by itself. */}
-          <View style={styles.stage}>
+          <View style={[styles.stage, landscape && { paddingRight: width * (1 - STOP_DOCK_LEFT) }]}>
             <View testID="hud-dial-box">
               <DialView size={dial} signals={signals} testID="hud-dial" />
             </View>
@@ -208,6 +216,13 @@ function SavingOverlay() {
 
 /** Height reserved for the docked STOP control. */
 const STOP_DOCK_H = 54;
+/**
+ * Where the landscape STOP dock starts, as a fraction of the width — and therefore where the
+ * dial's column ENDS. One constant for both, because they are one decision: the dial is centred
+ * in what STOP does not take. Two numbers here meant the dial was sized against 52 % and then
+ * drawn hard against the left edge, with the whole difference showing up as a void on the right.
+ */
+const STOP_DOCK_LEFT = 0.54;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
@@ -218,7 +233,7 @@ const styles = StyleSheet.create({
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   stopDock: { position: 'absolute', left: gutter, right: gutter, bottom: space[3] },
   // Landscape puts STOP in the right half, clear of the gauge that now spans the frame.
-  stopDockLandscape: { left: '52%', right: gutter, bottom: space[2] },
+  stopDockLandscape: { left: `${STOP_DOCK_LEFT * 100}%`, right: gutter, bottom: space[2] },
 
   stop: {
     alignSelf: 'stretch',
