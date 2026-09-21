@@ -198,17 +198,31 @@ export async function createSoundPort(sources: SoundPortSources): Promise<Prepar
 
     setBed(low, high) {
       if (!ctx || !bedLowGain || !bedHighGain) return;
-      const wanted = low > 0.001 || high > 0.001;
+      // Clamped ONCE, before anything is decided with them. `clamp01` also swallows a non-finite
+      // gain: Web Audio rejects one with a TypeError ("the provided float value is non-finite"),
+      // and this call sits on the 100 Hz path, so a throw here is a throw out of `DriftFeel.frame`
+      // and into the drive loop. The mixer clamps too; neither side is allowed to assume the other.
+      const lo = clamp01(low);
+      const hi = clamp01(high);
+      const wanted = lo > 0.001 || hi > 0.001;
       if (wanted) startBed();
       // A 40 ms ramp rather than a step: the bed is updated 20 times a second, and stepping a
       // gain node produces a click at every step.
       const t = ctx.currentTime;
       try {
-        bedLowGain.gain.setTargetAtTime(clamp01(low), t, 0.04);
-        bedHighGain.gain.setTargetAtTime(clamp01(high), t, 0.04);
+        bedLowGain.gain.setTargetAtTime(lo, t, 0.04);
+        bedHighGain.gain.setTargetAtTime(hi, t, 0.04);
       } catch {
-        bedLowGain.gain.value = clamp01(low);
-        bedHighGain.gain.value = clamp01(high);
+        // The FALLBACK IS A SECOND PLACE THAT CAN THROW, and it used to be bare: a restricted
+        // float reaching `setTargetAtTime` reaches `.value` too, so the catch re-raised the same
+        // TypeError from a place with nothing above it to catch. A bed that will not move is a
+        // quieter app; an exception out of the hot path is a broken one.
+        try {
+          bedLowGain.gain.value = lo;
+          bedHighGain.gain.value = hi;
+        } catch {
+          // the layer keeps whatever gain it had; the run carries on
+        }
       }
       if (!wanted) stopBed();
     },
@@ -276,6 +290,7 @@ function unavailablePort(total: number, why: string): PreparedSoundPort {
   };
 }
 
+/** 0..1, and 0 for anything that is not a number — Web Audio throws on a non-finite gain. */
 function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
+  return v > 0 ? (v > 1 ? 1 : v) : 0;
 }

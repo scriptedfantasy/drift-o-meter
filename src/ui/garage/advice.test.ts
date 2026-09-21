@@ -2,15 +2,23 @@
  * When the garage is allowed to mention calibration, and what it says when it does.
  *
  * Calibration is not a step (docs/DESIGN.md), so the default answer is silence. These are the
- * four cases where the LAST RUN left evidence, plus the case that matters most: that the
- * monitor's own sentence is carried verbatim and kept on its own line rather than glued into a
- * template.
+ * four cases where the LAST RUN left evidence, plus the case that matters most: what happens to
+ * the monitor's own sentence. It gets its own line rather than being glued into a template, and
+ * it is ENDED as sentences rather than left as the HUD pill the monitor writes — "100% of this
+ * run's sliding could not be trusted — Phone looks hand-held — clip it into a rigid mount to
+ * score drifts" was on the garage, in that shape, one screen away from a results page that had
+ * already stopped printing it that way.
  */
 import { describe, expect, it } from 'vitest';
 
 import { calibrationBand } from '../../engine/integrity';
 import type { SessionIndexEntry } from '../../platform';
+import { summarizeSession } from '../../platform/sessionStore';
+import { buildFixtureSession, FIXTURES } from '../results/fixture';
 import { mountAdvice } from './advice';
+
+/** What `IntegrityMonitor` composes: a percentage, an em dash, then its own pill. */
+const REJECTION = "100% of this run's sliding could not be trusted — Phone looks hand-held — clip it into a rigid mount to score drifts";
 
 /**
  * Qualities picked by asking the engine which band they are in, not by writing thresholds down
@@ -52,13 +60,28 @@ describe('mountAdvice', () => {
   });
 
   it('leads with the rejection when the engine threw the run out', () => {
-    const a = mountAdvice(entry({ trusted: false, integrityMessage: 'Phone looks hand-held — clip it into a rigid mount to score drifts.' }));
+    const a = mountAdvice(entry({ trusted: false, integrityMessage: REJECTION }));
     expect(a?.concern).toBe('rejected');
     expect(a?.level).toBe('bad');
-    // The monitor's sentence, verbatim and on its own, never concatenated into the body.
-    expect(a?.quote).toBe('Phone looks hand-held — clip it into a rigid mount to score drifts.');
+    // On its own line, never concatenated into the body…
     expect(a?.body).not.toContain('hand-held');
     expect(a?.body).toMatch(/nothing from that drive was scored/i);
+    // …and ended, so the monitor's pill reads as prose instead of arriving glued.
+    expect(a?.quote).toBe("100% of this run's sliding could not be trusted. Phone looks hand-held — clip it into a rigid mount to score drifts.");
+  });
+
+  it('never leaves a capital standing after a dash, on the run the engine really refused', () => {
+    // The string a driver actually reads, traced back from the index entry the card is drawn
+    // from: the real pipeline, the real monitor, the real `SessionIntegrity.message`.
+    const session = buildFixtureSession({ ...FIXTURES.handheld });
+    const stored = summarizeSession(session);
+    expect(stored.trusted).toBe(false);
+    expect(stored.integrityMessage).toMatch(/—\s+[A-Z]/); // the monitor really does write it glued
+    const quote = mountAdvice(stored)?.quote ?? '';
+    expect(quote).not.toMatch(/—\s+[A-Z]/);
+    expect(quote).toMatch(/[.!?]$/);
+    // Nothing is dropped: every word of the monitor's own sentence survives the split.
+    for (const word of stored.integrityMessage.split(/\s+/)) expect(quote).toContain(word);
   });
 
   it('still says the run was thrown out when the monitor had no sentence for it', () => {

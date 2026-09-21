@@ -604,8 +604,13 @@ export class DriftPipeline implements DriftPipelineApi {
     }
 
     // ---- 6. laps (CLEAN LAP surfaces on the next frame, with the scorer's other pending callouts)
+    //  The lap bonus is a PAYMENT, so it is handed the same two things every other payment in
+    //  this engine is judged on — the state and the monitor's verdict for this instant — and it
+    //  refuses itself when they say the scorer would not pay. It used to be given the lap alone,
+    //  and a harbor run whose crossing fell inside a 0.23 s stretch the monitor refused drew
+    //  `CLEAN LAP +1,425` on a frame stamped `counting: false`.
     const trackTick = this.trackBuilder.push(state);
-    if (trackTick.lapCompleted) this.scorer.onLapCompleted(trackTick.lapCompleted);
+    if (trackTick.lapCompleted) this.scorer.onLapCompleted(trackTick.lapCompleted, state, plausible);
 
     // ---- 7. keep the raw sample (decimated) for re-analysis
     //  Stride, not a time threshold: phone timestamps jitter by a few ms, and `t − last ≥ 20 ms`

@@ -1,12 +1,15 @@
 /**
  * The replay's colour and wording rules, shared by the Skia renderer and the screen chrome.
  *
- * Every rule here is a copy of the one the SVG reference renderer uses
- * (`tools/analysis/render-replay.ts`), so the app and the harness frame the critic judged agree
- * on what a given |β| looks like. The escalation ramp in particular is absolute: the same slip
- * angle is the same colour in every session, on both renderers.
+ * The SVG reference renderer (`tools/analysis/render-replay.ts`) IMPORTS these rules rather than
+ * carrying its own copies, so the app and the harness frame the critic judged cannot disagree
+ * about what a given |β| looks like. It used to say "every rule here is a copy of the one the
+ * reference renderer uses", which is a claim a reader cannot check and which stopped being true
+ * the moment the app's ramp was trust-gated and the copy was not: the tool took `--untrusted`
+ * specifically to check that presentation and drew the trail, the markers, the slip label and the
+ * band ticks in full ember anyway. A copy is not a shared rule. This is the one file.
  */
-import { SEVERITY_EDGES, formatPoints, type DriftSeverity, type Replay, type ReplayEventKind } from '../../engine/replay';
+import { SEVERITY_EDGES, formatPoints, severityOf, type DriftSeverity, type Replay, type ReplayEventKind } from '../../engine/replay';
 import { clamp } from '../../engine/types';
 import { colors } from '../theme';
 

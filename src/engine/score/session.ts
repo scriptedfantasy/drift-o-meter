@@ -2,8 +2,9 @@
  * scoreSession — replays the chain rules over a whole run and aggregates the
  * 0–100 components + grade. See index.ts for the rule set.
  */
-import type { DriftEvent, SessionIntegrity, SessionScore, SlipState, StyleCalloutKind, TrackCorner, TrackModel } from '../types';
+import type { DriftEvent, Lap, SessionIntegrity, SessionScore, SlipState, StyleCalloutKind, TrackCorner, TrackModel } from '../types';
 import { clamp, radToDeg } from '../types';
+import { countsForPoints } from './accumulator';
 import { scoreDrift, type ScoredDrift } from './drift';
 import {
   angleScore,
@@ -382,6 +383,56 @@ export function medianCornerGapM(track: TrackModel | null): number {
   return median(gaps);
 }
 
+/**
+ * What a lap's CLEAN LAP bonus is worth, 0..1 — the offline form of the gate
+ * `LiveScorer.onLapCompleted` asks at the instant it pays.
+ *
+ * TWO PATHS, the same two `scoreDrift` already has, and for the same reason.
+ *
+ *  - WITH the per-sample mask (the live pipeline's own `finish()`, and any replay handed it):
+ *    the answer is the gate itself, at the sample the lap closed on — `countsForPoints`, the
+ *    identical expression, so `finish()` reproduces the live decision exactly. 1 or 0.
+ *
+ *  - WITHOUT it (a session re-scored from storage, where a sample-indexed mask could not
+ *    survive decimation without silently misaligning): the durable fallback is
+ *    `DriftEvent.suppressedS`, and a per-drift duration cannot say WHERE inside a slide the
+ *    monitor stopped believing — only how much of it it refused. So this pays the EXPECTED
+ *    value, the believed fraction of the lap's drifting time, exactly as `scoreDrift` pays the
+ *    expected value of a suppressed drift's callouts. A lap whose believed remainder is shorter
+ *    than one sample gap was not partly believed, it was refused, and pays 0.
+ */
+function lapPayFactor(lap: Lap, states: SlipState[], mask: Uint8Array | null, lapDrifts: DriftEvent[], maxDtS: number): number {
+  if (mask) {
+    const i = firstSampleAtOrAfter(states, lap.endT);
+    if (i < 0) return 0;
+    return countsForPoints(states[i], mask[i] !== 0) ? 1 : 0;
+  }
+  let dur = 0;
+  let supp = 0;
+  for (const e of lapDrifts) {
+    if (!(e.durationS > 0)) continue;
+    dur += e.durationS;
+    supp += Math.min(Math.max(0, e.suppressedS), e.durationS);
+  }
+  if (!(dur > 0)) return 1; // nothing to doubt: a lap with no measured drifting time
+  const remainderS = dur - supp;
+  return remainderS <= maxDtS ? 0 : clamp(remainderS / dur, 0, 1);
+}
+
+/** Index of the first state at or after `t`, or the last one; −1 when there are none. */
+function firstSampleAtOrAfter(states: SlipState[], t: number): number {
+  const n = states.length;
+  if (n === 0) return -1;
+  let lo = 0;
+  let hi = n;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (states[mid].t < t) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.min(lo, n - 1);
+}
+
 // ---------------------------------------------------------------------------------------
 
 export function scoreSession(
@@ -409,7 +460,14 @@ export function scoreSession(
         // monitor refused to believe earned nothing, and tidiness does not pay where sliding
         // did not. (`cleanLaps` still counts the lap — it is a statement about spins.)
         if (!(last.total > 0)) continue;
-        const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, last.stats.multiplierEnd) : 1);
+        // AND the same gate every other payment asks, about the instant the bonus is paid at.
+        // `last.total > 0` is a question about the lap's HISTORY; it was the only question here,
+        // and a harbor run at looseness 0 paid 1,725 points across two crossings the monitor
+        // refused — on frames the HUD was simultaneously stamping NOT SCORING.
+        const idsInLap = new Set(inLap.map((d) => d.id));
+        const factor = lapPayFactor(lap, states, ctx?.plausible ?? null, drifts.filter((e) => idsInLap.has(e.id)), o.maxDtS);
+        if (!(factor > 0)) continue;
+        const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, last.stats.multiplierEnd) : 1) * factor;
         last.callouts.push({ t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts });
         last.bonus += pts;
         last.total += pts;

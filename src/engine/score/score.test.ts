@@ -91,7 +91,8 @@ function feed(scorer: LiveScorer, syn: Synth, opts: { complete?: boolean; laps?:
     }
     if (opts.laps) {
       while (lapIdx < opts.laps.length && states[i].t >= opts.laps[lapIdx].endT) {
-        scorer.onLapCompleted(opts.laps[lapIdx]);
+        // the lap bonus is judged at the instant it pays, exactly as the pipeline hands it
+        scorer.onLapCompleted(opts.laps[lapIdx], states[i], true);
         lapIdx++;
       }
     }
@@ -539,7 +540,7 @@ describe('live vs offline agreement', () => {
         liveScores.push(sc.onDriftCompleted(cur));
         cur = null;
       }
-      while (lapIdx < track.laps.length && s.t >= track.laps[lapIdx].endT) sc.onLapCompleted(track.laps[lapIdx++]);
+      while (lapIdx < track.laps.length && s.t >= track.laps[lapIdx].endT) sc.onLapCompleted(track.laps[lapIdx++], s, true);
     }
     expect(liveScores).toHaveLength(events.length);
     for (const s of liveScores) {

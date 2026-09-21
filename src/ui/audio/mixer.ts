@@ -303,7 +303,13 @@ export class DriftFeel {
     this.stats.frames++;
     const t = this.now();
     const ft = f.t;
-    const dt = Number.isFinite(this.lastFrameT) ? Math.min(0.1, Math.max(0, ft - this.lastFrameT)) : 0.01;
+    // `dt` drives two exponential filters and the play-rate window, and none of the three has a
+    // way back from NaN: one non-finite frame time would leave `bedGain`, `bedMix` and `winRec`
+    // poisoned for the rest of the run. A non-finite step falls back to the nominal 10 ms — which
+    // is also what the first frame of a run gets, so this replaces the old `lastFrameT` test
+    // rather than adding to it.
+    const step = ft - this.lastFrameT;
+    const dt = Number.isFinite(step) ? Math.min(0.1, Math.max(0, step)) : 0.01;
     this.lastFrameT = ft;
 
     // Playback rate, measured rather than declared: see MAX_PLAY_RATE.
@@ -365,7 +371,7 @@ export class DriftFeel {
       if (f.score.banked) this.offer('banked', t);
       if (f.lap.completed !== null) this.offer('lap', t);
 
-      this.flushSlots(t, flick);
+      this.flushSlots(t, flick, true);
     }
 
     // The other half of rule 6: once the engine believes again, say so. Not gated, not offered —
@@ -377,7 +383,14 @@ export class DriftFeel {
     }
 
     // ── the continuous layer ────────────────────────────────────────────────────────────────
-    const absDeg = Math.abs(radToDeg(f.state.beta));
+    // β ARRIVES ON TRUST FROM THE ESTIMATOR, so it is clamped here. `bedGain` is a running
+    // exponential filter: one non-finite β makes it NaN and it never recovers, every later frame
+    // pushes `setBed(NaN, NaN)`, and on web assigning a non-finite float to an AudioParam throws
+    // a TypeError inside the 100 Hz path. `guardMotion` does keep β finite across 30 000 frames
+    // of the worst runs measured, so this is a latch that cannot be allowed to exist rather than
+    // a bug being fixed: a filter with no way back is not allowed to take an unchecked input.
+    const beta = f.state.beta;
+    const absDeg = Number.isFinite(beta) ? Math.abs(radToDeg(beta)) : 0;
     // THE SAME NUMBER the drive display's ember glow uses, from the same function: `trustIn` is
     // 0 when the engine will not stand behind the reading and 0.65 when it believes it but calls
     // the input degraded. The bed used to be a plain open/closed, so through a dropout the glow
@@ -411,6 +424,33 @@ export class DriftFeel {
   }
 
   /**
+   * Several cues arriving on ONE instant, resolved exactly as `frame()` resolves them: the
+   * family rule, the flick rule, the priority order, the two voices.
+   *
+   * This exists because of a specific lie. The `/sound` lab's THE SPIN button replays a moment
+   * where CHAIN LOST and SPIN land on the same frame, under a caption that says "the cause
+   * outranks the consequence, so you hear one" — and it used to call `cue()` once per step,
+   * which is the OUTSIDE-the-frame-stream path with no slots in it. Both clips started, 0.1 ms
+   * apart, and the decision log read `SPIN played` / `LOST played`. The rule the lab exists to
+   * demonstrate was the one rule it could not show. Now the press goes through here and the log
+   * reads `lost · family · vs spin`.
+   *
+   * `fromFrame` is false, for the same reason `cue()` sets it false: the belief gate exists to
+   * stop the FRAME STREAM from narrating a run the engine does not stand behind, and a button a
+   * person pressed has nothing to be sceptical about. Everything else is the shipping path.
+   */
+  offerAll(ids: readonly SoundId[]): void {
+    const t = this.now();
+    this.clearSlots();
+    let flick = false;
+    for (let i = 0; i < ids.length; i++) {
+      if (ids[i] === 'transition') flick = true;
+      this.offer(ids[i], t);
+    }
+    this.flushSlots(t, flick, false);
+  }
+
+  /**
    * Offer a candidate for its family; the highest-priority offer in a frame is the one that
    * survives. The loser is logged as 'family' rather than dropped in silence, so the `/sound`
    * lab and the tests can see the rule fire — CHAIN LOST losing to SPIN is the case that matters.
@@ -435,8 +475,13 @@ export class DriftFeel {
     }
   }
 
-  /** Dispatch the surviving candidate of every family, highest priority first. */
-  private flushSlots(t: number, flick: boolean): void {
+  /**
+   * Dispatch the surviving candidate of every family, highest priority first.
+   *
+   * `fromFrame` travels through to `dispatch`: it is what decides whether the belief gate
+   * applies. True from `frame()`, false from `offerAll()` — see there.
+   */
+  private flushSlots(t: number, flick: boolean, fromFrame: boolean): void {
     // The flick rule, applied here rather than at the offer site so the lab can show it firing.
     if (flick) {
       const entry = this.slots[FAMILY_INDEX.entry];
@@ -457,7 +502,7 @@ export class DriftFeel {
       const spec = specFor(best.id);
       best.id = null;
       best.priority = -1;
-      if (spec) this.dispatch(spec, t, true);
+      if (spec) this.dispatch(spec, t, fromFrame);
     }
   }
 
@@ -601,8 +646,11 @@ export class DriftFeel {
     // Equal-power cross-fade: a linear pair dips 3 dB in the middle, which reads as the bed
     // losing its nerve exactly where the angle is most interesting.
     const x = this.bedMix;
-    const low = g * Math.cos((x * Math.PI) / 2);
-    const high = g * Math.sin((x * Math.PI) / 2);
+    // `clamp01` on the way out, not for the arithmetic — `g` is at most BED_LEVEL and the two
+    // factors at most 1 — but because this is the last line before the port, and a port that is
+    // handed a non-finite gain throws inside the 100 Hz path (see `audio.web.ts`).
+    const low = clamp01(g * Math.cos((x * Math.PI) / 2));
+    const high = clamp01(g * Math.sin((x * Math.PI) / 2));
     // The epsilon is skipped on the way to zero. Otherwise the last step — from a gain just
     // under the epsilon down to silence — is never pushed, the port never hears `(0, 0)`, and
     // the two loops run at a whisper for the rest of the drive. That is a drone.
@@ -631,13 +679,16 @@ export class DriftFeel {
    * elapsed time since the last call, and goes through exactly the same envelope and cross-fade
    * the run uses — the lab demonstrates the real thing, not a re-implementation of it.
    */
-  bedFromAngle(absDeg: number, dt: number, open = true, trust = 1): { low: number; high: number; gain: number } {
+  bedFromAngle(absDeg: number, dtIn: number, open = true, trust = 1): { low: number; high: number; gain: number } {
     const t = this.now();
-    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) * trust : 0;
+    // Same two clamps as `frame()`, for the same reason: these filters have no way back from NaN.
+    const deg = Number.isFinite(absDeg) ? absDeg : 0;
+    const dt = Number.isFinite(dtIn) ? Math.max(0, dtIn) : 0;
+    const target = open ? clamp01((deg - BED_FLOOR_DEG) / BED_SPAN_DEG) * trust : 0;
     const tau = target > this.bedGain ? BED_ATTACK_TAU : BED_RELEASE_TAU;
-    this.bedGain += (target - this.bedGain) * (1 - Math.exp(-Math.max(0, dt) / tau));
-    const mixTarget = clamp01((absDeg - BED_MIX_FLOOR_DEG) / BED_MIX_SPAN_DEG);
-    this.bedMix += (mixTarget - this.bedMix) * (1 - Math.exp(-Math.max(0, dt) / 0.12));
+    this.bedGain += (target - this.bedGain) * (1 - Math.exp(-dt / tau));
+    const mixTarget = clamp01((deg - BED_MIX_FLOOR_DEG) / BED_MIX_SPAN_DEG);
+    this.bedMix += (mixTarget - this.bedMix) * (1 - Math.exp(-dt / 0.12));
     this.pushBed(t);
     return { low: this.bedPushedLow, high: this.bedPushedHigh, gain: this.bedGain };
   }
@@ -668,8 +719,9 @@ function emit(port: HapticPort, shape: HapticShape): void {
   else port.impact(shape);
 }
 
+/** 0..1, and 0 for anything that is not a number: this is the last gate before the port. */
 function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
+  return v > 0 ? (v > 1 ? 1 : v) : 0;
 }
 
 export { BED_HIGH, BED_LOW };

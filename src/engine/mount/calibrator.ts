@@ -865,6 +865,14 @@ export class MountCalibrator {
         this.gsy = this.my = this.iy;
         this.gsz = this.mz = this.iz;
         this.updateUpFromSlow();
+        // Build the frame NOW, on the sample that seeds it. `ax/ay/az` below are the specific
+        // force with gravity removed ALONG THE BODY UP (`b`), and `b` only moves in
+        // `rebuildFrame`; without this the first sample of every run had gravity removed along
+        // the reset prior (0, 0, 1) instead, so it reported ~12 m/s² of acceleration that never
+        // happened. One sample — but it is the sample every band-pass in `IntegrityMonitor`
+        // primes on, and a 0.3 Hz high-pass rings on it for half a second into a 2 s RMS whose
+        // memory holds it for ~4.6 s afterwards.
+        this.rebuildFrame();
       } else if (gap) {
         // sample gap: the rotation during it is unknown — re-seed from the OS attitude filter
         this.reseedUp(gMag > 1 ? gx : fx, gMag > 1 ? gy : fy, gMag > 1 ? gz : fz, fx, fy, fz);

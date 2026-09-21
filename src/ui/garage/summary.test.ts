@@ -6,6 +6,13 @@
  * the held peak on `DriftStats` — and the garage printed the wrong one for the whole of its
  * life. Nothing here asserts a value the scorer produced: only that the number on screen is the
  * held one, that it is below the instantaneous one, and that a spin lends it nothing.
+ *
+ * TWO THINGS THIS SUITE ONCE MISSED, both of which were on screen while it was green.
+ * It checked each slide mark with `expect(deg).toBeGreaterThan(0)` and nothing else, which 118°
+ * satisfies — so the instantaneous peak lived in `SlideMark[2]` under a green suite (the drawn
+ * consequence is in `trace.test.ts`). And it ran only the three cheap `sim` fixtures, none of
+ * which is the pipeline run that holds the shipped board's 53° record, while its one no-spin
+ * case exercised the spin branch zero times.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -13,9 +20,14 @@ import { radToDeg, type Session } from '../../engine/types';
 // Straight from the module, not the platform barrel: the barrel pulls in expo-sensors.
 import { summarizeSession } from '../../platform/sessionStore';
 import { buildFixtureSession, FIXTURES } from '../results/fixture';
+import { TRACE_CEILING_DEG } from './trace';
 
-/** The fast, ground-truth fixtures: `sim` source, no pipeline, about 200 ms each. */
-const CASES = ['spin', 'sloppy', 'touge'] as const;
+/**
+ * The three cheap ground-truth fixtures (`sim`, ~200 ms each) and the two PIPELINE runs the
+ * shipped screenshots are drawn from — `good` holds the board's 52.8° record and `hero` its
+ * 50.8°, and neither had ever been summarised in a test.
+ */
+const CASES = ['spin', 'sloppy', 'touge', 'good', 'hero'] as const;
 
 function statsOf(s: Session, id: number): { heldPeakDeg: number; spun: boolean } | null {
   const per = s.score.perDrift as unknown as Record<number, { stats?: { heldPeakDeg: number; spun: boolean } }>;
@@ -26,7 +38,7 @@ describe.each(CASES)('summarizing the %s fixture', (name) => {
   const session = buildFixtureSession({ ...FIXTURES[name] });
   const entry = summarizeSession(session);
 
-  it('carries the engineitself’s held peak, over the drifts that did not spin', () => {
+  it('carries the engine itself’s held peak, over the drifts that did not spin', () => {
     const expected = session.drifts
       .filter((d) => !d.spin && statsOf(session, d.id)?.spun !== true)
       .reduce((m, d) => Math.max(m, statsOf(session, d.id)?.heldPeakDeg ?? 0), 0);
@@ -61,6 +73,27 @@ describe.each(CASES)('summarizing the %s fixture', (name) => {
     }
     expect(entry.slides.filter((m) => m[3] === 1)).toHaveLength(entry.spins);
   });
+
+  it('gives every mark the ENGINE’s held peak for that drift — spun ones included', () => {
+    // `deg > 0` was the whole of the old check, and `DriftEvent.peakAngle` passes it. This is an
+    // identity against the field `SessionIndexEntry.heldPeakDeg`'s contract names, plus the
+    // maximum that says no mark is the instantaneous figure the contract forbids.
+    for (const [i, mark] of entry.slides.entries()) {
+      const drift = session.drifts[i];
+      const stats = statsOf(session, drift.id);
+      expect(mark[2]).toBeCloseTo(Math.round((stats?.heldPeakDeg ?? 0) * 10) / 10, 6);
+      expect(mark[2]).toBeLessThanOrEqual(radToDeg(Math.abs(drift.peakAngle)));
+    }
+  });
+
+  it('never stores a mark the plot would have to draw past its own ceiling', () => {
+    // The card captions the axis "<ceiling>° top". A trusted run's held angles have to fit under
+    // it for that caption to be a scale rather than a decoration.
+    for (const mark of entry.slides) {
+      if (mark[3] === 1) continue; // a spin is a footprint, not a height — see trace.test.ts
+      expect(mark[2]).toBeLessThanOrEqual(TRACE_CEILING_DEG);
+    }
+  });
 });
 
 describe('the spin fixture specifically', () => {
@@ -72,5 +105,14 @@ describe('the spin fixture specifically', () => {
     expect(spun.length).toBeGreaterThan(0);
     const spunPeak = spun.reduce((m, d) => Math.max(m, radToDeg(Math.abs(d.peakAngle))), 0);
     expect(spunPeak).toBeGreaterThan(entry.heldPeakDeg);
+    // …and does not store it in the trace either, which is where it went instead.
+    expect(Math.max(...entry.slides.map((m) => m[2]))).toBeLessThan(spunPeak);
+  });
+});
+
+describe('the cases that exercise the spin branch', () => {
+  it('covers spins in more than one run, so the branch is not carried by one fixture', () => {
+    const spinny = CASES.map((name) => summarizeSession(buildFixtureSession({ ...FIXTURES[name] }))).filter((e) => e.spins > 0);
+    expect(spinny.length).toBeGreaterThanOrEqual(2);
   });
 });

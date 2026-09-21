@@ -98,9 +98,15 @@ describe('the slide count', () => {
     expect(slidesText(entry({ drifts: 8, spins: 1 }), false).note).toBe('1 spun');
   });
 
-  it('asserts no slides at all on a run the monitor did not believe', () => {
-    // `implausibleDriftFraction = 1.000`: the angle was withheld and seven slides were not.
-    expect(slidesText(entry({ drifts: 7, spins: 3 }), true)).toEqual({ value: '--', note: null });
+  it('publishes no judged count on a run the monitor did not believe', () => {
+    // `implausibleDriftFraction = 1.000`: nothing about the sliding was believed, so the slot
+    // claims nothing — but the card DRAWS those seven slides, and `SLIDES --` over a plot with
+    // seven countable marks is the screen refusing a number and then showing it. The note says
+    // the same thing the trace's own caption says: recorded, not judged.
+    expect(slidesText(entry({ drifts: 7, spins: 3 }), true)).toEqual({ value: '--', note: '7 recorded' });
+    expect(slidesText(entry({ drifts: 1, spins: 1 }), true).note).toBe('1 recorded');
+    // Nothing recorded, nothing to count.
+    expect(slidesText(entry({ drifts: 0, spins: 0 }), true)).toEqual({ value: '--', note: null });
   });
 });
 

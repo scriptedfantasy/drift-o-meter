@@ -246,14 +246,32 @@ export class LiveScorer {
    * live: ≥ cleanLapMinDrifts drifts ENDED inside the lap and none spun. Points bank
    * immediately (a clean lap cannot be lost). Returns the callout or null.
    *
-   * THE ONE PAYING PATH THAT IS NOT PER-SAMPLE, so it carries its own form of the same gate: a
-   * lap whose slides earned nothing earns nothing for being tidy either. Without it a hand-held
-   * run — every frame of which says `counting: false` — still banked 300 × the multiplier every
-   * time it came past the start line. `scoreSession` applies the identical test offline, so the
-   * live total and the re-scored one stay equal.
+   * THE ONE PAYING PATH THAT IS NOT PER-SAMPLE, so it has to ask the gate for itself — and it
+   * has to ask it about THE INSTANT IT PAYS AT, `s`, not about the lap's history.
+   *
+   * It used to ask only `sd.total > 0`: did the lap's last slide earn anything at any point in
+   * its life. That is a different question, and the difference is a lie on the screen. Measured
+   * on the app's own sim parameters (harbor, seed 1, laps 2): at looseness 0 the crossing falls
+   * inside a 0.23 s stretch the monitor refuses, and the HUD drew `CLEAN LAP +1,425` with the
+   * odometer stepping 9,624 → 10,974 four lines above the words `MOUNT SHAKING — NOT SCORING`.
+   * 1,725 points at looseness 0, 300 at 0.05, 1,725 at 0.1 and 0.15, 1,650 at 0.2 — every one of
+   * those runs publishing `trusted: true` with grade A or B, so it was 5–10 % of a PUBLISHED
+   * total paid at instants the monitor had refused.
+   *
+   * `countsForPoints` is the same expression `step()` and `fire()` ask, so a clean lap now obeys
+   * the rule every other callout already obeyed: a callout fired at an instant that earns
+   * nothing is worth exactly nothing. `scoreSession` applies the identical test offline when it
+   * has the per-sample mask, and its expected value when it only has `suppressedS`, so the live
+   * total and the re-scored one stay equal.
+   *
+   * `s` and `plausible` are REQUIRED for the same reason `DriftEvent.spin` is: a caller that can
+   * omit the gate is a caller that will, and this is the third paying path that was missed.
    */
-  onLapCompleted(lap: Lap): StyleCallout | null {
+  onLapCompleted(lap: Lap, s: SlipState, plausible = true): StyleCallout | null {
     const o = this.o;
+    // THE GATE, first: the lap bonus is a payment, and the engine pays nothing at an instant it
+    // does not believe. Checked before anything else so the answer cannot depend on the lap.
+    if (!countsForPoints(s, plausible)) return null;
     const inLap = this.log.filter((d) => d.endT >= lap.startT && d.endT < lap.endT);
     if (inLap.length < o.cleanLapMinDrifts || inLap.some((d) => d.spun)) return null;
     const last = inLap[inLap.length - 1];
