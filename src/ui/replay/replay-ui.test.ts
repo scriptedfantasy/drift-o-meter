@@ -17,13 +17,29 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { buildReplay, SEVERITY_EDGES, type Replay } from '../../engine/replay';
 import { degToRad, radToDeg, type Session } from '../../engine/types';
 import { FIXTURES, buildFixtureSession } from '../results/fixture';
-import { crosses, kerbContours, offsetRuns, segmentsCross, selfIntersections, smoothPolyline, type Pt } from './kerbs';
+import { crosses, FOLD_SPAN, kerbContours, MAX_TURN_RAD, offsetRuns, segmentsCross, selfIntersections, smoothPolyline, splitAtSpikes, type Pt } from './kerbs';
 import { replayLayout } from './layout';
 import { heatColor, fmtTime } from './palette';
 import { buildReplayView, gapWindows } from './view';
 import { parseReplayParams } from './params';
 
 const TRACKED = ['good', 'rough', 'handheld', 'touge', 'hero'] as const;
+
+/** The sharpest turn in a polyline, radians. */
+function sharpestTurn(run: Pt[]): number {
+  let worst = 0;
+  for (let i = 1; i + 1 < run.length; i++) {
+    const ax = run[i][0] - run[i - 1][0];
+    const ay = run[i][1] - run[i - 1][1];
+    const bx = run[i + 1][0] - run[i][0];
+    const by = run[i + 1][1] - run[i][1];
+    const la = Math.hypot(ax, ay);
+    const lb = Math.hypot(bx, by);
+    if (la < 1e-9 || lb < 1e-9) continue;
+    worst = Math.max(worst, Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)))));
+  }
+  return worst;
+}
 
 const built = new Map<string, { session: Session; replay: Replay }>();
 beforeAll(() => {
@@ -84,19 +100,35 @@ describe('kerbs: an offset that cannot fold', () => {
     }
   });
 
-  it.each(TRACKED)('%s: the road edge lines do not fold either', (name) => {
+  it.each(TRACKED)('%s: the road edge lines do not fold or spike either', (name) => {
     const { replay } = built.get(name)!;
     const track = replay.track!;
     const src: Pt[] = track.path.map((p) => [p.x, p.y] as Pt);
     const loop = track.closed ? [...src, src[0]] : src;
     for (const d of [4.35, -4.35]) {
-      for (const run of offsetRuns(loop, d)) {
-        expect(selfIntersections(run)).toBe(0);
+      const runs = offsetRuns(loop, d);
+      expect(runs.length).toBeGreaterThan(0);
+      for (const run of runs) {
+        // FOLD_SPAN, not every pair: a lap-long contour passing near itself at a hairpin is two
+        // bits of road, not a fold (see splitAtCrossings)
+        expect(selfIntersections(run, FOLD_SPAN)).toBe(0);
         for (let i = 1; i < run.length; i++) {
           expect(Math.hypot(run[i][0] - run[i - 1][0], run[i][1] - run[i - 1][1])).toBeLessThan(8);
         }
+        // and nothing zig-zags: a drawn contour never turns more sharply than a hairpin
+        expect(sharpestTurn(run)).toBeLessThanOrEqual(MAX_TURN_RAD + 1e-9);
       }
     }
+  });
+
+  it('a spike is cut out, and a smooth line is left alone', () => {
+    const straight: Pt[] = Array.from({ length: 10 }, (_, i) => [i, 0] as Pt);
+    expect(splitAtSpikes(straight)).toEqual([straight]);
+    const spiked: Pt[] = [...straight.slice(0, 5), [4.2, 6], ...straight.slice(5)];
+    const cut = splitAtSpikes(spiked);
+    expect(cut.length).toBeGreaterThan(1);
+    for (const run of cut) expect(sharpestTurn(run)).toBeLessThanOrEqual(MAX_TURN_RAD + 1e-9);
+    expect(cut.flat()).not.toContainEqual([4.2, 6]);
   });
 
   it.each(TRACKED)('%s: no kerb crosses itself or the road it belongs to', (name) => {

@@ -242,7 +242,23 @@ function injectSpin(session: Session, skip: Set<number>): void {
     scaled.push({ ...s, beta, speed });
   }
   for (let j = 0; j < scaled.length; j++) session.states[a + j] = scaled[j];
-  recomputeYaw(session.states, a, b);
+  // A car that has just spun is still sideways. Without this the trace snapped from 118° back to
+  // the simulator's 5° in one 10 ms sample — 11 000 °/s, a step no car can make — and the replay
+  // duly drew a car pointing straight down the road under a "LOST IT 118°" callout 50 ms after
+  // the spin. The angle washes out over `recoverS` instead, and the speed comes back with it.
+  const recoverS = 1.4;
+  const tb = session.states[b].t;
+  const signB = session.states[b].beta >= 0 ? 1 : -1;
+  let last = b;
+  for (let i = b + 1; i < session.states.length; i++) {
+    const s = session.states[i];
+    const f = (s.t - tb) / recoverS;
+    if (!(f < 1)) break;
+    const k = 1 - smoothstep(f);
+    session.states[i] = { ...s, beta: s.beta + (signB * spinPeak - s.beta) * k, speed: s.speed * (1 - 0.38 * k) };
+    last = i;
+  }
+  recomputeYaw(session.states, a, last);
   // the drift event has to agree with the trace it points at
   let peak = 0;
   let peakT = target.peakAngleT;

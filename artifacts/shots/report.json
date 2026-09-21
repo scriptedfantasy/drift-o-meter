@@ -1,25 +1,264 @@
 {
-  "startedAt": "2026-09-21T00:47:54.870Z",
+  "startedAt": "2026-09-21T01:00:20.978Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
-      "name": "replay-overview-landscape",
+      "name": "replay",
+      "path": "/replay/demo?cam=chase&t=94.9",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=chase&t=94.9",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay.png",
+      "video": null,
+      "ms": 34614,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 75168,
+        "cyanPixels": 3480,
+        "textPixels": 26364,
+        "nonBgFraction": 0.9809
+      }
+    },
+    {
+      "name": "replay-motion",
+      "path": "/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-motion.png",
+      "video": null,
+      "ms": 27627,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 81848,
+        "cyanPixels": 5420,
+        "textPixels": 53208,
+        "nonBgFraction": 0.9799
+      }
+    },
+    {
+      "name": "replay-cut",
+      "path": "/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cut.png",
+      "video": null,
+      "ms": 38973,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 84168,
+        "cyanPixels": 6404,
+        "textPixels": 49844,
+        "nonBgFraction": 0.9789
+      }
+    },
+    {
+      "name": "replay-shake",
+      "path": "/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-shake.png",
+      "video": null,
+      "ms": 16746,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 53428,
+        "cyanPixels": 960,
+        "textPixels": 29760,
+        "nonBgFraction": 0.9717
+      }
+    },
+    {
+      "name": "replay-overview",
       "path": "/replay/demo?cam=overview&t=60&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=overview&t=60&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-overview-landscape.png",
+      "screenshot": "artifacts/shots/replay-overview.png",
       "video": null,
-      "ms": 5278,
+      "ms": 7211,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -36,8 +275,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -62,32 +301,31 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 35600,
-        "cyanPixels": 0,
-        "textPixels": 18752,
-        "nonBgFraction": 0.7875
+        "emberPixels": 45616,
+        "cyanPixels": 224,
+        "textPixels": 21596,
+        "nonBgFraction": 0.9734
       }
     },
     {
-      "name": "replay-chase-landscape",
+      "name": "replay-chase",
       "path": "/replay/demo?cam=chase&t=95.9&play=0&ui=1",
-      "url": "http://127.0.0.1:32809/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=chase&t=95.9&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-chase-landscape.png",
+      "screenshot": "artifacts/shots/replay-chase.png",
       "video": null,
-      "ms": 9273,
+      "ms": 9103,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
         "otherTextNodes": 0
       },
       "skia": {
@@ -96,8 +334,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -110,8 +348,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 0,
+            "g": 0,
             "b": 0
           },
           "bottomRight": {
@@ -122,24 +360,24 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 98440,
-        "cyanPixels": 2600,
-        "textPixels": 45508,
-        "nonBgFraction": 0.8591
+        "emberPixels": 107560,
+        "cyanPixels": 5868,
+        "textPixels": 52732,
+        "nonBgFraction": 0.9694
       }
     },
     {
-      "name": "replay-cinematic-landscape",
+      "name": "replay-cinematic",
       "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-cinematic-landscape.png",
+      "screenshot": "artifacts/shots/replay-cinematic.png",
       "video": null,
-      "ms": 8569,
+      "ms": 6731,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -156,8 +394,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -182,24 +420,24 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 39480,
-        "cyanPixels": 820,
-        "textPixels": 42248,
-        "nonBgFraction": 0.8521
+        "emberPixels": 44080,
+        "cyanPixels": 4548,
+        "textPixels": 50608,
+        "nonBgFraction": 0.9791
       }
     },
     {
-      "name": "replay-ghost-landscape",
+      "name": "replay-ghost",
       "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-ghost-landscape.png",
+      "screenshot": "artifacts/shots/replay-ghost.png",
       "video": null,
-      "ms": 8341,
+      "ms": 6878,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -216,8 +454,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -242,24 +480,24 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 18160,
-        "cyanPixels": 680,
-        "textPixels": 20804,
-        "nonBgFraction": 0.8579
+        "emberPixels": 30456,
+        "cyanPixels": 3772,
+        "textPixels": 24508,
+        "nonBgFraction": 0.9754
       }
     },
     {
-      "name": "replay-highlight-landscape",
+      "name": "replay-highlight",
       "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
-      "url": "http://127.0.0.1:32809/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "url": "http://127.0.0.1:41175/replay/demo?hl=1&play=0&cam=chase&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-highlight-landscape.png",
+      "screenshot": "artifacts/shots/replay-highlight.png",
       "video": null,
-      "ms": 20199,
+      "ms": 13479,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -276,8 +514,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -290,8 +528,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 0,
+            "g": 0,
             "b": 0
           },
           "bottomRight": {
@@ -302,24 +540,24 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 89728,
-        "cyanPixels": 2516,
-        "textPixels": 23924,
-        "nonBgFraction": 0.8383
+        "emberPixels": 115840,
+        "cyanPixels": 5996,
+        "textPixels": 33244,
+        "nonBgFraction": 0.9698
       }
     },
     {
-      "name": "replay-scrub-landscape",
+      "name": "replay-scrub",
       "path": "/replay/demo?cam=chase&scrub=0.36&ui=1",
-      "url": "http://127.0.0.1:32809/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=chase&scrub=0.36&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-scrub-landscape.png",
+      "screenshot": "artifacts/shots/replay-scrub.png",
       "video": null,
-      "ms": 17764,
+      "ms": 13077,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -336,8 +574,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -350,8 +588,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 0,
+            "g": 0,
             "b": 0
           },
           "bottomRight": {
@@ -362,31 +600,32 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 74336,
-        "cyanPixels": 1860,
-        "textPixels": 23820,
-        "nonBgFraction": 0.836
+        "emberPixels": 73556,
+        "cyanPixels": 4024,
+        "textPixels": 28268,
+        "nonBgFraction": 0.9676
       }
     },
     {
-      "name": "replay-untrusted-landscape",
+      "name": "replay-untrusted",
       "path": "/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-untrusted-landscape.png",
+      "screenshot": "artifacts/shots/replay-untrusted.png",
       "video": null,
-      "ms": 8770,
+      "ms": 7844,
       "fonts": {
         "status": "loaded",
         "families": [
+          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
         "otherTextNodes": 0
       },
       "skia": {
@@ -395,8 +634,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -421,144 +660,24 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 1204,
-        "cyanPixels": 1300,
-        "textPixels": 6248,
-        "nonBgFraction": 0.8442
+        "emberPixels": 952,
+        "cyanPixels": 7116,
+        "textPixels": 15792,
+        "nonBgFraction": 0.971
       }
     },
     {
-      "name": "replay-warnings-landscape",
+      "name": "replay-warnings",
       "path": "/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-warnings-landscape.png",
+      "screenshot": "artifacts/shots/replay-warnings.png",
       "video": null,
-      "ms": 7736,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 11848,
-        "cyanPixels": 4204,
-        "textPixels": 23964,
-        "nonBgFraction": 0.7746
-      }
-    },
-    {
-      "name": "replay-warnings-open-landscape",
-      "path": "/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
-      "url": "http://127.0.0.1:32809/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-warnings-open-landscape.png",
-      "video": null,
-      "ms": 10925,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 3,
-            "g": 1,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 61400,
-        "cyanPixels": 1692,
-        "textPixels": 49600,
-        "nonBgFraction": 0.858
-      }
-    },
-    {
-      "name": "replay-end-landscape",
-      "path": "/replay/demo?cam=overview&t=999&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/demo?cam=overview&t=999&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-end-landscape.png",
-      "video": null,
-      "ms": 4840,
+      "ms": 6793,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -574,8 +693,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -600,24 +719,24 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 19460,
-        "cyanPixels": 0,
-        "textPixels": 43256,
-        "nonBgFraction": 0.5135
+        "emberPixels": 24916,
+        "cyanPixels": 4184,
+        "textPixels": 26992,
+        "nonBgFraction": 0.9701
       }
     },
     {
-      "name": "replay-touge-landscape",
-      "path": "/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
-      "url": "http://127.0.0.1:32809/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "name": "replay-warnings-open",
+      "path": "/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
+      "url": "http://127.0.0.1:41175/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-touge-landscape.png",
+      "screenshot": "artifacts/shots/replay-warnings-open.png",
       "video": null,
-      "ms": 9188,
+      "ms": 8825,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -634,8 +753,8 @@
         "canvasKit": true
       },
       "pixels": {
-        "width": 2556,
-        "height": 1179,
+        "width": 1179,
+        "height": 2556,
         "corners": {
           "topLeft": {
             "r": 0,
@@ -660,13 +779,435 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 47828,
-        "cyanPixels": 3228,
-        "textPixels": 41972,
-        "nonBgFraction": 0.861
+        "emberPixels": 59640,
+        "cyanPixels": 3940,
+        "textPixels": 34952,
+        "nonBgFraction": 0.9712
+      }
+    },
+    {
+      "name": "replay-end",
+      "path": "/replay/demo?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=overview&t=999&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-end.png",
+      "video": null,
+      "ms": 6010,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 18800,
+        "cyanPixels": 0,
+        "textPixels": 43264,
+        "nonBgFraction": 0.5587
+      }
+    },
+    {
+      "name": "replay-from-results",
+      "path": "/results/fixture-good?reveal=off",
+      "url": "http://127.0.0.1:41175/results/fixture-good?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-from-results.png",
+      "video": null,
+      "ms": 13640,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 94,
+        "bodyTextNodes": 183,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 79692,
+        "cyanPixels": 2972,
+        "textPixels": 24224,
+        "nonBgFraction": 0.9779
+      }
+    },
+    {
+      "name": "replay-touge",
+      "path": "/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-touge.png",
+      "video": null,
+      "ms": 6140,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 18,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 71672,
+        "cyanPixels": 11632,
+        "textPixels": 57060,
+        "nonBgFraction": 0.9826
+      }
+    },
+    {
+      "name": "replay-grade",
+      "path": "/replay/demo?cam=overview&t=118.2&rate=0.25&play=1&ui=0",
+      "url": "http://127.0.0.1:41175/replay/demo?cam=overview&t=118.2&rate=0.25&play=1&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-grade.png",
+      "video": null,
+      "ms": 21991,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 18800,
+        "cyanPixels": 0,
+        "textPixels": 43264,
+        "nonBgFraction": 0.5587
+      }
+    },
+    {
+      "name": "replay-spin",
+      "path": "/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-spin.png",
+      "video": null,
+      "ms": 9975,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 27188,
+        "cyanPixels": 6320,
+        "textPixels": 60596,
+        "nonBgFraction": 0.9772
+      }
+    },
+    {
+      "name": "replay-chain-lost",
+      "path": "/replay/fixture-spin?cam=chase&t=98.1&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/fixture-spin?cam=chase&t=98.1&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-chain-lost.png",
+      "video": null,
+      "ms": 8074,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 23072,
+        "cyanPixels": 5356,
+        "textPixels": 70380,
+        "nonBgFraction": 0.9779
+      }
+    },
+    {
+      "name": "replay-spin-end",
+      "path": "/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:41175/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-spin-end.png",
+      "video": null,
+      "ms": 7634,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 17,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "cyanPixels": 20256,
+        "textPixels": 48124,
+        "nonBgFraction": 0.5552
       }
     }
   ],
-  "finishedAt": "2026-09-21T00:49:45.851Z",
+  "finishedAt": "2026-09-21T01:04:52.440Z",
   "failed": 0
 }

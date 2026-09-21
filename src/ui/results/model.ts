@@ -240,7 +240,10 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
     notes.push({
       level: 'bad',
       title: 'The engine will not vouch for this score',
-      body: `${endSentence(judged.message || 'Too much of the run could not be believed')} ${Math.round(judged.implausibleDriftFraction * 100)}% of your drifting time earned nothing (${judged.suppressedS.toFixed(1)} s), so the number above is a floor, not a measurement.`,
+      // No "the number above is a floor": that phrasing asserts the driver earned at least that
+      // much, which is precisely the claim `scoreTrusted: false` withholds. The screen shows no
+      // number at all now, so the note says what actually happened and stops there.
+      body: `${endSentence(judged.message || 'Too much of the run could not be believed')} ${Math.round(judged.implausibleDriftFraction * 100)}% of your drifting time earned nothing (${judged.suppressedS.toFixed(1)} s), and what is left is too little of the run to stand as a score.`,
     });
   } else if (judged && judged.implausibleDriftFraction > 0.02) {
     notes.push({

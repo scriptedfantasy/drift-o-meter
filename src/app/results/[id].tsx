@@ -329,20 +329,36 @@ function ResultsPage({
       )}
       <View style={styles.heroRight}>
         <AppText variant="micro" color="muted">
-          {untrusted ? 'Points logged' : 'Session score'}
+          {untrusted ? 'Points' : 'Session score'}
         </AppText>
-        <Odometer
-          value={model.total}
-          run={run}
-          reduceMotion={reduceMotion}
-          fontSize={L.scoreSize}
-          color={untrusted ? colors.muted : colors.ember}
-          background={heroSurface(untrusted ? colors.red : model.gradeColor)}
-          testID="score-odometer"
-        />
+        {untrusted ? (
+          // NO NUMBER. `SessionIntegrity.scoreTrusted` says a consumer must not present the total
+          // as an achievement, and a residual total shown with "a floor, not a measurement" does
+          // exactly that: it tells the driver they earned AT LEAST that much, which is the one
+          // claim the engine refuses to make. The garage stopped saying it; this screen was still
+          // saying it one screen over. The dash is the honest figure.
+          <AppText
+            variant="hero"
+            color="muted"
+            numeric
+            style={[styles.grade, { fontSize: L.scoreSize, lineHeight: L.scoreSize * 1.02 }]}
+            testID="score-odometer">
+            --
+          </AppText>
+        ) : (
+          <Odometer
+            value={model.total}
+            run={run}
+            reduceMotion={reduceMotion}
+            fontSize={L.scoreSize}
+            color={colors.ember}
+            background={heroSurface(model.gradeColor)}
+            testID="score-odometer"
+          />
+        )}
         {untrusted ? (
           <AppText variant="micro" color="red" style={styles.floorNote} align="right">
-            {model.total > 0 ? 'A floor, not a measurement' : 'Nothing the engine counted'}
+            Nothing the engine counted
           </AppText>
         ) : (
           <View style={styles.ratingRow}>

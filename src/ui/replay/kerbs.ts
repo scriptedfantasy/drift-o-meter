@@ -110,6 +110,24 @@ export function offsetRuns(raw: Pt[], d: number, maxCurvatureFrac = KERB_OPTIONS
   // nearest vertex that has one. Left unclamped, the ENDS of a kerb are exactly where the offset
   // folds first — a hairpin's entry and exit are the tightest part of it.
   const clampIndex = (i: number) => Math.max(2, Math.min(n - 3, i));
+  // The clamped offset is computed for every vertex FIRST and then smoothed along the line.
+  // An unsmoothed clamp is its own artefact: the curvature of an estimated path jumps from
+  // vertex to vertex, so the offset jumped with it and threw a metres-long spike out sideways —
+  // which is how the road edge line came to zig-zag across the asphalt on the loose-mount
+  // fixture even after the folds were gone.
+  const dists = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    const c = clampIndex(i);
+    const { radius, side } = curvatureRadius(near(c, -2), pts[c], near(c, 2));
+    // `side` +1 means the path turns left here, so its centre of curvature is to the LEFT,
+    // which is where a positive offset points. Only that case can fold.
+    dists[i] = side !== 0 && Math.sign(d) === side ? Math.sign(d) * Math.min(Math.abs(d), maxCurvatureFrac * radius) : d;
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    const next = dists.slice();
+    for (let i = 1; i < n - 1; i++) next[i] = 0.25 * dists[i - 1] + 0.5 * dists[i] + 0.25 * dists[i + 1];
+    for (let i = 0; i < n; i++) dists[i] = next[i];
+  }
   const out: Pt[] = [];
   for (let i = 0; i < n; i++) {
     const a = near(i, -2);
@@ -121,12 +139,7 @@ export function offsetRuns(raw: Pt[], d: number, maxCurvatureFrac = KERB_OPTIONS
       out.push([pts[i][0], pts[i][1]]);
       continue;
     }
-    let di = d;
-    const c = clampIndex(i);
-    const { radius, side } = curvatureRadius(near(c, -2), pts[c], near(c, 2));
-    // `side` +1 means the path turns left here, so its centre of curvature is to the LEFT,
-    // which is where a positive offset points. Only that case can fold.
-    if (side !== 0 && Math.sign(d) === side) di = Math.sign(d) * Math.min(Math.abs(d), maxCurvatureFrac * radius);
+    const di = dists[i];
     out.push([pts[i][0] - (dy / l) * di, pts[i][1] + (dx / l) * di]);
   }
   // break wherever the offset edge opposes the centre-line edge: that is a fold, not a kerb
@@ -149,21 +162,63 @@ export function offsetRuns(raw: Pt[], d: number, maxCurvatureFrac = KERB_OPTIONS
   if (run.length > 2) runs.push(run);
   // A reversed edge is the cheap fold test and it catches most of them; a path noisy enough to
   // wander (a hand-held recording estimates a centre line that moves metres between samples) can
-  // still cross itself without any single edge reversing, so the contour is cut at the crossing
-  // and the loop between the two ends is dropped. What is drawn is then a kerb or nothing.
-  return runs.flatMap(splitAtCrossings);
+  // still spike or cross itself without any single edge reversing. So the contour is also cut at
+  // any hairpin vertex, and at any self-crossing, dropping the piece between the two ends. What
+  // is drawn is then a line along the road or nothing at all.
+  // (both wrapped: `flatMap` passes the index as the second argument, which is a threshold here)
+  return runs.flatMap((r) => splitAtSpikes(r)).flatMap((r) => splitAtCrossings(r));
 }
 
-/** Cut a run at its first self-crossing, discarding the loop, until nothing crosses. */
-export function splitAtCrossings(run: Pt[]): Pt[][] {
+/** The sharpest turn a drawn contour may make. Beyond this it is a spike, not a corner. */
+export const MAX_TURN_RAD = (100 * Math.PI) / 180;
+
+/** Cut a run at every vertex sharper than `MAX_TURN_RAD`, dropping that vertex. */
+export function splitAtSpikes(run: Pt[], maxTurn = MAX_TURN_RAD): Pt[][] {
+  const out: Pt[][] = [];
+  let cur: Pt[] = run.length ? [run[0]] : [];
+  for (let i = 1; i + 1 < run.length; i++) {
+    const ax = run[i][0] - run[i - 1][0];
+    const ay = run[i][1] - run[i - 1][1];
+    const bx = run[i + 1][0] - run[i][0];
+    const by = run[i + 1][1] - run[i][1];
+    const la = len(ax, ay);
+    const lb = len(bx, by);
+    const turn = la > 1e-9 && lb > 1e-9 ? Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)))) : 0;
+    if (turn > maxTurn) {
+      if (cur.length > 2) out.push(cur);
+      cur = [];
+      continue;
+    }
+    cur.push(run[i]);
+  }
+  if (run.length > 1) cur.push(run[run.length - 1]);
+  if (cur.length > 2) out.push(cur);
+  return out;
+}
+
+/**
+ * Cut a run at its first LOCAL self-crossing, discarding the loop, until nothing crosses.
+ *
+ * Local is the point. A fold is two segments a handful of vertices apart doubling back on each
+ * other, and the loop between them is the artefact. Two segments a THOUSAND vertices apart that
+ * cross are simply two pieces of road passing close to each other — the harbour circuit's two
+ * legs run within 8 m at the hairpin, so their inner edge lines genuinely overlap — and cutting
+ * "the loop between them" there throws away half the lap. It did: the inner edge line of the
+ * showcase track came back as nothing at all.
+ */
+export function splitAtCrossings(run: Pt[], maxSpan = FOLD_SPAN): Pt[][] {
   for (let i = 0; i + 1 < run.length; i++) {
-    for (let j = i + 2; j + 1 < run.length; j++) {
+    const last = Math.min(run.length - 2, i + maxSpan);
+    for (let j = i + 2; j <= last; j++) {
       if (!segmentsCross(run[i], run[i + 1], run[j], run[j + 1])) continue;
-      return [...splitAtCrossings(run.slice(0, i + 1)), ...splitAtCrossings(run.slice(j + 1))];
+      return [...splitAtCrossings(run.slice(0, i + 1), maxSpan), ...splitAtCrossings(run.slice(j + 1), maxSpan)];
     }
   }
   return run.length > 2 ? [run] : [];
 }
+
+/** How many vertices apart two segments can be and still count as the same fold. */
+export const FOLD_SPAN = 24;
 
 /** Walk `roadPts` from `from`, taking a point roughly every `stepM`, for `spanM` metres. */
 function walk(roadPts: Pt[], closed: boolean, from: number, spanM: number, stepM: number, dir: 1 | -1): number[] {
@@ -248,11 +303,16 @@ export function segmentsCross(p1: Pt, p2: Pt, p3: Pt, p4: Pt): boolean {
   return t > 1e-9 && t < 1 - 1e-9 && u > 1e-9 && u < 1 - 1e-9;
 }
 
-/** How many times a polyline crosses itself. 0 for anything that may be drawn as a kerb. */
-export function selfIntersections(run: Pt[]): number {
+/**
+ * How many times a polyline crosses itself. 0 for anything that may be drawn as a kerb.
+ * `maxSpan` limits it to crossings within that many vertices — the fold scale — so a long
+ * contour that legitimately passes near itself is not counted as broken.
+ */
+export function selfIntersections(run: Pt[], maxSpan = Infinity): number {
   let count = 0;
   for (let i = 0; i + 1 < run.length; i++) {
-    for (let j = i + 2; j + 1 < run.length; j++) {
+    const last = Math.min(run.length - 2, i + maxSpan);
+    for (let j = i + 2; j <= last; j++) {
       if (segmentsCross(run[i], run[i + 1], run[j], run[j + 1])) count++;
     }
   }
