@@ -3,6 +3,11 @@
  * so the thing that decides what the driver reads can be swept over every score it will ever
  * show (`odometer.test.ts`), instead of being inspected in screenshots.
  *
+ * Two questions live here, and a screen that only answers the first has not answered the one its
+ * driver asks: what the drums SPELL at rest (`renderedDigits`), and what they spell while the
+ * score is still climbing (`movingReading`, with `columnVisible` deciding how many of them are
+ * drawn). The results odometer is only ever read in motion.
+ *
  * THE RULE, and the one it replaces. A column above the units parks on its own digit and turns
  * over only while the column BELOW it is itself crossing 9 → 0, over the last `CARRY_FRACTION`
  * of that crossing. The carry therefore cascades: the tens move over the last tenth of the
@@ -99,8 +104,13 @@ export function movingReading(value: number, columns: number): number {
 /**
  * What the odometer actually READS at this value, or null when any column is mid-turn (a
  * fraction of a digit in the window). The sweep test asserts this equals `String(value)` for
- * every integer score the field can hold — it is the value-side statement of "the number on the
+ * every integer score the field can hold — it is the AT REST statement of "the number on the
  * screen is the number in the engine".
+ *
+ * It is only half that statement, and the half that matters least on the verdict screen, whose
+ * odometer is read while it counts up and never once at rest. It also recomputes the column
+ * count synchronously, which is what the component does NOW but is not what it did — so this
+ * function passed on a model the component did not implement. `movingReading` is the other half.
  */
 export function renderedDigits(value: number, columns = 6): string | null {
   const shown = columnsUsed(value, columns);
