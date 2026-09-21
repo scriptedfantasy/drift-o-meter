@@ -283,10 +283,35 @@ async function resolveRegions(page, regions) {
     }, r.testId);
     if (!box) throw new Error(`region '${r.name}': no element with testID '${r.testId}'`);
     const pad = r.padFrac ?? 0;
-    out.push({
-      ...r,
-      rect: { x: Math.max(0, box.x - pad), y: Math.max(0, box.y - pad), w: Math.min(1, box.w + 2 * pad), h: Math.min(1, box.h + 2 * pad) },
-    });
+
+    // The element's own box, which may sit partly or wholly outside the frame.
+    const want = { x: box.x - pad, y: box.y - pad, w: box.w + 2 * pad, h: box.h + 2 * pad };
+    // ...and the part of it the screenshot actually contains.
+    const x0 = Math.min(1, Math.max(0, want.x));
+    const y0 = Math.min(1, Math.max(0, want.y));
+    const x1 = Math.min(1, Math.max(0, want.x + want.w));
+    const y1 = Math.min(1, Math.max(0, want.y + want.h));
+    const rect = { x: x0, y: y0, w: Math.max(0, x1 - x0), h: Math.max(0, y1 - y0) };
+
+    /**
+     * How much of the element the frame holds.
+     *
+     * The bottom edge used to go unclamped, and that is a way for a check to pass without
+     * reading a pixel: an element below the fold yields y > 1, `countRegion` starts its walk
+     * past the last row, counts nothing, and a `max` ceiling is satisfied by the absence of a
+     * rectangle rather than by the absence of a colour. Three garage routes were green that
+     * way. A ceiling is the only shape of check that can certify an absence (see the header of
+     * pixels.mjs), which is exactly why it must never be handed an empty region.
+     */
+    const area = Math.max(0, want.w) * Math.max(0, want.h);
+    const visibleFrac = area > 0 ? (rect.w * rect.h) / area : 0;
+    if (rect.w <= 0 || rect.h <= 0) {
+      throw new Error(
+        `region '${r.name}': '${r.testId}' is not in the frame (its box is at y=${want.y.toFixed(2)}..${(want.y + want.h).toFixed(2)}, ` +
+          `x=${want.x.toFixed(2)}..${(want.x + want.w).toFixed(2)}); scroll the route to it, or measure something that is on screen`,
+      );
+    }
+    out.push({ ...r, rect, visibleFrac });
   }
   return out;
 }
@@ -438,6 +463,13 @@ async function main() {
       // Region checks: "at most / at least N pixels of colour C inside rectangle R". A ceiling is
       // the only shape of check that can certify an ABSENCE — see the header of pixels.mjs.
       for (const r of result.pixels.regions ?? []) {
+        // A ceiling on a region the frame mostly does not hold certifies almost nothing: most
+        // of what it claims is absent was never looked at. A floor is safe — it fails loudly.
+        if (typeof r.max === 'number' && typeof r.visibleFrac === 'number' && r.visibleFrac < 0.6) {
+          result.errors.push(
+            `region '${r.name}': only ${Math.round(r.visibleFrac * 100)}% of it is in the frame, so a ceiling on it proves nothing; scroll to it first`,
+          );
+        }
         if (!r.ok) {
           const b = r.box;
           result.errors.push(

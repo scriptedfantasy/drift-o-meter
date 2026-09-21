@@ -297,6 +297,10 @@ function countRegion(png, region, sampleStep) {
     pixels,
     max: region.max,
     min: region.min,
+    // Carried through from `resolveRegions` so the caller can refuse a CEILING on a region
+    // the frame mostly does not hold — a ceiling satisfied by the absence of a rectangle
+    // rather than by the absence of a colour.
+    visibleFrac: region.visibleFrac,
     ok: failures.length === 0,
     wanted: failures.join(' and '),
   };

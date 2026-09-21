@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T19:47:35.879Z",
+  "startedAt": "2026-09-21T20:01:28.659Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -78,15 +78,13 @@
     {
       "name": "garage",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:44723/?demo=night",
+      "url": "http://127.0.0.1:41005/?demo=night",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage.png",
       "video": null,
-      "ms": 10703,
+      "ms": 9926,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -130,30 +128,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 356,
         "goldPixels": 56,
         "redPixels": 2292,
         "cyanPixels": 200,
+        "bluePixels": 15628,
         "textPixels": 43564,
-        "nonBgFraction": 0.9937,
+        "nonBgFraction": 0.4755,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:46:03.405Z"
+      "shotAt": "2026-09-21T20:01:07.050Z"
     },
     {
       "name": "garage-bests",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:44723/?demo=night",
+      "url": "http://127.0.0.1:41005/?demo=night",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-bests.png",
       "video": null,
-      "ms": 11312,
+      "ms": 10770,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -197,14 +194,15 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 316,
         "goldPixels": 0,
         "redPixels": 0,
         "cyanPixels": 200,
+        "bluePixels": 9584,
         "textPixels": 35520,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.6564,
         "regions": [
           {
             "name": "trace-spins",
@@ -223,12 +221,13 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 1,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T19:46:03.405Z"
+      "shotAt": "2026-09-21T20:01:07.050Z"
     },
     {
       "name": "garage-runs",
@@ -1462,15 +1461,13 @@
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:41005/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 6740,
+      "ms": 6796,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1510,14 +1507,15 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 44,
         "goldPixels": 8,
         "redPixels": 15284,
         "cyanPixels": 0,
-        "textPixels": 2564,
-        "nonBgFraction": 1,
+        "bluePixels": 0,
+        "textPixels": 2552,
+        "nonBgFraction": 0.6155,
         "regions": [
           {
             "name": "dial",
@@ -1534,27 +1532,26 @@
               "x1": 1179,
               "y1": 1912
             },
-            "pixels": 112780,
+            "pixels": 115680,
             "min": 40000,
+            "visibleFrac": 0.980392156862745,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T19:47:26.831Z"
+      "shotAt": "2026-09-21T20:01:07.050Z"
     },
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:41005/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 4820,
+      "ms": 4696,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1594,14 +1591,15 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 196,
         "goldPixels": 8,
         "redPixels": 15132,
         "cyanPixels": 0,
+        "bluePixels": 0,
         "textPixels": 2568,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.6559,
         "regions": [
           {
             "name": "dial",
@@ -1620,12 +1618,13 @@
             },
             "pixels": 254236,
             "min": 135000,
+            "visibleFrac": 0.980392156862745,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T19:47:26.831Z"
+      "shotAt": "2026-09-21T20:01:07.050Z"
     },
     {
       "name": "drive-transition",
@@ -2443,14 +2442,14 @@
     },
     {
       "name": "results",
-      "path": "/results/fixture-hero?reveal=off",
-      "url": "http://127.0.0.1:37139/results/fixture-hero?reveal=off",
+      "path": "/results/fixture-hero",
+      "url": "http://127.0.0.1:41005/results/fixture-hero",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results.png",
       "video": null,
-      "ms": 3391,
+      "ms": 3493,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -2458,11 +2457,10 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 140,
-        "bodyTextNodes": 189,
+        "displayTextNodes": 35,
+        "bodyTextNodes": 57,
         "otherTextNodes": 0
       },
       "skia": {
@@ -2476,36 +2474,59 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 96600,
-        "goldPixels": 67648,
+        "emberPixels": 9524,
+        "goldPixels": 2204,
         "redPixels": 0,
         "cyanPixels": 0,
-        "textPixels": 59004,
-        "nonBgFraction": 0.4314,
-        "regions": []
+        "bluePixels": 6316,
+        "textPixels": 23364,
+        "nonBgFraction": 0.6125,
+        "regions": [
+          {
+            "name": "best-drift",
+            "colour": "green",
+            "rect": {
+              "x": 0.05089058524173028,
+              "y": 0.4522080399061033,
+              "w": 0.8982188295165394,
+              "h": 0.1431924882629108
+            },
+            "box": {
+              "x0": 60,
+              "y0": 1156,
+              "x1": 1119,
+              "y1": 1522
+            },
+            "pixels": 8396,
+            "min": 2000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T20:01:07.050Z"
     },
     {
       "name": "results-sloppy",
@@ -5902,15 +5923,13 @@
     {
       "name": "garage-spun",
       "path": "/?demo=spun",
-      "url": "http://127.0.0.1:40563/?demo=spun",
+      "url": "http://127.0.0.1:41005/?demo=spun",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-spun.png",
       "video": null,
-      "ms": 9541,
+      "ms": 9749,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5954,14 +5973,15 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 316,
         "goldPixels": 0,
         "redPixels": 712,
         "cyanPixels": 200,
+        "bluePixels": 13524,
         "textPixels": 27404,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.6433,
         "regions": [
           {
             "name": "axis",
@@ -5970,7 +5990,7 @@
               "x": 0.09414758269720101,
               "y": 0.3884976525821596,
               "w": 0.811704834605598,
-              "h": 0.05868544600938967
+              "h": 0.058685446009389686
             },
             "box": {
               "x0": 111,
@@ -5980,12 +6000,13 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 1.0000000000000002,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:01:07.050Z"
     },
     {
       "name": "garage-flagged-stats",
@@ -15749,18 +15770,8 @@
       "shotAt": "2026-09-21T07:54:17.472Z"
     }
   ],
-  "finishedAt": "2026-09-21T19:48:19.169Z",
+  "finishedAt": "2026-09-21T20:01:39.787Z",
   "failed": 0,
   "failedAll": 0,
-  "shotThisRun": [
-    "drive-open-landscape",
-    "drive-landscape",
-    "drive-peak-landscape",
-    "drive-transition-landscape",
-    "drive-bank-landscape",
-    "drive-loose-landscape",
-    "drive-gps-landscape",
-    "drive-warn-landscape",
-    "drive-loose-peak-landscape"
-  ]
+  "shotThisRun": []
 }
