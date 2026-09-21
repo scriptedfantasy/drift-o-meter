@@ -21,6 +21,7 @@ import { useDriftFeel } from '@/ui/audio';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
 import { CalloutStack, ScoreBanner } from '@/ui/hud/CalloutStack';
 import { DriftStrip, EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
+import { readIntegrity } from '@/ui/hud/integrityView';
 import MiniMapView from '@/ui/hud/MiniMapView';
 import ScorePanel from '@/ui/hud/ScorePanel';
 import { useHudSignals } from '@/ui/hud/signals';
@@ -55,6 +56,13 @@ export default function DriveScreen() {
   // across the only other live graphic on the screen. At 124 the column is 217.
   const map = landscape ? { w: 168, h: 116 } : { w: 124, h: 148 };
 
+  // Landscape gives the callout stack whatever the right column has left, and an integrity
+  // banner takes most of it: with MOUNT SHAKING on screen the third chip was cut across its
+  // middle by the clip that keeps the stack inside its column, which reads as a broken chip
+  // rather than as a full stack. One chip always fits under a banner, three fit without one.
+  const tier = readIntegrity(run.snapshot).tier;
+  const landscapeEvents = tier === 'ok' ? run.events : run.events.slice(0, 1);
+
   return (
     <View style={styles.root} testID="screen-drive">
       <EdgeBloom signals={signals} />
@@ -74,7 +82,7 @@ export default function DriveScreen() {
                 <View style={styles.rightColumn}>
                   {live ? <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" /> : null}
                   <View style={styles.calloutsLandscape} pointerEvents="none">
-                    <CalloutStack events={run.events} fromRight size={22} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
+                    <CalloutStack events={landscapeEvents} fromRight size={22} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
                   </View>
                   {live ? (
                     <>
