@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T04:45:25.646Z",
+  "startedAt": "2026-09-21T04:45:55.620Z",
   "viewport": {
     "width": 852,
     "height": 393
@@ -8450,13 +8450,13 @@
     {
       "name": "drive-open-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open-landscape.png",
       "video": null,
-      "ms": 4495,
+      "ms": 4686,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8531,18 +8531,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-start-landscape",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start-landscape.png",
       "video": null,
-      "ms": 5256,
+      "ms": 4882,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8617,18 +8617,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-landscape",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-landscape.png",
       "video": null,
-      "ms": 10828,
+      "ms": 8940,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8674,47 +8674,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 196856,
-        "goldPixels": 18268,
-        "redPixels": 16320,
-        "cyanPixels": 15760,
-        "textPixels": 7136,
-        "nonBgFraction": 0.5921,
+        "emberPixels": 196780,
+        "goldPixels": 18272,
+        "redPixels": 16756,
+        "cyanPixels": 16080,
+        "textPixels": 7260,
+        "nonBgFraction": 0.6226,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0.00485475352112676,
-              "y": 0.14334764631043256,
+              "y": 0.19169370229007632,
               "w": 0.5155802523474178,
               "h": 0.6216618956743003
             },
             "box": {
               "x0": 12,
-              "y0": 169,
+              "y0": 226,
               "x1": 1330,
-              "y1": 902
+              "y1": 959
             },
-            "pixels": 153172,
+            "pixels": 154792,
             "min": 20000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-peak-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak-landscape.png",
       "video": null,
-      "ms": 5827,
+      "ms": 5891,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8789,18 +8789,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-transition-landscape",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition-landscape.png",
       "video": null,
-      "ms": 6181,
+      "ms": 6741,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8875,18 +8875,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-bank-landscape",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank-landscape.png",
       "video": null,
-      "ms": 6893,
+      "ms": 7142,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8896,7 +8896,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 96,
+        "displayTextNodes": 94,
         "bodyTextNodes": 29,
         "otherTextNodes": 0
       },
@@ -8937,21 +8937,21 @@
         "redPixels": 14712,
         "cyanPixels": 16440,
         "textPixels": 6188,
-        "nonBgFraction": 0.3,
+        "nonBgFraction": 0.3153,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-loose-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-landscape.png",
       "video": null,
-      "ms": 6050,
+      "ms": 5921,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9026,18 +9026,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-lost-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost-landscape.png",
       "video": null,
-      "ms": 6508,
+      "ms": 5125,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9047,7 +9047,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 92,
+        "displayTextNodes": 93,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -9112,18 +9112,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-gps-landscape",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps-landscape.png",
       "video": null,
-      "ms": 7118,
+      "ms": 5261,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9133,7 +9133,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 93,
+        "displayTextNodes": 94,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -9171,24 +9171,24 @@
         "cornersNearBg": true,
         "emberPixels": 135244,
         "goldPixels": 5088,
-        "redPixels": 32228,
+        "redPixels": 32240,
         "cyanPixels": 14028,
         "textPixels": 9236,
-        "nonBgFraction": 0.5162,
+        "nonBgFraction": 0.5318,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-discarded-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded-landscape.png",
       "video": null,
-      "ms": 7091,
+      "ms": 6573,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9242,18 +9242,18 @@
         "nonBgFraction": 0.3764,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-savefail-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-landscape.png",
       "video": null,
-      "ms": 8376,
+      "ms": 8201,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9307,18 +9307,18 @@
         "nonBgFraction": 0.7954,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-chain-landscape",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain-landscape.png",
       "video": null,
-      "ms": 6833,
+      "ms": 5996,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9372,18 +9372,18 @@
         "nonBgFraction": 0.2062,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-warn-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn-landscape.png",
       "video": null,
-      "ms": 6048,
+      "ms": 7020,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9393,8 +9393,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
-        "bodyTextNodes": 30,
+        "displayTextNodes": 95,
+        "bodyTextNodes": 31,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9437,18 +9437,18 @@
         "nonBgFraction": 0.6368,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-savefail-untrusted-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted-landscape.png",
       "video": null,
-      "ms": 9808,
+      "ms": 7621,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9458,8 +9458,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 92,
-        "bodyTextNodes": 30,
+        "displayTextNodes": 93,
+        "bodyTextNodes": 31,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9502,18 +9502,18 @@
         "nonBgFraction": 0.5124,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "drive-loose-peak-landscape",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:41907/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:43811/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak-landscape.png",
       "video": null,
-      "ms": 6022,
+      "ms": 6490,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9523,7 +9523,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
+        "displayTextNodes": 92,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -9608,7 +9608,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:41:03.442Z"
+      "shotAt": "2026-09-21T04:47:32.232Z"
     },
     {
       "name": "replay-untrusted-leak-landscape",
@@ -12062,25 +12062,24 @@
       "shotAt": "2026-09-21T04:46:33.404Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:46:33.404Z",
+  "finishedAt": "2026-09-21T04:47:32.232Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "calibrate-nothing-landscape",
-    "calibrate-landscape",
-    "calibrate-level-landscape",
-    "calibrate-ready-landscape",
-    "calibrate-loose-landscape",
-    "calibrate-flat-landscape",
-    "calibrate-rejected-landscape",
-    "calibrate-fault-permission-landscape",
-    "calibrate-fault-unsupported-landscape",
-    "calibrate-fault-services-landscape",
-    "calibrate-fault-failed-landscape",
-    "calibrate-fault-location-landscape",
-    "calibrate-shaking-landscape",
-    "calibrate-early-landscape",
-    "calibrate-cradle-banner-landscape",
-    "calibrate-gps-landscape"
+    "drive-open-landscape",
+    "drive-start-landscape",
+    "drive-landscape",
+    "drive-peak-landscape",
+    "drive-transition-landscape",
+    "drive-bank-landscape",
+    "drive-loose-landscape",
+    "drive-lost-landscape",
+    "drive-gps-landscape",
+    "drive-discarded-landscape",
+    "drive-savefail-landscape",
+    "drive-chain-landscape",
+    "drive-warn-landscape",
+    "drive-savefail-untrusted-landscape",
+    "drive-loose-peak-landscape"
   ]
 }
