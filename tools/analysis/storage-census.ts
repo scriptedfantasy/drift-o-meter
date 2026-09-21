@@ -22,7 +22,14 @@
  * `useGarage`, `SessionCards` and `BestsBoard` call. The body-reading path (`lastRun.ts`) is
  * deliberately absent, because it only runs when a row is TAPPED.
  */
-import { createMemoryBackend, createSessionStore, summarizeSession, type SessionBackend, type SessionIndexEntry } from '../../src/platform/sessionStore';
+import {
+  createMemoryBackend,
+  createSessionStore,
+  summarizeSession,
+  type SessionBackend,
+  type SessionIndexEntry,
+  type StorageDiagnosis,
+} from '../../src/platform/sessionStore';
 import type { Session } from '../../src/engine/types';
 import { mountAdvice } from '../../src/ui/garage/advice';
 import { lastRunStanding, personalBests } from '../../src/ui/garage/bests';
@@ -193,7 +200,22 @@ async function census(runs: number): Promise<void> {
   console.log(`                        ${mb(fullBytes * runs)} parsed per open, at ${runs} runs`);
 }
 
-async function reads(runs: number): Promise<void> {
+export interface ReadCensus {
+  counts: Counts;
+  drawn: Drawn;
+  entries: SessionIndexEntry[];
+  listMs: number;
+  diagnosis: StorageDiagnosis;
+}
+
+/**
+ * Store a season, open it cold, draw the whole garage from it, and report every read that took.
+ *
+ * Exported so `storage-census.test.ts` can assert `bodyReads === 0` on every run of the suite:
+ * the claim is an ABSENCE, and an absence that lives only in a printout is a number waiting to
+ * stop being true (docs/CRITIC.md, rule 15).
+ */
+export async function measureReads(runs: number): Promise<ReadCensus> {
   const { backend } = countingBackend();
   const store = createSessionStore(backend);
   for (const session of buildSeason(runs, true)) await store.saveSession(session);
@@ -204,6 +226,12 @@ async function reads(runs: number): Promise<void> {
   const listMs = performance.now() - t0;
   const drawn = drawGarage(entries);
   const diagnosis = await cold.store.diagnose();
+  return { counts: cold.counts, drawn, entries, listMs, diagnosis };
+}
+
+async function reads(runs: number): Promise<void> {
+  const { counts, drawn, listMs, diagnosis } = await measureReads(runs);
+  const cold = { counts };
 
   console.log(`\nWHAT DRAWING THE GARAGE READS — ${runs} stored runs, cold open`);
   console.log(`  rows drawn            ${drawn.rows}   (${drawn.nights} night${drawn.nights === 1 ? '' : 's'}, ${drawn.records} records, ${drawn.marks} slide marks)`);
@@ -285,4 +313,7 @@ async function main(): Promise<void> {
   console.log('');
 }
 
-void main();
+// Printing is what a script does; measuring is what its test imports. Every other tool in here
+// runs on import, and this one would too — but then importing it to check the count would print
+// a census on every test run.
+if (/storage-census/.test(process.argv[1] ?? '')) void main();

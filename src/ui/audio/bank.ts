@@ -35,10 +35,18 @@
  *                 bloom and haptic already use, so the sound takes the edge and the callout is
  *                 silent. The edge also exists before the scorer has an opinion.
  *   `transition`  fires 0.40–0.42 s AFTER the phase edge into `transition`. The design gives the
- *                 flick a 120 ms magenta flash, a 100 ms screen shake and a haptic ON THE EDGE.
+ *                 flick a magenta flash, a 100 ms screen shake and a haptic ON THE EDGE.
  *                 A whip 410 ms behind the flash is worse than no whip, so TRANSITION sounds on
  *                 the edge and the callout is silent. MANJI, which fires on the same frame as
  *                 the callout, is the badge landing and keeps its own sound.
+ *
+ *                 NO DURATION IS QUOTED FOR THAT FLASH, deliberately. This row used to say "the
+ *                 120 ms flash", taken from docs/DESIGN.md; the flash `useDriveRun.ts` actually
+ *                 runs is `withTiming(1, 40)` then `withTiming(0, 140)`, i.e. 180 ms. The number
+ *                 lives in a file this module must not import (it is React), so rather than keep
+ *                 a third copy of it in prose that nothing can fail on, the sentence says what is
+ *                 true without it. What matters here is the ORDER — sound, flash, shake and
+ *                 haptic all on the edge — not how long the flash lasts.
  *
  * ── What is deliberately FELT and never heard ─────────────────────────────────────────────────
  * One row — EXIT EDGE — has no file at all. docs/DESIGN.md § Motion language gives the exit a
@@ -221,7 +229,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     minGapS: 0.46,
     gated: true,
     haptic: 'medium',
-    why: 'The flick: a whip, a crack and a magenta stab. It rides the phase edge, with the 120 ms flash, the 2 px shake and the medium haptic — the callout that names it arrives 410 ms later and is deliberately silent.',
+    why: 'The flick: a whip, a crack and a magenta stab. It rides the phase edge, with the magenta flash, the 2 px shake and the medium haptic — the callout that names it arrives 410 ms later and is deliberately silent.',
   },
   {
     id: 'manji',
@@ -364,7 +372,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     minGapS: 1.02,
     gated: true,
     haptic: 'success',
-    why: 'A riser pulling up for 300 ms, a thunk on the beat, a gold shimmer paying out. Tier A and the loudest thing in a run, because it is the only moment where points stop being at risk.',
+    why: 'A riser pulling up for 300 ms, a thunk on the beat, a gold shimmer paying out. Tier B, with the rest of the drift beats: measured through the real pipeline it fires 0.50 to 1.11 times per drift (npx tsx tools/audio/coverage.ts, eight runs over both tracks), and by the rule in callouts.ts an event on every drift carries no news however good the news is. The loudest tier is kept for SPIN and the grade reveal, which happen once in a run or not at all.',
   },
   {
     id: 'lost',
