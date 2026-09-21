@@ -75,11 +75,3 @@ export function mixColor(a: string, b: string, t: number): string {
   const ch = (i: number) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * f).toString(16).padStart(2, '0');
   return `#${ch(0)}${ch(1)}${ch(2)}`;
 }
-
-/**
- * What is actually behind the hero's number: the page background under the grade-coloured wash.
- * The odometer's fade masks are painted in it, so a flat `bg0` would leave a visible rectangle.
- */
-export function heroSurface(gradeColor: string): string {
-  return mixColor(colors.bg0, gradeColor, 0.07);
-}

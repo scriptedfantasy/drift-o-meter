@@ -36,14 +36,20 @@ function ScorePanelImpl({ signals, snapshot, size = 54, align = 'left', testID }
   const integrity = readIntegrity(snapshot);
   const note = integrity.scoreNote;
   const trusted = snapshot.trust > 0;
+  // THE DIGITS ARE EMBER ONLY WHILE THE NUMBER IS STILL A SCORE. Two conditions, because they
+  // are two different failures: `trust === 0` is a reading the engine disowns, and
+  // `scoreStopped` is the screen's own sentence saying this total has stopped growing. The
+  // odometer used to read only the first, so on a shaking mount or a weak fix — where `trust`
+  // is 0.65 — a full-ember five-digit score sat directly above the words NOT SCORING.
+  const live = trusted && !integrity.scoreStopped;
   return (
     <View style={[styles.wrap, right && styles.wrapRight]} testID={testID}>
       <View style={[styles.head, right && styles.headRight]}>
         <Micro>Score</Micro>
-        {trusted ? <MultiplierChip signals={signals} value={snapshot.multiplier} /> : null}
+        {live ? <MultiplierChip signals={signals} value={snapshot.multiplier} /> : null}
       </View>
-      <Odometer value={signals.totalDisplay} size={size} columns={6} color={trusted ? colors.ember : colors.muted} testID="hud-odometer" />
-      <ChainBar signals={signals} snapshot={snapshot} right={right} note={note} noteTone={integrity.noteTone} />
+      <Odometer value={signals.totalDisplay} size={size} columns={6} color={live ? colors.ember : colors.muted} testID="hud-odometer" />
+      <ChainBar signals={signals} snapshot={snapshot} right={right} note={note} noteTone={integrity.noteTone} stopped={integrity.scoreStopped} />
     </View>
   );
 }
@@ -85,7 +91,21 @@ function MultiplierChip({ signals, value }: { signals: HudSignals; value: number
  * which is exactly the moment someone wants to know what is on the line. The two say different
  * things and the screen has room for both.
  */
-function ChainBar({ signals, snapshot, right, note, noteTone }: { signals: HudSignals; snapshot: HudSnapshot; right: boolean; note: string | null; noteTone: string }) {
+function ChainBar({
+  signals,
+  snapshot,
+  right,
+  note,
+  noteTone,
+  stopped,
+}: {
+  signals: HudSignals;
+  snapshot: HudSnapshot;
+  right: boolean;
+  note: string | null;
+  noteTone: string;
+  stopped: boolean;
+}) {
   const fill = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, signals.chainRatio.value)) * 100}%` }));
   const glow = useAnimatedStyle(() => ({ opacity: 0.25 + 0.75 * Math.min(1, signals.chainRatio.value) }));
   const atRisk = snapshot.chainPoints > 0;
@@ -104,10 +124,21 @@ function ChainBar({ signals, snapshot, right, note, noteTone }: { signals: HudSi
           {atRisk ? Math.round(snapshot.chainPoints).toLocaleString('en-US') : Math.round(snapshot.totalPoints).toLocaleString('en-US')}
         </AppText>
       </View>
+      {/* THE SENTENCE THAT SAYS THE BIG NUMBER IS NOT REAL, at a size a driver reads at arm's
+          length. It was 11 px — 23 device pixels of glyph under a 160 device px score digit and
+          a 340 px hero numeral — which made the most important sentence on the display the
+          smallest text on it. The coaching line beside it had already been raised to 17; this
+          one says "this score is not real" and now leads it. A note that is NOT the stop
+          sentence ("NO FIX — DEAD-RECKONED FROM THE GYRO", "WEAK GPS") stays an aside at 13:
+          it is information about the input, not a retraction of the number. */}
       {note ? (
-        <Micro color={noteTone} style={right ? styles.noteRight : undefined} numberOfLines={2}>
+        <AppText
+          color={noteTone}
+          style={[stopped ? styles.noteStopped : styles.note, right && styles.noteRight]}
+          numberOfLines={2}
+          adjustsFontSizeToFit>
           {note}
-        </Micro>
+        </AppText>
       ) : null}
     </View>
   );
@@ -124,6 +155,8 @@ const styles = StyleSheet.create({
   chainTrack: { height: 5, borderRadius: 3, backgroundColor: colors.bg2, overflow: 'hidden' },
   chainFill: { height: 5, borderRadius: 3, backgroundColor: colors.ember },
   chainFillMuted: { backgroundColor: colors.muted },
+  note: { fontFamily: fontFamilies.body.medium, fontSize: 13, lineHeight: 16, letterSpacing: 0.6 },
+  noteStopped: { fontFamily: fontFamilies.display.bold, fontSize: 18, lineHeight: 21, letterSpacing: 1.1 },
   noteRight: { textAlign: 'right' },
   chainHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
   chainValue: { fontFamily: fontFamilies.display.boldItalic, fontSize: 15, lineHeight: 17 },

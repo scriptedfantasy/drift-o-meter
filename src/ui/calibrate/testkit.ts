@@ -98,7 +98,7 @@ export function replayReadings(spec: ReplaySpec, snapshotHz = 12): Frame[] {
         reclineDeg: o.reclineDeg,
         quality: cal.quality,
         upQuality: diag.upQuality,
-        upSettled: diag.upSettled,
+        upAged: diag.upAged,
         forwardResolved: cal.forwardResolved,
         calibrationOk: state.calibrationOk,
         mount: state.mount,

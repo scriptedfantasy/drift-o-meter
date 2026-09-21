@@ -19,7 +19,7 @@ export { gradeStateOf, gradeStateColor } from './grade';
 export type { GradeState } from './grade';
 export { GradeBadge } from './GradeBadge';
 export type { GradeBadgeProps } from './GradeBadge';
-export { measuredCount, traceBars, traceLegend, TRACE_CEILING_DEG } from './trace';
+export { measuredCount, traceBars, traceHeight, traceLegend, TRACE_CEILING_DEG, TRACE_HEIGHT_DP, TRACE_STRIP_DP } from './trace';
 export type { TraceBar, TraceLegend, TraceOptions } from './trace';
 export { LastRunCard, RunRow } from './SessionCards';
 export { BestsBoard } from './BestsBoard';

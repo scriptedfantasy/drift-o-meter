@@ -215,7 +215,9 @@ export default function SettingsScreen() {
           title="Delete every run?"
           body="Every recording, score and replay on this device goes. There is no undo and nothing is backed up anywhere."
           detail={deleteAllDetail(stored)}
-          confirmLabel="Delete everything"
+          // Short enough to fit the button: "Delete everything" ellipsised to "DELETE EV…" at
+          // phone width, which is not a label to put on the button that empties the device.
+          confirmLabel="Delete all"
           busy={busy}
           onConfirm={() => void wipe()}
           onCancel={() => setAsking(false)}

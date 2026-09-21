@@ -53,12 +53,13 @@ import {
   eventColor,
   fmtTime,
   headlinePoints,
-  heatColor,
+  heatOf,
   isPointsClaim,
   kmh,
   mix,
   ribbonScale,
   severityWeight,
+  tintOf,
 } from './palette';
 import type { SceneResources } from './resources';
 import type { ReplayView } from './source';
@@ -139,25 +140,42 @@ interface Frame extends SceneInput {
 const REVEAL_S = 1.1;
 
 /**
- * The heat ramp, unless the engine has said it does not believe this run's sliding: an untrusted
- * recording plays, but its slip angles are not a measurement anyone should dress up. The points
- * and the grade are already withheld; the ember goes with them.
+ * THE GATE, for a live |β| — `heatOf` in palette.ts, with this frame's trust plugged in.
+ *
+ * It is a one-liner here and a swept, exported rule there because the version that lived only
+ * here was applied at sixteen draw sites and missed four, twice: the round before last a run
+ * stamped NOT SCORED drew its whole lap in ember and gold, and the round after that the same
+ * run drew an ember drift-start tick, an ember exit dot and an ember breadcrumb two inches under
+ * the words. Nothing in the suite or the harness could see either. `replay-ui.test.ts` now runs
+ * the rule, and runs a guard over the text of THIS FILE that fails if a ramp colour is ever
+ * spent outside it.
  */
 function heat(f: Frame, beta: number): string {
-  return f.noScore ? MUTED : heatColor(beta);
+  return heatOf(beta, !f.noScore);
 }
 
 /**
- * The same gate for a heat colour something else already worked out — the trail ribbon's halo,
- * its core chunks (coloured in `geometry.ts`, once, off the same ramp) and the mini-map.
+ * The gate for a colour that belongs to a DRIFT THE DETECTOR DECLARED, rather than to the pose
+ * the playhead is on: the ribbon's halo, the mini-map's trail, a peak marker, a band tick.
  *
- * It exists because the gate was applied at thirteen draw sites and missed the three BIGGEST:
- * a run stamped NOT SCORED drew its whole lap in full ember and gold, with the peak labels
- * beside it in grey and the slip numeral grey — one frame saying both things at once. Every
- * colour that comes off `heatColor`, wherever it was computed, goes through here or `heat`.
+ * The floor is the detector's own assertion. `heat` greys anything below the 8° hold edge
+ * because the engine says that is not sliding — which is right for a pose and wrong for a slide
+ * the engine has already declared: a drift's running peak is a degree or two for its first tenth
+ * of a second (44–115 trail samples per fixture), and greying the head of every ribbon would
+ * take the ember off drift ENTRY, the one beat DESIGN.md spends it on.
+ */
+function driftHeat(f: Frame, beta: number): string {
+  return heat(f, Math.max(Math.abs(beta), SEVERITY_EDGES.hold));
+}
+
+/**
+ * The same gate for a heat colour something else already worked out — the trail ribbon's core
+ * chunks (coloured in `geometry.ts`, once, off the same ramp) and the mini-map.
+ *
+ * Only the trust half; see `tintOf`. Every hex that reaches it belongs to a declared drift.
  */
 function tint(f: Frame, hex: string): string {
-  return f.noScore ? MUTED : hex;
+  return tintOf(hex, !f.noScore);
 }
 
 const BG = colors.bg0;
@@ -463,7 +481,13 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
   // The driven line where the car was NOT drifting (the future is never drawn: it spoils the
   // route). On a run with no drift in it this hairline IS the replay, so it is drawn to be seen
   // rather than to stay out of the ribbons' way.
+  //
+  // AND IT IS NOT EMBER. It was, at 0.55 alpha and double width, which put the whole driven line
+  // of `clean` — footer: 0 DRIFTS — in the colour that means a slide. `heat(f, 0)` is the ramp
+  // asked what zero slip looks like, and the gate's answer is the neutral: one rule, no second
+  // constant to keep in step with it.
   const clean = f.replay.segments.length === 0;
+  const lineCol = heat(f, 0);
   const lineW = mOrPx(f, clean ? 0.6 : 0.35, clean ? 1.8 : 1);
   const lineAlpha = clean ? 0.55 : 0.18;
   // stretches with no GPS behind them are a guess: dashed, never lit, whatever the car was doing
@@ -479,11 +503,11 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
   for (const run of g.runs) {
     if (run.startIndex > cur || !overlaps(f, run.bounds)) continue;
     if (run.endIndex <= cur) {
-      canvas.drawPath(run.path, strokePaint(f, colors.ember, lineW, lineAlpha));
+      canvas.drawPath(run.path, strokePaint(f, lineCol, lineW, lineAlpha));
     } else {
       const path = partialPath(f, run.startIndex, cur);
       if (path) {
-        canvas.drawPath(path, strokePaint(f, colors.ember, lineW, lineAlpha));
+        canvas.drawPath(path, strokePaint(f, lineCol, lineW, lineAlpha));
         path.dispose();
       }
     }
@@ -502,7 +526,7 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
     const w = severityWeight(seg.severity);
     const focus = f.ui.focusDriftId !== null && f.ui.focusDriftId === seg.driftId;
     // the halo's heat is the peak SO FAR, never the peak this slide will reach
-    const col = heat(f, sg.peakTo[Math.max(0, Math.min(seg.endIndex, cur) - seg.startIndex)]);
+    const col = driftHeat(f, sg.peakTo[Math.max(0, Math.min(seg.endIndex, cur) - seg.startIndex)]);
     canvas.drawPath(path, glowStroke(f, col, haloW * (0.55 + 0.5 * w), (0.09 + 0.13 * w) * boost, haloW * 0.28));
     canvas.drawPath(path, strokePaint(f, col, glowW * (0.8 + 0.5 * w), (0.18 + 0.22 * w) * boost));
     if (focus) canvas.drawPath(path, strokePaint(f, WHITE, haloW * 1.1, 0.16));
@@ -538,7 +562,7 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
       if (seg.peakT > f.t || !inView(f, tr.x[seg.peakIndex], tr.y[seg.peakIndex])) continue;
       const w = severityWeight(seg.severity);
       if (w < 0.45) continue;
-      canvas.drawCircle(tr.x[seg.peakIndex], tr.y[seg.peakIndex], mOrPx(f, 7, 9), fillPaint(f, heat(f, seg.peakAngle), 0.1 + 0.12 * w));
+      canvas.drawCircle(tr.x[seg.peakIndex], tr.y[seg.peakIndex], mOrPx(f, 7, 9), fillPaint(f, driftHeat(f, seg.peakAngle), 0.1 + 0.12 * w));
     }
   }
 }
@@ -599,11 +623,13 @@ function drawMarkers(canvas: SkCanvas, f: Frame): void {
   const pw = mOrPx(f, 0.3, 1);
   const lap = lapAt(r, f.t);
   const li = lap ? lap.index : -1;
-  // previous laps: a 3 px breadcrumb, no ring, no label
+  // previous laps: a 3 px breadcrumb, no ring, no label. The peak breadcrumb is a RAMP colour —
+  // the same dot the current lap draws, one lap older — so it goes through the gate; the
+  // transition's magenta is a beat rather than a severity and never did.
   for (const m of r.markers) {
     if (m.t > f.t || (m.lapIndex === li && li >= 0) || !inView(f, m.x, m.y)) continue;
     if (m.kind === 'transition' || m.kind === 'drift-peak') {
-      canvas.drawCircle(m.x, m.y, mOrPx(f, 0.5, 1.5), fillPaint(f, m.kind === 'transition' ? colors.magenta : colors.ember, 0.28));
+      canvas.drawCircle(m.x, m.y, mOrPx(f, 0.5, 1.5), fillPaint(f, m.kind === 'transition' ? colors.magenta : driftHeat(f, SEVERITY_EDGES.hold), 0.28));
     }
   }
   for (const m of visibleMarkers(f)) {
@@ -627,18 +653,28 @@ function drawMarkers(canvas: SkCanvas, f: Frame): void {
         break;
       }
       case 'drift-peak': {
-        const col = heat(f, m.peakAngle ?? 0);
+        const col = driftHeat(f, m.peakAngle ?? 0);
         canvas.drawCircle(m.x, m.y, mOrPx(f, 2, 2.6), strokePaint(f, col, pw, 0.5));
         canvas.drawCircle(m.x, m.y, mOrPx(f, 0.7, 1.2), fillPaint(f, col));
         break;
       }
+      // The two ends of a slide. `SEVERITY_EDGES.hold` is the bottom of the ramp, which is
+      // ember: these ticks mark that a slide STARTED and ENDED here, not how big it got — the
+      // peak is drawn where it happened, and a start tick in the colour of a peak the car has
+      // not reached yet gives the slide away before it arrives.
+      //
+      // They were raw `colors.ember`, outside the gate. On `fixture-handheld` at t=60 — a
+      // recording stamped NOT SCORED, with every ribbon, halo, chunk, label and minimap around
+      // them correctly grey — the two of them plus the breadcrumb above drew 818 ember pixels in
+      // one cluster two inches under the words, which is the gate leaking at the one moment it
+      // exists for.
       case 'drift-end':
-        canvas.drawCircle(m.x, m.y, mOrPx(f, 0.6, 1), fillPaint(f, colors.ember, 0.75));
+        canvas.drawCircle(m.x, m.y, mOrPx(f, 0.6, 1), fillPaint(f, driftHeat(f, SEVERITY_EDGES.hold), 0.75));
         break;
       case 'drift-start': {
         const nx = -Math.sin(m.course);
         const ny = Math.cos(m.course);
-        canvas.drawLine(m.x - nx * 2, m.y - ny * 2, m.x + nx * 2, m.y + ny * 2, strokePaint(f, colors.ember, pw, 0.6));
+        canvas.drawLine(m.x - nx * 2, m.y - ny * 2, m.x + nx * 2, m.y + ny * 2, strokePaint(f, driftHeat(f, SEVERITY_EDGES.hold), pw, 0.6));
         break;
       }
       default:
@@ -930,7 +966,7 @@ function drawWorldLabels(canvas: SkCanvas, f: Frame): void {
       const sev = severityWeight(m.severity ?? 'none');
       if (f.overview && sev < 0.45) continue;
       label = m.label;
-      fill = heat(f, m.peakAngle ?? 0);
+      fill = driftHeat(f, m.peakAngle ?? 0);
       if (sev >= 0.75) {
         font = f.fonts.peak;
         size = 16;
@@ -1031,7 +1067,7 @@ function drawMinimap(canvas: SkCanvas, f: Frame): void {
     const sp: Array<{ x: number; y: number }> = [];
     for (let i = seg.startIndex; i <= end; i += 3) sp.push({ x: mx(r.trail.x[i]), y: my(r.trail.y[i]) });
     if (sp.length > 1) {
-      const col = heat(f, sg.peakTo[Math.max(0, end - seg.startIndex)]);
+      const col = driftHeat(f, sg.peakTo[Math.max(0, end - seg.startIndex)]);
       canvas.drawPoints(PointMode.Polygon, sp, strokePaint(f, col, 1.7, 0.95, StrokeCap.Round));
     }
   }
@@ -1211,7 +1247,7 @@ function drawBottomHud(canvas: SkCanvas, f: Frame): void {
     canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, b - a), height: 2.5 }, fillPaint(f, MUTED, 0.45));
     if (seg.startT > f.t) continue;
     const played = s.xAt(Math.min(seg.endT, f.t));
-    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, played - a), height: 2.5 }, fillPaint(f, heat(f, seg.peakAngle), 0.85));
+    canvas.drawRect({ x: a, y: s.yBot + 2, width: Math.max(1, played - a), height: 2.5 }, fillPaint(f, driftHeat(f, seg.peakAngle), 0.85));
   }
   // a stretch with no GPS behind it, marked on the timeline as well as in the world
   for (const g of f.view.gaps) {
@@ -1302,11 +1338,11 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   // same number twice at the same size on every frame is one of them saying nothing.
   if (compact) {
     x += drawStr(canvas, f, f.fonts.label, driftStr, x, ly, { color: MUTED, tracking: 1.4 }) + 12;
-    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, x, ly, { color: heat(f, best), tracking: 1.4 });
+    if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, x, ly, { color: driftHeat(f, best), tracking: 1.4 });
     return;
   }
   const dw = drawStr(canvas, f, f.fonts.label, driftStr, lay.info.x, ly + 22, { color: MUTED, tracking: 1.4 });
-  if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, lay.info.x + dw + 14, ly + 22, { color: heat(f, best), tracking: 1.4 });
+  if (bestStr) drawStr(canvas, f, f.fonts.label, bestStr, lay.info.x + dw + 14, ly + 22, { color: driftHeat(f, best), tracking: 1.4 });
 }
 
 /**

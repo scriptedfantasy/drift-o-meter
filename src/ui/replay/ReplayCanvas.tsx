@@ -33,7 +33,7 @@ import {
 } from '../../engine/replay';
 import { clamp } from '../../engine/types';
 import { buildSceneGeometry } from './geometry';
-import type { ReplayLayout } from './layout';
+import { safeFrame, type ReplayLayout } from './layout';
 import { TYPE } from './palette';
 import type { HighlightChip, PlayerSignals } from './player';
 import { createSceneResources } from './resources';
@@ -213,33 +213,12 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       const cutFade = Math.max(sv.playing.value === 1 ? cam.cutFade : 0, wallFade);
 
       // The camera frames the ACTION rectangle, which in portrait stops above the floating
-      // transport. `worldToScreen` puts the centre at (w/2, h/2), so hand the renderer a state
-      // whose half-extents ARE that rectangle's centre on screen: the mapping stays exact and the
-      // engine's camera never has to know about the chrome.
+      // transport, and `safeFrame` holds the car inside it — the rule, with the measurements
+      // behind it, is in layout.ts, where a test can run it over every fixture and both
+      // orientations instead of it living only inside this loop.
       const act = actionRect(s.layout, camera.getMode());
-      let cxs = act.x + act.w / 2;
-      let cys = act.y + act.h / 2;
-      // Safe frame. The engine's look-ahead is a distance in metres and its zoom is fitted to the
-      // SHORTER side of the viewport, so on a tall portrait stage — and especially in cinematic,
-      // which zooms in by up to 1.6x — the car can be pushed past the bottom of the band. This
-      // slides the frame (not the camera) back along the same line until the car is inside it
-      // again: the camera's own motion is untouched, and a car is never half off the screen.
       const pose = poseAt(s.replay, t);
-      {
-        const dx = pose.x - cam.cx;
-        const dy = pose.y - cam.cy;
-        const c = Math.cos(cam.rotation);
-        const sn = Math.sin(cam.rotation);
-        const offX = cam.zoom * (c * dx - sn * dy);
-        const offY = -cam.zoom * (sn * dx + c * dy);
-        const maxY = act.h * 0.32;
-        const maxX = act.w * 0.34;
-        if (offY > maxY) cys -= offY - maxY;
-        else if (offY < -maxY) cys += -maxY - offY;
-        if (offX > maxX) cxs -= offX - maxX;
-        else if (offX < -maxX) cxs += -maxX - offX;
-      }
-      const camScreen: CameraState = { ...cam, w: 2 * cxs, h: 2 * cys };
+      const camScreen: CameraState = safeFrame(cam, pose.x, pose.y, act);
 
       const chipNow = s.chip.current;
       // A paused frame is a poster frame: the chip that names the moment stays up until the run

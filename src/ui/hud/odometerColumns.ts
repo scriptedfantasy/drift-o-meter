@@ -55,6 +55,48 @@ export function columnsUsed(value: number, columns: number): number {
 }
 
 /**
+ * Whether the drum at `place` is in use at this value — the per-column form of `columnsUsed`,
+ * and the one the component asks.
+ *
+ * IT IS PER-COLUMN ON PURPOSE. `columnsUsed` returns a COUNT, and a count is a number of views,
+ * which means React has to render before the count can change. The odometer asked for the count
+ * from the UI thread and hopped back through `runOnJS(setUsed)` to apply it, so the new leading
+ * column arrived one React commit AFTER the value had crossed the decade — and in that window
+ * the leading digit was simply not drawn. Measured off the reveal's own frames: 9,014 at
+ * t=1420 ms, "0,924" at t=1444 (the true value was 10,924), 14,330 at t=1491. The number the
+ * driver read went BACKWARDS by ten thousand, mid-roll, at every decade.
+ *
+ * Asked per column, the same rule is a pure function of the value, so it can be evaluated inside
+ * each column's own animated style and takes effect on the frame the value crosses. Nothing is
+ * cached, nothing is committed, nothing lags.
+ */
+export function columnVisible(value: number, place: number, columns: number): boolean {
+  'worklet';
+  if (place >= columns) return false;
+  if (place <= 0) return true;
+  return (value > 0 ? value : 0) >= Math.pow(10, place);
+}
+
+/**
+ * What the odometer reads WHILE IT MOVES, given the columns it is actually drawing.
+ *
+ * `renderedDigits` answers the at-rest question and returns null the moment a drum is mid-turn —
+ * which is every frame of a roll, and the results odometer is only ever read in motion. This one
+ * answers the moving question: a drum caught between two digits still shows its lower digit
+ * across most of the window, so the figure a driver reads off `shown` columns is the integer
+ * they spell. It must be `Math.floor(value)` at every value, or a digit has gone missing.
+ */
+export function movingReading(value: number, columns: number): number {
+  const v = value > 0 ? value : 0;
+  let out = 0;
+  for (let place = columns - 1; place >= 0; place--) {
+    if (!columnVisible(v, place, columns)) continue;
+    out = out * 10 + (Math.floor(columnOffset(v, place)) % 10);
+  }
+  return out;
+}
+
+/**
  * What the odometer actually READS at this value, or null when any column is mid-turn (a
  * fraction of a digit in the window). The sweep test asserts this equals `String(value)` for
  * every integer score the field can hold — it is the value-side statement of "the number on the

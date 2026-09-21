@@ -11,10 +11,12 @@
  * table, the trail store and the query parser are all pure modules, imported without React
  * Native. Anything that needs a renderer is verified in the capture harness instead.
  */
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { colors } from '../theme';
-import { columnOffset, columnsUsed, renderedDigits, CARRY_FRACTION } from './odometerColumns';
+import { columnOffset, columnsUsed, columnVisible, movingReading, renderedDigits, CARRY_FRACTION } from './odometerColumns';
 import { readIntegrity, CALIBRATION_GRACE_S } from './integrityView';
 import { createTrail, fitTrail, pushTrail, resetTrail } from './trail';
 import { DEFAULT_HUD_PARAMS, parseHudParams } from './hudParams';
@@ -75,6 +77,56 @@ describe('odometer columns', () => {
     }
   });
 
+  it('reads as the value it holds WHILE IT ROLLS, across every decade crossing', () => {
+    // WHY THIS EXISTS, AND WHY THE SWEEP ABOVE COULD NOT CATCH IT. That sweep asks
+    // `renderedDigits`, which recomputes the column count synchronously from the value and only
+    // answers the AT REST case — and the results odometer is only ever read in motion. The
+    // component did not recompute the count synchronously: it raised it through
+    // `runOnJS(setUsed)`, so the new leading column arrived one React commit after the value
+    // crossed the decade and the leading digit was not drawn for that commit. Captured off the
+    // reveal's own frames: portrait 9,014 (t=1420 ms) → "0,924" (t=1444, true value 10,924) →
+    // 14,330 (t=1491); landscape 7,400 → "3,067" → 17,492. The reading went BACKWARDS.
+    //
+    // `movingReading` is the moving-value counterpart: what the drums spell at a value that is
+    // between integers, using the same per-column rule the component now evaluates inside each
+    // column's animated style. It must equal `Math.floor(value)` everywhere, or a digit is
+    // missing. The step is deliberately not a divisor of any power of ten, so the sweep lands
+    // inside carries rather than only on them.
+    let worst = '';
+    let backwards = 0;
+    let prev = -1;
+    for (let v = 0; v <= 120_000; v += 0.37) {
+      const read = movingReading(v, 6);
+      if (read !== Math.floor(v) && !worst) worst = `at ${v.toFixed(2)} the drums spell ${read}`;
+      if (read < prev) backwards++;
+      prev = read;
+    }
+    expect(worst, 'a value the odometer does not spell while rolling').toBe('');
+    expect(backwards, 'frames where the number a driver reads went down while the score went up').toBe(0);
+
+    // the two captured crossings, exactly
+    expect(movingReading(10_924, 6)).toBe(10_924);
+    expect(movingReading(13_067, 6)).toBe(13_067);
+    // and the column that carries the leading digit is in use the instant the value needs it
+    expect(columnVisible(9_999.99, 4, 6)).toBe(false);
+    expect(columnVisible(10_000, 4, 6)).toBe(true);
+  });
+
+  it('never derives the column count through a React commit', () => {
+    // The moving-value test above pins the ARITHMETIC; this pins the WIRING, which is where the
+    // defect actually lived — the arithmetic was right all along and the component asked for it
+    // one commit too late. A count is a number of views, so any count kept in React state is a
+    // frame behind the value by construction. `columnVisible` is asked per column, inside that
+    // column's own animated style, and nothing about the field's width may be committed.
+    const src = readFileSync(new URL('./Odometer.tsx', import.meta.url), 'utf8');
+    // comments stripped: this file's own docstring names the defect, and a prose mention of it
+    // is the opposite of a reintroduction
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code, 'the column count must not hop to the JS thread').not.toMatch(/runOnJS/);
+    expect(code, 'the column count must not be React state').not.toMatch(/useState|useAnimatedReaction/);
+    expect(code, 'each column decides for itself, from the value').toMatch(/columnVisible\(/);
+  });
+
   it('uses only as many columns as the number needs, and never fewer than one', () => {
     expect(columnsUsed(0, 6)).toBe(1);
     expect(columnsUsed(9, 6)).toBe(1);
@@ -86,6 +138,17 @@ describe('odometer columns', () => {
     expect(columnsUsed(-5, 6)).toBe(1);
     expect(columnOffset(-5, 0)).toBe(0);
     expect(columnOffset(-5, 3)).toBe(0);
+
+    // and the per-column form the component asks says the same thing at every value, so the
+    // count on screen cannot drift from the count the rest of this file reasons about
+    for (const v of [0, 1, 9, 10, 99, 100, 999, 1000, 9999, 10_000, 99_999, 1_000_000, -5]) {
+      const used = columnsUsed(Math.max(0, v), 6);
+      for (let place = 0; place < 6; place++) {
+        expect(columnVisible(v, place, 6), `value ${v}, place ${place}`).toBe(place < used);
+      }
+    }
+    // a column beyond the field is never drawn, whatever the value
+    expect(columnVisible(1e9, 6, 6)).toBe(false);
   });
 });
 

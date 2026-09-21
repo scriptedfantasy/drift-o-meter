@@ -8,9 +8,9 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { gutter } from '../theme';
-import { LANDSCAPE_MIN_WIDTH, RAIL_GAP, resultsLayout } from './layout';
-import { refusalFrom } from './unscored';
+import { gutter, space } from '../theme';
+import { LANDSCAPE_MIN_WIDTH, RAIL_GAP, resultsLayout, scoreFieldWidth, WASH_BOTTOM_CLEAR } from './layout';
+import { faultStat, refusalFrom } from './unscored';
 
 /** iPhone 15 Pro, the harness's device profile. */
 const PORTRAIT = { w: 393, h: 852 };
@@ -38,29 +38,54 @@ describe('resultsLayout', () => {
   });
 
   it('never lets the hero wash reach the bottom of a short viewport', () => {
-    // the harness fails a route whose corner pixels are not bg0
-    for (const [w, h] of [
-      [852, 393],
-      [740, 360],
-      [1024, 768],
-    ]) {
-      expect(resultsLayout(w, h).washHeight).toBeLessThan(h * 0.75);
+    // WHAT THIS USED TO ASSERT, AND WHY IT COULD NOT FAIL: `washHeight < h * 0.75` against a
+    // landscape `washHeight` that is literally `height * 0.72`. A fraction of the height cannot
+    // be caught out by a looser fraction of the height — the assertion restated the formula. The
+    // property is about DP OF CLEAR SPACE at the bottom of the frame: the harness fails a route
+    // whose corner pixels are not bg0, and below that band the actions are docked. Stated in dp,
+    // and swept over heights the formula was never tuned on, it has something to catch: a flat
+    // 0.72 fails this at every height under 229.
+    for (let h = 200; h <= 1400; h += 37) {
+      for (const w of [Math.max(h + 1, 660), h < 900 ? 1366 : 1600, Math.round(h * 0.6)]) {
+        const L = resultsLayout(w, h);
+        expect(h - L.washHeight, `${w}x${h} leaves this much clear under the wash`).toBeGreaterThanOrEqual(WASH_BOTTOM_CLEAR);
+      }
     }
   });
 
-  it('sizes the grade letter to the block it lives in, at every size', () => {
+  it('sizes the grade letter to what it actually shares the rail with', () => {
+    // ALSO A TAUTOLOGY BEFORE: `letterSize <= heroWidth` against `railWidth * 0.5`, and
+    // `< h * 0.5` against a value already capped at `h * 0.34`. Neither could fail. The real
+    // constraints are that the SCORE has to fit beside the letter on the same row, and that the
+    // letter has to fit the rail's free height — and, on a tall frame, that it is not left tiny
+    // in a rail that is mostly black (180 dp in a 1024 dp frame, with 62 % of the rail empty).
     for (const [w, h] of [
       [393, 852],
       [852, 393],
       [740, 360],
+      [667, 375],
+      [644, 400],
       [1024, 768],
+      [1280, 720],
+      [1366, 1024],
       [320, 568],
     ]) {
       const L = resultsLayout(w, h);
-      expect(L.letterSize).toBeGreaterThan(40);
-      expect(L.letterSize).toBeLessThanOrEqual(L.heroWidth);
-      // a landscape letter also has to fit the height it shares with the score and the actions
-      if (L.landscape) expect(L.letterSize).toBeLessThan(h * 0.5);
+      expect(L.letterSize, `${w}x${h}`).toBeGreaterThan(40);
+      if (!L.landscape) {
+        expect(L.letterSize).toBeLessThanOrEqual(L.contentWidth);
+        continue;
+      }
+      if (L.railStack) {
+        // its own line: the width is the rail's, and the height is the rail's free height
+        expect(L.letterSize, `${w}x${h} letter vs rail`).toBeLessThanOrEqual(L.railWidth);
+        expect(L.letterSize * L.letterLineRatio, `${w}x${h} letter vs free height`).toBeLessThanOrEqual(L.railBlockHeight);
+        // and it is a grade letter, not a caption, on a frame with room for one
+        expect(L.letterSize, `${w}x${h} letter is too small for the frame it has`).toBeGreaterThan(h * 0.25);
+      } else {
+        // sharing the row: letter + gap + the score field must fit the rail
+        expect(L.letterSize + space[3] + scoreFieldWidth(L.scoreSize), `${w}x${h} letter + score vs rail`).toBeLessThanOrEqual(L.railWidth);
+      }
     }
   });
 
@@ -70,18 +95,47 @@ describe('resultsLayout', () => {
   });
 
   it('never returns a width a child would have to clip', () => {
+    // WHAT THIS MISSED. It listed [600, 400] and then asserted only `contentWidth > 0` and
+    // `sparkWidth <= contentWidth` — nothing that compared the column back to the frame it came
+    // from. At 600 x 400 the split was drawn and the report column overflowed: measured live,
+    // `clientWidth` 255 against `scrollWidth` 283, with the section head cut to "SCORE BREAKD…".
+    // The column has to fit the frame, at every width, and the sweep is fine enough to land in
+    // the 44 dp window that used to be wrong.
+    for (let w = 300; w <= 1700; w += 7) {
+      for (const h of [360, 400, 852, 1024]) {
+        const L = resultsLayout(w, h);
+        expect(L.contentWidth, `${w}x${h}`).toBeGreaterThan(0);
+        expect(L.sparkWidth).toBeGreaterThanOrEqual(80);
+        expect(L.sparkWidth).toBeLessThanOrEqual(L.contentWidth);
+        expect(L.scoreSize).toBeGreaterThan(20);
+        if (L.landscape) {
+          expect(gutter * 2 + L.railWidth + RAIL_GAP + L.contentWidth, `${w}x${h} rail + gap + column vs frame`).toBeLessThanOrEqual(w);
+          expect(L.railWidth, `${w}x${h} rail`).toBeGreaterThanOrEqual(280);
+          expect(L.contentWidth, `${w}x${h} column`).toBeGreaterThanOrEqual(300);
+        } else {
+          expect(L.columnWidth).toBeLessThanOrEqual(w);
+        }
+      }
+    }
+  });
+
+  it('puts the hero letter where both layouts actually draw it', () => {
+    // The grade reveal flies its own letter onto this box, so a wrong number here is a letter
+    // that dissolves next to the hero instead of landing on it. Measured on the shipped web
+    // export: the letter's line box starts at (20, 40) at 393 x 852 AND at 852 x 393.
     for (const [w, h] of [
       [393, 852],
       [852, 393],
-      [600, 400],
-      [1280, 800],
+      [1366, 1024],
     ]) {
       const L = resultsLayout(w, h);
-      expect(L.contentWidth).toBeGreaterThan(0);
-      expect(L.sparkWidth).toBeGreaterThanOrEqual(80);
-      expect(L.sparkWidth).toBeLessThanOrEqual(L.contentWidth);
-      expect(L.scoreSize).toBeGreaterThan(20);
+      expect(L.heroLetterLeft, `${w}x${h} left`).toBe(gutter);
+      expect(L.heroLetterTop, `${w}x${h} top`).toBe(40);
     }
+    // a portrait page wider than its column centres it, and the letter travels with it
+    const wide = resultsLayout(900, 1400);
+    expect(wide.landscape).toBe(false);
+    expect(wide.heroLetterLeft).toBe((900 - wide.columnWidth) / 2 + gutter);
   });
 });
 
@@ -128,5 +182,51 @@ describe('refusalFrom', () => {
     const r = refusalFrom('Mount the phone firmly');
     expect(r.remedy).toBe('Mount the phone firmly.');
     expect(r.reason).toBeNull();
+  });
+});
+
+describe('faultStat', () => {
+  const J = (o: Partial<{ mount: 'rigid' | 'suspect' | 'loose'; physics: 'ok' | 'implausible'; gps: 'good' | 'poor' | 'none' }> = {}) => ({
+    mount: 'rigid' as const,
+    physics: 'ok' as const,
+    gps: 'good' as const,
+    ...o,
+  });
+
+  it('never says LOOSE about a mount the monitor called rigid', () => {
+    // THE DEFECT, AS CODE. The strip drew `<Stat label="Mount" value="LOOSE" />` on every refused
+    // run. The monitor refuses rigidly mounted phones too — it vetoes on the calibration bar
+    // alone and says "Can't tell which way the car points", which ARCHITECTURE.md names as the
+    // expected real-road failure and `results-layout.test.ts` already lists as reachable. On
+    // those runs the cell stated a fact about the hardware that nothing had measured. No
+    // simulator refusal reaches it (18 in a row came back loose), so only a test can hold it.
+    const unresolved = faultStat(J(), false);
+    expect(unresolved.value).not.toBe('LOOSE');
+    expect(unresolved.label).toBe('Car axis');
+    expect(unresolved.value).toBe('UNKNOWN');
+  });
+
+  it('reports what the monitor found, in the monitor\'s order of severity', () => {
+    expect(faultStat(J({ mount: 'loose' }), false)).toEqual({ label: 'Mount', value: 'LOOSE', tone: 'severe' });
+    // a loose mount outranks everything else, including an unresolved axis it caused
+    expect(faultStat(J({ mount: 'loose', physics: 'implausible', gps: 'none' }), false).value).toBe('LOOSE');
+    expect(faultStat(J({ physics: 'implausible' }), true)).toEqual({ label: 'Motion', value: 'IMPOSSIBLE', tone: 'severe' });
+    expect(faultStat(J({ mount: 'suspect' }), true)).toEqual({ label: 'Mount', value: 'SHAKING', tone: 'warn' });
+    expect(faultStat(J({ gps: 'none' }), true)).toEqual({ label: 'GPS', value: 'NONE', tone: 'severe' });
+    expect(faultStat(J({ gps: 'poor' }), true)).toEqual({ label: 'GPS', value: 'POOR', tone: 'warn' });
+  });
+
+  it('always has something to say, so the cell is never blank', () => {
+    for (const mount of ['rigid', 'suspect', 'loose'] as const) {
+      for (const physics of ['ok', 'implausible'] as const) {
+        for (const gps of ['good', 'poor', 'none'] as const) {
+          for (const fwd of [true, false]) {
+            const f = faultStat({ mount, physics, gps }, fwd);
+            expect(f.label.length, `${mount}/${physics}/${gps}/${fwd}`).toBeGreaterThan(0);
+            expect(f.value).toMatch(/^[A-Z ]+$/);
+          }
+        }
+      }
+    }
   });
 });

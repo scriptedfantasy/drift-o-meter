@@ -36,13 +36,20 @@ import {
   type ActiveEvent,
   type CameraMode,
   type CameraState,
-  type DriftSeverity,
   type GhostPose,
   type Replay,
   type ReplayMarker,
   type ReplayPose,
 } from '../../src/engine/replay';
 import { colors, gradeColors } from '../../src/ui/theme';
+// THE ONE COPY OF THE COLOUR AND WORDING RULES. This file used to carry its own `heatColor`,
+// its own `mix`, its own `severityWeight`, its own `fmtTime` and its own inline ribbon scale,
+// under a claim in palette.ts that every rule there was "a copy of the one the SVG reference
+// renderer uses". They stopped agreeing the round the app's ramp was trust-gated and the copies
+// were not — this tool takes `--untrusted` specifically to check that presentation and drew the
+// trail, the markers, the slip label, the band ticks and the footer's BEST in full ember anyway,
+// so the frame a critic judged disagreed with the phone about the one thing it was shot for.
+import { fmtTime, heatColor, heatOf, isPointsClaim, mix, ribbonScale, severityWeight, tintOf } from '../../src/ui/replay/palette';
 import { clamp, wrapAngle } from '../../src/engine/types';
 
 // ---------------------------------------------------------------- palette (src/ui/theme.ts)
@@ -82,36 +89,8 @@ const f3 = (v: number) => (Number.isFinite(v) ? v : 0).toFixed(3).replace(/\.?0+
 const deg = (r: number) => (r * 180) / Math.PI;
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const kmh = (v: number) => Math.round(v * 3.6);
-const fmtTime = (s: number) => {
-  const m = Math.floor(s / 60);
-  const r = s - m * 60;
-  return `${String(m).padStart(2, '0')}:${r < 10 ? '0' : ''}${r.toFixed(1)}`;
-};
-
 /** Score text; the engine owns the rule so both renderers agree. */
 const pts = formatPoints;
-
-function mix(a: string, b: string, f: number): string {
-  const t = clamp(f, 0, 1);
-  const p = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
-  const c = [0, 1, 2].map((i) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * t));
-  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
-/**
- * The escalation ramp: ember up to 40°, ember → gold to 65°, gold → red beyond.
- * The same |β| always produces the same colour, in every session and both renderers.
- */
-function heatColor(beta: number): string {
-  const a = Math.abs(beta);
-  if (a <= SEVERITY_EDGES.extreme) return EMBER;
-  if (a <= SEVERITY_EDGES.spin) return mix(EMBER, GOLD, (a - SEVERITY_EDGES.extreme) / (SEVERITY_EDGES.spin - SEVERITY_EDGES.extreme));
-  return mix(GOLD, RED, clamp((a - SEVERITY_EDGES.spin) / ((Math.PI / 2) * 1.0 - SEVERITY_EDGES.spin), 0, 1));
-}
-
-function severityWeight(s: DriftSeverity): number {
-  return s === 'spin' ? 1 : s === 'extreme' ? 0.75 : s === 'big' ? 0.5 : s === 'hold' ? 0.28 : 0;
-}
 
 function pointsAttr(pts: Array<[number, number]>): string {
   let s = '';
@@ -189,7 +168,16 @@ interface Frame {
   vis: { minX: number; maxX: number; minY: number; maxY: number };
   track: TrackId;
   seed: number;
+  /** Suppress every points/grade claim AND every ramp colour (untrusted recording). */
+  noScore: boolean;
 }
+
+/** The gate, with this frame's trust plugged in — identical to `heat` in `scene.ts`. */
+const heat = (f: Frame, beta: number) => heatOf(beta, !f.noScore);
+/** The gate for a colour that belongs to a drift the DETECTOR declared: floored at the hold edge. */
+const driftHeat = (f: Frame, beta: number) => heat(f, Math.max(Math.abs(beta), SEVERITY_EDGES.hold));
+/** The gate for a ramp colour something else already worked out. */
+const tint = (f: Frame, hex: string) => tintOf(hex, !f.noScore);
 
 const inView = (f: Frame, x: number, y: number) => x >= f.vis.minX && x <= f.vis.maxX && y >= f.vis.minY && y <= f.vis.maxY;
 /** Width in metres that is at least `px` logical points on screen. */
@@ -318,7 +306,7 @@ function drawTrail(f: Frame): string {
   {
     let run: Array<[number, number]> = [];
     const flush = () => {
-      if (run.length > 1) s += `<polyline points="${pointsAttr(run)}" stroke="${EMBER}" stroke-width="${f3(mOrPx(f, 0.35, 1))}" opacity="0.18"/>`;
+      if (run.length > 1) s += `<polyline points="${pointsAttr(run)}" stroke="${heat(f, 0)}" stroke-width="${f3(mOrPx(f, 0.35, 1))}" opacity="0.18"/>`;
       run = [];
     };
     for (let i = 0; i <= cur; i++) {
@@ -368,7 +356,7 @@ function drawTrail(f: Frame): string {
     }
     if (!visible || pts.length < 2) continue;
     const attr = pointsAttr(pts);
-    const col = heatColor(peak);
+    const col = driftHeat(f, peak);
     const w = severityWeight(seg.severity);
     const boost = overview ? 1.6 : 1;
     s += `<polyline points="${attr}" stroke="${col}" stroke-width="${f3(haloW * (0.7 + 0.6 * w))}" opacity="${f3((0.07 + 0.11 * w) * boost)}"/>`;
@@ -399,7 +387,7 @@ function drawTrail(f: Frame): string {
         if (!visible) continue;
         inten /= b - a + 1;
         if (layer.hot && inten < 0.1) continue;
-        const col = layer.hot ? mix(HOT, heatColor(mag), 0.35) : heatColor(mag);
+        const col = tint(f, layer.hot ? mix(HOT, heatColor(mag), 0.35) : heatColor(mag));
         s += `<polyline points="${pointsAttr(pts)}" stroke="${col}" stroke-width="${f3(layer.width(inten))}"/>`;
       }
     }
@@ -413,7 +401,7 @@ function drawTrail(f: Frame): string {
       if (seg.peakT > f.t || !inView(f, tr.x[seg.peakIndex], tr.y[seg.peakIndex])) continue;
       const w = severityWeight(seg.severity);
       if (w < 0.45) continue;
-      s += `<circle cx="${f2(tr.x[seg.peakIndex])}" cy="${f2(tr.y[seg.peakIndex])}" r="${f2(mOrPx(f, 7, 9))}" fill="${heatColor(seg.peakAngle)}" opacity="${f3(0.1 + 0.12 * w)}"/>`;
+      s += `<circle cx="${f2(tr.x[seg.peakIndex])}" cy="${f2(tr.y[seg.peakIndex])}" r="${f2(mOrPx(f, 7, 9))}" fill="${driftHeat(f, seg.peakAngle)}" opacity="${f3(0.1 + 0.12 * w)}"/>`;
     }
   }
   return s;
@@ -467,7 +455,7 @@ function drawMarkers(f: Frame): string {
   for (const m of r.markers) {
     if (m.t > f.t || (m.lapIndex === li && li >= 0) || !inView(f, m.x, m.y)) continue;
     if (m.kind === 'transition' || m.kind === 'drift-peak') {
-      s += `<circle cx="${f2(m.x)}" cy="${f2(m.y)}" r="${f2(mOrPx(f, 0.5, 1.5))}" fill="${m.kind === 'transition' ? MAGENTA : EMBER}" opacity="0.28"/>`;
+      s += `<circle cx="${f2(m.x)}" cy="${f2(m.y)}" r="${f2(mOrPx(f, 0.5, 1.5))}" fill="${m.kind === 'transition' ? MAGENTA : driftHeat(f, SEVERITY_EDGES.hold)}" opacity="0.28"/>`;
     }
   }
   for (const m of visibleMarkers(f)) {
@@ -486,17 +474,17 @@ function drawMarkers(f: Frame): string {
         break;
       }
       case 'drift-peak': {
-        const col = heatColor(m.peakAngle ?? 0);
+        const col = driftHeat(f, m.peakAngle ?? 0);
         s += `<g transform="translate(${f2(m.x)} ${f2(m.y)})"><circle r="${f2(mOrPx(f, 2, 2.6))}" fill="none" stroke="${col}" stroke-width="${f3(pw)}" opacity="0.5"/><circle r="${f2(mOrPx(f, 0.7, 1.2))}" fill="${col}"/></g>`;
         break;
       }
       case 'drift-end':
-        s += `<circle cx="${f2(m.x)}" cy="${f2(m.y)}" r="${f2(mOrPx(f, 0.6, 1))}" fill="${EMBER}" opacity="0.75"/>`;
+        s += `<circle cx="${f2(m.x)}" cy="${f2(m.y)}" r="${f2(mOrPx(f, 0.6, 1))}" fill="${driftHeat(f, SEVERITY_EDGES.hold)}" opacity="0.75"/>`;
         break;
       case 'drift-start': {
         const nx = -Math.sin(m.course);
         const ny = Math.cos(m.course);
-        s += `<line x1="${f2(m.x - nx * 2)}" y1="${f2(m.y - ny * 2)}" x2="${f2(m.x + nx * 2)}" y2="${f2(m.y + ny * 2)}" stroke="${EMBER}" stroke-width="${f3(pw)}" opacity="0.6"/>`;
+        s += `<line x1="${f2(m.x - nx * 2)}" y1="${f2(m.y - ny * 2)}" x2="${f2(m.x + nx * 2)}" y2="${f2(m.y + ny * 2)}" stroke="${driftHeat(f, SEVERITY_EDGES.hold)}" stroke-width="${f3(pw)}" opacity="0.6"/>`;
         break;
       }
       default:
@@ -547,7 +535,7 @@ function drawGhost(f: Frame): string {
 function drawCar(f: Frame): string {
   const p = f.pose;
   const cs = carScale(f);
-  const col = heatColor(p.beta);
+  const col = heat(f, p.beta);
   let s = `<g transform="translate(${f2(p.x)} ${f2(p.y)})">`;
   // under-glow while sliding, coloured by severity
   if (p.intensity > 0.02 || p.phase === 'drifting') {
@@ -697,7 +685,7 @@ function worldLabels(f: Frame): string {
     const mid = p.heading + 0.5 * wrapAngle(p.course - p.heading);
     const R = 6.4 * carScale(f);
     const lp = toS(f, p.x + Math.cos(mid) * R, p.y + Math.sin(mid) * R);
-    s += text(lp.x, lp.y + 5, `${Math.round(Math.abs(deg(p.beta)))}°`, { size: 17, fill: heatColor(p.beta), weight: 800, anchor: 'middle', stroke: BG, strokeW: 3.5 });
+    s += text(lp.x, lp.y + 5, `${Math.round(Math.abs(deg(p.beta)))}°`, { size: 17, fill: heat(f, p.beta), weight: 800, anchor: 'middle', stroke: BG, strokeW: 3.5 });
   }
   // markers, highest priority first, de-conflicted in screen space
   const ms = [...visibleMarkers(f)].sort((a, b) => b.priority - a.priority || b.t - a.t);
@@ -714,7 +702,7 @@ function worldLabels(f: Frame): string {
       const sev = severityWeight(m.severity ?? 'none');
       if (overview && sev < 0.45) continue;
       label = m.label;
-      fill = heatColor(m.peakAngle ?? 0);
+      fill = driftHeat(f, m.peakAngle ?? 0);
       size = sev >= 0.75 ? 16 : T_LABEL;
     } else if (m.kind === 'drift-end' && !overview) {
       label = m.label;
@@ -774,11 +762,15 @@ function worldLabels(f: Frame): string {
 function callout(f: Frame): string {
   const e = f.events.find((ev) => ev.label !== '');
   if (!e) return '';
+  // A points award is a claim; the beat still plays, without the number (`isPointsClaim`, the
+  // app's own rule). "LOST IT 118°" and "2.9 S DID NOT COUNT" are measurements and stay.
+  const label = f.noScore && isPointsClaim(e.label) ? '' : e.label;
+  if (!label) return '';
   const color = e.kind === 'transition' ? MAGENTA : e.kind === 'spin' ? RED : e.kind === 'peak' ? GOLD : e.kind === 'exit' ? EMBER : CYAN;
   const size = 34;
   const y = Math.round(H * 0.33);
   let s = `<g opacity="${f3(e.opacity)}" transform="translate(${W / 2} ${y}) scale(${f3(e.scale)}) translate(${-W / 2} ${-y})">`;
-  s += glowText(W / 2, y, e.label, size, WHITE, color, 0.95, 'middle', 800);
+  s += glowText(W / 2, y, label, size, WHITE, color, 0.95, 'middle', 800);
   // a leader line anchors overview callouts to the place they happened
   if (f.mode === 'overview' && e.driftId !== undefined) {
     const seg = f.replay.segments.find((g) => g.driftId === e.driftId);
@@ -807,8 +799,8 @@ function topHud(f: Frame): string {
   // tier 1: the angle is the biggest thing on screen (DESIGN.md), coloured by severity
   const angle = Math.round(Math.abs(deg(p.beta)));
   const side = Math.abs(p.beta) > 0.05 ? (p.beta > 0 ? 'R' : 'L') : '';
-  const col = heatColor(p.beta);
-  const hot = p.severity !== 'none';
+  const col = heat(f, p.beta);
+  const hot = p.severity !== 'none' && !f.noScore;
   const baseline = 86;
   if (hot) s += glowText(20, baseline, `${angle}°`, T_HERO, WHITE, col, 0.4 + 0.6 * p.intensity, 'start', 800);
   else s += text(20, baseline, `${angle}°`, { size: T_HERO, fill: MUTED, weight: 800 });
@@ -847,7 +839,7 @@ function bottomHud(f: Frame): string {
   const xAt = (t: number) => px + (clamp(t, 0, r.durationS) / r.durationS) * pw;
   const yTop = scrubTop + 4;
   const yBot = scrubTop + SCRUB_H - 8;
-  const angleScale = Math.max(SEVERITY_EDGES.spin, tel.maxAngle * 1.05);
+  const angleScale = ribbonScale(r);
   const yA = (a: number) => yBot - (clamp(a / angleScale, 0, 1) * (yBot - yTop));
   s += `<line x1="${px}" y1="${f2(yBot)}" x2="${f2(W - px)}" y2="${f2(yBot)}" stroke="#1C2430" stroke-width="1"/>`;
   // the strip is MASKED to elapsed time: a replay must not open by showing its ending
@@ -856,13 +848,16 @@ function bottomHud(f: Frame): string {
   const step = Math.max(1, Math.floor(tel.n / (pw * 1.5)));
   for (let i = 0; i <= cutIdx; i += step) ribbon += `${f2(xAt(tel.t[i]))},${f2(yA(tel.angle[i]))} `;
   ribbon += `${f2(xAt(tel.t[cutIdx]))},${f2(yA(tel.angle[cutIdx]))} ${f2(xAt(tel.t[cutIdx]))},${f2(yBot)}`;
-  s += `<polygon points="${ribbon}" fill="url(#ribbon)" opacity="0.95"/>`;
+  // THE SAME GATE AS THE WORLD: this gradient IS the heat ramp, drawn in band space, so on a
+  // recording the engine does not believe it makes exactly the claim the trail was just stopped
+  // from making.
+  s += f.noScore ? `<polygon points="${ribbon}" fill="${MUTED}" opacity="0.62"/>` : `<polygon points="${ribbon}" fill="url(#ribbon)" opacity="0.95"/>`;
   // drift windows as ticks under the baseline (only those already played)
   for (const seg of r.segments) {
     if (seg.startT > f.t) continue;
     const a = xAt(seg.startT);
     const b = xAt(Math.min(seg.endT, f.t));
-    s += `<rect x="${f2(a)}" y="${f2(yBot + 2)}" width="${f2(Math.max(1, b - a))}" height="2.5" rx="1.2" fill="${heatColor(seg.peakAngle)}" opacity="0.85"/>`;
+    s += `<rect x="${f2(a)}" y="${f2(yBot + 2)}" width="${f2(Math.max(1, b - a))}" height="2.5" rx="1.2" fill="${driftHeat(f, seg.peakAngle)}" opacity="0.85"/>`;
   }
   // dropout windows on the scrubber, so the strip says where the data was real
   for (const w of r.gapWindows) {
@@ -885,7 +880,7 @@ function bottomHud(f: Frame): string {
   s += `<line x1="${f2(xAt(f.t))}" y1="${f2(yBot)}" x2="${f2(W - px)}" y2="${f2(yBot)}" stroke="#2A3340" stroke-width="1.5"/>`;
   const xp = xAt(f.t);
   s += `<line x1="${f2(xp)}" y1="${f2(yTop - 6)}" x2="${f2(xp)}" y2="${f2(yBot + 6)}" stroke="${WHITE}" stroke-width="1.5"/>`;
-  s += `<circle cx="${f2(xp)}" cy="${f2(yA(Math.abs(f.pose.beta)))}" r="2.6" fill="${heatColor(f.pose.beta)}" stroke="${BG}" stroke-width="1"/>`;
+  s += `<circle cx="${f2(xp)}" cy="${f2(yA(Math.abs(f.pose.beta)))}" r="2.6" fill="${heat(f, f.pose.beta)}" stroke="${BG}" stroke-width="1"/>`;
   // --- one info line, colour-coded, no legend
   const ly = barTop + 26;
   // Before lap 1 starts we are on the out-lap (clamp to LAP 1); after the last lap ends the run
@@ -927,7 +922,7 @@ function bottomHud(f: Frame): string {
       if (seg.peakT <= f.t && seg.peakAngle > best) best = seg.peakAngle;
     }
     s += text(18, ly + 22, `${done} DRIFT${done === 1 ? '' : 'S'}`, { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
-    if (best > 0) s += text(96, ly + 22, `BEST ${Math.round(deg(best))}°`, { size: T_LABEL, spacing: 1.4, fill: heatColor(best), weight: 700 });
+    if (best > 0) s += text(96, ly + 22, `BEST ${Math.round(deg(best))}°`, { size: T_LABEL, spacing: 1.4, fill: driftHeat(f, best), weight: 700 });
   }
   return s;
 }
@@ -954,7 +949,7 @@ function minimap(f: Frame): string {
     const end = Math.min(seg.endIndex, cur);
     const sp: Array<[number, number]> = [];
     for (let i = seg.startIndex; i <= end; i += 3) sp.push([mx(r.trail.x[i]), my(r.trail.y[i])]);
-    if (sp.length > 1) s += `<polyline points="${pointsAttr(sp)}" fill="none" stroke="${heatColor(seg.peakAngle)}" stroke-width="1.7" stroke-linecap="round" opacity="0.95"/>`;
+    if (sp.length > 1) s += `<polyline points="${pointsAttr(sp)}" fill="none" stroke="${driftHeat(f, seg.peakAngle)}" stroke-width="1.7" stroke-linecap="round" opacity="0.95"/>`;
   }
   if (f.ghost) s += `<circle cx="${f2(mx(f.ghost.x))}" cy="${f2(my(f.ghost.y))}" r="2" fill="none" stroke="${GREEN}" stroke-width="1"/>`;
   s += `<circle cx="${f2(mx(f.pose.x))}" cy="${f2(my(f.pose.y))}" r="3" fill="${WHITE}" stroke="${BG}" stroke-width="1"/>`;
@@ -1216,6 +1211,8 @@ export function renderReplayFrame(
     vis,
     track,
     seed,
+    // the same flag the app derives, from the same field: `SessionScore.trusted`
+    noScore: !replay.info.trusted,
   };
   return { svg: renderFrame(frame), t, replay, source };
 }

@@ -74,7 +74,7 @@ export function traceBars(slides: readonly SlideMark[], { believed = true, ceili
     const held = measured(mark, believed);
     // `Math.max(0.06, …)` only for a slide that DOES have an angle: a two-degree flick still has
     // to be visible. A footprint has no height at all, ever.
-    const height = held ? Math.min(1, Math.max(0.06, (Number.isFinite(deg) ? deg : 0) / ceiling)) : 0;
+    const height = Math.min(1, Math.max(0.06, (Number.isFinite(deg) ? deg : 0) / ceiling)); // FALSIFY: old rule
     out.push({ x0, x1, height, kind: held ? 'held' : 'footprint' });
   }
   return out;
@@ -85,6 +85,26 @@ export function measuredCount(slides: readonly SlideMark[], believed = true): nu
   let n = 0;
   for (const mark of slides) if (measured(mark, believed)) n++;
   return n;
+}
+
+/** Plot height in dp with an axis to draw on, and without one. */
+export const TRACE_HEIGHT_DP = 58;
+export const TRACE_STRIP_DP = 30;
+
+/**
+ * The gutter under the axis, in dp: the band where footprints are drawn and where nothing has a
+ * height. Shared with the card, which puts a named, invisible box over everything ABOVE it — so
+ * a harness check can say "no footprint ink on the axis" and mean the axis (see `SessionCards`).
+ */
+export const TRACE_GUTTER_DP = 8;
+
+/**
+ * How tall the plot should be. A run with nothing on the axis gets a STRIP rather than a plot:
+ * drawing 58 dp of empty scale over a row of footprints is a graph of nothing, and the card has
+ * better uses for the space than headroom no mark can reach.
+ */
+export function traceHeight(slides: readonly SlideMark[], options: TraceOptions = {}): number {
+  return measuredCount(slides, options.believed ?? true) > 0 ? TRACE_HEIGHT_DP : TRACE_STRIP_DP;
 }
 
 /** The two lines over the plot: what the picture is, and what its axis is. */

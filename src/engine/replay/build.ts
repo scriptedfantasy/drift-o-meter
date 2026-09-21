@@ -466,6 +466,7 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
       transitions: Math.max(transitions, d.transitions | 0),
       points: total,
       grossPoints: gross,
+      suppressedS: Number.isFinite(d.suppressedS) && d.suppressedS > 0 ? Math.min(d.suppressedS, Math.max(0, d.durationS)) : 0,
       lapIndex: trail.lapOf[startIndex],
     });
   }
@@ -623,6 +624,29 @@ export function formatPoints(p: number): string {
 
 const MARKER_PRIORITY: Record<string, number> = { 'drift-peak': 40, transition: 30, 'drift-end': 20, lap: 15, 'drift-start': 10 };
 
+/**
+ * WHY a slide banked nothing, when the reason is the integrity monitor — or '' when it is not.
+ *
+ * A slide worth zero has exactly three shapes, and they are not the same thing to a driver:
+ *  • a spin took the chain (`lost`), which the exit already names: "CHAIN LOST −8981";
+ *  • the monitor refused the seconds it was made of, so the scorer paid for none of it;
+ *  • it simply was not worth much and rounded to nothing.
+ * Only the middle one has something to say, and `DriftEvent.suppressedS` is the engine's own
+ * words for it: src/engine/types.ts calls the duration "the only form a driver can be shown:
+ * '6.1 s of this slide did not count, because the phone was moving in its mount'".
+ *
+ * It is a MEASUREMENT of the recording, not a claim about a score — no signed number, so
+ * `isPointsClaim` leaves it alone and an untrusted recording may still show it, the same way it
+ * still shows "LOST IT 118°". Before this, `hero` seed 13's drift 3 (2.93 s, all 2.93 s of it
+ * refused) drew a full ember ribbon with a halo and two ember ticks, banked nothing, and said
+ * nothing: the ribbon and the silence disagreed and no frame on the replay said which was right,
+ * while the results screen printed the session's 9.36 s / 11.4 % one screen away.
+ */
+export function refusedLabel(seg: Pick<ReplaySegment, 'lost' | 'points' | 'suppressedS'>): string {
+  if (seg.lost || seg.points > 0 || !(seg.suppressedS > 0)) return '';
+  return `${seg.suppressedS.toFixed(1)} S DID NOT COUNT`;
+}
+
 function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: ReplayLap[], opts: ReplayOptions): ReplayMarker[] {
   const markers: ReplayMarker[] = [];
   const lapOfT = (t: number) => trail.lapOf[clamp(Math.round(t * trail.hz), 0, trail.n - 1)];
@@ -664,10 +688,12 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
       ...poseFields(trail, seg.endT),
       // A drift whose chain was lost never banked these: it is marked as taken away, not awarded.
       // A drift the scorer paid NOTHING for gets no number at all \u2014 "+0" over the road is the
-      // replay announcing an award the engine refused to make. The dot still marks the exit.
-      label: seg.lost ? (seg.grossPoints > 0 ? `\u2212${formatPoints(seg.grossPoints)}` : '') : seg.points > 0 ? `+${formatPoints(seg.points)}` : '',
+      // replay announcing an award the engine refused to make. The dot still marks the exit, and
+      // when the monitor is the reason there is nothing to award, the exit says so instead.
+      label: seg.lost ? (seg.grossPoints > 0 ? `\u2212${formatPoints(seg.grossPoints)}` : '') : seg.points > 0 ? `+${formatPoints(seg.points)}` : refusedLabel(seg),
       driftId: seg.driftId,
       points: seg.points,
+      suppressedS: refusedLabel(seg) ? seg.suppressedS : undefined,
     });
   }
   for (const lap of laps) {
@@ -726,17 +752,20 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
     // never added to the running total, so its exit must not read as an award either.
     //
     // A slide the monitor refused to believe banked nothing and risked nothing: there is no
-    // number to announce, so the beat plays with an EMPTY label rather than a "+0" or an
-    // "AT RISK +0". The ticker is a claim about a score; zero points is not a score to claim.
+    // number to announce, so the beat never carries a "+0" or an "AT RISK +0". The ticker is a
+    // claim about a score; zero points is not a score to claim. It is not silent either — it
+    // says how many seconds of the slide did not count, which is the reason (`refusedLabel`).
     const risked = seg.lost ? (seg.spin ? loss || seg.grossPoints : seg.grossPoints) : 0;
     const lostLabel = risked > 0 ? (seg.spin ? `CHAIN LOST \u2212${formatPoints(risked)}` : `AT RISK +${formatPoints(risked)}`) : '';
+    // …unless the monitor is WHY there is nothing to announce, in which case that is the beat.
+    const refused = refusedLabel(seg);
     events.push({
       kind: 'exit',
       t: seg.lost && seg.spin ? Math.min(seg.endT + 0.35, endOfRun) : seg.endT,
       holdS: 1.3,
       magnitude: seg.lost ? (seg.spin ? 1 : 0.35) : clamp(seg.grossPoints / maxPoints, 0.25, 1),
       priority: seg.lost && seg.spin ? 92 : 50,
-      label: seg.lost ? lostLabel : seg.points > 0 ? `+${formatPoints(seg.points)}` : '',
+      label: seg.lost ? lostLabel : seg.points > 0 ? `+${formatPoints(seg.points)}` : refused,
       points: seg.points,
       driftId: seg.driftId,
       lapIndex: seg.lapIndex,

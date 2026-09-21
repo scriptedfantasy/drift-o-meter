@@ -8,6 +8,8 @@
  * not a squeezed portrait: thin bars, and the big readouts move into the corners of the stage so
  * the world keeps the middle of a wide screen.
  */
+import type { CameraState } from '../../engine/replay';
+
 export interface Rect {
   x: number;
   y: number;
@@ -85,4 +87,50 @@ export function replayLayout(w: number, h: number, insets: Insets, controlsRows 
   const chrome = { y: insets.top + (landscape ? 24 : 30), left, right };
   const action: Rect = landscape ? { ...stage } : { x: 0, y: stage.y, w, h: Math.max(120, controls.y - stage.y) };
   return { w, h, landscape, insets, gutter, topBar, bottomBar, scrub, stage, action, controls, hero, readout, info, chrome };
+}
+
+/**
+ * How far from the centre of the action rectangle the car is allowed to sit, as a fraction of
+ * that rectangle. The car therefore lives in the middle 68 % × 64 % of what the viewer can see.
+ */
+export const SAFE_FRAME = { maxXFrac: 0.34, maxYFrac: 0.32 } as const;
+
+/**
+ * THE SAFE FRAME: the camera state the renderer actually draws with.
+ *
+ * `worldToScreen` puts (cx, cy) at (cam.w / 2, cam.h / 2), so handing the renderer a state whose
+ * half-extents ARE the action rectangle's centre on screen centres the world on the band the
+ * viewer can actually see, and the engine's camera never has to know about the chrome. This then
+ * slides that frame — not the camera — back along the same line until the car is inside
+ * `SAFE_FRAME` of its centre. The camera's own motion, its rate limits and its cuts are
+ * untouched; only where the result is printed moves.
+ *
+ * IT IS OUT HERE BECAUSE IT IS A GUARANTEE, and a guarantee that lives inside a
+ * requestAnimationFrame closure is one nothing can run. The camera's pan limiter saturates on
+ * exactly one shipped fixture — `handheld`, whose own estimated position steps 9.28 m between
+ * two trail samples 50 ms apart (185.6 m/s against 37.0 m/s driven) — and following a teleport
+ * at 60 m/s means lagging it. Measured on the raw camera against the portrait action rect
+ * (393×852, 0 insets): `handheld` chase leaves it on 27 frames of 6 819, up to 40.0 pt past the
+ * left edge, worst at t = 20.35 s; cinematic on 12; every other fixture × mode on 0. Raising the
+ * limiter would not fix that — it would let the 186 m/s jump through as a jump cut in the
+ * middle of a corner. Holding the FRAME instead costs the shot nothing and keeps the car on
+ * screen: through this function the same sweep leaves the rectangle on 0 frames of all sixteen
+ * fixture × mode combinations, in portrait and in landscape. `replay-ui.test.ts` runs that sweep.
+ */
+export function safeFrame(cam: CameraState, carX: number, carY: number, action: Rect): CameraState {
+  let cxs = action.x + action.w / 2;
+  let cys = action.y + action.h / 2;
+  const dx = carX - cam.cx;
+  const dy = carY - cam.cy;
+  const c = Math.cos(cam.rotation);
+  const sn = Math.sin(cam.rotation);
+  const offX = cam.zoom * (c * dx - sn * dy);
+  const offY = -cam.zoom * (sn * dx + c * dy);
+  const maxY = action.h * SAFE_FRAME.maxYFrac;
+  const maxX = action.w * SAFE_FRAME.maxXFrac;
+  if (offY > maxY) cys -= offY - maxY;
+  else if (offY < -maxY) cys += -maxY - offY;
+  if (offX > maxX) cxs -= offX - maxX;
+  else if (offX < -maxX) cxs += -maxX - offX;
+  return { ...cam, w: 2 * cxs, h: 2 * cys };
 }

@@ -58,7 +58,7 @@ function reading(over: Partial<CalibrationReading> = {}): CalibrationReading {
     rollDeg: 0.9,
     reclineDeg: 15.3,
     upQuality: 0.9,
-    upSettled: true,
+    upAged: true,
     quality: 0.7,
     peakQuality: 0.7,
     forwardResolved: true,
@@ -78,13 +78,13 @@ function reading(over: Partial<CalibrationReading> = {}): CalibrationReading {
 const NOTHING = { ...IDLE_READING };
 /** `?sim=harbor&at=0.5` — gravity seen, the mount cues still filling, nothing worked out. */
 const EARLY = reading({
-  samples: 50, elapsedS: 0.5, upQuality: 0.5, upSettled: false, quality: 0.05, peakQuality: 0.05,
+  samples: 50, elapsedS: 0.5, upQuality: 0.5, upAged: false, quality: 0.05, peakQuality: 0.05,
   forwardResolved: false, calibrationOk: false, mountConfident: false,
   message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
 });
 /** `?sim=harbor&looseness=1&at=2` — a real hand-held recording, cues not yet confident. */
 const HANDHELD_EARLY = reading({
-  samples: 200, elapsedS: 2, upQuality: 0.55, upSettled: true, quality: 0.09, peakQuality: 0.09,
+  samples: 200, elapsedS: 2, upQuality: 0.55, upAged: true, quality: 0.09, peakQuality: 0.09,
   forwardResolved: false, calibrationOk: false, mount: 'loose', mountConfident: false, handheld: true,
   message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
   mountMessage: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
@@ -605,7 +605,7 @@ describe('nothing is claimed without evidence', () => {
                   peakQuality: quality,
                   has: samples > 0,
                   upQuality: samples > 0 ? 0.9 : 0,
-                  upSettled: samples > 0 && quality > 0,
+                  upAged: samples > 0 && quality > 0,
                   // the per-topic sentence the monitor would publish for this mount
                   mountMessage: mount === 'loose' ? 'Phone is moving in its mount — tighten it' : mount === 'suspect' ? 'Phone may be shifting in its mount — check it is tight' : '',
                 }),

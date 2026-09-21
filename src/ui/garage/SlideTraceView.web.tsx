@@ -8,6 +8,7 @@ import { View } from 'react-native';
 
 import { skiaWebOptions } from '../skia/skiaWeb';
 import type { SlideTraceProps } from './SlideTrace';
+import { traceHeight } from './trace';
 
 export type { SlideTraceProps };
 
@@ -17,7 +18,7 @@ export default function SlideTraceView(props: SlideTraceProps) {
       getComponent={() => import('./SlideTrace')}
       opts={skiaWebOptions}
       componentProps={props}
-      fallback={<View style={{ width: props.width, height: props.height ?? 58 }} />}
+      fallback={<View style={{ width: props.width, height: props.height ?? traceHeight(props.slides, { believed: props.believed }) }} />}
     />
   );
 }

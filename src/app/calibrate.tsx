@@ -275,19 +275,20 @@ export default function CalibrateScreen() {
               {/* The rail carries the instrument and the way out; the column carries what is
                   wrong and what to do. Both have to end above 393 px of height, which is what
                   pushed step 02 and all three lights off the bottom before. */}
-              {/* The lights ride with the INSTRUMENT, not at the foot of the column. They are
-                  a readout, and in the column they were the last thing on the page: on the
-                  arrival-banner frames — the way DESIGN and the README say drivers normally
-                  reach this screen — all three fell below 393 px of landscape and the driver
-                  could not see the one row that carries the verdict at a glance. */}
               <View style={styles.left}>
                 {instrument}
-                <Lights lights={lights} compact />
                 {actions}
               </View>
+              {/* THE LIGHTS COME BEFORE THE STEPS HERE. They were last, and on the arrival-banner
+                  frames — the way DESIGN and the README say drivers normally reach this screen —
+                  all three fell below 393 px of landscape: measured, the row sat at 401–443 px.
+                  Above the steps it sits at 243–285 px and the way out still ends at 382 px.
+                  Putting them in the left rail instead cleared them but pushed the leave note
+                  (the measured claim about what leaving costs) off the bottom in its place. */}
               <View style={styles.right}>
                 {verdict}
                 <Cautions cautions={cautions} />
+                <Lights lights={lights} compact />
                 <Steps steps={steps} compact />
               </View>
             </View>

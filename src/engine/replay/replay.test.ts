@@ -25,9 +25,10 @@ import {
   type Replay,
 } from './index';
 import { sessionFromSimulation } from './fixtures';
-import { peakCallout, IDENTITY_TOLERANCE } from './build';
+import { peakCallout, refusedLabel, IDENTITY_TOLERANCE } from './build';
 import { replayChains, resolveOptions } from '../score';
 import { FIXTURES, buildFixtureSession } from '../../ui/results/fixture';
+import { isPointsClaim } from '../../ui/replay/palette';
 
 let run: SimulatedRun;
 let session: Session;
@@ -989,11 +990,18 @@ describe('camera', () => {
     expect(cam2.update(replay, 30, 0.5).cutFade).toBe(0);
   });
 
-  it('keeps the car inside the frame: look-ahead is a fraction of what is visible', () => {
+  it('keeps the car inside the frame: look-ahead is a fraction of what is visible, on both axes', () => {
     // ROUND-5 FINDING 5: look-ahead was a distance in metres while the zoom fits the SHORTER
     // side, so a zoomed-in cinematic frame on a tall portrait stage pushed the car past the
     // bottom of the visible band — one frame had it half under the scrubber. At full cinematic
     // zoom the old target put it 456 px below centre, off the bottom of an 844 pt screen.
+    //
+    // IT RAN ON ONE RUN AND ONE AXIS: `harbor` seed 1, and only `.y`, and only downwards. The x
+    // axis is not decoration — cinematic sways ±1.2 m laterally, and the fixture whose camera
+    // actually strains (`handheld`, whose recorded position teleports) leaves the portrait action
+    // rectangle on its LEFT edge, not its bottom. Both axes are checked here, and
+    // "every fixture, both follow modes" is the sweep below in the fixture suite; the frame the
+    // viewer really sees is `safeFrame` in src/ui/replay/layout.ts, swept in replay-ui.test.ts.
     const tall = { w: 390, h: 844 };
     const cap = CAMERA_TUNING.maxLookFrac * Math.min(tall.w, tall.h);
     const bandBottom = tall.h - 96 - 34; // the renderer's bottom bar + scrubber
@@ -1001,12 +1009,22 @@ describe('camera', () => {
       // the TARGET obeys the cap (jumpTo snaps to it, with no smoothing lag). Cinematic tilts
       // the frame by up to ±0.025 rad of sway, which swings ~1 px of the lateral offset onto
       // the vertical axis; nothing else may exceed the cap.
-      const slack = mode === 'cinematic' ? 1.5 : 1e-6;
+      const slack = mode === 'cinematic' ? 1.5 : 1e-3;
       const exact = new ReplayCamera(mode, tall);
       for (let t = 0; t <= replay.durationS; t += 0.25) {
         const st = exact.jumpTo(replay, t);
         const p = poseAt(replay, t);
-        expect(worldToScreen(st, p.x, p.y).y - tall.h / 2).toBeLessThanOrEqual(cap + slack);
+        const sp = worldToScreen(st, p.x, p.y);
+        const dx = sp.x - tall.w / 2;
+        const dy = sp.y - tall.h / 2;
+        // The target is the pose plus a look-ahead ALONG THE COURSE plus (cinematic) a ±1.2 m
+        // lateral sway, so what the cap bounds is the LENGTH of that offset, in whatever
+        // direction the frame is rotated — it points straight up only while the car is moving
+        // fast enough for the rotation to have caught its course. Bound the length, which is
+        // the exact claim, and the vertical separately, which is the axis the chrome is on.
+        const sway = mode === 'cinematic' ? CAMERA_TUNING.swayOffsetM * st.zoom : 0;
+        expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(cap + sway + slack);
+        expect(Math.abs(dy)).toBeLessThanOrEqual(cap + slack);
       }
       // and the smoothed camera stays close to it, and well clear of the chrome
       const cam = new ReplayCamera(mode, tall);
@@ -1235,6 +1253,103 @@ describe('the replay and the results screen count the same run', () => {
       }
     }
   }, 300_000);
+
+  /**
+   * THE SAME LOOK-AHEAD CAP, ON EVERY FIXTURE AND BOTH AXES.
+   *
+   * The camera suite's own version of this runs on one simulated harbour run. The fixture whose
+   * camera actually strains is `handheld`, and it is not in that suite. Measured here over all
+   * eight × chase and cinematic at 0.25 s: |Δy| peaks at 85.8 pt in chase — the cap, exactly —
+   * and 86.1 in cinematic (the ±1.4° sway swinging a pixel of the lateral offset onto the
+   * vertical); |Δx| is ≤ 3.1 pt in chase and 14.9–38.4 in cinematic, which is the ±1.2 m sway
+   * at that frame's own zoom. Nothing here depends on those numbers: the bound is recomputed
+   * from the tuning and this frame's zoom.
+   */
+  it('the look-ahead cap holds on every fixture, on both axes', () => {
+    const tall = { w: 390, h: 844 };
+    const cap = CAMERA_TUNING.maxLookFrac * Math.min(tall.w, tall.h);
+    for (const name of names) {
+      const { replay: r } = built.get(name)!;
+      for (const mode of ['chase', 'cinematic'] as CameraMode[]) {
+        const slack = mode === 'cinematic' ? 1.5 : 1e-3;
+        const cam = new ReplayCamera(mode, tall);
+        for (let t = 0; t <= r.durationS; t += 0.25) {
+          const st = cam.jumpTo(r, t);
+          const p = poseAt(r, t);
+          const sp = worldToScreen(st, p.x, p.y);
+          const sway = mode === 'cinematic' ? CAMERA_TUNING.swayOffsetM * st.zoom : 0;
+          const where = `${name}/${mode} t=${t.toFixed(2)}`;
+          expect(Math.hypot(sp.x - tall.w / 2, sp.y - tall.h / 2), where).toBeLessThanOrEqual(cap + sway + slack);
+          expect(Math.abs(sp.y - tall.h / 2), where).toBeLessThanOrEqual(cap + slack);
+        }
+      }
+    }
+  }, 300_000);
+
+  /**
+   * A SLIDE THE ENGINE PAID NOTHING FOR SAYS WHY, IN THE ENGINE'S OWN WORDS.
+   *
+   * `hero` on seed 13 is a trusted S-grade run (23 982 points) whose drift 3 — 46.43–49.36 s of
+   * session clock, 44.38–47.31 s of replay clock — had all 2.93 s of it refused by the integrity
+   * monitor, so the scorer published `total: 0` for it. The replay drew that slide a full ember
+   * ribbon with a halo, an ember start tick and an ember end dot, banked nothing, and said
+   * nothing: the ribbon and the silence disagreed and no frame said which was right, while the
+   * results screen printed the session's own 9.36 s / 11.4 % one screen away.
+   *
+   * The eight default fixtures have every per-drift total above zero, which is why this needs a
+   * seed — the same reason the fabricated-score defect survived a round.
+   */
+  it('a slide the monitor refused names the seconds instead of banking a number', () => {
+    const s = buildFixtureSession({ ...FIXTURES.hero, seed: 13 });
+    const r = buildReplay(s);
+    expect(s.score.trusted).toBe(true);
+    expect(s.integrity.suppressedS).toBeGreaterThan(1);
+    const refused = r.segments.filter((g) => !g.lost && g.points === 0 && g.suppressedS > 0);
+    expect(refused.length, 'hero seed 13 has exactly one refused slide, drift 3').toBe(1);
+    const seg = refused[0];
+    expect(seg.driftId).toBe(3);
+    // the segment carries the ENGINE's duration, not one re-derived here — clamped to the
+    // drift's own length exactly as the scorer clamps it (`stats.implausibleS`, drift.ts), because
+    // `suppressedS` is measured BETWEEN samples and can land a few milliseconds past the end
+    const drift = s.drifts.find((d) => d.id === seg.driftId)!;
+    expect(seg.suppressedS).toBe(Math.min(drift.suppressedS, drift.durationS));
+    expect(drift.suppressedS).toBeGreaterThanOrEqual(drift.durationS - 1e-9); // all of it
+
+    const label = refusedLabel(seg);
+    expect(label).toBe('2.9 S DID NOT COUNT');
+    // it is a measurement, not a score: the untrusted gate must leave it alone, the way it
+    // leaves "LOST IT 118°" alone
+    expect(isPointsClaim(label)).toBe(false);
+    // and it reaches BOTH places the exit of a slide is drawn
+    const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId)!;
+    expect(exit.label).toBe(label);
+    expect(exit.points).toBe(0);
+    const end = r.markers.find((m) => m.kind === 'drift-end' && m.driftId === seg.driftId)!;
+    expect(end.label).toBe(label);
+    expect(end.suppressedS).toBeCloseTo(seg.suppressedS, 9);
+
+    // no "+0" anywhere, and the running total is untouched across it
+    expect(exit.label).not.toMatch(/[+\u2212-]\s*\d/);
+    expect(r.trail.score[seg.endIndex]).toBeCloseTo(r.trail.score[seg.startIndex], 6);
+    expect(Math.round(r.trail.score[r.trail.n - 1])).toBe(s.score.total);
+  }, 120_000);
+
+  /** The other two shapes of a zero: they have nothing to say, and say nothing. */
+  it('a lost chain and an honest zero are not given the monitor\'s reason', () => {
+    expect(refusedLabel({ lost: true, points: 0, suppressedS: 4 })).toBe('');
+    expect(refusedLabel({ lost: false, points: 0, suppressedS: 0 })).toBe('');
+    expect(refusedLabel({ lost: false, points: 1250, suppressedS: 4 })).toBe('');
+    expect(refusedLabel({ lost: false, points: 0, suppressedS: 6.14 })).toBe('6.1 S DID NOT COUNT');
+    // and across the shipped eight, nothing changed: none of them has a refused slide
+    for (const name of names) {
+      const { replay: r } = built.get(name)!;
+      for (const seg of r.segments) {
+        if (refusedLabel(seg) === '') continue;
+        expect(seg.points, `${name} drift ${seg.driftId}`).toBe(0);
+        expect(seg.lost).toBe(false);
+      }
+    }
+  });
 
   it.each(names)('%s: the run is drawn to the end of it', (name) => {
     const { session, replay: r } = built.get(name)!;

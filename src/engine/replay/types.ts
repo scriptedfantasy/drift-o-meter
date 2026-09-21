@@ -155,6 +155,19 @@ export interface ReplaySegment {
   points: number;
   /** Points the drift earned before the chain rule was applied (equals `points` when kept). */
   grossPoints: number;
+  /**
+   * Seconds of this drift the integrity monitor refused to believe (`DriftEvent.suppressedS`),
+   * carried through rather than re-derived.
+   *
+   * It is here because it is the ONLY thing that explains a slide worth nothing that was not
+   * lost to a spin. `hero` seed 13's drift 3 is 2.93 s long with 2.93 s of it refused: the
+   * replay drew it a full ember ribbon with a halo, an ember start tick and an ember end dot,
+   * then banked nothing and said nothing, so the ribbon and the silence disagreed and no frame
+   * said which was right. `src/engine/types.ts` calls this duration "the only form a driver can
+   * be shown", and the results screen already prints the session's own; the replay says it per
+   * slide, at the exit.
+   */
+  suppressedS: number;
   /** Lap index this drift starts in, or -1. */
   lapIndex: number;
 }
@@ -206,6 +219,12 @@ export interface ReplayMarker {
   severity?: DriftSeverity;
   /** Points for drift-end markers. */
   points?: number;
+  /**
+   * Seconds of this drift the monitor refused, on drift-end markers whose slide banked nothing
+   * BECAUSE of it (`ReplaySegment.suppressedS`). Present only when it is the reason there is no
+   * number to draw, so a renderer never has to decide what a zero means.
+   */
+  suppressedS?: number;
 }
 
 /**

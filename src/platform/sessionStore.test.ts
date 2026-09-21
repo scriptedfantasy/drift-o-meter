@@ -238,7 +238,8 @@ describe('session store (memory backend)', () => {
 
   describe('the slide trace a summary carries', () => {
     it('places every slide on the run, in order, with the spins marked', () => {
-      const e = summarizeSession(sessionWithSpin());
+      const s = sessionWithSpin();
+      const e = summarizeSession(s);
       expect(e.slides).toHaveLength(2);
       const [clean, spun] = e.slides;
       expect(spun[3]).toBe(1);
@@ -250,9 +251,15 @@ describe('session store (memory backend)', () => {
         expect(b).toBeGreaterThanOrEqual(a);
       }
       expect(clean[1]).toBeLessThan(spun[0]);
-      // the clean slide is drawn at the angle it HELD; the spun one at the angle it reached
+      // EVERY slide carries the angle it HELD — `DriftStats.heldPeakDeg` — spun ones included.
+      // The spun slide used to carry its instantaneous peak (96° here, 118° on the shipped
+      // fixtures) under the same field name, and the card drew it on an axis captioned "held
+      // angle". Which slides are worth a height is the screen's call (`ui/garage/trace.ts`
+      // draws a spin as a footprint); it is not a licence to store a different quantity.
       expect(clean[2]).toBe(48);
-      expect(spun[2]).toBeCloseTo(96, 0);
+      expect(spun[2]).toBe(91);
+      const instantaneous = e.slides.map((_, i) => (Math.abs(s.drifts[i].peakAngle) * 180) / Math.PI);
+      for (const [i, mark] of e.slides.entries()) expect(mark[2]).toBeLessThan(instantaneous[i]);
     });
 
     it('is normalised against the same origin whether or not the states survived trimming', () => {

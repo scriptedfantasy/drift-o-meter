@@ -39,6 +39,7 @@ import { parseHudParams, type HudParams } from './hudParams';
 import { createHudPipeline, idleFrame, type DriftPipelineApi } from './hudPipeline';
 import { SimPlayer } from './simPlayer';
 import { resetSignals, type HudSignals } from './signals';
+import { nextDisplayTotal } from './odometerValue';
 import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
 
 /**
@@ -127,8 +128,24 @@ export interface RunError {
   verdict: RunVerdict | null;
 }
 
-/** The run's own result, shown when a completed run cannot be written to storage. */
+/**
+ * The run's own result, shown when a completed run cannot be written to storage.
+ *
+ * `trusted` IS THE FIRST FIELD because it decides what the other five may be used for.
+ * `src/engine/types.ts` says it in capitals on `SessionIntegrity.scoreTrusted`: "A consumer MUST
+ * NOT present the total or the grade as an achievement when this is false: no grade letter, no
+ * leaderboard entry, no share card." This screen used to build the verdict from `s.score.grade`
+ * and `s.score.total` with no such check, so a hand-held run the engine had scored 0 / grade B /
+ * `trusted: false` drew a 64 px cyan B, an ember 0 and "4 DRIFTS · PEAK 76° · 1:58" — a trophy
+ * for a recording the engine had refused to vouch for. Nothing caught it because the capture
+ * route only ever shot a clean run through this overlay (`drive-savefail`); there is now an
+ * untrusted one beside it.
+ */
 export interface RunVerdict {
+  /** `SessionScore.trusted`. False forbids the grade, the total and the peak angle. */
+  trusted: boolean;
+  /** The monitor's own words for why it refused. Empty when trusted. */
+  message: string;
   grade: Grade;
   points: number;
   drifts: number;
@@ -318,17 +335,10 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.ayG.value = f.state.ay / G;
       signals.active.value = active ? 1 : 0;
       signals.total.value = f.score.total;
-      // The odometer's own value: one exponential filter at sample rate. It converges during a
-      // warp, tracks a fast climb with ~0.12 s of lag, and snaps once it is within half a point
-      // so a parked score reads exactly.
-      const dTotal = f.score.total - h.displayTotal;
-      // Snap generously (25 points, or 0.2 % of a big score): while the score climbs the gap is
-      // far wider than that, and the moment it plateaus the digits park on the exact figure
-      // instead of hovering a fraction below it.
-      const snapAt = Math.max(25, f.score.total * 0.002);
-      // Snapping rounds: the engine's total is fractional (callout bonuses carry the multiplier),
-      // and a settled odometer must sit on a whole digit, not 0.3 of the way past it.
-      h.displayTotal = Math.abs(dTotal) < snapAt ? Math.round(f.score.total) : h.displayTotal + dTotal * (1 - Math.exp(-dt / 0.12));
+      // The odometer's own value. The rule — chase, and park only once the engine has stopped
+      // paying — lives in `odometerValue.ts` so `hud.test.ts` can sweep it over a real run; it
+      // is the fix for a score that stepped instead of rolling on 90.2 % of harbor frames.
+      h.displayTotal = nextDisplayTotal(h.displayTotal, f.score.total, f.score.delta, dt);
       signals.totalDisplay.value = h.displayTotal;
       signals.chainPoints.value = f.score.chainPoints;
       signals.multiplier.value = f.score.multiplier;
@@ -462,8 +472,12 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         body: `${err instanceof Error ? err.message : String(err)} The run itself is intact — free some space and try again, or take the verdict as it stands.`,
         retryable: true,
         retryLabel: 'Try again',
+        // The engine's verdict travels WITH the numbers, so the overlay cannot show one without
+        // the other. `score.trusted` mirrors `integrity.scoreTrusted` for exactly this reason.
         verdict: s
           ? {
+              trusted: s.score.trusted,
+              message: s.integrity.message,
               grade: s.score.grade,
               points: s.score.total,
               drifts: s.drifts.length,

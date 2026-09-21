@@ -103,7 +103,7 @@ export function useCalibration(): Calibration {
         reclineDeg: o.reclineDeg,
         quality: cal.quality,
         upQuality: diag.upQuality,
-        upSettled: diag.upSettled,
+        upAged: diag.upAged,
         peakQuality: diag.peakQuality,
         forwardResolved: cal.forwardResolved,
         calibrationOk: state.calibrationOk,

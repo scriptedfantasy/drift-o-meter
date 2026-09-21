@@ -9,7 +9,7 @@
  *
  * Imports Skia directly, so on web it must only ever be loaded through `MiniMapView`.
  */
-import { BlurMask, Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia';
+import { BlurMask, Canvas, Circle, Group, Path, RoundedRect, Skia } from '@shopify/react-native-skia';
 import { useMemo } from 'react';
 import { useDerivedValue } from 'react-native-reanimated';
 
@@ -100,8 +100,22 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
 
   const lineW = 2.4 / (fit.scale || 1);
 
+  /**
+   * The instrument's own frame. It is here because an empty map is BLACK, and the portrait
+   * layout now gives this box whatever height the fixed rows do not use — so on the first
+   * seconds of a run, before there is a trail to draw, a bigger box would have been a bigger
+   * hole. A hairline rectangle says "this is the map, and there is nothing on it yet", which is
+   * the same thing the drift strip above it says in words.
+   */
+  const frame = useMemo(() => {
+    const r = Skia.XYWHRect(0.5, 0.5, Math.max(1, width - 1), Math.max(1, height - 1));
+    return Skia.RRectXY(r, 6, 6);
+  }, [height, width]);
+
   return (
     <Canvas style={{ width, height }} testID={testID}>
+      <RoundedRect rect={frame} color={rgba(colors.bg1, 0.55)} />
+      <RoundedRect rect={frame} color={rgba(colors.line, 0.9)} style="stroke" strokeWidth={1} />
       <Group transform={worldTransform}>
         <Path path={paths.cold} color={coldColor} style="stroke" strokeWidth={lineW} strokeCap="round" strokeJoin="round" />
         <Path path={paths.hot} color={hotGlow} style="stroke" strokeWidth={lineW * 3.4} strokeCap="round" strokeJoin="round">

@@ -88,9 +88,12 @@ describe('how many runs a screen may say it is holding', () => {
     // The whole finding: entries is [] because listSessions threw, and six bodies are on disk.
     const d = diagnosis({ index: 'unreadable', recordings: 6 });
     expect(storedRuns([], d)).toEqual({ count: 6, counted: 'recordings' });
-    expect(storedRunsText(storedRuns([], d))).toContain('6 recordings on this device');
+    expect(storedRunsText(storedRuns([], d))).toBe('6 recordings on this device.');
     expect(storedRunsText(storedRuns([], d))).not.toMatch(/^0 /);
-    expect(storedRunsText(storedRuns([], d))).toMatch(/could not be read/);
+    expect(storedRunsText(storedRuns([], d))).not.toMatch(/stored runs/);
+    // …and the section it heads says WHY the count is of recordings rather than of runs.
+    expect(faultFor(d, null)?.title).toMatch(/could not be read/);
+    expect(storedRunsText(storedRuns([], diagnosis({ index: 'unreadable', recordings: 1 })))).toBe('1 recording on this device.');
   });
 
   it('says unknown rather than zero when the device cannot count', () => {

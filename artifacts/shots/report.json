@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T04:07:59.918Z",
+  "startedAt": "2026-09-21T04:13:49.018Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -3776,13 +3776,13 @@
     {
       "name": "garage",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:33505/?demo=night",
+      "url": "http://127.0.0.1:36169/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage.png",
       "video": null,
-      "ms": 9673,
+      "ms": 11508,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -3828,15 +3828,36 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 498656,
+        "emberPixels": 496156,
         "goldPixels": 5244,
         "redPixels": 0,
         "cyanPixels": 3956,
         "textPixels": 64300,
         "nonBgFraction": 0.6779,
-        "regions": []
+        "regions": [
+          {
+            "name": "trace-spins",
+            "colour": "red",
+            "rect": {
+              "x": 0.09014758269720101,
+              "y": 0.5839364730046949,
+              "w": 0.819704834605598,
+              "h": 0.07607511737089201
+            },
+            "box": {
+              "x0": 106,
+              "y0": 1493,
+              "x1": 1073,
+              "y1": 1687
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T03:58:03.856Z"
+      "shotAt": "2026-09-21T04:14:32.664Z"
     },
     {
       "name": "garage-bests",
@@ -4101,13 +4122,13 @@
     {
       "name": "garage-flagged",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:33505/?demo=flagged",
+      "url": "http://127.0.0.1:36169/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged.png",
       "video": null,
-      "ms": 10468,
+      "ms": 10103,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4161,7 +4182,7 @@
         "nonBgFraction": 0.7338,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:58:03.856Z"
+      "shotAt": "2026-09-21T04:14:32.664Z"
     },
     {
       "name": "garage-delete",
@@ -4426,13 +4447,13 @@
     {
       "name": "garage-spun",
       "path": "/?demo=spun",
-      "url": "http://127.0.0.1:33505/?demo=spun",
+      "url": "http://127.0.0.1:36169/?demo=spun",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-spun.png",
       "video": null,
-      "ms": 9288,
+      "ms": 9657,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4482,22 +4503,43 @@
         "goldPixels": 1024,
         "redPixels": 824,
         "cyanPixels": 3956,
-        "textPixels": 61748,
+        "textPixels": 61820,
         "nonBgFraction": 0.6777,
-        "regions": []
+        "regions": [
+          {
+            "name": "axis",
+            "colour": "red",
+            "rect": {
+              "x": 0.09414758269720101,
+              "y": 0.5879364730046949,
+              "w": 0.811704834605598,
+              "h": 0.05868544600938967
+            },
+            "box": {
+              "x0": 111,
+              "y0": 1503,
+              "x1": 1068,
+              "y1": 1653
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T03:58:03.856Z"
+      "shotAt": "2026-09-21T04:14:32.664Z"
     },
     {
       "name": "garage-flagged-stats",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:33505/?demo=flagged",
+      "url": "http://127.0.0.1:36169/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged-stats.png",
       "video": null,
-      "ms": 10438,
+      "ms": 12077,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4543,15 +4585,56 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 21256,
+        "emberPixels": 20392,
         "goldPixels": 3024,
         "redPixels": 74480,
         "cyanPixels": 0,
         "textPixels": 50384,
         "nonBgFraction": 0.7506,
-        "regions": []
+        "regions": [
+          {
+            "name": "axis",
+            "colour": "red",
+            "rect": {
+              "x": 0.09414758269720101,
+              "y": 0.4636150234741784,
+              "w": 0.811704834605598,
+              "h": 0.025821596244131457
+            },
+            "box": {
+              "x0": 111,
+              "y0": 1185,
+              "x1": 1068,
+              "y1": 1251
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "plot",
+            "colour": "ember",
+            "rect": {
+              "x": 0.09014758269720101,
+              "y": 0.4596150234741784,
+              "w": 0.819704834605598,
+              "h": 0.043211267605633805
+            },
+            "box": {
+              "x0": 106,
+              "y0": 1175,
+              "x1": 1073,
+              "y1": 1285
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T03:58:03.856Z"
+      "shotAt": "2026-09-21T04:14:32.664Z"
     },
     {
       "name": "settings-stored",
@@ -7164,10 +7247,13 @@
       "shotAt": "2026-09-21T04:01:10.922Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:08:05.293Z",
+  "finishedAt": "2026-09-21T04:14:32.664Z",
   "failed": 0,
   "failedAll": 8,
   "shotThisRun": [
-    "sound-fault"
+    "garage",
+    "garage-flagged",
+    "garage-spun",
+    "garage-flagged-stats"
   ]
 }

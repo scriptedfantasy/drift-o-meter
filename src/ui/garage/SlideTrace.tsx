@@ -22,13 +22,13 @@ import { useMemo } from 'react';
 
 import type { SlideMark } from '../../platform';
 import { colors, rgba } from '../theme';
-import { traceBars, TRACE_CEILING_DEG } from './trace';
+import { traceBars, traceHeight, TRACE_CEILING_DEG, TRACE_GUTTER_DP } from './trace';
 
 export interface SlideTraceProps {
   slides: readonly SlideMark[];
   /** Canvas width in dp. */
   width: number;
-  /** Canvas height in dp. */
+  /** Canvas height in dp. Defaults to `traceHeight` — a plot with an axis, a strip without. */
   height?: number;
   /** Ridge colour for the slides that counted. */
   color?: string;
@@ -54,8 +54,9 @@ function ridge(b: ReturnType<typeof Skia.PathBuilder.Make>, x0: number, x1: numb
   b.cubicTo(c - shoulder * 0.45, top, c - shoulder * 0.55, base, c, base);
 }
 
-export default function SlideTrace({ slides, width, height = 58, color = colors.ember, believed = true, ceilingDeg = TRACE_CEILING_DEG, testID }: SlideTraceProps) {
-  const base = height - 8;
+export default function SlideTrace({ slides, width, height, color = colors.ember, believed = true, ceilingDeg = TRACE_CEILING_DEG, testID }: SlideTraceProps) {
+  const plot = height ?? traceHeight(slides, { believed });
+  const base = plot - TRACE_GUTTER_DP;
   const headroom = base - 6;
   // The gutter: everything the app will not put a number on lives BELOW the axis, where it
   // cannot be read as a height on it.
@@ -65,10 +66,13 @@ export default function SlideTrace({ slides, width, height = 58, color = colors.
     const keptB = Skia.PathBuilder.Make();
     const markB = Skia.PathBuilder.Make();
     const gridB = Skia.PathBuilder.Make();
-    // A single hairline at half the ceiling, so a ridge has something to be tall against.
-    gridB.moveTo(0, base - headroom * 0.5).lineTo(width, base - headroom * 0.5);
+    const bars = traceBars(slides, { believed, ceilingDeg });
+    // A single hairline at half the ceiling, so a ridge has something to be tall against — and
+    // only when something is ON the axis. A scale over a row of footprints is a scale for
+    // nothing, and it reads as a plot whose marks all came out at zero.
+    if (bars.some((b) => b.kind === 'held')) gridB.moveTo(0, base - headroom * 0.5).lineTo(width, base - headroom * 0.5);
     gridB.moveTo(0, base).lineTo(width, base);
-    for (const bar of traceBars(slides, { believed, ceilingDeg })) {
+    for (const bar of bars) {
       const x0 = bar.x0 * width;
       const x1 = bar.x1 * width;
       if (bar.kind === 'held') {
@@ -81,7 +85,7 @@ export default function SlideTrace({ slides, width, height = 58, color = colors.
   }, [slides, width, base, headroom, foot, ceilingDeg, believed]);
 
   return (
-    <Canvas style={{ width, height }} testID={testID}>
+    <Canvas style={{ width, height: plot }} testID={testID}>
       <Path path={grid} color={rgba(colors.text, 0.14)} style="stroke" strokeWidth={1} />
       {/* the halo first, so the ridge sits in its own light */}
       <Group opacity={0.55}>

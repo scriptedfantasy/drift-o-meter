@@ -6,6 +6,10 @@
  *   actions       optional steps run before the screenshot (see README: tap / wait / scroll / press / eval / waitFor / screenshot)
  *   expectCanvas  fail if no <canvas> (Skia) is present
  *   minEmber      fail if fewer ember-coloured pixels than this are visible (proves the ring rendered)
+ *   regions       per-colour counts inside one rectangle, each with a `max` and/or a `min`:
+ *                 `{ name, colour, testId | rect, padFrac, max, min }`. A CEILING is the only
+ *                 shape of check that can certify an ABSENCE (see the header of pixels.mjs), and
+ *                 `testId` keeps it pointed at the same thing when the layout moves.
  *   fullPage      capture the full scroll height instead of the viewport
  *
  * The `/drive` routes capture MOMENTS, not t=0. `?at=<s>` warps the simulated recording to that
@@ -60,10 +64,10 @@ function longPress(testId, ms = 700) {
  * measures 0 ember when the dial is muted and tens of thousands when it is not.
  */
 function gaugeIsCold(max) {
-  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge', padFrac: 0.01, max };
+  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, max };
 }
 function gaugeIsHot(min) {
-  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge', padFrac: 0.01, min };
+  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, min };
 }
 
 export const defaultRoutes = [
@@ -75,7 +79,14 @@ export const defaultRoutes = [
   // An empty garage that has to be inviting rather than apologetic.
   { name: 'home', path: '/', waitMs: 1200 },
   // Six runs across two tracks, newest first: the big last-run card, then the board, then rows.
-  { name: 'garage', path: '/?demo=night', waitMs: 8000 },
+  {
+    name: 'garage',
+    path: '/?demo=night',
+    waitMs: 8000,
+    // The other half of the same claim, as a maximum: this run spun nothing, so the plot holds
+    // no footprint ink at all. Red inside `last-run-plot` is what a spin draws.
+    regions: [{ name: 'trace-spins', colour: 'red', testId: 'last-run-plot', padFrac: 0.004, max: 0 }],
+  },
   // Scrolled to the personal-best board: four records per track, empty tiles where nothing counts.
   { name: 'garage-bests', path: '/?demo=night', waitMs: 8000, actions: [{ type: 'scroll', y: 780 }, { type: 'wait', ms: 900 }] },
   // Scrolled to the run list, which is where the NOT SCORED row lives (the hand-held recording).
@@ -284,14 +295,27 @@ export const defaultRoutes = [
   // A hand-held recording: it still replays, and it must not present points or a grade.
   // On a recording the engine does not believe, the slip angle loses its escalation colours
   // along with the points: EVERY colour off `heatColor` is greyed — the trail ribbon and its
-  // halo, the core chunks, the mini-map trail and the scrubber's own |β| gradient. The frame
-  // measures 24 ember pixels, so it really is ember-free rather than nearly.
+  // halo, the core chunks, the mini-map trail, the two ticks that mark a slide's ends, the
+  // previous lap's breadcrumbs and the scrubber's own |β| gradient.
+  //
   // NO `minEmber`, on purpose: an ember floor on this frame is a check on the defect. It had one
   // (150) and the frame passed it at 240 px while the lap was still drawn in full ember, because
   // t=17 is BEFORE the hand-held car has slid — the route could not tell the two states apart.
-  // `expectCanvas` is the "something drew" floor; `replay-untrusted-slid` below is the frame
-  // that can tell them apart, at t=46, where the ungated trail measured 39 716 ember pixels.
-  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true },
+  //
+  // AND THE COMMENT THAT REPLACED IT WAS ALSO WRONG. It said "the frame measures 24 ember
+  // pixels, so it really is ember-free rather than nearly" — two mistakes in one sentence. The
+  // 24 were not ember: sampled, they are `#B28300 / #C69200 / #C89400`, antialiased `#FFC53D`
+  // gold scrubber pips that the old box-shaped `isEmber` swallowed (see pixels.mjs). And a
+  // sentence about absence backed by no check is not a check: the number was in a comment,
+  // nothing ran it, and three ember draws were leaking on the same run two frames later. The
+  // ceiling below is the check. Measured with the hue-band classifier: 0.
+  {
+    name: 'replay-untrusted',
+    path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0',
+    waitMs: 4200,
+    expectCanvas: true,
+    regions: [{ name: 'stage', colour: 'ember', testId: 'replay-stage', padFrac: 0.01, max: 0 }],
+  },
   // Bad data: `gaps=6` blanks six seconds of recorded position (a tunnel), so buildReplay's own
   // warnings fire and the dead-reckoned stretch is dashed instead of glowing.
   { name: 'replay-warnings', path: '/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 1200 },
@@ -327,10 +351,15 @@ export const defaultRoutes = [
 
   // ---- /sound: the feel lab ---------------------------------------------------------------
   // Every clip in the bank drawn and playable, the continuous layer on a slider, the mixer's own
-  // decision log. A browser will not start an AudioContext before the page is touched, so the
-  // first frame is the LOCKED state — which is the state that must not put anything in the
-  // console. The second shoots it after a real tap on a play button: the context resumes, the
-  // clip is dispatched and the decision log names what happened to it.
+  // decision log.
+  //
+  // THIS COMMENT USED TO SAY the first frame is the LOCKED state, because a browser will not
+  // start an AudioContext before the page is touched. It is not, here: headless Chromium starts
+  // one without a gesture, so `/sound` shoots AUDIBLE and this harness cannot certify the locked
+  // path at all — a route written for a state it can never reach. The locked path is real on a
+  // phone and stays on the list of what only a device can settle. The second route below shoots
+  // after a real tap on a play button: the context resumes, the clip is dispatched, and the
+  // decision log names what happened to it — which is a thing this harness CAN prove.
   { name: 'sound', path: '/sound', waitMs: 2600 },
   {
     name: 'sound-played',
@@ -479,10 +508,35 @@ export const defaultRoutes = [
   // A night that ENDED on the scruffy run: eleven slides, three of them spun. "SLIDES 11" with
   // no mention of the spins was a finding, and `night` ends on a clean run, so the fix had
   // nowhere to appear. This is the frame it appears in ("8 of 11 · 3 spun").
-  { name: 'garage-spun', path: '/?demo=spun', waitMs: 7000 },
+  {
+    name: 'garage-spun',
+    path: '/?demo=spun',
+    waitMs: 7000,
+    // The same maximum on the run that has spins AND held angles: three spins, none of them on
+    // the axis. This is the frame the finding was written from — "the three tallest ridges are
+    // the spins, under HELD ANGLE THROUGH THE RUN · 60° TOP, directly above the card's own HELD
+    // ANGLE 18°" — and 0 red pixels above the gutter is what makes that sentence false now.
+    regions: [{ name: 'axis', colour: 'red', testId: 'last-run-axis', max: 0 }],
+  },
   // The hand-held card's own numbers, one viewport down: angle, slides and points all `--` on a
   // run the monitor did not believe, over a trace drawn hollow and captioned as a recording.
-  { name: 'garage-flagged-stats', path: '/?demo=flagged', waitMs: 8000, actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }] },
+  {
+    name: 'garage-flagged-stats',
+    path: '/?demo=flagged',
+    waitMs: 8000,
+    actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }],
+    // TWO MAXIMA, because the claim is an absence and only a maximum can prove one
+    // (docs/CRITIC.md rule 15). `last-run-axis` is the part of the plot ABOVE the footprint
+    // gutter — the held-angle axis itself — so "0 red pixels in it" says no slide of a run the
+    // monitor did not believe is drawn as an angle. That check FAILS on the build this was found
+    // in: all seven slides drew there, in red, at their instantaneous peaks (75–85°), clamped to
+    // the 60° ceiling. The second says the same thing from the other side: no ember either, so
+    // nothing is dressed up as a believed angle. A floor on this frame proves nothing.
+    regions: [
+      { name: 'axis', colour: 'red', testId: 'last-run-axis', max: 0 },
+      { name: 'plot', colour: 'ember', testId: 'last-run-plot', padFrac: 0.004, max: 0 },
+    ],
+  },
 
   // THE SPIN, which is the whole reason the replay and the results screen disagreed. The engine
   // marks drift #6 of the `spin` fixture as a spin and the scorer takes its chain away; these
@@ -541,9 +595,15 @@ export const defaultRoutes = [
   // 3 (44.4–47.3 s) had all 2.9 s of it refused by the integrity monitor — `suppressedS` 2.93 —
   // so the scorer published `total: 0` for it while the run as a whole scored 23 982. The replay used to read that 0 as "no score data", run its own estimate
   // and slam "+127" over the road at the exit — a number the engine had refused to pay. This is
-  // that exit, 0.14 s after it fires: the beat still plays and it says nothing, because there is
-  // nothing to say. The eight default fixtures all happen to have every per-drift total above
-  // zero, which is why this needs a seed.
+  // that exit, 0.14 s after it fires. The eight default fixtures all happen to have every
+  // per-drift total above zero, which is why this needs a seed.
+  //
+  // THE BEAT NO LONGER PLAYS EMPTY. It said nothing at all, "because there is nothing to say",
+  // while the same slide was drawn a full ember ribbon with a halo and two ember ticks — so the
+  // ribbon and the silence disagreed and no frame said which was right. There IS something to
+  // say, and src/engine/types.ts says it is the only form a driver can be shown: the seconds the
+  // monitor refused. The callout on this frame reads "2.9 S DID NOT COUNT". It is a measurement,
+  // not a score, so `isPointsClaim` leaves it alone and an untrusted run would show it too.
   { name: 'replay-zero-paid', path: '/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 400 },
   // …and the same drift's HIGHLIGHT CHIP, which used to read "19° · 127 PTS" and now reads the
   // one thing that is true about it: 19°.
@@ -552,13 +612,33 @@ export const defaultRoutes = [
   // hand-held car has slid, so it could not tell a greyed trail from an ember one. At t=46 the
   // ungated trail measured 39 716 ember pixels beside a NOT SCORED plate and grey peak labels.
   // No `minEmber`: the point of this frame is that the heat ramp is withheld, so a floor on
-  // ember pixels would be a check on the defect.
-  { name: 'replay-untrusted-slid', path: '/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0', waitMs: 4200, expectCanvas: true },
+  // ember pixels would be a check on the defect. The ceiling is the check — and this tick of the
+  // run is OFF CAMERA for the ticks that were still leaking, which is why `replay-untrusted-leak`
+  // below exists as well. One moment is not a run.
+  {
+    name: 'replay-untrusted-slid',
+    path: '/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0',
+    waitMs: 4200,
+    expectCanvas: true,
+    regions: [{ name: 'stage', colour: 'ember', testId: 'replay-stage', padFrac: 0.01, max: 0 }],
+  },
   // A CLEAN LAP'S TELEMETRY STRIP. `clean` peaks at 4.18°, and the scrub band used to rescale
   // itself to that peak — so a lap with nothing in it drew full-height in gold and red, under a
-  // footer reading 0 DRIFTS. The band is absolute now and this is what a clean lap looks like:
-  // a flat line. No `minEmber` for the same reason as above.
-  { name: 'replay-clean-band', path: '/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1', waitMs: 3200, expectCanvas: true },
+  // footer reading 0 DRIFTS. The band is absolute now (`ribbonScale` is the spin edge, full
+  // stop) and this is what a clean lap looks like: a flat line. No `minEmber` for the same
+  // reason as above; the ceilings say the thing the sentence says. Gold starts 80 % up the band
+  // and red at the top, so on a lap with no drift in it there must be NEITHER inside the strip:
+  // measured 0 and 0, portrait and landscape.
+  {
+    name: 'replay-clean-band',
+    path: '/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1',
+    waitMs: 3200,
+    expectCanvas: true,
+    regions: [
+      { name: 'band-gold', colour: 'gold', testId: 'replay-scrubber', max: 0 },
+      { name: 'band-red', colour: 'red', testId: 'replay-scrubber', max: 0 },
+    ],
+  },
   // The same zero-paid slide as a HIGHLIGHT chip (it ranks 8th of 8 on this seed), which is the
   // other string that carried the invented number: "19° · 127 PTS". `replay-zero-chip` above
   // shows the deep-linked THIS DRIFT chip, which has always been measurements only.
@@ -722,4 +802,65 @@ export const defaultRoutes = [
   // frame is the answer to the READY footer: confidence reads 61 % here having peaked at 76 %,
   // so "as sharp as it gets" was false and "Best so far 76%" is what the calibrator publishes.
   { name: 'calibrate-gps', path: '/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1', waitMs: 2400, expectCanvas: true },
+
+  // ---- replay: the moment the trust gate was leaking, and the two that could not see it -----
+  // THE FRAME THE LEAK IS ON. `replay-untrusted` (t=17) and `replay-untrusted-slid` (t=46) both
+  // measure 0 ember and both were passing while three draws were still ungated, because at
+  // neither instant is a drift-start tick, a drift-end dot or a previous-lap breadcrumb inside
+  // the shot. At t=60 the start tick of the lap-2 slide sits beside the start/finish gate: with
+  // those three draws outside the gate this frame drew 1 099 ember pixels in one cluster at
+  // x 213–320, y 1112–1189 — sampled `#EB7656 / #C85333 / #B84220`, a visible orange streak two
+  // inches under the words NOT SCORED. Gated: 0. A ceiling on the STAGE (the world band, by its
+  // own testID, so it follows the layout) is what makes that an assertion rather than a sentence.
+  {
+    name: 'replay-untrusted-leak',
+    path: '/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0',
+    waitMs: 4200,
+    expectCanvas: true,
+    regions: [{ name: 'stage', colour: 'ember', testId: 'replay-stage', padFrac: 0.01, max: 0 }],
+  },
+  // …and the whole route at once, where the breadcrumbs of every finished lap are on screen
+  // together: 134 ember pixels before the gate reached them, 0 after. Chase can only ever show
+  // the few metres around the car; overview is the frame that can see the lot.
+  {
+    name: 'replay-untrusted-overview',
+    path: '/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0',
+    waitMs: 4200,
+    expectCanvas: true,
+    regions: [{ name: 'stage', colour: 'ember', testId: 'replay-stage', padFrac: 0.01, max: 0 }],
+  },
+  // A LAP THE ENGINE FOUND NO DRIFT IN SPENDS NO EMBER IN THE WORLD. `replay-clean-band` shoots
+  // the same instant with the transport up, and the transport's PLAY button is ember by design,
+  // so a frame-wide count there says nothing. This is the same frame with `ui=0`: the driven
+  // line, the slip label, the slip arc, the heading line and the L/R chevron, on a run whose
+  // footer reads 0 DRIFTS and whose hero numeral is already grey because 4.2° is below the
+  // engine's 8° hold edge. The line and the label used to be full ember beside that grey
+  // numeral — one frame saying both "not sliding" and "sliding" about the same angle. Measured
+  // inside the stage: 11 892 ember pixels before, 0 after (the 508 left on the frame are three
+  // rows of the scrub ribbon's own baseline, below the stage, where the gradient bottoms out).
+  {
+    name: 'replay-clean-world',
+    path: '/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0',
+    waitMs: 3200,
+    expectCanvas: true,
+    regions: [{ name: 'stage', colour: 'ember', testId: 'replay-stage', padFrac: 0.01, max: 0 }],
+  },
+  // THE OTHER END OF THE SAME SCALE. `sloppy` peaks at 118° and the band used to stretch to
+  // 123.9° to hold it, which put the 65° spin edge — where the gradient's stops say red — at
+  // 52.5 % of the strip, inside the ember zone, under a world painting the same 70° slide
+  // gold-to-red. Fixed at the spin edge, everything past 65° saturates at the top, where the
+  // shader already says a spin is: the share of the trace in the top tenth of the band goes from
+  // 4.40 % to 16.51 %, and the strip measures 4 524 red pixels in portrait, 10 388 in landscape.
+  //
+  // The floor below proves the strip paints a spin RED; it is not what proves the scale is
+  // absolute, and it should not be read as if it were. Two runs having the same scale is a claim
+  // about two frames, so it is asserted where it can be — `replay-ui.test.ts`, "the scrub band is
+  // the same scale on a clean lap as on a lap full of spins", which fails on the old rule.
+  {
+    name: 'replay-sloppy-band',
+    path: '/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1',
+    waitMs: 3200,
+    expectCanvas: true,
+    regions: [{ name: 'band-red', colour: 'red', testId: 'replay-scrubber', min: 2000 }],
+  },
 ];

@@ -16,6 +16,11 @@ import { simulateRun, type SimulatedRun, type TrackId } from '../../sim';
 import { degToRad, radToDeg, type Grade, type Session, type SlipState } from '../types';
 import { scoreSession, countTransitions, steadinessScore, angleScore, DEFAULT_SCORE_OPTIONS, LiveScorer } from './index';
 
+/** Just enough of a scored drift for the callout sums below. */
+interface ScoredDriftLike {
+  callouts: Array<{ kind: string; points: number }>;
+}
+
 // ── helpers ────────────────────────────────────────────────────────────────────────────────
 
 /** A 100 Hz SlipState stream from a β(t) / speed(t) script. */
@@ -234,10 +239,34 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
    * callout bonus with `counting: false` on 100.0 % of its 13 016 samples passed both. The
    * screen meanwhile showed "EXTREME ANGLE +375" and "CHAIN LOST −965" over a score of 0 and
    * the words NOT SCORING, all in one frame.
+   *
+   * ── WHERE IT IS SWEPT, AND WHY THAT IS THE WHOLE TEST ─────────────────────────────────────
+   * It used to sweep `[0, 0.25, 0.4, 0.7, 1.0]` and it BRACKETED THE NEXT BUG BY CONSTRUCTION.
+   * Below about 0.1 the monitor doubts almost nothing; at 0.25 and above it doubts everything,
+   * and a guard of the form "did this drift ever earn anything" then blocks the payment for the
+   * wrong reason. The leak lived in between — CLEAN LAP paid 1 725 points at looseness 0, 300 at
+   * 0.05, 1 725 at 0.1 and at 0.15, 1 650 at 0.2, on runs every one of which published
+   * `trusted: true` with grade A or B. Every value the old grid used was clean and every value it
+   * skipped was not.
+   *
+   * So the grid is now the AMBIGUOUS band, on more than one seed and more than one track, and it
+   * keeps the all-or-nothing ends as the cheap cases they are. Where a parameter makes a system
+   * partly-believed is where a partial-credit bug can exist at all.
+   *
+   * And it asserts PER FRAME: the first frame that pays fails the test by name and time, rather
+   * than a per-run sum that a small leak could hide inside a large total.
    */
-  it('no frame that says it is not counting ever adds a point — over the whole looseness sweep', () => {
-    for (const looseness of [0, 0.25, 0.4, 0.7, 1.0]) {
-      const run = simulateRun('harbor', { ...base, looseness });
+  it('no frame that says it is not counting ever adds a point — across the partially-believed band', () => {
+    const grid: Array<{ track: TrackId; seed: number; looseness: number }> = [];
+    // the band where the monitor believes SOME of the run: this is where the leak lived
+    for (const seed of [1, 2]) for (const looseness of [0, 0.05, 0.1, 0.15, 0.2, 0.22]) grid.push({ track: 'harbor', seed, looseness });
+    for (const looseness of [0.05, 0.1, 0.15, 0.2]) grid.push({ track: 'touge', seed: 1, looseness });
+    // and the two ends, which are cheap and which the old grid was made of
+    for (const looseness of [0.25, 1.0]) grid.push({ track: 'harbor', seed: 1, looseness });
+
+    const rows: string[] = [];
+    for (const { track, seed, looseness } of grid) {
+      const run = simulateRun(track, { ...base, seed, looseness });
       const p = new DriftPipeline({});
       const gps = run.gps.slice().sort((a, b) => a.t - b.t);
       let j = 0;
@@ -245,8 +274,10 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
       let samples = 0;
       let notCounting = 0;
       let paidWhileNotCounting = 0;
-      let worstFrame = '';
+      let paidFrames = 0;
+      let firstBad = '';
       let calloutPointsWhileNotCounting = 0;
+      const where = `${track}/seed ${seed}/looseness ${looseness}`;
       for (let i = 0; i < run.motion.length; i++) {
         while (j < gps.length && gps[j].t <= run.motion[i].t) p.pushGps(gps[j++]);
         const f = p.pushMotion(run.motion[i]);
@@ -255,25 +286,41 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
         samples++;
         if (f.score.counting) continue;
         notCounting++;
-        for (const c of f.score.callouts) calloutPointsWhileNotCounting += c.points;
+        // PER FRAME. Every callout drawn on a frame the scorer refused carries 0 points, so a
+        // chip can never show a "+N" the bank never received.
+        for (const c of f.score.callouts) {
+          calloutPointsWhileNotCounting += c.points;
+          expect(c.points, `${where}: ${c.label} paid at t=${f.t.toFixed(2)} on a frame stamped counting:false`).toBe(0);
+        }
+        // …and the total itself cannot have gone UP, which is the guarantee `pipeline.ts`
+        // publishes on `LiveFrame.score.counting` and the one a HUD reads it for.
         if (dTotal > 0) {
           paidWhileNotCounting += dTotal;
-          if (!worstFrame) worstFrame = `t=${f.t.toFixed(2)} +${dTotal.toFixed(1)} [${f.score.callouts.map((c) => c.label).join(', ')}]`;
+          paidFrames++;
+          if (!firstBad) firstBad = `t=${f.t.toFixed(2)} +${dTotal.toFixed(1)} [${f.score.callouts.map((c) => c.label).join(', ') || 'no callout on this frame'}]`;
         }
+        expect(dTotal, `${where}: the total rose by ${dTotal.toFixed(1)} at t=${f.t.toFixed(2)} on a frame stamped counting:false`).toBeLessThanOrEqual(0);
       }
       while (j < gps.length) p.pushGps(gps[j++]);
       const session = p.finish();
-      process.stdout.write(
-        `\nNOT-COUNTING PROPERTY looseness ${looseness}: ${notCounting}/${samples} frames not counting, ` +
-          `${paidWhileNotCounting.toFixed(1)} points paid on them, finish() total ${session.score.total} (${session.score.grade}, trusted ${session.score.trusted})\n`,
+      // the second reading of the same fact, per rule 11: the PUBLISHED callout list. A clean-lap
+      // bonus reaches `Session.score.perDrift` even though it never belonged to a drift's own
+      // accumulation, so a leak that the frame stream somehow missed still shows up here.
+      let cleanLapPoints = 0;
+      for (const sd of Object.values(session.score.perDrift)) for (const c of sd.callouts) if (c.kind === 'clean-lap') cleanLapPoints += c.points;
+      rows.push(
+        `  ${where.padEnd(34)} ${((100 * notCounting) / samples).toFixed(1).padStart(5)} % of ${samples} frames not counting, ` +
+          `${paidWhileNotCounting.toFixed(1).padStart(8)} pts paid on ${paidFrames} of them, ` +
+          `finish() ${String(session.score.total).padStart(6)} (${session.score.grade}, trusted ${session.score.trusted}), clean-lap ${cleanLapPoints.toFixed(0)}` +
+          (firstBad ? ` — first ${firstBad}` : ''),
       );
-      expect(paidWhileNotCounting, `looseness ${looseness} paid while not counting — first at ${worstFrame}`).toBe(0);
-      // and the callouts drawn on those frames carry no points either, so a chip cannot show a
-      // "+N" for something the bank never received
-      expect(calloutPointsWhileNotCounting, `looseness ${looseness} fired paying callouts while not counting`).toBe(0);
-      if (looseness > 0) expect(notCounting, `looseness ${looseness} should have doubted something`).toBeGreaterThan(0);
+      expect(paidWhileNotCounting, `${where} paid while not counting — first at ${firstBad}`).toBe(0);
+      expect(calloutPointsWhileNotCounting, `${where} fired paying callouts while not counting`).toBe(0);
+      if (looseness >= 0.25) expect(notCounting, `${where} should have doubted everything`).toBe(samples);
+      if (looseness > 0) expect(notCounting, `${where} should have doubted something`).toBeGreaterThan(0);
     }
-  }, 180_000);
+    process.stdout.write(`\nNOT-COUNTING PROPERTY over ${grid.length} runs\n${rows.join('\n')}\n`);
+  }, 300_000);
 
   it('a hand-held run earns literally nothing, live and at the end', () => {
     // the exact recording the capture harness shoots (`?sim=harbor&looseness=1`): measured
@@ -394,51 +441,103 @@ describe('a stored session re-scores without the per-sample mask', () => {
       integrity: { mount: stored.integrity.mount, physics: stored.integrity.physics, gps: stored.integrity.gps, message: stored.integrity.message },
     });
 
-  it('lands within a few percent of the live total on a partially-suppressed run', () => {
-    // looseness 0.2: the monitor doubts part of several slides and all of one, and still
-    // trusts the run overall — the case where the number actually gets published
-    const pipe = drivePipe('harbor', { seed: 1, laps: 2, aggression: 0.8, consistency: 0.7, looseness: 0.2 });
-    const live = pipe.finish();
-    const stored = JSON.parse(JSON.stringify(live)) as Session;
+  /**
+   * THE BOUND ON THE FALLBACK — and it is a bound with a MECHANISM, not a number with headroom.
+   *
+   * The previous form of this test drove one case (harbor, seed 1, looseness 0.2) and asserted
+   * `err < 10 %`, justified as "0.0–1.3 % typical and 8.5 % worst over 2 tracks × 3 seeds ×
+   * looseness 0/0.1/0.2". That grid reproduces exactly and the headline was honest on it. It was
+   * also one seed too narrow, which is precisely the mistake `docs/DESIGN.md` records being made
+   * about the calibrator's ceiling. Measured now over 2 tracks × seeds 1–6 × looseness
+   * 0/0.1/0.2/0.22/0.25 — `npx tsx tools/analysis/rescore-sweep.ts`, 60 runs — the flat worst
+   * cases are 37.4 % (harbor/5/0.2, a refused run whose live total is only 2 366) and 18.0 % on a
+   * run that actually publishes (touge/5/0.2). A flat bound wide enough for those asserts almost
+   * nothing.
+   *
+   * So the bound is tied to the one thing that can make the fallback wrong. A stored session has
+   * no per-sample mask, only `DriftEvent.suppressedS`, so it knows HOW MUCH of a slide the
+   * monitor refused and not WHERE — and every point of error comes out of that. Over all 60 runs
+   * the error never exceeds twice the suppressed fraction of the run's drifting time, and it is
+   * EXACTLY ZERO when nothing was suppressed. That is a statement a clean run cannot satisfy by
+   * being clean, and it fails the moment the fallback starts guessing about something else.
+   *
+   * What would remove the bound entirely is the fallback carrying WHEN the monitor stopped
+   * believing rather than only how long: suppressed intervals `[startT, endT]` on the session, in
+   * the same monotonic clock as everything else, which no decimation can misalign. That is a
+   * `src/engine/types.ts` change and is proposed rather than made here.
+   */
+  const RESCORE_ERR_PER_SUPPRESSED = 2.0;
+  const RESCORE_ERR_FLOOR = 0.005;
+  const RESCORE_COMPONENT_FLOOR = 3;
+  const RESCORE_COMPONENT_PER_SUPPRESSED = 60;
 
-    // the fallback is on the event and survived JSON
-    for (const d of stored.drifts) expect(Number.isFinite(d.suppressedS), `drift ${d.id}`).toBe(true);
-    const partial = stored.drifts.filter((d) => d.suppressedS > 0.01 && d.suppressedS < d.durationS - 0.01);
-    expect(partial.length, 'this run is meant to exercise PARTIAL suppression').toBeGreaterThan(0);
-    expect(stored.integrity.suppressedS).toBeGreaterThan(1);
-    expect(live.score.trusted).toBe(true);
-
-    const re = reScore(stored);
-    const err = Math.abs(re.total - live.score.total) / Math.max(1, live.score.total);
-    process.stdout.write(
-      `\nRE-SCORE FROM STORAGE: live ${live.score.total} → ${re.total} (${(100 * err).toFixed(1)} %), ` +
-        `${partial.length} partially and ${stored.drifts.filter((d) => d.suppressedS >= d.durationS - 0.01).length} fully suppressed slides of ${stored.drifts.length}\n`,
-    );
-    // MEASURED, over 2 tracks × 3 seeds × looseness 0 / 0.1 / 0.2: 0.0–1.3 % while under ~5 s
-    // of the run was suppressed, 8.5 % on this one (18.6 s across two long slides). The bound is
-    // wider than it was because the live pass now refuses a callout that fires in an instant the
-    // monitor did not believe, and a per-drift duration cannot say which callouts those were —
-    // so this path pays their expected value. The direction that matters is still pinned: a run
-    // the monitor REFUSED re-scores to exactly 0 (the next test).
-    expect(err, `re-score drifted ${(100 * err).toFixed(1)} % from the live total`).toBeLessThan(0.1);
-    // and it reproduces the VERDICT exactly, which is the part a screen must obey
-    expect(re.integrity.scoreTrusted).toBe(live.score.trusted);
-    expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
-
-    // EVERY COMPONENT, not just the total. A total within a percent once hid quality being 13
-    // points out, because quality is the only component that integrates dt (the thing the mask
-    // zeroes) while angle and consistency are measured off the recorded trace. A screen tells a
-    // driver WHY they scored what they did out of these five numbers.
+  it('re-scores within twice the suppressed fraction — over seeds and looseness, not one case', () => {
+    // The cases that BIND the bound on the full grid, plus the clean ends. Chosen from the
+    // sweep's own output, not by hand: harbor/1/0.2 is its worst ratio (1.85), harbor/2/0 its
+    // worst component ratio, harbor/5/0.2 its worst flat error, touge/5/0.2 the worst on a run
+    // that publishes, touge/2/0.2 its worst component on one.
+    const cases: Array<{ track: TrackId; seed: number; looseness: number }> = [
+      { track: 'harbor', seed: 1, looseness: 0 },
+      { track: 'harbor', seed: 1, looseness: 0.2 },
+      { track: 'harbor', seed: 2, looseness: 0 },
+      { track: 'harbor', seed: 5, looseness: 0.2 },
+      { track: 'harbor', seed: 6, looseness: 0.22 },
+      { track: 'touge', seed: 1, looseness: 0 },
+      { track: 'touge', seed: 1, looseness: 0.22 },
+      { track: 'touge', seed: 2, looseness: 0.2 },
+      { track: 'touge', seed: 5, looseness: 0.2 },
+    ];
     const comps = ['angle', 'consistency', 'quality', 'speed', 'style'] as const;
-    const moved = comps
-      .map((k) => ({ k, live: live.score[k], re: re[k], d: Math.abs(re[k] - live.score[k]) }))
-      .sort((a, b) => b.d - a.d);
-    process.stdout.write(`  components: ${moved.map((m) => `${m.k} ${m.live.toFixed(1)}→${m.re.toFixed(1)}`).join(', ')}\n`);
-    for (const m of moved) expect(m.d, `${m.k} drifted ${m.d.toFixed(1)} points`).toBeLessThan(2);
-    // the two that are measured off the trace cannot move at all
-    expect(re.angle).toBeCloseTo(live.score.angle, 5);
-    expect(re.consistency).toBeCloseTo(live.score.consistency, 5);
-  }, 120_000);
+    const rows: string[] = [];
+    let sawPartial = false;
+    for (const { track, seed, looseness } of cases) {
+      // the same parameters `tools/analysis/rescore-sweep.ts` sweeps, which are the app's own
+      const live = drivePipe(track, { seed, laps: 2, looseness }).finish();
+      const stored = JSON.parse(JSON.stringify(live)) as Session;
+      for (const d of stored.drifts) expect(Number.isFinite(d.suppressedS), `${track}/${seed}/${looseness} drift ${d.id}`).toBe(true);
+      const re = reScore(stored);
+      const driftS = stored.drifts.reduce((a, d) => a + d.durationS, 0);
+      const suppressed = driftS > 0 ? stored.integrity.suppressedS / driftS : 0;
+      const err = Math.abs(re.total - live.score.total) / Math.max(1, live.score.total);
+      const where = `${track}/${seed}/${looseness}`;
+      const moved = comps.map((k) => ({ k, live: live.score[k], re: re[k], d: Math.abs(re[k] - live.score[k]) })).sort((a, b) => b.d - a.d);
+      if (stored.drifts.some((d) => d.suppressedS > 0.01 && d.suppressedS < d.durationS - 0.01)) sawPartial = true;
+      rows.push(
+        `  ${where.padEnd(18)} live ${String(live.score.total).padStart(6)} → ${String(Math.round(re.total)).padStart(6)}  ` +
+          `err ${(100 * err).toFixed(1).padStart(5)} %  suppressed ${(100 * suppressed).toFixed(1).padStart(5)} %  ` +
+          `ratio ${(suppressed > 0 ? err / suppressed : 0).toFixed(2)}  trusted ${live.score.trusted}  worst ${moved[0].k} ${moved[0].d.toFixed(1)}`,
+      );
+
+      // THE BOUND. Error comes out of suppression and nothing else.
+      expect(err, `${where}: re-scored ${(100 * err).toFixed(1)} % out with ${(100 * suppressed).toFixed(1)} % of its sliding suppressed`).toBeLessThanOrEqual(
+        RESCORE_ERR_PER_SUPPRESSED * suppressed + RESCORE_ERR_FLOOR,
+      );
+      // and every component obeys the same shape, with a floor for the couple of points that
+      // are irreducible on ANY re-score (the mean speed is over a different set of samples)
+      for (const m of moved) {
+        expect(m.d, `${where}: ${m.k} moved ${m.d.toFixed(1)} points (${m.live.toFixed(1)} → ${m.re.toFixed(1)})`).toBeLessThanOrEqual(
+          Math.max(RESCORE_COMPONENT_FLOOR, RESCORE_COMPONENT_PER_SUPPRESSED * suppressed),
+        );
+      }
+      // the two that are measured off the recorded trace cannot move at all, ever
+      expect(re.angle, where).toBeCloseTo(live.score.angle, 5);
+      expect(re.consistency, where).toBeCloseTo(live.score.consistency, 5);
+      // and it reproduces the VERDICT exactly, which is the part a screen must obey
+      expect(re.integrity.scoreTrusted, where).toBe(live.score.trusted);
+      expect(re.integrity.implausibleDriftFraction, where).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
+      // THE CLEAN-LAP BONUS IS THE SAME NUMBER IN BOTH PATHS. It is the one payment a per-drift
+      // duration cannot place in time, and the live pass and the re-score now compute its worth
+      // from the same two per-drift durations (`lapBelief`), so it may not drift by more than the
+      // chain replay moves the multiplier it is scaled by.
+      const cleanLap = (m: Record<number, ScoredDriftLike>) =>
+        Object.values(m).reduce((a, d) => a + d.callouts.filter((c) => c.kind === 'clean-lap').reduce((x, c) => x + c.points, 0), 0);
+      const clLive = cleanLap(live.score.perDrift);
+      const clRe = cleanLap(re.perDrift);
+      expect(Math.abs(clRe - clLive), `${where}: CLEAN LAP ${clLive.toFixed(0)} live vs ${clRe.toFixed(0)} re-scored`).toBeLessThanOrEqual(0.06 * Math.max(1, clLive));
+    }
+    expect(sawPartial, 'these cases are meant to exercise PARTIAL suppression').toBe(true);
+    process.stdout.write(`\nRE-SCORE FROM STORAGE (full grid: npx tsx tools/analysis/rescore-sweep.ts)\n${rows.join('\n')}\n`);
+  }, 300_000);
 
   it('reproduces the refusal exactly on a run the monitor did not believe', () => {
     // a fully-suppressed run: the points cannot be reconstructed from a per-drift duration —

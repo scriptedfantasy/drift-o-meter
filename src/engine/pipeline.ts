@@ -127,7 +127,8 @@ export interface LiveFrame {
     message: string;
     /**
      * Whether anything derived from this instant may be BELIEVED — the phone is in its mount,
-     * the readings are physically possible and the estimator's state is valid.
+     * the readings are physically possible, the estimator's state is valid, AND the scorer has
+     * actually paid for some of the recent sliding.
      *
      * Two different questions, and a display needs both: `score.counting` answers "is the
      * scorer paying right now", which is false at every red light; this answers "is the
@@ -136,6 +137,17 @@ export interface LiveFrame {
      * 'loose' || physics === 'implausible' || !valid`) disagreed with the engine by
      * construction, and that disagreement is what hid a scorer paying for slides it did not
      * believe.
+     *
+     * THE LAST CLAUSE EXISTS BECAUSE THE TWO ANSWERS DIVERGED BY 96 POINTS OF PERCENTAGE.
+     * At simulator looseness 0.25 the mount reads `suspect` rather than `loose`, the physics
+     * are possible and the state is valid, so the first three clauses said "believable" on
+     * 95.9 % of a run the scorer paid for on 0.0 % of (harbor, seed 1, 2 laps; 0.3 → 95.5 %
+     * vs 0.0 %, touge → 94.3 % vs 0.0 %). The drive display drew a gold 56° hero numeral, a
+     * gold ×5.0 multiplier, three full-colour callout chips and PEAK 56° beside SCORE 0 on a
+     * run that publishes nothing. Being permissive per-instant is right; staying permissive
+     * while slide after slide goes unpaid is not, so the clause is a WINDOW over drifting
+     * time (see `believedRecently`), not another per-instant test. A red light still does not
+     * grey the screen: the window only fills while the detector says the car is sliding.
      */
     believable: boolean;
   };
@@ -488,6 +500,8 @@ export class DriftPipeline implements DriftPipelineApi {
   // ---- diagnostics
   /** 1 per state sample where the integrity monitor believed the slide. Aligned with `states`. */
   private plausibleMask = new BitMask();
+  /** Trailing window of drifting seconds, and of drifting seconds the scorer actually paid for. */
+  private readonly slideWindow = new PaidWindow(BELIEVE_WINDOW_S);
   private nSamples = 0;
   private nDropped = 0;
   private nGps = 0;
@@ -630,6 +644,12 @@ export class DriftPipeline implements DriftPipelineApi {
     }
 
     // ---- 8. the frame the app renders
+    //  The window that bounds how far `integrity.believable` may drift from `score.counting`:
+    //  it fills only while the detector says the car is sliding, so a red light never greys the
+    //  screen, and it empties into `believedRecently` once slide after slide has gone unpaid.
+    //  `dt` is clamped the same way the accumulator clamps it — a gap is time nobody observed.
+    const slideDt = det.phase !== 'idle' && dt > 0 && dt <= 0.25 ? dt : 0;
+    this.slideWindow.push(slideDt, tick.counting ? slideDt : 0);
     const integrity = this.readIntegrity(state.valid);
     const frame: LiveFrame = {
       t,
@@ -855,6 +875,7 @@ export class DriftPipeline implements DriftPipelineApi {
     this.integrity.reset();
     this.stateStore.clear();
     this.plausibleMask.clear();
+    this.slideWindow.clear();
     this.lastState = null;
     this._drifts.length = 0;
     this._gps.length = 0;
@@ -1012,8 +1033,10 @@ export class DriftPipeline implements DriftPipelineApi {
     // ONE place decides whether the reading may be believed (see `LiveFrame.integrity.believable`).
     // It deliberately omits the speed and fix-freshness gates that `driftPlausible` also applies:
     // a car stopped at a red light is not a fault, and a screen that greyed out for one would be
-    // lying in the other direction.
-    const believable = s.mount !== 'loose' && s.physics === 'ok' && valid;
+    // lying in the other direction. What it does NOT omit is the scorer's own record: a mount
+    // that reads `suspect` rather than `loose` used to keep the whole display in full colour
+    // through a run the scorer paid nothing for, and `believedRecently` is the bound on that.
+    const believable = s.mount !== 'loose' && s.physics === 'ok' && valid && this.slideWindow.believedRecently;
     const prev = this.integritySnapshot;
     if (prev && prev.mount === s.mount && prev.physics === s.physics && prev.gps === s.gps && prev.message === s.message && prev.believable === believable) {
       return prev;
@@ -1036,6 +1059,96 @@ export class DriftPipeline implements DriftPipelineApi {
  * One bit per sample. A 120 000-sample run costs 15 KB here instead of 120 KB of booleans,
  * and `toArray` materialises the Uint8Array the offline scorer indexes with.
  */
+/**
+ * How much SLIDING may go unpaid before the reading stops being worth showing in colour, and
+ * how much of it has to have been paid for. Measured, not guessed: over 2 tracks × 3 seeds ×
+ * looseness 0/0.1/0.2/0.25/0.3 these values leave the believable fraction of every TRUSTED run
+ * where it was — identical to the old rule at looseness 0 and 0.1 on all six runs, and 93.2 %
+ * against 95.9 % on the one that is genuinely half-refused — while collapsing it from ~95 % to
+ * 0.3–10 % on every run the engine refuses, and the biggest angle the display will keep from
+ * such a run from 40–77° down to 11–28°. The grid is printed by `score/honesty.test.ts`
+ * ("the display's gate and the scorer's gate cannot diverge without bound").
+ */
+const BELIEVE_WINDOW_S = 6;
+/** Sliding seconds that have to be in the window before it is allowed to say anything. */
+const BELIEVE_MIN_SLIDE_S = 0.4;
+/** Paid share of the window's sliding below which the reading is no longer shown in colour. */
+const BELIEVE_MIN_PAID = 0.25;
+
+/**
+ * Trailing window over SLIDING time: how much of the last `windowS` seconds the car spent
+ * sliding the scorer actually paid for.
+ *
+ * It exists because `integrity.believable` and `score.counting` are two answers to one question
+ * and they were allowed to diverge without limit — 95.9 % against 0.0 % on a measured run, with
+ * the drive display drawing a gold 56° numeral and a gold ×5.0 beside SCORE 0. This is the bound
+ * on that divergence.
+ *
+ * THE WINDOW IS SLIDING TIME, NOT WALL TIME, and that is the whole design. A car waiting at a
+ * red light is not counting and is perfectly believable, so idle samples are never pushed: they
+ * neither fill the window nor drain it. Draining on wall time gave every new slide a fresh grace
+ * period, which on the touge fixture left a 31° peak on a run worth nothing; with sliding time
+ * only the FIRST slide of a run is given the benefit of the doubt, which is the only slide about
+ * which the engine genuinely has not been shown anything yet.
+ *
+ * O(1) per sample: a fixed ring of (slide, paid) with running sums, sized for `windowS` at
+ * 200 Hz so a phone delivering faster than 100 Hz cannot overflow it. It allocates once.
+ */
+class PaidWindow {
+  private readonly slide: Float64Array;
+  private readonly paid: Float64Array;
+  private head = 0;
+  private tail = 0;
+  private slideSum = 0;
+  private paidSum = 0;
+  constructor(private readonly windowS: number) {
+    const cap = Math.max(64, Math.ceil(windowS * 200) + 2);
+    this.slide = new Float64Array(cap);
+    this.paid = new Float64Array(cap);
+  }
+  /** `sliding` seconds spent drifting, of which `counted` were paid. Idle time is not pushed. */
+  push(sliding: number, counted: number): void {
+    if (!(sliding > 0)) return;
+    const cap = this.slide.length;
+    if ((this.head + 1) % cap === this.tail) this.drop(); // full: the oldest entry leaves
+    this.slide[this.head] = sliding;
+    this.paid[this.head] = counted;
+    this.slideSum += sliding;
+    this.paidSum += counted;
+    this.head = (this.head + 1) % cap;
+    while (this.tail !== this.head && this.slideSum - this.slide[this.tail] >= this.windowS) this.drop();
+  }
+  private drop(): void {
+    this.slideSum -= this.slide[this.tail];
+    this.paidSum -= this.paid[this.tail];
+    this.tail = (this.tail + 1) % this.slide.length;
+  }
+  clear(): void {
+    this.head = 0;
+    this.tail = 0;
+    this.slideSum = 0;
+    this.paidSum = 0;
+  }
+  /** Sliding seconds in the window. */
+  get slidingS(): number {
+    return this.slideSum;
+  }
+  /** Of those, the seconds the scorer paid for. */
+  get paidS(): number {
+    return this.paidSum;
+  }
+  /**
+   * False once enough sliding has gone by unpaid: the window holds at least
+   * `BELIEVE_MIN_SLIDE_S` of drifting and the scorer paid for less than `BELIEVE_MIN_PAID` of
+   * it. True in every other case, including an empty window — nothing has been shown to be
+   * wrong yet.
+   */
+  get believedRecently(): boolean {
+    if (this.slideSum < BELIEVE_MIN_SLIDE_S) return true;
+    return this.paidSum >= BELIEVE_MIN_PAID * this.slideSum;
+  }
+}
+
 class BitMask {
   private words = new Uint32Array(1024);
   private n = 0;

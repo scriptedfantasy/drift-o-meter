@@ -37,10 +37,27 @@ export interface IntegrityView {
    * and a gold "PEAK 37°", three meanings of one colour inside one third of the screen.
    */
   noteTone: string;
+  /**
+   * True when the note is the sentence "… — NOT SCORING", i.e. when the screen is telling the
+   * driver that the big number beside it is not growing.
+   *
+   * PUBLISHED rather than sniffed out of `scoreNote`, and it is what the odometer's colour
+   * reads. The odometer used to lose its ember only at `trust === 0`, which is a different
+   * condition: on a weak fix or a shaking mount `trust` is 0.65, so the score sat there in full
+   * ember with NOT SCORING written underneath it. One says the reading is degraded; the other
+   * says this number has stopped. The number takes its colour from the second.
+   */
+  scoreStopped: boolean;
 }
 
 /** How long the calibrator is allowed to be "still working it out" before that is a fault. */
 export const CALIBRATION_GRACE_S = 8;
+
+/** A score-block note, and whether it is the one that says the number has stopped growing. */
+interface Note {
+  text: string;
+  halted: boolean;
+}
 
 export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
   const { mount, gps, physics, message } = snapshot.integrity;
@@ -50,14 +67,19 @@ export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
   // keeps paying; a note inferred from `gps: 'none'` claimed the opposite, and the results
   // screen then banked those points.
   const counting = snapshot.counting;
-  const stopped = (reason: string) => `${reason} — NOT SCORING`;
-  const view = (tier: IntegrityTier, heading: string, scoreNote: string | null): IntegrityView => ({
-    tier,
-    heading,
-    message,
-    scoreNote,
-    noteTone: scoreNote === null ? colors.muted : tier === 'severe' && !counting ? colors.red : tier === 'severe' ? colors.text : colors.muted,
-  });
+  /** A note that says the score has STOPPED, tagged as such so nothing has to read the string. */
+  const stopped = (reason: string): Note => ({ text: `${reason} — NOT SCORING`, halted: true });
+  const view = (tier: IntegrityTier, heading: string, note: Note | string | null): IntegrityView => {
+    const n: Note | null = note === null ? null : typeof note === 'string' ? { text: note, halted: false } : note;
+    return {
+      tier,
+      heading,
+      message,
+      scoreNote: n === null ? null : n.text,
+      scoreStopped: n !== null && n.halted,
+      noteTone: n === null ? colors.muted : tier === 'severe' && !counting ? colors.red : tier === 'severe' ? colors.text : colors.muted,
+    };
+  };
 
   if (mount === 'loose') return view('severe', 'LOOSE MOUNT', counting ? 'MOUNT LOOSE — THESE POINTS MAY NOT STAND' : stopped('MOUNT LOOSE'));
   if (physics === 'implausible') {

@@ -72,6 +72,30 @@ export function bandIsScorable(band: CalibrationBand): boolean {
 }
 
 /**
+ * HAS THE VERTICAL SETTLED? Two facts from `MountCalibrator.diagnostics()`, and no new number.
+ *
+ *  - `upAged`: the axis has had its settling time (`MountOptions.upSettleS` of gravity data,
+ *    reset by a knock). On its own this says nothing about whether the axis is RIGHT — a phone
+ *    waving in a hand ages in exactly like a bolted one, and reads 13 % quality while it does.
+ *  - `upQuality` at or above the engine's own floor. `MountCalibrator.quality` is `upQuality`
+ *    times a factor that is never above 1, so `quality <= upQuality` always: an up axis under
+ *    the floor the monitor refuses a calibration below is BY ITSELF the reason the run would be
+ *    refused. A light calling that settled would be contradicting the headline above it.
+ *
+ * Which is exactly what it did. The calibration screen kept `SETTLED_UP = 0.6` — a threshold on
+ * `upQuality`, which is age × accelerometer fit — and a shaking cradle spoils the fit, so the
+ * phase was READY while the VERTICAL light read "Settling" on 29,476 of 40,864 READY frames at
+ * simulator looseness 0.1 and on 18,932 of 18,932 at 0.15. Because the floor here is the same
+ * one `calibrationBand` refuses below, READY now implies settled by construction rather than by
+ * luck: `npx tsx tools/analysis/calibration-sweep.ts warmup` reports 0 of them.
+ */
+export function verticalSettled(upQuality: number, upAged: boolean): boolean {
+  if (!upAged) return false;
+  if (!Number.isFinite(upQuality)) return true;
+  return upQuality >= DEFAULT_INTEGRITY_OPTIONS.minCalibrationQuality;
+}
+
+/**
  * How far a scorable calibration sits between the engine's veto and the point where the mount
  * stops qualifying anything: 0 at the bar, 1 at sharp and above.
  *

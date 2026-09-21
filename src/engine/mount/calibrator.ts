@@ -118,12 +118,12 @@ export interface MountOptions {
    *
    * It was already here as a bare `/ 1.5` inside the up-axis quality, where it is the age term
    * that ramps `upQuality` in from 0.3 of its steady value. Naming it lets `diagnostics()`
-   * publish `upSettled` off the same number, which matters because the calibration screen was
+   * publish `upAged` off the same number, which matters because the calibration screen was
    * deciding "the vertical has settled" for itself, from `upQuality >= 0.6`. `upQuality` is a
-   * PRODUCT of age and accelerometer fit, and the fit is degraded by a shaking cradle, so at
+   * PRODUCT of age and accelerometer fit, and 0.6 was a threshold on the product, so at
    * simulator looseness 0.1–0.15 that screen read `CALIBRATED / Ready to measure` over a
-   * VERTICAL light saying "Settling" on 72–100 % of its READY frames. Age is the question
-   * "has the vertical stopped moving around"; fit is a different question.
+   * VERTICAL light saying "Settling" on 72–100 % of its READY frames. `band.ts` puts the two
+   * halves back together at an edge the engine already owns.
    */
   upSettleS: number;
   /** Cut-off (seconds) between the inertial up's trusted fast content and its drifting slow part. */
@@ -332,11 +332,14 @@ export interface MountDiagnostics {
   meanTrust: number;
   upQuality: number;
   /**
-   * The up axis is established: `upSettleS` weighted seconds of gravity data behind it, and not
-   * re-converging from a knock (a knock sets that clock back to zero). This is the ENGINE
-   * naming the edge a screen would otherwise pick for itself — see `upSettleS`.
+   * The up axis has had its settling time: `upSettleS` weighted seconds of gravity data behind
+   * it, and not re-converging from a knock (a knock sets that clock back to zero).
+   *
+   * ON ITS OWN THIS SAYS NOTHING ABOUT WHETHER THE AXIS IS RIGHT — a phone waving in a hand
+   * ages in exactly like a bolted one, and does. `upQuality` is the other half. `band.ts`'s
+   * `verticalSettled` is what a screen asks; this is one of its two inputs.
    */
-  upSettled: boolean;
+  upAged: boolean;
   /** Long-term axis line: anisotropy (0..1), evidence seconds, quality. */
   lineAnisotropy: number;
   lineEvidence: number;
@@ -447,7 +450,7 @@ export class MountCalibrator {
   private devEma = 0; // rad
   private fitEma = 0; // rad: trust-weighted EMA of the angle between −f̂ and the inertial up
   private upAge = 0; // seconds of gravity data since (re)start
-  private upSettled = false;
+  private upAged = false;
   private qualityPeak = 0;
   private jumpSince = -1;
   private stationaryUntil = -1;
@@ -602,7 +605,7 @@ export class MountCalibrator {
       gyroBias: [this.gbx, this.gby, this.gbz],
       meanTrust: this.trustN > 0 ? this.trustSum / this.trustN : 0,
       upQuality: this.upQuality,
-      upSettled: this.upSettled,
+      upAged: this.upAged,
       lineAnisotropy: this.lineAniso,
       lineEvidence: this.mE,
       lineQuality: this.lineQuality,
@@ -665,7 +668,7 @@ export class MountCalibrator {
     this.devEma = 0;
     this.fitEma = 0;
     this.upAge = 0;
-    this.upSettled = false;
+    this.upAged = false;
     this.qualityPeak = 0;
     this.jumpSince = -1;
     this.stationaryUntil = -1;
@@ -1717,7 +1720,7 @@ export class MountCalibrator {
     const steady = clamp(1 - this.fitEma / o.fitQualityRad, 0, 1);
     const age = clamp(this.upAge / o.upSettleS, 0, 1);
     this.upQuality = this.gravInit ? steady * (0.3 + 0.7 * age) : 0;
-    this.upSettled = this.gravInit && this.upAge >= o.upSettleS;
+    this.upAged = this.gravInit && this.upAge >= o.upSettleS;
 
     // ---- line quality
     const lineQ = this.lineValid ? this.lineAniso * clamp(this.mE / o.lineMinEvidence, 0, 1) : 0;

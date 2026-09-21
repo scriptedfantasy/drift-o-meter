@@ -97,7 +97,7 @@
  * `DriftEvent.transitions` and `ScoredDrift.transitions` are the same number by construction;
  * `countTransitions()` applies that same rule to a bare β trace.
  */
-export { LiveScorer } from './live';
+export { LiveScorer, lapBelief } from './live';
 export type { LiveTick, LiveDriftInfo } from './live';
 export { scoreDrift, driftSamples, driftSampleRange } from './drift';
 export type { ScoredDrift, DriftContext, DriftStats } from './drift';

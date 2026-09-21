@@ -65,6 +65,14 @@ export interface LiveTick {
   counting: boolean;
 }
 
+/** Where `endDrift` puts what it fires: a live tick, or the record the next tick will drain. */
+interface EndDriftSink {
+  callouts: StyleCallout[];
+  unpriced?: StyleCallout[];
+  lost: boolean;
+  lostPoints: number;
+}
+
 interface CompletedDrift {
   id: number;
   startT: number;
@@ -95,12 +103,22 @@ export class LiveScorer {
    */
   private ring: SlipState[] = [];
   private ringHead = 0;
-  private pending: { callouts: StyleCallout[]; lost: boolean; lostPoints: number } | null = null;
+  /**
+   * What the NEXT tick has to report, because it happened between two samples.
+   *
+   * `callouts` are already paid for; `unpriced` are end-of-drift callouts that have NOT been
+   * paid yet, because the frame that reports them is the frame that decides whether they are
+   * worth anything (see `push`). `drift` is the ScoredDrift they belong to, so a refusal can
+   * take them back off its bonus as well as off the chain.
+   */
+  private pending: { callouts: StyleCallout[]; unpriced: StyleCallout[]; drift: ScoredDrift | null; lost: boolean; lostPoints: number } | null = null;
   private lastT = -Infinity;
   /** Ids of completed drifts whose points are still at risk. */
   private unbankedIds: number[] = [];
   /** Id of the last drift that ended (by spin or by onDriftCompleted): later samples with it are ignored. */
   private deadId: number | null = null;
+  /** A CLEAN LAP that has been earned and is waiting for a sample the scorer pays on. */
+  private pendingLap: { t: number; points: number; driftId: number } | null = null;
 
   constructor(opts?: Partial<ScoreOptions>) {
     this.o = resolveOptions(opts);
@@ -149,6 +167,7 @@ export class LiveScorer {
     this.lastT = -Infinity;
     this.unbankedIds = [];
     this.deadId = null;
+    this.pendingLap = null;
   }
 
   /**
@@ -177,8 +196,31 @@ export class LiveScorer {
       counting: countsForPoints(s, plausible),
     };
     this.remember(s);
+    // A CLEAN LAP earned while the monitor was doubting the car waits here for a sample the
+    // scorer pays on, and lands on that one — never on a frame stamped `counting: false`.
+    if (this.pendingLap) this.releaseLap(s, plausible);
     if (this.pending) {
-      tick.callouts.push(...this.pending.callouts);
+      // END-OF-DRIFT CALLOUTS ARE PRICED BY THE FRAME THAT REPORTS THEM, not by the one that
+      // earned them. `onDriftCompleted` runs BETWEEN two samples — the pipeline calls it after
+      // the scorer's own `push` — so a PERFECT EXIT earned on a believed sample used to be
+      // added to the chain there and then, and surfaced on the next frame. When that next frame
+      // was one the monitor refused, the HUD drew `PERFECT EXIT +45` with the total rising, on a
+      // frame stamped `counting: false` (measured: harbor, seed 2, looseness 0.1, t = 5.18 s).
+      // That is the same class as the CLEAN LAP leak one level down, and the fix is the same
+      // sentence: nothing is paid on a frame the scorer would not pay on.
+      for (const c of this.pending.unpriced) {
+        if (tick.counting) {
+          this.chainPoints += c.points;
+        } else if (c.points !== 0) {
+          const sd = this.pending.drift;
+          if (sd) {
+            sd.bonus -= c.points;
+            sd.total -= c.points;
+          }
+          c.points = 0;
+        }
+      }
+      tick.callouts.push(...this.pending.callouts, ...this.pending.unpriced);
       if (this.pending.lost) {
         tick.lost = true;
         tick.lostPoints = this.pending.lostPoints;
@@ -187,8 +229,9 @@ export class LiveScorer {
     }
     const active = live !== null && live.phase !== 'idle' && live.id !== this.deadId;
 
-    // a drift ended (feed went idle or switched id)
-    if (this.acc && (!active || (live as LiveDriftInfo).id !== this.acc.id)) this.endDrift(s.t, false, tick);
+    // a drift ended (feed went idle or switched id). It is closed at THIS sample, so this
+    // sample's gate prices whatever it fires — the same rule `fire()` applies inside a drift.
+    if (this.acc && (!active || (live as LiveDriftInfo).id !== this.acc.id)) this.endDrift(s.t, false, tick, tick.counting ? 'pay' : 'refuse');
     // a drift started
     if (active && !this.acc) this.startDrift((live as LiveDriftInfo).id, s.t);
 
@@ -198,7 +241,7 @@ export class LiveScorer {
       tick.callouts.push(...res.callouts);
       tick.rate = res.rate;
       const spin = (live as LiveDriftInfo).spin === true || this.acc.spun;
-      if (spin) this.endDrift(s.t, true, tick);
+      if (spin) this.endDrift(s.t, true, tick, tick.counting ? 'pay' : 'refuse');
       else {
         tick.driftPoints = this.acc.driftTotal;
         tick.driftId = this.acc.id;
@@ -227,10 +270,14 @@ export class LiveScorer {
   onDriftCompleted(e: DriftEvent): ScoredDrift {
     if (this.acc && this.acc.id === e.id) {
       const spin = e.spin === true || this.acc.spun;
-      const tick = { callouts: [] as StyleCallout[], lost: false, lostPoints: 0 };
+      const id = this.acc.id;
+      // `unpriced`: these callouts are reported on the NEXT tick, so that tick decides whether
+      // they are worth anything. `endDrift` therefore does not bank them here.
+      const out = { callouts: [] as StyleCallout[], unpriced: [] as StyleCallout[], drift: null as ScoredDrift | null, lost: false, lostPoints: 0 };
       const endT = Math.min(e.endT, Math.max(this.lastT, this.acc.startT));
-      this.endDrift(endT, spin, tick);
-      this.pending = tick; // callouts / CHAIN LOST are reported on the next tick; its delta shows the drop
+      this.endDrift(endT, spin, out, 'defer');
+      out.drift = this.completed.get(id) ?? null;
+      this.pending = out; // callouts / CHAIN LOST are reported on the next tick; its delta shows the drop
     }
     const known = this.completed.get(e.id);
     if (known) return known;
@@ -244,50 +291,75 @@ export class LiveScorer {
   /**
    * Optional: tell the scorer a lap closed (from the track model) so CLEAN LAP can fire
    * live: ≥ cleanLapMinDrifts drifts ENDED inside the lap and none spun. Points bank
-   * immediately (a clean lap cannot be lost). Returns the callout or null.
+   * immediately (a clean lap cannot be lost). Returns the callout when it is paid on this
+   * sample, or null — which includes the case where it is queued for the next believed one.
    *
-   * THE ONE PAYING PATH THAT IS NOT PER-SAMPLE, so it has to ask the gate for itself — and it
-   * has to ask it about THE INSTANT IT PAYS AT, `s`, not about the lap's history.
+   * ── THE ONE PAYING PATH THAT IS NOT PER-SAMPLE ────────────────────────────────────────────
+   * so it has to answer the gate for itself, and it used to answer a different question
+   * entirely: `sd.total > 0`, "did the lap's last slide earn anything at any point in its life".
+   * Measured on the app's own sim parameters (harbor, seed 1, 2 laps), the HUD drew
+   * `CLEAN LAP +1,425` with the odometer stepping 9,624 → 10,974 four lines above the words
+   * `MOUNT SHAKING — NOT SCORING`: 1,725 points at looseness 0, 300 at 0.05, 1,725 at 0.1 and
+   * 0.15, 1,650 at 0.2, every one of those runs published with `trusted: true` and grade A or B.
+   * 5–10 % of a PUBLISHED total, paid at instants the monitor had refused.
    *
-   * It used to ask only `sd.total > 0`: did the lap's last slide earn anything at any point in
-   * its life. That is a different question, and the difference is a lie on the screen. Measured
-   * on the app's own sim parameters (harbor, seed 1, laps 2): at looseness 0 the crossing falls
-   * inside a 0.23 s stretch the monitor refuses, and the HUD drew `CLEAN LAP +1,425` with the
-   * odometer stepping 9,624 → 10,974 four lines above the words `MOUNT SHAKING — NOT SCORING`.
-   * 1,725 points at looseness 0, 300 at 0.05, 1,725 at 0.1 and 0.15, 1,650 at 0.2 — every one of
-   * those runs publishing `trusted: true` with grade A or B, so it was 5–10 % of a PUBLISHED
-   * total paid at instants the monitor had refused.
+   * ── WHAT REPLACED IT, AND WHY IT IS NOT SIMPLY `countsForPoints` ──────────────────────────
+   * Two things, because the bonus has two honest questions to answer and they are not the same
+   * question:
    *
-   * `countsForPoints` is the same expression `step()` and `fire()` ask, so a clean lap now obeys
-   * the rule every other callout already obeyed: a callout fired at an instant that earns
-   * nothing is worth exactly nothing. `scoreSession` applies the identical test offline when it
-   * has the per-sample mask, and its expected value when it only has `suppressedS`, so the live
-   * total and the re-scored one stay equal.
+   *   HOW MUCH is it worth — `lapBelief`, the believed share of the sliding inside the lap. A
+   *   lap the monitor refused outright is worth nothing for being tidy; a lap it believed
+   *   entirely is worth the full bonus; in between it is worth the share. This is the same
+   *   arithmetic `scoreSession` runs offline, off the same two fields, so the live total and a
+   *   re-scored one agree without either needing the per-sample mask.
+   *
+   *   WHEN is it paid — never on a sample the scorer would not pay on. Not as a forfeit: the
+   *   crossing instant is an arbitrary tick of a lap-long award, and on harbor seed 1 the start
+   *   line happens to sit inside a 0.23 s stretch the monitor doubts on EVERY lap, so forfeiting
+   *   cost a clean, trusted, looseness-0 run 1,725 points and opened a 3.3 % live-versus-stored
+   *   gap on the cleanest run the simulator can produce — which is the defect class
+   *   `docs/CRITIC.md` rule 9 is about, moved rather than killed. So the payment WAITS
+   *   (`pendingLap`) for the next sample `countsForPoints` accepts, and if the run never offers
+   *   one — a hand-held run, every frame of which says `counting: false` — it is never paid at
+   *   all. No frame can ever show `score.total` rising while it is stamped `counting: false`,
+   *   which is the guarantee `pipeline.ts` publishes and the one a HUD reads it for.
    *
    * `s` and `plausible` are REQUIRED for the same reason `DriftEvent.spin` is: a caller that can
    * omit the gate is a caller that will, and this is the third paying path that was missed.
    */
   onLapCompleted(lap: Lap, s: SlipState, plausible = true): StyleCallout | null {
     const o = this.o;
-    // THE GATE, first: the lap bonus is a payment, and the engine pays nothing at an instant it
-    // does not believe. Checked before anything else so the answer cannot depend on the lap.
-    if (!countsForPoints(s, plausible)) return null;
     const inLap = this.log.filter((d) => d.endT >= lap.startT && d.endT < lap.endT);
     if (inLap.length < o.cleanLapMinDrifts || inLap.some((d) => d.spun)) return null;
     const last = inLap[inLap.length - 1];
     const sd = this.completed.get(last.id);
     if (!sd || !(sd.total > 0)) return null;
+    const believed = lapBelief(inLap.map((d) => this.completed.get(d.id)));
+    if (!(believed > 0)) return null;
     // the same multiplier rule as every other callout, and the same one `scoreSession` applies
     // offline (the lap's last drift's end multiplier), so live and replay agree to the point
-    const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, sd ? sd.multiplierEnd : 1) : 1);
-    const c: StyleCallout = { t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts };
-    this.bankedTotal += pts;
+    const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, sd.multiplierEnd) : 1) * believed;
+    this.pendingLap = { t: lap.endT, points: pts, driftId: sd.id };
+    return this.releaseLap(s, plausible);
+  }
+
+  /**
+   * Pay a queued CLEAN LAP, if this sample is one the scorer pays on. Called at the top of every
+   * `push` and once from `onLapCompleted` itself, so a clean crossing pays on its own frame.
+   */
+  private releaseLap(s: SlipState, plausible: boolean): StyleCallout | null {
+    const q = this.pendingLap;
+    if (!q || !countsForPoints(s, plausible)) return null;
+    this.pendingLap = null;
+    const c: StyleCallout = { t: q.t, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: q.points };
+    this.bankedTotal += q.points;
+    const sd = this.completed.get(q.driftId);
     if (sd) {
       sd.callouts.push(c);
-      sd.bonus += pts;
-      sd.total += pts;
+      sd.bonus += q.points;
+      sd.total += q.points;
     }
-    if (!this.pending) this.pending = { callouts: [], lost: false, lostPoints: 0 };
+    if (!this.pending) this.pending = { callouts: [], unpriced: [], drift: null, lost: false, lostPoints: 0 };
     this.pending.callouts.push(c);
     return c;
   }
@@ -311,12 +383,30 @@ export class LiveScorer {
     this.lastExitClean = false;
   }
 
-  private endDrift(endT: number, spin: boolean, tick: { callouts: StyleCallout[]; lost: boolean; lostPoints: number }): void {
+  /**
+   * Close the drift. `pay` is false when the caller is `onDriftCompleted`, i.e. when the
+   * end-of-drift callouts will be REPORTED on a later frame: their points are then held on the
+   * callouts and banked (or written off) by the frame that reports them, so the running total
+   * can never rise on a frame stamped `counting: false`.
+   */
+  private endDrift(endT: number, spin: boolean, tick: EndDriftSink, mode: 'pay' | 'refuse' | 'defer'): void {
     const acc = this.acc as DriftAccumulator;
     const o = this.o;
     const { callouts, stats } = acc.finish(endT, spin);
-    for (const c of callouts) this.chainPoints += c.points;
-    tick.callouts.push(...callouts);
+    if (mode === 'defer') {
+      (tick.unpriced as StyleCallout[]).push(...callouts);
+    } else {
+      if (mode === 'refuse') {
+        // this sample is one the scorer will not pay on, so the exit callout is worth exactly
+        // nothing — the same rule `fire()` applies to every callout inside the drift
+        for (const c of callouts) {
+          acc.bonus -= c.points;
+          c.points = 0;
+        }
+      }
+      for (const c of callouts) this.chainPoints += c.points;
+      tick.callouts.push(...callouts);
+    }
     const sd = buildDriftScore(acc, stats, o);
     if (stats.spun) {
       const lost = this.chainPoints;
@@ -378,6 +468,27 @@ export class LiveScorer {
   private ringStates(): SlipState[] {
     return this.ringHead === 0 ? this.ring : this.ring.slice(this.ringHead);
   }
+}
+
+/**
+ * How much of a lap's sliding the integrity monitor believed, 0..1 — what a CLEAN LAP is worth.
+ *
+ * `stats.durationS` is the drifting time that COUNTED and `stats.implausibleS` is the drifting
+ * time it refused, and both are produced the same way by the live accumulator and by a re-score
+ * (where `scoreDrift` fills them from `DriftEvent.suppressedS`). So this one expression gives
+ * the same answer live, in `finish()`, and on a session loaded from disk with no per-sample mask
+ * at all — which is why the bonus needs no second rule for the durable path.
+ */
+export function lapBelief(drifts: Array<{ stats: { durationS: number; implausibleS: number } } | undefined>): number {
+  let counted = 0;
+  let refused = 0;
+  for (const d of drifts) {
+    if (!d) continue;
+    counted += Math.max(0, d.stats.durationS);
+    refused += Math.max(0, d.stats.implausibleS);
+  }
+  const total = counted + refused;
+  return total > 0 ? counted / total : 1;
 }
 
 function fmt(n: number): string {

@@ -14,8 +14,10 @@
  */
 import { describe, expect, it, beforeAll } from 'vitest';
 
-import { buildReplay, formatPoints, SEVERITY_EDGES, type Replay } from '../../engine/replay';
+import { buildReplay, formatPoints, poseAt, ReplayCamera, SEVERITY_EDGES, severityOf, worldToScreen, type CameraMode, type Replay } from '../../engine/replay';
 import { degToRad, radToDeg, type Session } from '../../engine/types';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { FIXTURES, buildFixtureSession } from '../results/fixture';
 import {
   crosses,
@@ -34,8 +36,8 @@ import {
   splitBetweenRuns,
   type Pt,
 } from './kerbs';
-import { replayLayout } from './layout';
-import { fmtTime, headlinePoints, heatColor, isPointsClaim, ribbonScale } from './palette';
+import { replayLayout, safeFrame } from './layout';
+import { NO_HEAT, fmtTime, headlinePoints, heatColor, heatOf, isPointsClaim, ribbonScale, tintOf } from './palette';
 import { buildReplayView, gapWindows } from './view';
 import { parseReplayParams } from './params';
 
@@ -317,25 +319,45 @@ describe('palette', () => {
   /**
    * The scrubber's |β| band is ABSOLUTE, and it has to be on every run or it is not a scale.
    *
-   * The band's shader is a gradient in normalised space — red at the top means a spin — so a run
-   * scaled to its own maximum draws red at whatever its maximum happens to be. A clean lap did:
-   * 4.18° at 80 % of the band, next to `good`'s real 55.54° at 85 %.
+   * The band's shader is a gradient in normalised space — ember to 55 % of its height, gold at
+   * 80 %, red at the top — so a run scaled to its own maximum paints those words at whatever
+   * its maximum happens to be. A clean lap did: 4.18° at 80 % of the band, next to `good`'s real
+   * 55.54° at 85 %.
+   *
+   * THE TEST THAT USED TO BE HERE CARRIED THIS TITLE AND COULD NOT FAIL (CRITIC.md rule 16). It
+   * asserted `ribbonScale(r) >= SEVERITY_EDGES.spin` and `>= r.telemetry.maxAngle` over every
+   * fixture — both restatements of `Math.max(spin, 1.05 * maxAngle)`, false for no input — while
+   * the property in its own title was not true of half the fixtures: 65.0° on clean/good/touge
+   * against 123.9° on sloppy and spin, which put `sloppy`'s 65° spin edge at 52.5 % of its band,
+   * in the ember zone, under a world drawing the same angle gold-to-red. EQUALITY is the claim.
    */
   it('the scrub band is the same scale on a clean lap as on a lap full of spins', () => {
     const clean = built.get('clean')!.replay;
     const good = built.get('good')!.replay;
     expect(clean.segments.length).toBe(0);
-    expect(ribbonScale(clean)).toBeGreaterThanOrEqual(SEVERITY_EDGES.spin);
+    // ONE scale, the spin edge, on every fixture — the assertion the title makes
+    for (const name of Object.keys(FIXTURES)) {
+      const r = built.get(name)!.replay;
+      expect(ribbonScale(r), name).toBe(SEVERITY_EDGES.spin);
+    }
+    // …including every fixture the old `Math.max(spin, 1.05 * maxAngle)` gave a band of its own:
+    // hero 67.0°, rough 73.5°, handheld 87.9°, sloppy and spin 123.9° (measured, degrees).
+    const hadOwnBand: Record<string, number> = { hero: 67.0, rough: 73.5, handheld: 87.9, sloppy: 123.9, spin: 123.9 };
+    for (const [name, oldDeg] of Object.entries(hadOwnBand)) {
+      const r = built.get(name)!.replay;
+      expect(radToDeg(Math.max(SEVERITY_EDGES.spin, r.telemetry.maxAngle * 1.05)), name).toBeCloseTo(oldDeg, 1);
+      expect(ribbonScale(r), name).toBe(SEVERITY_EDGES.spin);
+    }
+    // so a given |β| is the same height everywhere, and the spin edge is the top of the band
+    const heightOf = (r: Replay, beta: number) => Math.min(1, beta / ribbonScale(r));
+    for (const name of Object.keys(FIXTURES)) {
+      const r = built.get(name)!.replay;
+      expect(heightOf(r, degToRad(40)), name).toBeCloseTo(heightOf(good, degToRad(40)), 12);
+      expect(heightOf(r, SEVERITY_EDGES.spin), name).toBe(1);
+    }
     // and a clean lap draws a flat line rather than filling the band
     expect(clean.telemetry.maxAngle / ribbonScale(clean)).toBeLessThan(0.15);
     expect(good.telemetry.maxAngle / ribbonScale(good)).toBeGreaterThan(0.6);
-    // same |β|, same height, whichever run it is in
-    expect(ribbonScale(clean)).toBe(SEVERITY_EDGES.spin);
-    for (const name of Object.keys(FIXTURES)) {
-      const r = built.get(name)!.replay;
-      expect(ribbonScale(r)).toBeGreaterThanOrEqual(SEVERITY_EDGES.spin);
-      expect(ribbonScale(r)).toBeGreaterThanOrEqual(r.telemetry.maxAngle);
-    }
   });
 });
 
@@ -430,5 +452,195 @@ describe('what the screen prints about a run', () => {
     const best = Math.max(...session.drifts.map((d) => radToDeg(d.peakAngle)));
     const drawn = Math.max(...replay.segments.map((s) => radToDeg(s.peakAngle)));
     expect(Math.round(drawn)).toBe(Math.round(best));
+  });
+});
+
+/**
+ * THE TRUST/SLIDE GATE, and the guard that it is actually reached.
+ *
+ * This is the biggest change of the last two rounds and NOTHING executable stood behind it.
+ * `heat`/`tint` were module-private one-liners in `scene.ts`; no test imported `scene.ts` at all;
+ * `heatColor` was tested, but that is the UNGATED ramp; and the four harness frames whose whole
+ * point is the ABSENCE of ember carried only `expectCanvas`. So the gate regressed twice without
+ * anything going red — first to 39 716 ember pixels on a lap stamped NOT SCORED, then to 818 in
+ * a cluster two inches under the words.
+ *
+ * Two tests, because the defect has two halves and only the second one can catch it:
+ *  1. the RULE, swept — what the gate does with a colour it is handed;
+ *  2. the REACH, read off the renderers' own source — whether every colour that comes off the
+ *     ramp is handed to it at all. The bug was never in the rule. It was in the four draw calls
+ *     that never called it, and the only thing that can see those is the text of the file.
+ */
+describe('the heat gate', () => {
+  const SWEEP = [0, 1, 4.2, 7.9, 8, 8.1, 20, 24.9, 25, 40, 55, 64.9, 65, 70, 90, 118, 180].map(degToRad);
+
+  it('an untrusted recording is handed the neutral for every angle there is', () => {
+    for (const b of SWEEP) {
+      expect(heatOf(b, false), `${radToDeg(b).toFixed(1)}°`).toBe(NO_HEAT);
+      expect(heatOf(-b, false)).toBe(NO_HEAT);
+    }
+    expect(heatOf(NaN, false)).toBe(NO_HEAT);
+    // …and so is every colour the ramp itself can produce, wherever it was worked out
+    for (const b of SWEEP) expect(tintOf(heatColor(b), false)).toBe(NO_HEAT);
+    expect(tintOf(HOT_CHUNK, false)).toBe(NO_HEAT);
+  });
+
+  it('below the 8° hold edge the engine says NOT SLIDING, and nothing draws a slide colour', () => {
+    // the hero numeral has always greyed here (`p.severity !== 'none'`); the L/R chevron beside
+    // it, the world slip label, the slip arc and the playhead dot did not, because `heatColor`
+    // returns identical ember from 0° to 40°. One frame said both things about the same 4.2°.
+    for (const b of SWEEP) {
+      const expected = severityOf(b) === 'none' ? NO_HEAT : heatColor(b);
+      expect(heatOf(b, true), `${radToDeg(b).toFixed(1)}°`).toBe(expected);
+      expect(heatOf(-b, true), `-${radToDeg(b).toFixed(1)}°`).toBe(expected);
+    }
+    expect(heatOf(degToRad(7.9), true)).toBe(NO_HEAT);
+    expect(heatOf(SEVERITY_EDGES.hold, true)).toBe(heatColor(SEVERITY_EDGES.hold));
+    expect(heatOf(NaN, true)).toBe(NO_HEAT);
+    // a trusted run's ramp is otherwise untouched: the gate adds a floor, it does not re-ramp
+    expect(tintOf(heatColor(degToRad(70)), true)).toBe(heatColor(degToRad(70)));
+  });
+
+  /**
+   * EVERY DRAW SITE, read off the source of both renderers.
+   *
+   * A colour that comes off the escalation ramp — `colors.ember`/`EMBER`, `colors.gold`/`GOLD`,
+   * anything `heatColor()` returned, a chunk colour `geometry.ts` pre-computed off it — may only
+   * reach a paint through `heat(`, `driftHeat(` or `tint(`. Anything else has to be named below
+   * with a reason, which is the point: adding an ungated ember draw is a two-line change and this
+   * makes the second line a sentence someone has to write.
+   */
+  const GATE = /(?:^|[^A-Za-z_$])(?:heat|driftHeat|tint)\s*\(/;
+  const RAMP = /colors\.ember|colors\.gold|\bEMBER\b|\bGOLD\b|heatColor\s*\(|chunk\.color/;
+
+  /** Lines that legitimately hold a ramp token outside the gate, each with why. */
+  const EXEMPT: Array<{ needle: string; why: string }> = [
+    { needle: 'const EMBER = colors.ember', why: 'the token definition itself' },
+    { needle: 'const GOLD = colors.gold', why: 'the token definition itself' },
+    { needle: "p.phase === 'drifting' ? colors.ember : WHITE", why: 'the POINTS numeral, drawn only inside the trusted headline (headlinePoints returns null otherwise)' },
+    { needle: "p.phase === 'drifting' ? EMBER : WHITE", why: 'same, in the SVG renderer, inside its `if (r.info.trusted)` branch' },
+    { needle: 'width: cw, height: 17 }, fillPaint(f, colors.ember, fade)', why: 'the multiplier chip, inside the same trusted headline block' },
+    { needle: 'height="17" rx="3" fill="${EMBER}"', why: 'the multiplier chip, inside `p.multiplier > 1.05 && r.info.trusted`' },
+    { needle: 'width: w, height: 18 }, fillPaint(f, colors.ember)', why: 'the scrub time bubble: UI chrome for the clock, not a claim about a slide' },
+    { needle: "e.kind === 'exit' ? EMBER : CYAN", why: 'the callout beat colour, keyed by BEAT and not by severity (`eventColor` in palette.ts is the app\'s copy of the same switch)' },
+    { needle: '[grade] ?? colors.ember', why: 'the grade reveal, which returns early on `f.noScore`' },
+    { needle: '[r.info.grade] ?? EMBER', why: 'the grade chip in the SVG footer, inside `if (finished && r.info.grade)`' },
+    { needle: 'i % 3 === 0 ? colors.gold : colors.ember', why: 'the grade reveal particles, after the same early return' },
+    { needle: 'stop-color="${EMBER}"', why: 'the scrub ribbon gradient definition; the untrusted branch draws MUTED and never references it' },
+    { needle: 'fillPaint(f, colors.gold, 0.8)', why: 'the highlight pips above the scrub band: a bookmark marker, not a severity' },
+    { needle: 'strokePaint(f, colors.gold, 1, 0.55 * h.alpha', why: 'the highlight chip border \u2014 the same bookmark gold as the pips it names' },
+    { needle: "kicker, lay.w / 2, top + 17, { color: colors.gold", why: 'the highlight chip kicker, same bookmark gold' },
+  ];
+
+  it.each([
+    ['src/ui/replay/scene.ts', 'the app'],
+    ['tools/analysis/render-replay.ts', 'the harness'],
+  ])('%s spends no ramp colour outside the gate', (rel) => {
+    const src = readFileSync(join(__dirname, '..', '..', '..', rel), 'utf8');
+    const leaks: string[] = [];
+    const usedExemptions = new Set<string>();
+    src.split('\n').forEach((line, i) => {
+      const code = line.replace(/^\s*(\/\/|\*|\/\*).*$/, '');
+      if (!RAMP.test(code)) return;
+      if (GATE.test(code)) return;
+      const hit = EXEMPT.find((e) => code.includes(e.needle));
+      if (hit) {
+        usedExemptions.add(hit.needle);
+        return;
+      }
+      leaks.push(`${rel}:${i + 1}  ${line.trim()}`);
+    });
+    expect(leaks, `ungated ramp colour:\n${leaks.join('\n')}`).toEqual([]);
+    expect(usedExemptions.size, 'every exemption still describes a real line').toBeGreaterThan(0);
+  });
+
+  it('the exemption list is not a way to keep dead entries', () => {
+    const src = [
+      readFileSync(join(__dirname, 'scene.ts'), 'utf8'),
+      readFileSync(join(__dirname, '..', '..', '..', 'tools/analysis/render-replay.ts'), 'utf8'),
+    ].join('\n');
+    for (const e of EXEMPT) expect(src.includes(e.needle), `stale exemption: ${e.needle} (${e.why})`).toBe(true);
+  });
+});
+
+/** The white-hot core `geometry.ts` mixes into a chunk colour — still a ramp colour. */
+const HOT_CHUNK = '#FFB08A';
+
+/**
+ * THE SAFE FRAME: the car is on screen on every frame of every fixture, in both orientations.
+ *
+ * The camera's pan limiter saturates on `handheld` — 74 chase and 78 cinematic frames of 6 819 —
+ * because that recording's own estimated position steps 9.28 m between two trail samples 50 ms
+ * apart (185.6 m/s against 37.0 m/s driven), and following a teleport at 60 m/s means lagging it.
+ * Against the raw camera that costs the viewer the car: 27 chase frames outside the portrait
+ * action rect, up to 40.0 pt past its left edge, worst at t = 20.35 s; 12 in cinematic; 0 on
+ * every other fixture. The screen does not draw from the raw camera — `safeFrame` holds the
+ * frame — and this is the sweep that says so, at the same 60 fps, on the mapping the pixels
+ * actually come from. Raising the limiter was never the alternative: it would let a 186 m/s jump
+ * through in the middle of a corner.
+ */
+describe('safeFrame: the car never leaves the band the viewer can see', () => {
+  const SCREENS = [
+    { name: 'portrait', w: 393, h: 852 },
+    { name: 'landscape', w: 852, h: 393 },
+  ];
+  const dt = 1 / 60;
+
+  it.each(SCREENS)('$name: raw camera vs the frame the renderer draws', (screen) => {
+    const lay = replayLayout(screen.w, screen.h, { top: 0, bottom: 0, left: 0, right: 0 }, 2);
+    let rawWorst = 0;
+    let rawFrames = 0;
+    for (const name of Object.keys(FIXTURES)) {
+      const r = built.get(name)!.replay;
+      for (const mode of ['chase', 'cinematic'] as CameraMode[]) {
+        const act = lay.action;
+        const cam = new ReplayCamera(mode, act);
+        for (let t = 0; t <= r.durationS; t += dt) {
+          const st = cam.update(r, t, dt);
+          const p = poseAt(r, t);
+          // what the raw camera would have put on screen, centred on the action rect
+          const raw = worldToScreen({ ...st, w: act.w, h: act.h }, p.x, p.y);
+          const rawOut = Math.max(-raw.x, raw.x - act.w, -raw.y, raw.y - act.h);
+          if (rawOut > 0) {
+            rawFrames++;
+            rawWorst = Math.max(rawWorst, rawOut);
+          }
+          // what the renderer actually draws
+          const sf = safeFrame(st, p.x, p.y, act);
+          const sp = worldToScreen(sf, p.x, p.y);
+          expect(sp.x, `${name} ${mode} t=${t.toFixed(2)} x`).toBeGreaterThanOrEqual(act.x);
+          expect(sp.x, `${name} ${mode} t=${t.toFixed(2)} x`).toBeLessThanOrEqual(act.x + act.w);
+          expect(sp.y, `${name} ${mode} t=${t.toFixed(2)} y`).toBeGreaterThanOrEqual(act.y);
+          expect(sp.y, `${name} ${mode} t=${t.toFixed(2)} y`).toBeLessThanOrEqual(act.y + act.h);
+        }
+      }
+    }
+    // and the thing being guarded against is real on this grid, not hypothetical: in portrait
+    // the raw camera leaves the rectangle, which is why the frame is held
+    if (screen.name === 'portrait') {
+      expect(rawFrames).toBeGreaterThan(0);
+      expect(rawWorst).toBeGreaterThan(20);
+    }
+  });
+
+  it('holds the car inside the fraction it promises, and moves nothing else', () => {
+    const lay = replayLayout(393, 852, { top: 0, bottom: 0, left: 0, right: 0 }, 2);
+    const act = lay.action;
+    const cam = { cx: 0, cy: 0, zoom: 10, rotation: 0, w: act.w, h: act.h, cut: false, cutFade: 0 };
+    // a car dead centre leaves the frame exactly where the action rect is
+    const centred = safeFrame(cam, 0, 0, act);
+    expect(centred.w / 2).toBeCloseTo(act.x + act.w / 2, 9);
+    expect(centred.h / 2).toBeCloseTo(act.y + act.h / 2, 9);
+    // the camera itself is never touched — only where the result is printed
+    for (const [x, y] of [[40, 0], [-40, 0], [0, 40], [0, -40], [60, -60]] as Array<[number, number]>) {
+      const sf = safeFrame(cam, x, y, act);
+      expect(sf.cx).toBe(cam.cx);
+      expect(sf.cy).toBe(cam.cy);
+      expect(sf.zoom).toBe(cam.zoom);
+      expect(sf.rotation).toBe(cam.rotation);
+      const sp = worldToScreen(sf, x, y);
+      expect(Math.abs(sp.x - (act.x + act.w / 2))).toBeLessThanOrEqual(act.w * 0.34 + 1e-9);
+      expect(Math.abs(sp.y - (act.y + act.h / 2))).toBeLessThanOrEqual(act.h * 0.32 + 1e-9);
+    }
   });
 });

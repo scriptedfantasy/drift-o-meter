@@ -25,7 +25,7 @@ import { GradeBadge } from './GradeBadge';
 import { gradeStateColor, gradeStateOf } from './grade';
 import { angleText, pointsText, rowFootnote, slidesText } from './labels';
 import SlideTraceView from './SlideTraceView';
-import { traceLegend } from './trace';
+import { traceHeight, traceLegend, TRACE_GUTTER_DP } from './trace';
 
 /**
  * The mount verdict's own colour. Red is the danger token, and RIGID is not a danger: a run
@@ -153,7 +153,11 @@ function SlideTraceStrip({ entry, untrusted }: { entry: SessionIndexEntry; untru
   const [width, setWidth] = useState(0);
   const onLayout = useCallback((e: LayoutChangeEvent) => setWidth(Math.round(e.nativeEvent.layout.width)), []);
   const has = entry.slides.length > 0;
-  const legend = traceLegend(entry.slides, { believed: !untrusted });
+  const believed = !untrusted;
+  const legend = traceLegend(entry.slides, { believed });
+  // A run with nothing on the axis gets a strip rather than a plot, and the placeholder that
+  // stands in before layout has to be the same height or the card jumps when it arrives.
+  const height = traceHeight(entry.slides, { believed });
   return (
     <View style={styles.trace} onLayout={onLayout}>
       <View style={styles.traceLegend}>
@@ -162,11 +166,25 @@ function SlideTraceStrip({ entry, untrusted }: { entry: SessionIndexEntry; untru
           {legend.right}
         </Micro>
       </View>
-      {has && width > 0 ? (
-        <SlideTraceView slides={entry.slides} width={width} believed={!untrusted} testID="last-run-trace" />
-      ) : (
-        <View style={styles.traceEmpty} />
-      )}
+      {/* Two named boxes over the same plot, so a harness check can be about the PLOT, and about
+          the AXIS, rather than about the card. A maximum is the only shape of check that can
+          prove an absence (docs/CRITIC.md rule 15), and the absence this screen has to prove is
+          that no spin — and nothing at all from a run the monitor did not believe — is drawn on
+          the held-angle axis. `last-run-axis` is everything above the gutter, so "0 red pixels
+          inside it" is exactly that claim, and it FAILED while the defect was on screen: the
+          spins were drawn in red, full height, up to the ceiling.
+
+          The boxes are needed because Skia's `<Canvas>` does not carry its testID onto the DOM
+          node on web, and because a testID names a whole element — there is no way to ask about
+          the top of one. The overlay draws nothing and takes no touches. */}
+      <View testID="last-run-plot">
+        {has && width > 0 ? (
+          <SlideTraceView slides={entry.slides} width={width} height={height} believed={believed} testID="last-run-trace" />
+        ) : (
+          <View style={[styles.traceEmpty, { height }]} />
+        )}
+        <View testID="last-run-axis" pointerEvents="none" style={[styles.traceAxis, { bottom: TRACE_GUTTER_DP }]} />
+      </View>
     </View>
   );
 }
@@ -240,7 +258,9 @@ const styles = StyleSheet.create({
   points: { fontSize: 52, lineHeight: 52, letterSpacing: -2 },
   trace: { marginTop: space[1], gap: 2 },
   traceLegend: { flexDirection: 'row', justifyContent: 'space-between', gap: space[2] },
-  traceEmpty: { height: 58, borderBottomWidth: 1, borderBottomColor: alpha(colors.text, 0.14) },
+  traceEmpty: { borderBottomWidth: 1, borderBottomColor: alpha(colors.text, 0.14) },
+  // Measured, not drawn: the band of the plot that is the angle axis (see SlideTraceStrip).
+  traceAxis: { position: 'absolute', left: 0, right: 0, top: 0 },
   trackName: { marginTop: space[1] },
   standing: { textTransform: 'none', letterSpacing: 0.2 },
   voidNote: { borderLeftWidth: 2, borderLeftColor: colors.red, paddingLeft: space[3], marginTop: space[1] },

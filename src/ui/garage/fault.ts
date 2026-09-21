@@ -83,7 +83,9 @@ export function storedRunsText(runs: StoredRuns): string {
   if (counted === 'recordings') {
     if (count === null) return 'The recordings on this device cannot be counted from here.';
     if (count === 0) return 'No recordings on this device.';
-    return count === 1 ? '1 recording on this device, in a run list that could not be read.' : `${count} recordings on this device, in a run list that could not be read.`;
+    // Short, because `faultFor` is about to head the same section with WHY it is counting
+    // recordings and what to do about it. What this line must never do is say 0.
+    return count === 1 ? '1 recording on this device.' : `${count} recordings on this device.`;
   }
   if (count === 1) return '1 stored run.';
   return `${count ?? 0} stored runs.`;

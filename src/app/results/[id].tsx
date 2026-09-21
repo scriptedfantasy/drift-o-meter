@@ -36,11 +36,11 @@ import {
   GradeReveal,
   GradeScale,
   gradeWord,
-  heroSurface,
   IntegrityPanel,
   LapTable,
   Odometer,
   RAIL_GAP,
+  faultStat,
   refusalFrom,
   resolveFixture,
   resultsLayout,
@@ -245,6 +245,12 @@ function ResultsPage({
    * disclosure with the rest of the notes.
    */
   const refusal = untrusted ? refusalFrom(model.judged.message, model.verdict) : null;
+  /**
+   * The fourth stat on a refused run. It is the MONITOR'S finding, not a constant: this cell
+   * read "Mount · LOOSE" on every refusal, including the ones the monitor recorded as
+   * `mount: 'rigid'` and refused for an unresolved forward axis.
+   */
+  const fault = untrusted ? faultStat(model.judged, model.session.calibration?.forwardResolved ?? false) : null;
 
   const share = useCallback(async () => {
     // an untrusted run has no score to publish — see the contract on SessionIntegrity.scoreTrusted
@@ -287,20 +293,40 @@ function ResultsPage({
     </View>
   );
 
+  /**
+   * The light under the verdict.
+   *
+   * IT FADES AT BOTH ITS OWN EDGES, and that is why it runs vertically. It used to be a diagonal
+   * (0,0) → (1,1) ramp from alpha 0.2 to transparent, which cannot vanish on all four sides of a
+   * box: a linear gradient is constant along the lines across its axis, so its first stop paints
+   * the whole top edge and its bottom-left corner is still mid-ramp. Measured in landscape: a
+   * 40/255 step in ONE pixel row at y = 34 dp across the full rail width, where the wash's top
+   * edge met the date row, and a 14/255 step at y = 341 where the view ended — which on one
+   * route drew a horizontal line straight through the SHARE / DRIVE AGAIN row. It read as a card
+   * laid on the page rather than as light on it.
+   *
+   * Vertically, alpha is a function of y alone: 0 at the top edge, up to full just below the top
+   * row, and back to 0 inside the view. The left and right edges bleed past the frame
+   * (`washInset`), so those two have nothing to step against.
+   */
+  const washColor = untrusted ? colors.red : model.gradeColor;
   const wash = (
     <LinearGradient
       // no grade, no grade colour: an unpublished run gets the warning wash, not a laurel
-      colors={[alpha(untrusted ? colors.red : model.gradeColor, untrusted ? 0.16 : 0.2), alpha(untrusted ? colors.red : model.gradeColor, 0.04), 'transparent']}
-      locations={[0, 0.5, 1]}
+      colors={[alpha(washColor, 0), alpha(washColor, untrusted ? 0.16 : 0.2), alpha(washColor, 0.05), alpha(washColor, 0)]}
+      locations={[0, 0.16, 0.62, 1]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 0, y: 1 }}
       style={[styles.heroWash, { left: -L.washInset, right: -L.washInset, height: L.washHeight }]}
       pointerEvents="none"
     />
   );
 
+  // On a tall landscape rail the grade takes its own line and the score sits under it: sharing
+  // the row with a five-digit odometer caps the letter at half the rail however big the frame
+  // gets, which at 1366 x 1024 left a 180 dp letter in a rail that was 45 % black.
   const heroTop = (
-    <View style={styles.heroTop}>
+    <View style={[styles.heroTop, L.railStack && styles.heroTopStacked]}>
       {untrusted ? (
         <View style={styles.gradeBox}>
           <AppText variant="micro" color="muted" style={styles.gradeLabel}>
@@ -329,7 +355,7 @@ function ResultsPage({
           </AppText>
         </View>
       )}
-      <View style={styles.heroRight}>
+      <View style={[styles.heroRight, L.railStack && styles.heroRightStacked]}>
         <AppText variant="micro" color="muted">
           {untrusted ? 'Points' : 'Session score'}
         </AppText>
@@ -348,15 +374,13 @@ function ResultsPage({
             --
           </AppText>
         ) : (
-          <Odometer
-            value={model.total}
-            run={run}
-            reduceMotion={reduceMotion}
-            fontSize={L.scoreSize}
-            color={colors.ember}
-            background={heroSurface(model.gradeColor)}
-            testID="score-odometer"
-          />
+          // NO `background`. The odometer's fade masks are PAINTED in the colour they are given,
+          // so they are only honest over a flat surface — and the surface here is the hero wash,
+          // a grade-coloured diagonal gradient. `heroSurface()` sampled it at one point and
+          // painted that one colour into a box per digit column: measured at y = 176, mask
+          // rgb(24,22,16) against wash rgb(35,30,18), an 11/255 step. The component's own
+          // docstring warns about exactly this. Unmasked, the window's own clip does the job.
+          <Odometer value={model.total} run={run} reduceMotion={reduceMotion} fontSize={L.scoreSize} color={colors.ember} testID="score-odometer" />
         )}
         {untrusted ? (
           <AppText variant="micro" color="red" style={styles.floorNote} align="right">
@@ -413,8 +437,8 @@ function ResultsPage({
         color={untrusted ? colors.muted : colors.text}
         size={26}
       />
-      {untrusted ? (
-        <Stat label="Mount" value="LOOSE" color={colors.red} size={20} />
+      {untrusted && fault ? (
+        <Stat label={fault.label} value={fault.value} color={fault.tone === 'severe' ? colors.red : colors.ember} size={20} />
       ) : (
         <Stat label="Best chain" value={formatScore(model.stats.longestChainPoints)} color={model.stats.longestChainPoints > 0 ? colors.magenta : colors.muted} size={26} />
       )}
@@ -601,10 +625,13 @@ function ResultsPage({
         <View style={[styles.rail, { width: L.railWidth }]}>
           {topRow}
           {/* The wash belongs to the rail, not to the block inside it: anchored under the top row
-              it lights the whole verdict panel, and its top edge never lands mid-rail. */}
+              it lights the whole verdict panel, and its top edge never lands mid-rail.
+              The verdict sits straight under the top row — there used to be a `flex: 0.55` lead
+              above it, which optically centred the block on a landscape phone and, on a 1366 x
+              1024 frame, put 340 px of black above the word GRADE. One band below the verdict is
+              deliberate (it docks the actions under the thumb); two was not. */}
           <View style={styles.railBody}>
             {wash}
-            <View style={styles.railLead} />
             <View style={styles.hero}>
               {heroTop}
               {untrusted ? null : <GradeScale rating={model.rating} grade={model.grade} color={model.gradeColor} run={run} reduceMotion={reduceMotion} testID="grade-scale" />}
@@ -658,7 +685,7 @@ function MissingSession({ id, error, onGarage, onDrive }: { id?: string; error: 
   const wide = resultsLayout(width, height).landscape;
   return (
     <View style={styles.root} testID="screen-results-missing">
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+      <SafeAreaView style={[styles.safe, wide && styles.missingFrame]} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.missing, wide && styles.missingWide]}>
           <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => pressed && styles.pressed}>
             <AppText variant="micro" color="muted">
@@ -673,14 +700,23 @@ function MissingSession({ id, error, onGarage, onDrive }: { id?: string; error: 
               ? `That session could not be read: ${error}`
               : `Nothing is stored under "${id ?? 'this id'}". Runs are saved on the phone that recorded them, so a link from another device will not find one here.`}
           </AppText>
-          <AppText variant="small" color="muted">
-            Try a demo verdict instead: /results/fixture-hero
-          </AppText>
           <View style={styles.missingActions}>
-            <Button label="Back to garage" onPress={onGarage} testID="cta-garage" />
-            <Button label="Drive" variant="secondary" onPress={onDrive} testID="cta-drive" />
+            <Button label="Drive a run" onPress={onDrive} testID="cta-drive" />
+            <Button label="Back to garage" variant="secondary" onPress={onGarage} testID="cta-garage" />
           </View>
         </View>
+        {/* Wide: the message keeps a reading measure on the left and the frame's other half
+            carries the thing to do about it, instead of 55 % black. */}
+        {wide ? (
+          <View style={styles.missingAside}>
+            <AppText variant="micro" color="muted">
+              Where runs live
+            </AppText>
+            <AppText variant="body" color="muted" style={styles.missingBody}>
+              Every session is stored on the phone that recorded it. Nothing is uploaded, so there is no copy to fetch — the garage lists the ones this phone has.
+            </AppText>
+          </View>
+        ) : null}
       </SafeAreaView>
     </View>
   );
@@ -713,8 +749,6 @@ const styles = StyleSheet.create({
   frame: { flex: 1, flexDirection: 'row', paddingHorizontal: gutter },
   rail: { paddingBottom: space[4] },
   railBody: { flex: 1 },
-  /** On a tall frame the verdict sits a third of the way down rather than clinging to the top. */
-  railLead: { flex: 0.55 },
   /** Pushes the rail's actions to the bottom edge, where a thumb finds them without looking. */
   railFill: { flex: 1, minHeight: space[4] },
   railRule: { width: 1, backgroundColor: colors.line, marginHorizontal: RAIL_GAP / 2, marginVertical: space[4] },
@@ -727,6 +761,8 @@ const styles = StyleSheet.create({
   heroWash: { position: 'absolute', top: 0 },
   gradeLabel: { marginBottom: -space[2] },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
+  /** A tall rail stacks it: the letter on its own line, the score reading under it. */
+  heroTopStacked: { flexDirection: 'column', alignItems: 'stretch', gap: space[2] },
   gradeBox: { justifyContent: 'flex-start' },
   grade: {
     letterSpacing: -6,
@@ -735,6 +771,9 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   heroRight: { flex: 1, alignItems: 'flex-end', gap: 2, paddingTop: space[2] },
+  // stacked, the score is its own block under the letter: it reads left-aligned on the rail's
+  // grid with the label and the letter, not pushed to an edge it no longer shares
+  heroRightStacked: { flex: 0, alignItems: 'flex-start', paddingTop: 0 },
   ratingRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
   verdict: { borderLeftWidth: 3, paddingLeft: space[4], paddingVertical: space[1], gap: space[2] },
   voidPlate: { borderWidth: 2, borderColor: colors.red, paddingHorizontal: space[3], paddingVertical: space[2], alignSelf: 'flex-start', marginTop: space[2] },
@@ -756,8 +795,10 @@ const styles = StyleSheet.create({
   // than eliding into "DRIVE AG…"
   tightHalf: { paddingHorizontal: space[2] },
   footer: { marginTop: space[6] },
+  missingFrame: { flexDirection: 'row', alignItems: 'center' },
   missing: { flex: 1, paddingHorizontal: gutter, paddingTop: space[6], gap: space[3] },
   missingWide: { justifyContent: 'center', paddingTop: 0, paddingBottom: space[6] },
+  missingAside: { flex: 1, paddingRight: gutter, gap: space[2], borderLeftWidth: 1, borderLeftColor: colors.line, paddingLeft: RAIL_GAP },
   missingTitle: { marginTop: space[4] },
   missingBody: { maxWidth: 420 },
   missingActions: { flexDirection: 'row', gap: space[3], marginTop: space[4] },

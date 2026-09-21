@@ -53,3 +53,37 @@ export function refusalFrom(message: string | undefined | null, fallback = ''): 
   if (!remedy) return { remedy: capitalize(endSentence(reason)), reason: null };
   return { remedy: capitalize(endSentence(remedy)), reason: reason ? capitalize(endSentence(reason)) : null };
 }
+
+/** The fourth cell of the stat strip on a refused run: what the monitor actually found. */
+export interface FaultStat {
+  label: string;
+  value: string;
+  /** 'severe' when the fault is the reason the run was thrown out; 'warn' when it qualifies it. */
+  tone: 'severe' | 'warn';
+}
+
+/**
+ * What to put where a scored run puts BEST CHAIN.
+ *
+ * It used to be `<Stat label="Mount" value="LOOSE" />`, unconditional — a fact about the
+ * hardware, stated on every refused run, including the ones where the monitor's verdict is
+ * `mount: 'rigid'`. The monitor can and does refuse a rigidly mounted phone: it vetoes on the
+ * calibration bar alone and says "Can't tell which way the car points", which is the failure
+ * `docs/ARCHITECTURE.md` names as the expected one on real roads (a street of long sweepers
+ * never offers the longitudinal acceleration the forward axis is resolved from). On that run
+ * the cell asserted a defect in the cradle that nothing had measured.
+ *
+ * The simulator does not reach it — 18 refusals in a row came back `loose` — which is exactly
+ * why it is worth fixing from the code rather than from a screenshot.
+ */
+export function faultStat(judged: { mount: 'rigid' | 'suspect' | 'loose'; physics: 'ok' | 'implausible'; gps: 'good' | 'poor' | 'none' }, forwardResolved: boolean): FaultStat {
+  if (judged.mount === 'loose') return { label: 'Mount', value: 'LOOSE', tone: 'severe' };
+  if (judged.physics === 'implausible') return { label: 'Motion', value: 'IMPOSSIBLE', tone: 'severe' };
+  if (judged.mount === 'suspect') return { label: 'Mount', value: 'SHAKING', tone: 'warn' };
+  // A rigid phone the monitor still would not believe: the fact it is missing is which way the
+  // car points, not how tight the cradle is.
+  if (!forwardResolved) return { label: 'Car axis', value: 'UNKNOWN', tone: 'severe' };
+  if (judged.gps === 'none') return { label: 'GPS', value: 'NONE', tone: 'severe' };
+  if (judged.gps === 'poor') return { label: 'GPS', value: 'POOR', tone: 'warn' };
+  return { label: 'Mount', value: 'CALIBRATING', tone: 'warn' };
+}

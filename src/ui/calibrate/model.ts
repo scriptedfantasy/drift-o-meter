@@ -23,7 +23,7 @@
  * not repeat it as one. Every function below reads `mountVerdict`, which says 'unknown' until
  * the cues mean something, and 'unknown' is a pass NOWHERE.
  */
-import { calibrationBand, calibrationHeadroom, CALIBRATION_SHARP, DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
+import { calibrationBand, calibrationHeadroom, verticalSettled, CALIBRATION_SHARP, DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
 import { DEFAULT_MOUNT_OPTIONS } from '../../engine/mount';
 import type { Vec3 } from '../../engine/types';
 import { G } from '../../engine/types';
@@ -199,8 +199,8 @@ export interface CalibrationReading {
   forwardResolved: boolean;
   /** The engine's own verdict on whether this calibration may be believed. */
   calibrationOk: boolean;
-  /** The engine's own verdict on whether the vertical has stopped moving around. */
-  upSettled: boolean;
+  /** The engine's own "the up axis has had its settling time"; `band.ts` turns it into a verdict. */
+  upAged: boolean;
   /** The highest confidence this calibration has reached, from `MountCalibrator`. */
   peakQuality: number;
   mount: MountState;
@@ -246,7 +246,7 @@ export const IDLE_READING: CalibrationReading = {
   reclineDeg: 0,
   quality: 0,
   upQuality: 0,
-  upSettled: false,
+  upAged: false,
   peakQuality: 0,
   forwardResolved: false,
   calibrationOk: false,
@@ -312,11 +312,11 @@ export function isFlat(r: CalibrationReading): boolean {
  * and it contradicted the screen's own headline: `upQuality` is age × accelerometer fit, and a
  * shaking cradle degrades the fit, so at simulator looseness 0.1 the phase was READY while the
  * VERTICAL light read "Settling" on 29,476 of 40,864 READY frames, and on 18,932 of 18,932 at
- * looseness 0.15. `upSettled` asks the question the light is actually asking — has the up axis
- * had its settling time — and `band.ts`'s rule holds again: this screen knows no edges.
+ * looseness 0.15. `band.ts` names the edge off the engine's own floor instead, so READY implies
+ * settled by construction and this screen knows no edges at all.
  */
 export function isSettled(r: CalibrationReading): boolean {
-  return r.upSettled;
+  return verticalSettled(r.upQuality, r.upAged);
 }
 
 export type CalibrationPhase = 'failed' | 'blocked' | 'unsteady' | 'ready' | 'seeking' | 'levelling' | 'starting';

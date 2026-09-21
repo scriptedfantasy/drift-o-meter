@@ -11,7 +11,7 @@ export { buildFixtureSession, fixtureQuery, resolveFixture, FIXTURES, DEFAULT_FI
 export type { FixtureSpec } from './fixture';
 export { cornerLabel, cornerShape, cornerTag, cornerAt } from './corners';
 export { verdictFor, componentRows, worstCorner, bestCorner, weightedHeldPeak, weightedJitter } from './verdict';
-export { calloutColor, GRADE_SCALE, GRADE_WORDS, gradeWord, heroSurface, KIND_NAMES, mixColor, scoreColor } from './palette';
+export { calloutColor, GRADE_SCALE, GRADE_WORDS, gradeWord, KIND_NAMES, mixColor, scoreColor } from './palette';
 export { GradeReveal, REVEAL_MODES } from './GradeReveal';
 export type { RevealMode } from './GradeReveal';
 export { GradeScale } from './GradeScale';
@@ -26,7 +26,6 @@ export { WhyUnscored } from './WhyUnscored';
 export { CalloutReel } from './CalloutReel';
 export { SectionHead, Stat, Tag } from './parts';
 export { useEnter, useFill } from './entrance';
-export { resultsLayout, LANDSCAPE_MIN_WIDTH, RAIL_GAP } from './layout';
+export { resultsLayout, LANDSCAPE_MIN_WIDTH, RAIL_GAP, scoreFieldWidth, WASH_BOTTOM_CLEAR } from './layout';
 export type { ResultsLayout } from './layout';
-export { refusalFrom } from './unscored';
-export type { Refusal } from './unscored';
+export { faultStat, refusalFrom, type FaultStat, type Refusal } from './unscored';

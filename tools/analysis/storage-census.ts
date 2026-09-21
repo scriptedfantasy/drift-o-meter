@@ -17,19 +17,12 @@
  * store here is built over a backend that COUNTS every read, the whole index-only render path is
  * run over it, and the count is printed. `bodyReads` is the number to read.
  *
- * Everything is the app's own code: `createSessionStore` is the store the app runs,
- * `summarizeSession` writes the entries, and the render path below is the set of pure functions
- * `useGarage`, `SessionCards` and `BestsBoard` call. The body-reading path (`lastRun.ts`) is
- * deliberately absent, because it only runs when a row is TAPPED.
+ * Everything is the app's own code: `createSessionStore` is the store the app runs, it writes
+ * the entries through its own `summarizeSession`, and the render path below is the set of pure
+ * functions `useGarage`, `SessionCards` and `BestsBoard` call. The body-reading path
+ * (`lastRun.ts`) is deliberately absent, because it only runs when a row is TAPPED.
  */
-import {
-  createMemoryBackend,
-  createSessionStore,
-  summarizeSession,
-  type SessionBackend,
-  type SessionIndexEntry,
-  type StorageDiagnosis,
-} from '../../src/platform/sessionStore';
+import { createMemoryBackend, createSessionStore, type SessionBackend, type SessionIndexEntry, type StorageDiagnosis } from '../../src/platform/sessionStore';
 import type { Session } from '../../src/engine/types';
 import { mountAdvice } from '../../src/ui/garage/advice';
 import { lastRunStanding, personalBests } from '../../src/ui/garage/bests';
@@ -69,7 +62,7 @@ function countingBackend(): { backend: SessionBackend; counts: Counts; bodies: M
     deleteBody: (id) => inner.deleteBody(id),
     async listBodyIds() {
       counts.bodyIdLists++;
-      return inner.listBodyIds();
+      return (await inner.listBodyIds?.()) ?? [];
     },
   };
   return { backend, counts, bodies: inner.bodies, indexJson: () => inner.index };
@@ -244,30 +237,52 @@ async function reads(runs: number): Promise<void> {
   if (cold.counts.bodyReads !== 0) console.log('  *** A BODY WAS READ TO DRAW THE LIST — the garage is parsing recordings again ***');
 }
 
-async function orphans(runs: number): Promise<void> {
+export interface OrphanCensus extends ReadCensus {
+  /** Recordings left on the device after the eviction. */
+  kept: number;
+  /** Rows still printing a held angle — a fact that lives in the index, not in a body. */
+  withAngle: number;
+}
+
+/**
+ * Every body but a handful deleted from under a perfectly good index: the rows still have to
+ * draw, because everything a row says lives in the index. This is the state the garage is in
+ * after a browser evicts site data, and the one that used to blank the list.
+ */
+export async function measureOrphans(runs: number): Promise<OrphanCensus> {
   const { backend, bodies } = countingBackend();
   const store = createSessionStore(backend);
   for (const session of buildSeason(runs, true)) await store.saveSession(session);
 
-  // Every body deleted from under a perfectly good index: the rows still have to draw, because
-  // everything a row says lives in the index. This is the state the garage is in after a
-  // browser evicts site data, and the one that used to blank the list.
-  const keep = Math.max(1, Math.floor(runs / 8));
-  const ids = [...bodies.keys()];
-  for (const id of ids.slice(keep)) await backend.deleteBody(id);
+  const kept = Math.max(1, Math.floor(runs / 8));
+  for (const id of [...bodies.keys()].slice(kept)) await backend.deleteBody(id);
 
   const cold = await coldOpen(backend);
   const entries = await cold.store.listSessions();
+  const t0 = performance.now();
   const drawn = drawGarage(entries);
-  const withAngle = entries.filter((e) => angleText(e, !e.trusted) !== '--').length;
+  const listMs = performance.now() - t0;
   const diagnosis = await cold.store.diagnose();
+  return {
+    counts: cold.counts,
+    drawn,
+    entries,
+    listMs,
+    diagnosis,
+    kept,
+    withAngle: entries.filter((e) => angleText(e, !e.trusted) !== '--').length,
+  };
+}
 
-  console.log(`\nROWS WITH NO RECORDING BEHIND THEM — ${runs - keep} of ${runs} bodies deleted`);
+async function orphans(runs: number): Promise<void> {
+  const { counts, drawn, entries, diagnosis, kept, withAngle } = await measureOrphans(runs);
+
+  console.log(`\nROWS WITH NO RECORDING BEHIND THEM — ${runs - kept} of ${runs} bodies deleted`);
   console.log(`  rows drawn            ${drawn.rows} of ${entries.length}`);
   console.log(`  bodies left on device ${diagnosis.recordings}`);
   console.log(`  rows printing an angle ${withAngle}`);
   console.log(`  slide marks drawn     ${drawn.marks}`);
-  console.log(`  bodyReads             ${cold.counts.bodyReads}`);
+  console.log(`  bodyReads             ${counts.bodyReads}`);
 }
 
 async function parse(runs: number): Promise<void> {

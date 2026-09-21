@@ -19,7 +19,7 @@ export default function GradeBurstView(props: GradeBurstProps) {
       getComponent={() => import('./GradeBurst')}
       opts={skiaWebOptions}
       componentProps={props}
-      fallback={<View style={{ width: props.size, height: props.size }} />}
+      fallback={<View style={{ width: props.size, height: props.height ?? props.size }} />}
     />
   );
 }

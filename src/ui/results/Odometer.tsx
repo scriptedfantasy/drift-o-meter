@@ -12,8 +12,12 @@
  * filtering at sample rate rather than re-aiming a tween, is about a value that keeps moving;
  * this one has a known target, so a single tween is right.)
  *
- * `background` is the surface the number sits on, because the fade masks paint it: pass the
- * colour actually behind the digits or the mask leaves a rectangle.
+ * NO `background` BY DEFAULT. The HUD odometer can paint a fade in a given colour at the top and
+ * bottom of each window, and it is only honest over a surface that really is that one flat
+ * colour. This screen's hero sits on the grade wash — a diagonal gradient — and the page used to
+ * hand it `heroSurface(gradeColor)`, one sample of that gradient, which drew a visible plate per
+ * digit column: mask rgb(24,22,16) against wash rgb(35,30,18) at y = 176, an 11/255 step behind
+ * the biggest number in the app. Left out, the window's own clip does the job.
  */
 import { useEffect } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
@@ -30,8 +34,8 @@ export interface OdometerProps {
   durationMs?: number;
   fontSize: number;
   color?: string;
-  /** The surface behind the digits; the fade masks are drawn in it. */
-  background?: string;
+  /** Only if the surface behind the digits really is ONE flat colour. See the note above. */
+  background?: string | null;
   /** Keep the digits still: the value arrives quickly instead of rolling. */
   reduceMotion?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -44,7 +48,7 @@ export function Odometer({
   durationMs = 1300,
   fontSize,
   color = colors.ember,
-  background = colors.bg0,
+  background = null,
   reduceMotion = false,
   style,
   testID,

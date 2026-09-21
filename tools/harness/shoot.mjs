@@ -214,6 +214,40 @@ async function fontReport(page, timeoutMs) {
   }, timeoutMs);
 }
 
+/**
+ * Turn a route's region list into rectangles `pixels.mjs` can count in.
+ *
+ * A region may give its rectangle as fractions of the viewport (`rect`) or, better, NAME THE
+ * ELEMENT it is about (`testId`). Naming the element is what keeps a ceiling honest as the
+ * layout moves: "at most N ember pixels inside the gauge" stays a statement about the gauge in
+ * portrait, in landscape and at any device scale, while a hand-written fraction silently starts
+ * measuring the wrong band the first time a row changes height. `padFrac` grows the box (as a
+ * fraction of the viewport) so a glow just outside the element's own bounds is still counted.
+ */
+async function resolveRegions(page, regions) {
+  if (regions.length === 0) return [];
+  const out = [];
+  for (const r of regions) {
+    if (!r.testId) {
+      out.push(r);
+      continue;
+    }
+    const box = await page.evaluate((id) => {
+      const el = document.querySelector(`[data-testid="${id}"]`);
+      if (!el) return null;
+      const b = el.getBoundingClientRect();
+      return { x: b.x / window.innerWidth, y: b.y / window.innerHeight, w: b.width / window.innerWidth, h: b.height / window.innerHeight };
+    }, r.testId);
+    if (!box) throw new Error(`region '${r.name}': no element with testID '${r.testId}'`);
+    const pad = r.padFrac ?? 0;
+    out.push({
+      ...r,
+      rect: { x: Math.max(0, box.x - pad), y: Math.max(0, box.y - pad), w: Math.min(1, box.w + 2 * pad), h: Math.min(1, box.h + 2 * pad) },
+    });
+  }
+  return out;
+}
+
 async function skiaReport(page) {
   return page.evaluate(() => {
     let webgl = false;
@@ -349,7 +383,7 @@ async function main() {
       for (const action of route.actions ?? []) await runAction(page, action, ctx);
       result.skia = await skiaReport(page);
       const buf = await page.screenshot({ path: shotPath, fullPage: route.fullPage ?? args.fullPage });
-      result.pixels = analyzePng(buf);
+      result.pixels = analyzePng(buf, { regions: await resolveRegions(page, route.regions ?? []) });
 
       if (args.fontCheck) {
         if (!result.fonts.families.some((f) => /Barlow/i.test(f))) result.errors.push(`fonts: no Barlow face loaded (loaded: ${result.fonts.families.join(', ') || 'none'})`);
@@ -358,6 +392,16 @@ async function main() {
       }
       if (route.expectCanvas && result.skia.canvases === 0) result.errors.push('skia: expected a <canvas>, found none');
       if (route.minEmber && result.pixels.emberPixels < route.minEmber) result.errors.push(`pixels: only ${result.pixels.emberPixels} ember pixels (< ${route.minEmber}); the ring did not render`);
+      // Region checks: "at most / at least N pixels of colour C inside rectangle R". A ceiling is
+      // the only shape of check that can certify an ABSENCE — see the header of pixels.mjs.
+      for (const r of result.pixels.regions ?? []) {
+        if (!r.ok) {
+          const b = r.box;
+          result.errors.push(
+            `pixels: region '${r.name}' has ${r.pixels} ${r.colour} pixels, wanted ${r.wanted} (x ${b.x0}–${b.x1}, y ${b.y0}–${b.y1})`,
+          );
+        }
+      }
       if (!result.pixels.cornersNearBg) {
         const c = result.pixels.corners;
         result.errors.push(`pixels: page background is not bg0 (corners ${rgbHex(c.topLeft)} ${rgbHex(c.topRight)} ${rgbHex(c.bottomLeft)} ${rgbHex(c.bottomRight)})`);
@@ -394,7 +438,7 @@ async function main() {
     const px = result.pixels ?? {};
     const sk = result.skia ?? {};
     console.log(
-      `[shoot] ${result.ok ? 'OK  ' : 'FAIL'} ${name.padEnd(20)} ${String(result.ms).padStart(5)} ms  fonts:${(f.families ?? []).filter((x) => /Barlow/.test(x)).length}/9 display:${f.displayTextNodes ?? '-'} body:${f.bodyTextNodes ?? '-'} other:${f.otherTextNodes ?? '-'}  canvas:${sk.canvases ?? '-'} webgl:${sk.webgl ?? '-'}  ember:${px.emberPixels ?? '-'} cyan:${px.cyanPixels ?? '-'} nonBg:${px.nonBgFraction ?? '-'} corners:${px.cornersOnBg ?? '-'}`,
+      `[shoot] ${result.ok ? 'OK  ' : 'FAIL'} ${name.padEnd(20)} ${String(result.ms).padStart(5)} ms  fonts:${(f.families ?? []).filter((x) => /Barlow/.test(x)).length}/9 display:${f.displayTextNodes ?? '-'} body:${f.bodyTextNodes ?? '-'} other:${f.otherTextNodes ?? '-'}  canvas:${sk.canvases ?? '-'} webgl:${sk.webgl ?? '-'}  ember:${px.emberPixels ?? '-'} gold:${px.goldPixels ?? '-'} red:${px.redPixels ?? '-'} cyan:${px.cyanPixels ?? '-'} nonBg:${px.nonBgFraction ?? '-'} corners:${px.cornersOnBg ?? '-'}${(px.regions ?? []).map((r) => `  ${r.name}[${r.colour}]:${r.pixels}`).join('')}`,
     );
     for (const e of result.errors) console.log(`         - ${e}`);
   }

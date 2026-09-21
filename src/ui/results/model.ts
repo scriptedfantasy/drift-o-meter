@@ -46,6 +46,11 @@ export interface DriftRow {
   /** Corner this slide happened on, when the track has one. */
   corner: TrackCorner | null;
   cornerLabel: string | null;
+  /**
+   * The callouts this slide was PAID for, as the run published them — not as a re-score would
+   * award them. A callout on a sample the monitor did not believe pays zero and is still in the
+   * list, so the count is what fired and the points are what banked.
+   */
   callouts: Array<{ kind: StyleCalloutKind; label: string; points: number }>;
 }
 
@@ -131,6 +136,12 @@ export interface ResultsBase {
   drifts: DriftRow[];
   best: DriftRow | null;
   callouts: CalloutTally[];
+  /**
+   * Bonus points from callouts, summed over the drifts that banked — and it is a SLICE of
+   * `total`, not a second opinion about it, so it comes from the same published `perDrift` the
+   * total does. "N of the total came from callouts" is false the moment the two have different
+   * sources.
+   */
   calloutPoints: number;
   lostPoints: number;
   laps: LapConsistency | null;
@@ -367,8 +378,16 @@ function driftRows(session: Session, breakdown: SessionBreakdown, published: Ses
   return sorted.map((event, i) => {
     const scored = breakdown.perDrift[event.id];
     const stats = scored?.stats;
-    // points and multiplier as PUBLISHED where the run recorded them, so the column adds up to
-    // the total in the hero; the shape of the drift still comes from the re-score's stats
+    // EVERY PAYMENT AS PUBLISHED, every SHAPE from the re-score. The split is not a preference,
+    // it is what the two objects can answer. The pipeline scored the run with a per-sample
+    // plausibility mask that a stored session does not carry, so only it knows what a slide was
+    // PAID — the total, the multiplier, which callouts fired and for how much, whether a spin
+    // took the chain. The re-score alone carries `stats`, which is the drift's shape: peak,
+    // held peak, speeds, transitions, how long it held a plateau. Reading a payment off the
+    // re-score prints money the engine deliberately did not pay: `rough` drift #6's published
+    // callouts are `initiation:25, transition:0, transition:0, extreme-angle:375, long-drift:330,
+    // transition:0, manji:0` — the monitor did not believe those samples — while the re-score
+    // pays all seven, 2,605 against 730, and the screen used to tally the re-score's.
     const pub = published.perDrift?.[event.id];
     const { trace, peakAt } = traceOf(event, session);
     const mid = session.states[Math.min(session.states.length - 1, Math.max(0, Math.round((event.sampleStart + event.sampleEnd) / 2)))];
@@ -390,15 +409,18 @@ function driftRows(session: Session, breakdown: SessionBreakdown, published: Ses
       transitions: stats ? stats.transitions : event.transitions,
       points: Math.round(pub?.total ?? scored?.total ?? 0),
       multiplier: pub?.multiplier ?? scored?.multiplier ?? 1,
-      spun: stats ? stats.spun : false,
-      lost: scored ? scored.lost : false,
+      // `spun` and `lost` are published fields for the reason `DriftScore.lost` states in
+      // `types.ts`: the scorer's spin rule is broader than the detector's flag, so nobody else
+      // re-derives it. `stats.spun` IS that re-derivation, one object over.
+      spun: pub?.spun ?? stats?.spun ?? false,
+      lost: pub?.lost ?? scored?.lost ?? false,
       cleanExit: stats ? stats.cleanExit : true,
       direction: event.initialDirection,
       trace,
       peakAt,
       corner,
       cornerLabel: corner ? cornerLabel(corner) : null,
-      callouts: (scored?.callouts ?? []).map((c) => ({ kind: c.kind, label: c.label, points: c.points })),
+      callouts: (pub?.callouts ?? scored?.callouts ?? []).map((c) => ({ kind: c.kind, label: c.label, points: c.points })),
     };
   });
 }
