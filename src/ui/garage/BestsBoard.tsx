@@ -1,163 +1,125 @@
 /**
- * Personal bests, one panel per track: best grade, most points, biggest angle, longest chain.
+ * BIGGEST ANGLE: one row per driver, in order.
  *
- * Every tile is a link to the run that holds the record, because a record with no run behind it
- * is a claim rather than a fact. Tracks with nothing scored yet say so instead of printing
- * zeros — and a run the engine would not vouch for never appears here at all.
+ * It was four record tiles per track — best grade, most points, biggest angle, longest chain —
+ * and the panel took its colour from the grade, so the board's whole accent was an opinion
+ * about a letter. What several people sharing one car actually argue about is one number, so
+ * that is the board: rank, who, how far sideways they got, and how long they kept it there.
+ *
+ * Every row is a link to the run that holds the angle, because a record with no run behind it
+ * is a claim rather than a fact. A driver with nothing the engine vouched for keeps their row
+ * and shows a dash — they have been out, and a board that drops them looks like it lost their
+ * runs — and the unassigned bucket is a row like any other. It is listed, never hidden.
+ *
+ * The angle takes its colour from `angleColor`, the ramp the dial and the results screen also
+ * read, so 61° is the same colour wherever it appears and a row up in the red zone reads as
+ * the limit rather than as a high score.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { formatDate } from '../format';
+import { formatDuration } from '../format';
 import { AppText, Micro } from '../Text';
-import { alpha, colors, gradeColors, radii, space } from '../theme';
-import type { BestRecord, TrackBests } from './bests';
-import { bestGradeOf } from './bests';
+import { angleColor, colors, radii, space } from '../theme';
+import type { DriverStanding } from './bests';
+import { driverHandle } from './driverCopy';
+import { holdText } from './labels';
 
 export interface BestsBoardProps {
-  bests: readonly TrackBests[];
-  /**
-   * The run the driver just did. A tile it holds is marked, because a board that cannot say
-   * "you did that tonight" is a table of numbers rather than a record board.
-   */
-  lastId?: string | null;
-  /** Landscape or a tablet: the track panels sit side by side instead of stacking. */
+  standings: readonly DriverStanding[];
+  /** Who is at the wheel. Their row is outlined, the rest are hairlined. */
+  activeId?: string | null;
+  /** Landscape or a tablet: the rows sit two abreast instead of stacking. */
   wide?: boolean;
-  onOpen(record: BestRecord): void;
+  onOpen(standing: DriverStanding): void;
 }
 
-export function BestsBoard({ bests, lastId, wide = false, onOpen }: BestsBoardProps) {
+export function BestsBoard({ standings, activeId = null, wide = false, onOpen }: BestsBoardProps) {
   return (
     <View style={[styles.board, wide && styles.boardWide]}>
-      {bests.map((t) => (
-        <TrackPanel key={t.track} bests={t} lastId={lastId ?? null} wide={wide} onOpen={onOpen} />
+      {standings.map((s) => (
+        <BoardRow key={s.driverId ?? 'unassigned'} standing={s} active={s.driverId !== null && s.driverId === activeId} wide={wide} onOpen={onOpen} />
       ))}
       <Micro numberOfLines={2} style={styles.footnote}>
-        Only runs the engine vouched for can hold a record — and the biggest angle is one you held and
-        drove out of, not one you spun into
+        Only runs the engine vouched for can take a place — and the angle is one you held and drove out of, not one you
+        spun into
       </Micro>
     </View>
   );
 }
 
-function TrackPanel({ bests, lastId, wide, onOpen }: { bests: TrackBests; lastId: string | null; wide: boolean; onOpen(record: BestRecord): void }) {
-  const grade = bestGradeOf(bests);
-  const accent = grade ? (gradeColors[grade] ?? colors.ember) : colors.line;
-  return (
-    <View style={[styles.panel, wide && styles.panelWide, { borderLeftColor: accent }]} testID={`bests-${bests.track.replace(/\s+/g, '-').toLowerCase()}`}>
-      <View style={styles.head}>
-        <AppText variant="subheading" numberOfLines={1} style={styles.track}>
-          {bests.track}
-        </AppText>
-        <Micro numberOfLines={1}>
-          {bests.runs === 1 ? '1 run' : `${bests.runs} runs`}
-          {bests.scored < bests.runs ? ` · ${bests.runs - bests.scored} not scored` : ''}
-        </Micro>
-      </View>
-      {bests.scored === 0 ? (
-        <Micro color="red" style={styles.none}>
-          Nothing here counts yet — the engine would not vouch for {bests.runs === 1 ? 'that run' : 'any of these runs'}
-        </Micro>
-      ) : bests.framing ? (
-        <Micro style={styles.framing} numberOfLines={2}>
-          {bests.framing}
-        </Micro>
-      ) : null}
-      <View style={styles.grid}>
-        {bests.records.map((r) => (
-          <RecordTile
-            key={r.key}
-            record={r}
-            accent={r.key === 'grade' ? accent : tileColor(r.key)}
-            fresh={!r.empty && lastId !== null && r.id === lastId}
-            onOpen={onOpen}
-          />
-        ))}
-      </View>
-      <Micro numberOfLines={1} style={styles.last}>
-        Last driven {formatDate(bests.lastAt)}
-      </Micro>
-    </View>
-  );
-}
-
-function tileColor(key: BestRecord['key']): string {
-  switch (key) {
-    case 'points':
-      return colors.ember;
-    case 'angle':
-      return colors.gold;
-    default:
-      return colors.magenta;
-  }
-}
-
-function RecordTile({ record, accent, fresh, onOpen }: { record: BestRecord; accent: string; fresh: boolean; onOpen(record: BestRecord): void }) {
-  const dim = record.empty;
+function BoardRow({ standing, active, wide, onOpen }: { standing: DriverStanding; active: boolean; wide: boolean; onOpen(s: DriverStanding): void }) {
+  const { empty, peakDeg } = standing;
+  const angle = empty ? '--' : `${Math.round(peakDeg)}°`;
+  const slide = empty ? '--' : holdText(standing.slideS);
   return (
     <Pressable
-      disabled={dim}
-      onPress={() => onOpen(record)}
+      disabled={empty}
+      onPress={() => onOpen(standing)}
       accessibilityRole="button"
-      accessibilityLabel={`${record.label} ${record.value}${fresh ? ', set by your last run' : ''}`}
-      testID={fresh ? `best-${record.key}-fresh` : undefined}
+      accessibilityLabel={
+        empty
+          ? `${standing.name}, ${standing.runs === 1 ? '1 run' : `${standing.runs} runs`}, nothing judged yet`
+          : `${standing.name}, place ${standing.rank}, biggest angle ${angle}, in a ${slide} slide`
+      }
+      testID={`board-${driverHandle(standing.driverId ? { id: standing.driverId, name: standing.name } : null)}`}
       style={({ pressed }) => [
-        styles.tile,
-        { borderColor: alpha(dim ? colors.line : accent, fresh ? 1 : 0.5) },
-        fresh && { borderWidth: 2, backgroundColor: alpha(accent, 0.1) },
+        styles.row,
+        wide && styles.rowWide,
+        { borderColor: active ? colors.text : colors.line },
         pressed && styles.pressed,
       ]}>
-      <Micro numberOfLines={1}>{record.label}</Micro>
-      <AppText variant="telemetry" color={dim ? colors.muted : accent} numeric numberOfLines={1} style={styles.value}>
-        {record.value}
-      </AppText>
-      {/* Its own line: side by side, "BIGGEST ANGLE" and the marker both truncated to "…". */}
-      {fresh ? (
-        <Micro numberOfLines={1} color={accent} style={styles.fresh}>
-          Set last run
+      <Micro numberOfLines={1} style={styles.rank}>
+        {standing.rank > 0 ? String(standing.rank) : '--'}
+      </Micro>
+      <View style={styles.who}>
+        <AppText variant="subheading" numberOfLines={1} color={empty ? colors.muted : colors.text} style={styles.name}>
+          {standing.name}
+        </AppText>
+        <Micro numberOfLines={1}>
+          {standing.runs === 1 ? '1 run' : `${standing.runs} runs`}
+          {standing.scored < standing.runs ? ` · ${standing.runs - standing.scored} not judged` : ''}
         </Micro>
-      ) : null}
-      {record.note ? (
-        <Micro numberOfLines={1} style={styles.note}>
-          {record.note}
-        </Micro>
-      ) : null}
+      </View>
+      <View style={styles.figure}>
+        <AppText variant="display" numeric numberOfLines={1} color={empty ? colors.muted : angleColor(peakDeg)} style={styles.angle}>
+          {angle}
+        </AppText>
+        <Micro numberOfLines={1}>{empty ? 'no angle yet' : `${slide} slide`}</Micro>
+      </View>
+      <View style={styles.sideways}>
+        <AppText variant="subheading" numeric numberOfLines={1} color={colors.blue} style={styles.sidewaysValue}>
+          {standing.sidewaysS > 0 ? formatDuration(standing.sidewaysS) : '--'}
+        </AppText>
+        <Micro numberOfLines={1}>Sideways</Micro>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  board: { gap: space[3] },
+  board: { gap: space[2] },
   boardWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start' },
-  panelWide: { flexBasis: '48%', flexGrow: 1, minWidth: 320 },
-  panel: {
-    backgroundColor: colors.bg1,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderLeftWidth: 3,
-    padding: space[4],
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: space[3],
-  },
-  head: { gap: 1 },
-  fresh: { letterSpacing: 0.8 },
-  track: { letterSpacing: 0.8 },
-  none: { maxWidth: 320 },
-  framing: { maxWidth: 330, textTransform: 'none', letterSpacing: 0.2, opacity: 0.85 },
-  note: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.8 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  tile: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    minWidth: 130,
+    // 44 dp is the floor for anything reached for at arm's length; a board row is also the
+    // way into the run that holds the record, so it is a real target and not a table cell.
+    minHeight: 56,
+    backgroundColor: colors.bg1,
     borderWidth: 1,
     borderRadius: radii.md,
-    backgroundColor: colors.bg2,
-    paddingHorizontal: space[3],
     paddingVertical: space[2],
-    gap: 1,
+    paddingHorizontal: space[3],
   },
-  value: { fontSize: 30, lineHeight: 32 },
-  last: {},
-  footnote: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.75, maxWidth: 420 },
+  rowWide: { flexBasis: '48.5%', flexGrow: 1, minWidth: 300 },
+  rank: { width: 16 },
+  who: { flex: 1, minWidth: 0, gap: 1 },
+  name: { letterSpacing: 0.8 },
+  figure: { alignItems: 'flex-end', minWidth: 0 },
+  angle: { fontSize: 28, lineHeight: 28, letterSpacing: -1 },
+  sideways: { alignItems: 'flex-end', width: 62 },
+  sidewaysValue: { fontSize: 18, lineHeight: 22, letterSpacing: 0 },
+  footnote: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.75, maxWidth: 420, marginTop: space[1] },
   pressed: { opacity: 0.7 },
 });

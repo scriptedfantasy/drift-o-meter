@@ -1,30 +1,36 @@
 /**
  * Garage — the home screen, and the only screen most nights start on.
  *
+ * Top to bottom it answers four questions in the order a driver asks them: whose car is this,
+ * who is driving, who is winning, and what did I do last time. Then DRIVE, pinned to the
+ * bottom edge where a thumb already is.
+ *
  * DRIVE is step two of the whole app (docs/DESIGN.md, "the whole app is four steps"): tapping it
  * starts recording, and nothing on this screen is allowed to stand between a driver and that.
  * There is no calibration errand next to it — the engine calibrates itself while driving — and
- * the simulated-source bay lives at the BOTTOM, off the path.
+ * the simulated-source bay lives at the BOTTOM of the scroll, off the path.
  *
- * Under DRIVE, in descending order of how likely a driver is to want it, sits the run they just
- * did (a card twice the size of anything else, which says what that run did to their records),
- * the records themselves, and then the rest of the nights, one line each under the night they
- * were driven. Swipe a run sideways or hold it to throw it away; the app asks before it does.
+ * WHO IS DRIVING is picked here, before the run, because it is the only moment it can be picked
+ * honestly: the drive screen stamps whoever is active onto the session at the instant it starts
+ * recording and never waits on this. Nobody is a real answer — the roster starts empty, the
+ * first run happens before anyone has typed a name, and a run recorded that way is listed as
+ * unassigned rather than hidden.
  *
- * Calibration appears here in exactly one case: the last run left evidence that the mount was
+ * Calibration appears here in exactly one case: the newest run left evidence that the mount was
  * wrong. Then the garage says what was wrong (`mountAdvice`) and offers the screen that fixes
  * it. Otherwise the link is tucked away in the footer with settings.
  *
- * A run the engine refused to score is never dressed up as an achievement here — no grade
- * letter, no record, no total, the monitor's own sentence instead (see
+ * A run the engine refused to judge is never dressed up as an achievement here — no angle, no
+ * place on the board, the monitor's own sentence instead, in red (see
  * `SessionIntegrity.scoreTrusted`).
  *
  * Nothing on this screen reads a session body. Every number, verdict and sentence comes from
- * `SessionIndexEntry`; a body is parsed only when a demo row is TAPPED.
+ * `SessionIndexEntry`, including who drove the run; a body is parsed only when a demo row is
+ * TAPPED.
  *
  * URL (web / the harness):
- *   /?demo=night     fill the list with six real, deterministic runs across two tracks
- *   /?demo=harbor    four scored runs on one track — the personal-best board with something to say
+ *   /?demo=night     six real, deterministic runs across two tracks, three drivers, one unclaimed
+ *   /?demo=harbor    four judged runs on one track — the board with something to argue about
  *   /?demo=first     one run
  *   /?demo=none      empty the garage
  *   /?sim=touge&looseness=1&dropouts=1   preselect the simulated source (see the demo bay)
@@ -44,25 +50,30 @@ import {
   type SimParams,
   type SessionIndexEntry,
 } from '@/platform';
-import { colors, formatDate, formatDuration, gutter, Micro, space, Wordmark } from '@/ui';
+import { driverById, NO_DRIVER_LABEL, type Driver } from '@/platform/drivers';
+import { colors, formatDate, formatDuration, gutter, Micro, SectionHead, space, Tag } from '@/ui';
 import {
   BestsBoard,
   ConfirmDialog,
   DriveSlab,
+  DriverBar,
+  DriverSheet,
   EmptyGarage,
+  GarageHero,
   LastRunCard,
   mountAdvice,
   MountNotice,
+  removeDriverCopy,
   RunRow,
   SimBay,
   SwipeToDelete,
   readDetail,
+  runsOf,
   useGarage,
-  type BestRecord,
+  type DriverStanding,
 } from '@/ui/garage';
 import { FaultNotice } from '@/ui/garage/FaultNotice';
 import { groupByNight } from '@/ui/garage/groups';
-import { SectionHead, Tag } from '@/ui/results';
 
 function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
@@ -77,8 +88,8 @@ function queryParams(query: string): Record<string, string> {
 }
 
 /**
- * Past this the screen is not a phone held upright: landscape in a cradle, or a tablet. DRIVE
- * then sits beside the last run instead of stretching into 55 % empty orange.
+ * Past this the screen is not a phone held upright: landscape in a cradle, or a tablet. The
+ * board and the run list then go two abreast instead of stretching a 56 dp row across 1040 px.
  */
 const WIDE_PX = 700;
 
@@ -89,6 +100,7 @@ export default function GarageScreen() {
   // statically exported page can hydrate before the router has parsed the URL.
   const demo = first(params.demo) ?? new URLSearchParams(currentSearch() ?? '').get('demo') ?? undefined;
   const garage = useGarage(demo);
+  const drivers = garage.drivers;
   const { settings, update } = useSettings();
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_PX;
@@ -115,7 +127,7 @@ export default function GarageScreen() {
     [settings.simRate, settings.simTrack, update],
   );
 
-  // ---- delete, with a question first ------------------------------------------------------
+  // ---- delete a run, with a question first -------------------------------------------------
   const [pending, setPending] = useState<SessionIndexEntry | null>(null);
   const [busy, setBusy] = useState(false);
   const confirmDelete = useCallback(async () => {
@@ -128,6 +140,27 @@ export default function GarageScreen() {
       setPending(null);
     }
   }, [garage, pending]);
+
+  // ---- edit a driver, and forget one with a question first ---------------------------------
+  const [editing, setEditing] = useState<Driver | null>(null);
+  const [forgetting, setForgetting] = useState<Driver | null>(null);
+  // Counted from the index, which is where `driverId` lives — so asking how much a removal
+  // costs reads no recordings either.
+  const forgettingRuns = useMemo(
+    () => (forgetting ? runsOf(garage.entries, drivers.roster, forgetting.id).length : 0),
+    [forgetting, garage.entries, drivers.roster],
+  );
+  const confirmForget = useCallback(async () => {
+    if (!forgetting) return;
+    setBusy(true);
+    try {
+      await drivers.remove(forgetting.id);
+    } finally {
+      setBusy(false);
+      setForgetting(null);
+      setEditing(null);
+    }
+  }, [drivers, forgetting]);
 
   /**
    * Opening a run is the only place a body is read at all, and only for a demo run: a stored
@@ -147,21 +180,16 @@ export default function GarageScreen() {
     [router],
   );
 
-  const openRecord = useCallback((record: BestRecord) => openRun({ id: record.id } as SessionIndexEntry), [openRun]);
+  const openStanding = useCallback((s: DriverStanding) => openRun({ id: s.id } as SessionIndexEntry), [openRun]);
 
   const hasRuns = garage.entries.length > 0;
-  /**
-   * The storage fault, and where it goes. In landscape with nothing in the list, the right
-   * column held two words ("THE GARAGE · UNREADABLE") in an otherwise empty half-screen while
-   * YOUR RUN LIST COULD NOT BE READ started at 70 % viewport height under DRIVE and REBUILD THE
-   * LIST was clipped off the bottom edge — the app's most urgent state, below the fold, beside
-   * a void. When there is no list to show, the fault takes the column the list would have had.
-   */
+  const unreadable = garage.fault?.kind === 'unreadable-index';
   const faultNotice = garage.fault ? <FaultNotice fault={garage.fault} busy={garage.rebuilding} onAct={() => void garage.rebuild()} /> : null;
-  const faultInColumn = wide && !hasRuns && faultNotice !== null;
-  // The one thing that earns a calibration prompt: the last run said something was wrong.
-  const advice = useMemo(() => mountAdvice(garage.last), [garage.last]);
+  // The one thing that earns a calibration prompt: the drive that just happened said something
+  // was wrong. `newest`, not `last` — `last` is whoever's list is on screen.
+  const advice = useMemo(() => mountAdvice(garage.newest), [garage.newest]);
   const nights = useMemo(() => groupByNight(garage.earlier), [garage.earlier]);
+
   const openCalibrate = useCallback(
     (why?: string) => {
       const q = [simQuery.slice(1), why ? `why=${why}` : ''].filter(Boolean).join('&');
@@ -170,75 +198,31 @@ export default function GarageScreen() {
     [router, simQuery],
   );
 
-  const cta = (
-    <>
-      <DriveSlab
-        onPress={() => router.push(`/drive${simQuery}`)}
-        caption={captionFor(sourceLabel, simParams !== null)}
-        inline={wide}
-        testID="cta-drive"
-      />
-      <View style={styles.underCta}>
-        <Micro numberOfLines={1} style={styles.ctaNote}>
-          Starts recording at once
-        </Micro>
-        <Tag label={sourceLabel} color={simParams ? colors.cyan : colors.green} filled />
-      </View>
-      {advice ? (
-        <View style={styles.notice}>
-          <MountNotice advice={advice} onPress={() => openCalibrate(advice.concern)} testID="mount-notice" />
-        </View>
-      ) : null}
-      {faultNotice && !faultInColumn ? <View style={styles.notice}>{faultNotice}</View> : null}
-      {garage.seeding ? (
-        <View style={styles.seeding} testID="garage-seeding">
-          <Micro color="cyan">
-            Building demo runs · {garage.seeding.done} / {garage.seeding.total}
-          </Micro>
-          <Micro style={styles.seedingNote}>Each one is simulated and then scored by the real engine, so the grades below are earned.</Micro>
-        </View>
-      ) : null}
-    </>
-  );
-
-  // An unreadable list is not an empty garage, and the screen must not say both at once: the
-  // notice above already says what is wrong and offers the repair, so nothing claims "NOTHING TO
-  // BEAT YET" over a disk that still has the recordings on it.
-  const unreadable = garage.fault?.kind === 'unreadable-index';
-  const lastRun = !hasRuns ? (
-    <>
-      <SectionHead title="The garage" right={unreadable ? 'Unreadable' : garage.loading ? 'Reading' : 'Empty'} />
-      {faultInColumn ? faultNotice : unreadable ? null : garage.loading ? <View style={styles.skeletonCard} testID="garage-loading" /> : <EmptyGarage testID="garage-empty" />}
-    </>
-  ) : (
-    <>
-      <SectionHead title="Last run" right={garage.entries.length === 1 ? '1 stored' : `${garage.entries.length} stored`} />
-      {garage.last ? (
-        <SwipeToDelete onDelete={() => setPending(garage.last)} enabled={pending === null} testID="last-run-swipe">
-          <LastRunCard
-            entry={garage.last}
-            standing={garage.standing?.line ?? null}
-            // the notice above already carries the monitor's sentence, once
-            showReason={advice === null}
-            onOpen={() => openRun(garage.last!)}
-            onDelete={() => setPending(garage.last)}
-            testID="last-run"
-          />
-        </SwipeToDelete>
-      ) : null}
-    </>
+  const active = drivers.active;
+  const listTitle = active ? active.name : hasRuns ? 'Every run' : 'The garage';
+  const listCount = garage.shown.length === 1 ? '1 run' : `${garage.shown.length} runs`;
+  /**
+   * Whose run a row should name, or null.
+   *
+   * Only when the list is NOT already one person's: with a driver selected the heading says
+   * whose runs these are and repeating it down every row is noise, but with nobody at the wheel
+   * the list mixes everyone's and the name is the only thing that says which is which.
+   */
+  const whoFor = useCallback(
+    (entry: SessionIndexEntry) => (active ? null : (driverById(drivers.roster, entry.driverId)?.name ?? NO_DRIVER_LABEL)),
+    [active, drivers.roster],
   );
 
   return (
     <View style={styles.root} testID="screen-garage">
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         <ScrollView
           style={styles.flex}
           contentContainerStyle={[styles.scroll, wide && styles.scrollWide]}
           showsVerticalScrollIndicator={false}
           testID="garage-scroll">
-          <View style={styles.header}>
-            <Wordmark />
+          <View style={styles.heroWrap}>
+            <GarageHero testID="garage-hero" />
             <Pressable
               onPress={() => router.push('/settings')}
               hitSlop={14}
@@ -250,88 +234,178 @@ export default function GarageScreen() {
             </Pressable>
           </View>
 
-          {wide ? (
-            <View style={styles.top}>
-              <View style={styles.topLeft}>{cta}</View>
-              <View style={styles.topRight}>{lastRun}</View>
-            </View>
-          ) : (
-            <>
-              {cta}
-              {lastRun}
-            </>
-          )}
+          <View style={styles.pad}>
+            <DriverBar
+              drivers={drivers.drivers}
+              activeId={drivers.roster.activeId}
+              error={drivers.error}
+              onSelect={(id) => void drivers.select(id)}
+              onEdit={setEditing}
+              onAdd={drivers.add}
+              testID="driver-bar"
+            />
 
-          {hasRuns ? (
-            <>
-              <SectionHead title="Personal bests" accent={colors.gold} right={garage.bests.length === 1 ? '1 track' : `${garage.bests.length} tracks`} />
-              <BestsBoard bests={garage.bests} lastId={garage.last?.id ?? null} onOpen={openRecord} wide={wide} />
+            {advice ? (
+              <View style={styles.notice}>
+                <MountNotice advice={advice} onPress={() => openCalibrate(advice.concern)} testID="mount-notice" />
+              </View>
+            ) : null}
+            {faultNotice ? <View style={styles.notice}>{faultNotice}</View> : null}
+            {garage.seeding ? (
+              <View style={styles.seeding} testID="garage-seeding">
+                <Micro color="green">
+                  Building demo runs · {garage.seeding.done} / {garage.seeding.total}
+                </Micro>
+                <Micro style={styles.seedingNote}>
+                  Each one is simulated and then measured by the real engine, so the angles below are earned.
+                </Micro>
+              </View>
+            ) : null}
 
-              {garage.earlier.length > 0 ? (
-                <SectionHead title="Earlier" accent={colors.cyan} right={garage.earlier.length === 1 ? '1 run' : `${garage.earlier.length} runs`} />
-              ) : null}
-              {garage.earlier.length === 0 ? (
-                <Micro style={styles.onlyRun}>That is the only run in here. The next one goes above it.</Micro>
+            {hasRuns ? (
+              <>
+                <SectionHead title="Biggest angle" right={garage.track ?? undefined} />
+                <BestsBoard standings={garage.standings} activeId={drivers.roster.activeId} wide={wide} onOpen={openStanding} />
+              </>
+            ) : null}
+
+            <SectionHead
+              title={listTitle}
+              right={hasRuns ? listCount : unreadable ? 'Unreadable' : garage.loading ? 'Reading' : 'Empty'}
+            />
+
+            {!hasRuns ? (
+              unreadable ? null : garage.loading ? (
+                <View style={styles.skeletonCard} testID="garage-loading" />
               ) : (
-                nights.map((night) => (
-                  <View key={night.key} style={styles.night}>
-                    <View style={styles.nightHead}>
-                      <Micro color="cyan" numberOfLines={1}>
-                        {night.label}
-                      </Micro>
-                      <View style={styles.nightRule} />
-                      {/* The section head already carries the total; repeat it only when the
-                          nights actually divide it up. */}
-                      {nights.length > 1 ? <Micro numberOfLines={1}>{night.runs.length === 1 ? '1 run' : `${night.runs.length} runs`}</Micro> : null}
-                    </View>
-                    <View style={[styles.list, wide && styles.listWide]}>
-                      {night.runs.map((e) => (
-                        <SwipeToDelete key={e.id} onDelete={() => setPending(e)} enabled={pending === null} style={wide ? styles.rowHalf : undefined}>
-                          <RunRow entry={e} onOpen={() => openRun(e)} onDelete={() => setPending(e)} testID={`run-${e.id}`} />
-                        </SwipeToDelete>
-                      ))}
-                    </View>
-                  </View>
-                ))
-              )}
-              <Micro style={styles.swipeHint}>Swipe a run left, or hold it, to delete</Micro>
-            </>
-          ) : null}
+                <EmptyGarage testID="garage-empty" />
+              )
+            ) : garage.shown.length === 0 ? (
+              <Micro style={styles.onlyRun}>
+                {active ? `Nothing stored under ${active.name} yet. Their next run lands here.` : 'Nothing stored yet.'}
+              </Micro>
+            ) : (
+              <>
+                {garage.last ? (
+                  <SwipeToDelete onDelete={() => setPending(garage.last)} enabled={pending === null} testID="last-run-swipe">
+                    <LastRunCard
+                      entry={garage.last}
+                      standing={garage.standing?.line ?? null}
+                      who={whoFor(garage.last)}
+                      // the notice above already carries the monitor's sentence, once
+                      showReason={advice === null}
+                      onOpen={() => openRun(garage.last!)}
+                      onDelete={() => setPending(garage.last)}
+                      testID="last-run"
+                    />
+                  </SwipeToDelete>
+                ) : null}
 
-          {simParams ? (
-            <>
-              <SectionHead title="Demo bay" accent={colors.cyan} right="Web" />
-              <SimBay params={simParams} onChange={changeSim} testID="sim-bay" />
-            </>
-          ) : null}
+                {garage.earlier.length === 0 ? (
+                  <Micro style={styles.onlyRun}>That is the only run in here. The next one goes above it.</Micro>
+                ) : (
+                  nights.map((night) => (
+                    <View key={night.key} style={styles.night}>
+                      <View style={styles.nightHead}>
+                        <Micro color="blue" numberOfLines={1}>
+                          {night.label}
+                        </Micro>
+                        <View style={styles.nightRule} />
+                        {/* The section head already carries the total; repeat it only when the
+                            nights actually divide it up. */}
+                        {nights.length > 1 ? <Micro numberOfLines={1}>{night.runs.length === 1 ? '1 run' : `${night.runs.length} runs`}</Micro> : null}
+                      </View>
+                      <View style={[styles.list, wide && styles.listWide]}>
+                        {night.runs.map((e) => (
+                          <SwipeToDelete key={e.id} onDelete={() => setPending(e)} enabled={pending === null} style={wide ? styles.rowHalf : undefined}>
+                            <RunRow entry={e} who={whoFor(e)} onOpen={() => openRun(e)} onDelete={() => setPending(e)} testID={`run-${e.id}`} />
+                          </SwipeToDelete>
+                        ))}
+                      </View>
+                    </View>
+                  ))
+                )}
+                <Micro style={styles.swipeHint}>Swipe a run left, or hold it, to delete</Micro>
+              </>
+            )}
 
-          {/* Tucked away, where an errand belongs: the app calibrates itself while driving. */}
-          <View style={styles.footer}>
-            <Pressable
-              onPress={() => openCalibrate()}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Check the mount"
-              testID="nav-calibrate"
-              style={({ pressed }) => [styles.footLink, pressed && styles.pressed]}>
-              <Micro color="muted">Check the mount</Micro>
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/settings')}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-              style={({ pressed }) => [styles.footLink, styles.footLinkEnd, pressed && styles.pressed]}>
-              <Micro color="muted">Settings</Micro>
-            </Pressable>
+            {simParams ? (
+              <>
+                <SectionHead title="Demo bay" right="Web" />
+                <SimBay params={simParams} onChange={changeSim} testID="sim-bay" />
+              </>
+            ) : null}
+
+            {/* Tucked away, where an errand belongs: the app calibrates itself while driving. */}
+            <View style={styles.footer}>
+              <Pressable
+                onPress={() => openCalibrate()}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Check the mount"
+                testID="nav-calibrate"
+                style={({ pressed }) => [styles.footLink, pressed && styles.pressed]}>
+                <Micro color="muted">Check the mount</Micro>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/settings')}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+                style={({ pressed }) => [styles.footLink, styles.footLinkEnd, pressed && styles.pressed]}>
+                <Micro color="muted">Settings</Micro>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
 
+      {/* Outside the scroll: DRIVE is never more than a thumb's reach away, whatever is above it. */}
+      <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.dock}>
+        <View style={styles.dockInner}>
+          <View style={styles.underCta}>
+            <Micro numberOfLines={1} style={styles.ctaNote}>
+              {/* "Unassigned" is a state a run can be IN, and it only reads as a choice once
+                  there are names to choose between. With an empty roster it reads as a fault. */}
+              {active ? `Recording as ${active.name}` : drivers.drivers.length === 0 ? 'No driver yet' : `Recording as ${NO_DRIVER_LABEL.toLowerCase()}`}
+            </Micro>
+            <Tag label={sourceLabel} color={simParams ? colors.blue : colors.green} filled />
+          </View>
+          <DriveSlab
+            onPress={() => router.push(`/drive${simQuery}`)}
+            caption={captionFor(sourceLabel, simParams !== null)}
+            inline={wide}
+            testID="cta-drive"
+          />
+        </View>
+      </SafeAreaView>
+
+      {editing ? (
+        <DriverSheet
+          key={editing.id}
+          driver={editing}
+          runs={runsOf(garage.entries, drivers.roster, editing.id).length}
+          error={drivers.error}
+          busy={busy}
+          onRename={(name) => {
+            void drivers.rename(editing.id, name).then((ok) => {
+              if (ok) setEditing(null);
+            });
+          }}
+          onRemove={() => setForgetting(editing)}
+          onClose={() => setEditing(null)}
+          testID="driver-sheet"
+        />
+      ) : null}
+
+      {forgetting ? (
+        <ForgetDialog driver={forgetting} runs={forgettingRuns} busy={busy} onConfirm={() => void confirmForget()} onCancel={() => setForgetting(null)} />
+      ) : null}
+
       {pending ? (
         <ConfirmDialog
           title="Delete this run?"
-          body="The recording, the score and the replay all go. There is no undo."
+          body="The recording and the replay both go. There is no undo."
           detail={`${pending.track ?? pending.name} · ${formatDate(pending.startedAt)} · ${formatDuration(pending.durationS)}`}
           confirmLabel="Delete"
           busy={busy}
@@ -344,6 +418,29 @@ export default function GarageScreen() {
   );
 }
 
+/**
+ * The question asked before a driver is forgotten.
+ *
+ * The wording is in `driverCopy.ts` and not here, because what a removal costs is a rule about
+ * the data rather than a sentence on a screen: the runs stay and become unassigned, and adding
+ * the same name back mints a new id that does not reclaim them.
+ */
+function ForgetDialog({ driver, runs, busy, onConfirm, onCancel }: { driver: Driver; runs: number; busy: boolean; onConfirm(): void; onCancel(): void }) {
+  const copy = removeDriverCopy(driver.name, runs);
+  return (
+    <ConfirmDialog
+      title={copy.title}
+      body={copy.body}
+      detail={copy.detail}
+      confirmLabel="Forget"
+      busy={busy}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+      testID="confirm-forget-driver"
+    />
+  );
+}
+
 function captionFor(sourceLabel: string, simulated: boolean): string {
   return simulated ? `Simulated · ${sourceLabel.replace(/^SIM · /, '')}` : 'Live sensors · mount it first';
 }
@@ -352,16 +449,25 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[16], width: '100%', maxWidth: 660, alignSelf: 'center' },
+  // No horizontal padding here: the hero bleeds to both edges and every section below it is
+  // wrapped in `pad` instead.
+  scroll: { paddingBottom: space[6], width: '100%', maxWidth: 660, alignSelf: 'center' },
   scrollWide: { maxWidth: 1040 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: space[3], paddingBottom: space[8] },
-  settings: { paddingVertical: space[1], paddingHorizontal: space[2], borderWidth: 1, borderColor: colors.line, borderRadius: 4 },
-  top: { flexDirection: 'row', alignItems: 'flex-start', gap: space[6] },
-  topLeft: { flex: 1.05, minWidth: 0 },
-  topRight: { flex: 1, minWidth: 0 },
-  underCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], marginTop: space[4] },
-  ctaNote: { flexShrink: 1 },
+  pad: { paddingHorizontal: gutter },
+  heroWrap: { position: 'relative' },
+  settings: { position: 'absolute', top: space[2], right: gutter, paddingVertical: space[1], paddingHorizontal: space[2], borderWidth: 1, borderColor: colors.line, borderRadius: 4 },
   notice: { marginTop: space[4] },
+  seeding: { marginTop: space[5], gap: 2 },
+  seedingNote: { textTransform: 'none', letterSpacing: 0.2 },
+  skeletonCard: { height: 180, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg1, opacity: 0.6 },
+  night: { marginTop: space[3] },
+  nightHead: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingBottom: space[2] },
+  nightRule: { flex: 1, height: 1, backgroundColor: colors.line },
+  list: { gap: space[2] },
+  listWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  rowHalf: { flexBasis: '48.5%', flexGrow: 1, minWidth: 280 },
+  onlyRun: { paddingVertical: space[2], textTransform: 'none', letterSpacing: 0.2 },
+  swipeHint: { marginTop: space[3], opacity: 0.7 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -375,16 +481,9 @@ const styles = StyleSheet.create({
   // was 110 × 14 with no hitSlop, on the one control someone uses when something feels wrong.
   footLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space[1] },
   footLinkEnd: { alignItems: 'flex-end' },
-  seeding: { marginTop: space[5], gap: 2, borderLeftWidth: 3, borderLeftColor: colors.cyan, paddingLeft: space[3] },
-  seedingNote: { textTransform: 'none', letterSpacing: 0.2 },
-  skeletonCard: { height: 180, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg1, opacity: 0.6 },
-  night: { marginTop: space[3] },
-  nightHead: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingBottom: space[2] },
-  nightRule: { flex: 1, height: 1, backgroundColor: colors.line },
-  list: { gap: space[2] },
-  listWide: { flexDirection: 'row', flexWrap: 'wrap' },
-  rowHalf: { flexBasis: '48.5%', flexGrow: 1, minWidth: 280 },
-  onlyRun: { paddingVertical: space[2], textTransform: 'none', letterSpacing: 0.2 },
-  swipeHint: { marginTop: space[3], opacity: 0.7 },
+  dock: { borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.bg0 },
+  dockInner: { paddingHorizontal: gutter, paddingTop: space[3], paddingBottom: space[3], gap: space[2], width: '100%', maxWidth: 660, alignSelf: 'center' },
+  underCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
+  ctaNote: { flexShrink: 1 },
   pressed: { opacity: 0.65 },
 });

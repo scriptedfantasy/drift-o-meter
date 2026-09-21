@@ -29,9 +29,18 @@ import { TRACE_CEILING_DEG } from './trace';
  */
 const CASES = ['spin', 'sloppy', 'touge', 'good', 'hero'] as const;
 
+/**
+ * The per-slide measurements, from whichever place this session keeps them — the same order
+ * `sessionStore`'s own accessor uses. `Session.driftStats` is the home; a run stored before it
+ * existed has them inside the scorer's per-drift record, and a test that only knew the old
+ * place would go green against a session that has neither.
+ */
 function statsOf(s: Session, id: number): { heldPeakDeg: number; spun: boolean } | null {
-  const per = s.score.perDrift as unknown as Record<number, { stats?: { heldPeakDeg: number; spun: boolean } }>;
-  return per[id]?.stats ?? null;
+  type Stats = { heldPeakDeg: number; spun: boolean };
+  const own = s.driftStats as Record<number, Stats> | undefined;
+  if (own?.[id]) return own[id];
+  const per = s.score?.perDrift as unknown as Record<number, { stats?: Stats }> | undefined;
+  return per?.[id]?.stats ?? null;
 }
 
 describe.each(CASES)('summarizing the %s fixture', (name) => {

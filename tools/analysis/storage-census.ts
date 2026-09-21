@@ -24,11 +24,12 @@
  */
 import { createMemoryBackend, createSessionStore, type SessionBackend, type SessionIndexEntry, type StorageDiagnosis } from '../../src/platform/sessionStore';
 import type { Session } from '../../src/engine/types';
+import { sanitizeRoster, type Roster } from '../../src/platform/drivers';
 import { mountAdvice } from '../../src/ui/garage/advice';
-import { lastRunStanding, personalBests } from '../../src/ui/garage/bests';
-import { gradeStateOf } from '../../src/ui/garage/grade';
+import { driverStandings, lastRunStanding, runsOf } from '../../src/ui/garage/bests';
+import { runStateOf } from '../../src/ui/garage/runState';
 import { groupByNight } from '../../src/ui/garage/groups';
-import { angleText, pointsText, rowFootnote, slidesText } from '../../src/ui/garage/labels';
+import { angleText, rowFootnote, runShapeText, slidesText } from '../../src/ui/garage/labels';
 import { traceBars, traceLegend } from '../../src/ui/garage/trace';
 import { buildFixtureSession, FIXTURES } from '../../src/ui/results/fixture';
 
@@ -78,6 +79,23 @@ function countingBackend(): { backend: SessionBackend; counts: Counts; bodies: M
  */
 const FLAVOURS = ['spin', 'sloppy', 'touge', 'clean'] as const;
 
+/**
+ * A car several people share, and one run in four that nobody claimed.
+ *
+ * The board groups and ranks by driver, so a season with one driver would not exercise the
+ * path that made `driverId` an INDEX field in the first place — a leaderboard that had to open
+ * a recording to find out whose it was is exactly the regression this file exists to catch.
+ */
+const ROSTER: Roster = sanitizeRoster({
+  drivers: [
+    { id: 'd-lukas', name: 'Lukas', createdAt: 1 },
+    { id: 'd-marco', name: 'Marco', createdAt: 2 },
+    { id: 'd-sam', name: 'Sam', createdAt: 3 },
+  ],
+  activeId: 'd-lukas',
+});
+const SEATS: Array<string | null> = ['d-lukas', 'd-marco', null, 'd-sam'];
+
 function trim(session: Session): Session {
   return { ...session, motion: [], gps: [], states: session.states.length > 0 ? [session.states[0]] : [], truth: undefined };
 }
@@ -88,7 +106,7 @@ function buildSeason(runs: number, trimmed: boolean): Session[] {
     const flavour = FLAVOURS[i % FLAVOURS.length];
     const session = buildFixtureSession({ ...FIXTURES[flavour], seed: i + 1 });
     // Distinct ids: the fixtures all build as `fixture-<name>`, and a season has distinct runs.
-    const dated = { ...session, id: `season-${String(i).padStart(3, '0')}`, startedAt: session.startedAt + i * 60_000 };
+    const dated = { ...session, id: `season-${String(i).padStart(3, '0')}`, startedAt: session.startedAt + i * 60_000, driverId: SEATS[i % SEATS.length] };
     out.push(trimmed ? trim(dated) : dated);
   }
   return out;
@@ -97,6 +115,7 @@ function buildSeason(runs: number, trimmed: boolean): Session[] {
 interface Drawn {
   rows: number;
   nights: number;
+  /** Rows on the leaderboard — one per driver, plus the unassigned bucket. */
   records: number;
   /** Total marks on all the slide traces — the plot really is built, not just counted. */
   marks: number;
@@ -104,25 +123,26 @@ interface Drawn {
 
 /** Everything the garage draws, from the index alone. */
 function drawGarage(entries: SessionIndexEntry[]): Drawn {
-  const bests = personalBests(entries);
-  const last = entries[0] ?? null;
-  lastRunStanding(bests, last);
-  mountAdvice(last);
-  const nights = groupByNight(entries.slice(1));
+  const standings = driverStandings(entries, ROSTER);
+  // The list the screen actually shows: the active driver's runs, filtered before grouping.
+  const shown = runsOf(entries, ROSTER, ROSTER.activeId);
+  lastRunStanding(standings, shown[0] ?? null, ROSTER);
+  mountAdvice(entries[0] ?? null);
+  const nights = groupByNight(shown.slice(1));
   let rows = 0;
   let marks = 0;
   for (const entry of entries) {
-    const state = gradeStateOf(entry.grade, entry.trusted);
+    const state = runStateOf(entry.trusted);
     const untrusted = state.kind === 'void';
     angleText(entry, untrusted);
     slidesText(entry, untrusted);
-    pointsText(entry, state.kind);
+    runShapeText(entry, state.kind);
     rowFootnote(entry, state.kind);
     traceLegend(entry.slides, { believed: !untrusted });
     marks += traceBars(entry.slides, { believed: !untrusted }).length;
     rows++;
   }
-  return { rows, nights: nights.length, records: bests.reduce((a, t) => a + t.records.length, 0), marks };
+  return { rows, nights: nights.length, records: standings.length, marks };
 }
 
 /**
@@ -227,7 +247,7 @@ async function reads(runs: number): Promise<void> {
   const cold = { counts };
 
   console.log(`\nWHAT DRAWING THE GARAGE READS — ${runs} stored runs, cold open`);
-  console.log(`  rows drawn            ${drawn.rows}   (${drawn.nights} night${drawn.nights === 1 ? '' : 's'}, ${drawn.records} records, ${drawn.marks} slide marks)`);
+  console.log(`  rows drawn            ${drawn.rows}   (${drawn.nights} night${drawn.nights === 1 ? '' : 's'}, ${drawn.records} board rows, ${drawn.marks} slide marks)`);
   console.log(`  bodyReads             ${cold.counts.bodyReads}        <- the claim: a row is drawn from the index alone`);
   console.log(`  indexReads            ${cold.counts.indexReads}`);
   console.log(`  bodyIdLists           ${cold.counts.bodyIdLists}        (diagnose() reads key NAMES, never bodies)`);

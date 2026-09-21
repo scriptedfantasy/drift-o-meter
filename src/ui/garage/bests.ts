@@ -1,192 +1,234 @@
 /**
- * Personal bests, per track, derived from what is actually stored.
+ * The board: one row per driver, ranked by the biggest angle they have held.
  *
- * Four records a driver recognises: best grade, most points, biggest angle, longest chain.
- * Only runs the engine vouched for can hold one — a score it refuses to publish is not an
- * achievement (see the contract on `SessionIntegrity.scoreTrusted`), so an untrusted run is
- * counted as a run and never as a record. Pure: a screen can render it, a test can check it.
+ * It used to be four records per track — best grade, most points, biggest angle, longest
+ * chain — and three of those four were arithmetic the user never asked for. What is left is
+ * the one number a driver recognises and the one question several people sharing a car
+ * actually argue about: who got it furthest sideways and kept it there.
  *
- * `lastRunStanding` is the other half of a career screen's job: not only what the records are,
- * but what the run you just did DID to them.
+ * ── THE RANKING RULE ──────────────────────────────────────────────────────────────────────
+ * Peak angle decides. Duration breaks ties, then the newer run. "Best drift" is the biggest
+ * angle, longest held, and an angle that lasted a tenth of a second is not the same
+ * achievement as the same angle carried through a corner — so the tie-break is part of the
+ * definition rather than a way of settling a draw.
+ *
+ * ── THE TRUST GATE ────────────────────────────────────────────────────────────────────────
+ * Only a run the engine vouched for can hold a place. This is the oldest rule on this screen
+ * and it is the reason the board is worth looking at: a phone waved about in a parked car
+ * produces an 85° "angle", bigger than anything any real run on the board holds, and the
+ * integrity monitor is the only thing standing between that number and the top of the list
+ * (see the contract on `SessionIntegrity.scoreTrusted`). A run it refused is COUNTED as a run
+ * and can never be a record.
+ *
+ * ── THE UNASSIGNED BUCKET ─────────────────────────────────────────────────────────────────
+ * A run may have no driver, and that is an answer rather than a gap: the roster starts empty
+ * and the first run happens before anyone has typed a name. A run whose driver has since been
+ * REMOVED reads the same way, because `driverById` answers null for both — one bucket, one
+ * code path, `NO_DRIVER_LABEL` for the name. It is listed and ranked like anybody else. It is
+ * never hidden, and it is never quietly reassigned to whoever is holding the phone now.
+ *
+ * Pure, and index-only: every figure here comes from `SessionIndexEntry`, so a whole season
+ * ranks without opening one recording (`npx tsx tools/analysis/storage-census.ts`).
  */
-import type { Grade } from '../../engine/types';
+import { driverById, NO_DRIVER_LABEL, type Roster } from '../../platform/drivers';
 import type { SessionIndexEntry } from '../../platform';
-
-export type RecordKey = 'grade' | 'points' | 'angle' | 'chain';
-
-export interface BestRecord {
-  key: RecordKey;
-  /** Uppercase label for the tile. */
-  label: string;
-  /** The record itself, formatted. */
-  value: string;
-  /** The record as a number (grade ordinal for `grade`), so a screen can compare against it. */
-  amount: number;
-  /** The run that holds it. */
-  id: string;
-  when: number;
-  /** Extra params that reproduce a demo run on the results screen. */
-  query: string;
-  /** True when nothing has been earned yet (the tile is a dash, not a boast). */
-  empty: boolean;
-  /** Why this number is what it is, when it would otherwise look like a repeat. */
-  note?: string;
-}
-
-export interface TrackBests {
-  track: string;
-  /** Every stored run on this track, trusted or not. */
-  runs: number;
-  /** Runs the engine vouched for — the only ones that can hold a record. */
-  scored: number;
-  /** Newest run on this track, ms since epoch. */
-  lastAt: number;
-  records: BestRecord[];
-  /**
-   * Set when the board is not yet a board. With one scored run every record is that run, so it
-   * says so — a record panel that silently repeats the row underneath it is not a record panel.
-   */
-  framing: string | null;
-}
-
-const GRADE_ORDER: Record<Grade, number> = { D: 0, C: 1, B: 2, A: 3, S: 4 };
+import { peakHold, sidewaysSeconds } from './runFacts';
 
 export const UNTRACKED = 'Unnamed road';
 
-function fmtPoints(n: number): string {
-  return Math.round(n).toLocaleString('en-US');
-}
-
-/** The name a run is filed under on the board. */
+/** The name a run is filed under when the board names a track. */
 export function trackKeyOf(entry: Pick<SessionIndexEntry, 'track'>): string {
   return entry.track && entry.track.trim() ? entry.track : UNTRACKED;
 }
 
-interface Candidate {
-  entry: SessionIndexEntry;
+export interface DriverStanding {
+  /**
+   * The driver this row is for, or null for the unassigned bucket. A run whose stored
+   * `driverId` names nobody on the roster any more lands here too — same bucket, same row.
+   */
+  driverId: string | null;
+  /** What to print. The driver's name as they typed it, or `NO_DRIVER_LABEL`. */
+  name: string;
+  /** 1-based place on the board. 0 for a row with no angle to rank, which sorts to the end. */
+  rank: number;
+  /** Every stored run of theirs, vouched for or not. */
+  runs: number;
+  /** The ones the engine vouched for — the only ones that can hold the angle. */
+  scored: number;
+  /** The biggest angle they have held, in degrees. 0 when they hold none. */
+  peakDeg: number;
+  /**
+   * How long the slide that reached it lasted. The tie-break, and the caption under the angle.
+   *
+   * A slide length, NOT a time at that angle — see `PeakHold.slideS`. The caption says "slide"
+   * for that reason, and the day `SessionIndexEntry` carries the engine's `timeAtAngleS` it can
+   * say "held" and mean it.
+   */
+  slideS: number;
+  /**
+   * Seconds sideways across the runs the engine vouched for, spins included.
+   *
+   * Gated on `trusted` like everything else on this board, because time sideways is a claim
+   * about SLIDING and the monitor did not believe the sliding on a run it threw out. The
+   * unassigned row's only run in the `night` set is the hand-held one, and this column read
+   * "1:19 sideways" beside an angle the same row refuses to state.
+   */
+  sidewaysS: number;
+  /** The run that holds the angle, for opening it. Empty when there is none. */
+  id: string;
+  /** When that run was driven, ms since epoch. */
+  when: number;
+  /** Their most recent run, ms since epoch — how the unranked rows are ordered. */
+  lastAt: number;
+  /** True when nothing of theirs has been vouched for yet, so the angle is a dash. */
+  empty: boolean;
 }
 
-function pick(cands: Candidate[], score: (c: Candidate) => number): { c: Candidate; v: number } | null {
-  let best: { c: Candidate; v: number } | null = null;
-  for (const c of cands) {
-    const v = score(c);
-    if (!Number.isFinite(v) || v <= 0) continue;
-    if (!best || v > best.v || (v === best.v && c.entry.startedAt > best.c.entry.startedAt)) best = { c, v };
+interface Bucket {
+  driverId: string | null;
+  name: string;
+  entries: SessionIndexEntry[];
+}
+
+/**
+ * The best of a driver's runs, by the ranking rule, or null when none of them can hold it.
+ *
+ * Non-positive angles are skipped rather than ranked at zero: a night of nothing but spins
+ * holds no angle at all, and a row reading "0°, 1st" would be the board awarding a place for
+ * failing to get sideways.
+ */
+function bestRun(entries: readonly SessionIndexEntry[]): { entry: SessionIndexEntry; deg: number; slideS: number } | null {
+  let best: { entry: SessionIndexEntry; deg: number; slideS: number } | null = null;
+  for (const entry of entries) {
+    if (!entry.trusted) continue;
+    const deg = entry.heldPeakDeg;
+    if (!Number.isFinite(deg) || deg <= 0) continue;
+    // The angle is the index's own authoritative figure; the trace says how long the slide ran.
+    const slideS = peakHold(entry).slideS;
+    if (!best || deg > best.deg || (deg === best.deg && slideS > best.slideS) || (deg === best.deg && slideS === best.slideS && entry.startedAt > best.entry.startedAt)) {
+      best = { entry, deg, slideS };
+    }
   }
   return best;
 }
 
-function record(key: RecordKey, label: string, hit: { c: Candidate; v: number } | null, format: (v: number) => string): BestRecord {
-  if (!hit) return { key, label, value: '--', amount: 0, id: '', when: 0, query: '', empty: true };
-  return { key, label, value: format(hit.v), amount: hit.v, id: hit.c.entry.id, when: hit.c.entry.startedAt, query: '', empty: false };
+/**
+ * Group every stored run by who drove it and rank the drivers by the biggest angle held.
+ *
+ * Drivers with nothing vouched for keep their row — they have been out, and a board that
+ * drops them looks like it lost their runs — but they rank after everyone who holds an angle,
+ * most recently driven first, and carry rank 0 so a screen can draw a dash instead of a place.
+ */
+export function driverStandings(entries: readonly SessionIndexEntry[], roster: Roster): DriverStanding[] {
+  const buckets = new Map<string, Bucket>();
+  for (const entry of entries) {
+    // One lookup decides both cases the product treats alike: never claimed, and claimed by
+    // someone since removed. `driverById` answers null for each.
+    const driver = driverById(roster, entry.driverId);
+    const key = driver?.id ?? '';
+    const bucket = buckets.get(key);
+    if (bucket) bucket.entries.push(entry);
+    else buckets.set(key, { driverId: driver?.id ?? null, name: driver?.name ?? NO_DRIVER_LABEL, entries: [entry] });
+  }
+
+  const rows: DriverStanding[] = [];
+  for (const bucket of buckets.values()) {
+    const best = bestRun(bucket.entries);
+    rows.push({
+      driverId: bucket.driverId,
+      name: bucket.name,
+      rank: 0,
+      runs: bucket.entries.length,
+      scored: bucket.entries.filter((e) => e.trusted).length,
+      peakDeg: best?.deg ?? 0,
+      slideS: best?.slideS ?? 0,
+      sidewaysS: bucket.entries.reduce((a, e) => a + (e.trusted ? sidewaysSeconds(e) : 0), 0),
+      id: best?.entry.id ?? '',
+      when: best?.entry.startedAt ?? 0,
+      lastAt: bucket.entries.reduce((m, e) => Math.max(m, e.startedAt), 0),
+      empty: best === null,
+    });
+  }
+
+  rows.sort((a, b) => {
+    if (a.empty !== b.empty) return a.empty ? 1 : -1;
+    if (a.empty) return b.lastAt - a.lastAt;
+    return b.peakDeg - a.peakDeg || b.slideS - a.slideS || b.when - a.when;
+  });
+  let place = 0;
+  for (const row of rows) row.rank = row.empty ? 0 : ++place;
+  return rows;
 }
 
 /**
- * Group the stored runs by track and find the four records on each. Tracks come back with the
- * most recently driven first, so the board reads like a logbook rather than an alphabet.
+ * What to print beside BIGGEST ANGLE: the track, when there is only one.
  *
- * Reads the index and nothing else — `trusted`, `heldPeakDeg` and `longestChainPoints` all
- * live there now, so a board of twenty runs costs no JSON parsing at all.
+ * The board ranks across every stored run, because the question it answers is who has held the
+ * biggest angle — not who has held it here. So it may only be captioned with a track name when
+ * every run really was driven on that track; otherwise it says how many, which is true. It read
+ * "HARBOR CIRCUIT" over a board whose second-placed driver set his angle on a mountain road.
  */
-export function personalBests(entries: readonly SessionIndexEntry[]): TrackBests[] {
-  const byTrack = new Map<string, Candidate[]>();
-  for (const entry of entries) {
-    const track = trackKeyOf(entry);
-    const list = byTrack.get(track);
-    if (list) list.push({ entry });
-    else byTrack.set(track, [{ entry }]);
-  }
-
-  const out: TrackBests[] = [];
-  for (const [track, all] of byTrack) {
-    const scored = all.filter((c) => c.entry.trusted);
-    const gradeHit = pick(scored, (c) => GRADE_ORDER[c.entry.grade] + 1);
-    const pointsHit = pick(scored, (c) => c.entry.total);
-    const chainHit = pick(scored, (c) => c.entry.longestChainPoints);
-    const chain = record('chain', 'Longest chain', chainHit, fmtPoints);
-    // A chain worth the whole run's points is not the points tile repeating itself — it is a
-    // run that never dropped the chain. Say that, or the board looks broken.
-    if (chainHit && pointsHit && chainHit.c.entry.id === pointsHit.c.entry.id && Math.round(chainHit.v) === Math.round(pointsHit.v)) {
-      chain.note = 'the whole run, unbroken';
-    }
-    out.push({
-      track,
-      runs: all.length,
-      scored: scored.length,
-      lastAt: all.reduce((m, c) => Math.max(m, c.entry.startedAt), 0),
-      framing: scored.length === 1 ? 'One scored run, so it holds all four — this is the bar to beat' : null,
-      records: [
-        {
-          ...record('grade', 'Best grade', gradeHit, () => ''),
-          value: gradeHit ? gradeHit.c.entry.grade : '--',
-        },
-        record('points', 'Most points', pointsHit, fmtPoints),
-        // The angle the driver HELD and drove out of — which is what the caption under this
-        // board has always said it is (`DriftStats.heldPeakDeg`, not `DriftEvent.peakAngle`).
-        record('angle', 'Biggest angle', pick(scored, (c) => c.entry.heldPeakDeg), (v) => `${Math.round(v)}°`),
-        chain,
-      ],
-    });
-  }
-  out.sort((a, b) => b.lastAt - a.lastAt);
-  return out;
-}
-
-/** The grade a track's best run earned, for colouring the board. `null` when nothing is scored. */
-export function bestGradeOf(bests: TrackBests): Grade | null {
-  const r = bests.records.find((x) => x.key === 'grade');
-  return r && !r.empty ? (r.value as Grade) : null;
+export function boardTrack(entries: readonly SessionIndexEntry[]): string | null {
+  if (entries.length === 0) return null;
+  const tracks = new Set(entries.map(trackKeyOf));
+  return tracks.size === 1 ? trackKeyOf(entries[0]) : `${tracks.size} tracks`;
 }
 
 export interface LastRunStanding {
-  /** Records the last run now holds on its own track. */
-  records: RecordKey[];
-  /** Points short of the track's best. Null when this run holds the points record. */
-  pointsBehind: number | null;
-  /** True when it is the only scored run on this track, so holding all four means nothing yet. */
+  /** True when the run just done holds its driver's biggest angle. */
+  isBest: boolean;
+  /** Degrees short of that driver's biggest. Null when this run holds it. */
+  behindDeg: number | null;
+  /** True when it is the only run of theirs the engine has vouched for. */
   onlyScoredRun: boolean;
-  /** The one line the last-run card prints. Null when there is nothing true to say. */
+  /** The one line the last-run card prints. Never empty — null is returned instead. */
   line: string;
 }
 
 /**
- * What the run you just did did to your own numbers.
+ * What the run you just did did to your own biggest angle.
  *
- * A career screen's whole job, and the garage used to say nothing at all: the last run was an A
- * worth 23,050 with a 56° hold, the board immediately under it read S / 31,519 / 64° / 15,092,
- * and not one pixel connected the two.
+ * A career screen's whole job, and the garage used to say nothing at all: the last run held
+ * 56°, the board directly under it read 64°, and not one pixel connected the two.
  *
- * A run the engine would not vouch for gets nothing here — it holds no record and its total is
- * not a total, so there is nothing to compare. And the FIRST scored run on a track holds all
- * four records by arithmetic, which is not four records; it says what it is instead.
+ * A run the engine would not vouch for gets nothing here. It holds no place and its angle is
+ * not an angle the app will state, so there is nothing to compare — saying "4° off your best"
+ * under a run whose angle the same card prints as `--` would be the screen quoting a number
+ * it has just refused. And a driver's FIRST judged run is their best by arithmetic, which is
+ * not an achievement; it says what it is instead.
  */
-export function lastRunStanding(bests: readonly TrackBests[], last: SessionIndexEntry | null): LastRunStanding | null {
+export function lastRunStanding(standings: readonly DriverStanding[], last: SessionIndexEntry | null, roster: Roster): LastRunStanding | null {
   if (!last || !last.trusted) return null;
-  const panel = bests.find((t) => t.track === trackKeyOf(last));
-  if (!panel) return null;
+  const driverId = driverById(roster, last.driverId)?.id ?? null;
+  const row = standings.find((s) => s.driverId === driverId);
+  if (!row || row.empty) return null;
 
-  const held = panel.records.filter((r) => !r.empty && r.id === last.id);
-  const keys = held.map((r) => r.key);
-  const points = panel.records.find((r) => r.key === 'points');
-  const pointsBehind = points && !points.empty && points.id !== last.id ? Math.max(0, Math.round(points.amount - last.total)) : null;
-  const onlyScoredRun = panel.scored <= 1;
+  const isBest = row.id === last.id;
+  const behindDeg = isBest ? null : Math.max(0, Math.round(row.peakDeg - last.heldPeakDeg));
+  const onlyScoredRun = row.scored <= 1;
 
   const line = onlyScoredRun
-    ? `First scored run on ${panel.track} — this is the bar to beat`
-    : keys.length > 0
-      ? `New record — ${listOf(held.map((r) => r.label.toLowerCase()))}`
-      : pointsBehind === null
-        ? ''
-        : pointsBehind === 0
-          ? 'Level with your best here'
-          : `${fmtPoints(pointsBehind)} off your best here`;
+    ? `First judged run in here — ${Math.round(row.peakDeg)}° is the bar to beat`
+    : isBest
+      ? `New biggest angle — ${Math.round(row.peakDeg)}°${row.slideS > 0 ? `, in a ${row.slideS.toFixed(1)} s slide` : ''}`
+      : behindDeg === 0
+        ? 'Level with the biggest angle on this board'
+        : `${behindDeg}° off the biggest angle on this board`;
 
-  if (!line) return null;
-  return { records: keys, pointsBehind, onlyScoredRun, line };
+  return { isBest, behindDeg, onlyScoredRun, line };
 }
 
-function listOf(items: string[]): string {
-  if (items.length <= 1) return items[0] ?? '';
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+/**
+ * One driver's runs, newest first, in the order the index gave them.
+ *
+ * FILTER BEFORE GROUPING, never after. `groupByNight` does not sort: it coalesces ADJACENT
+ * entries and trusts its input to be newest-first, so filtering a newest-first list keeps
+ * that true and each night appears once. Grouping first and then splitting each night by
+ * driver would produce the same date heading two and three times down one screen.
+ *
+ * `null` selects the unassigned bucket — the runs nobody claimed, and the runs whose driver
+ * has since been forgotten, which are the same set as far as this screen is concerned.
+ */
+export function runsOf(entries: readonly SessionIndexEntry[], roster: Roster, driverId: string | null): SessionIndexEntry[] {
+  return entries.filter((e) => (driverById(roster, e.driverId)?.id ?? null) === driverId);
 }

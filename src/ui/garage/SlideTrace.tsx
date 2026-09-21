@@ -54,7 +54,7 @@ function ridge(b: ReturnType<typeof Skia.PathBuilder.Make>, x0: number, x1: numb
   b.cubicTo(c - shoulder * 0.45, top, c - shoulder * 0.55, base, c, base);
 }
 
-export default function SlideTrace({ slides, width, height, color = colors.ember, believed = true, ceilingDeg = TRACE_CEILING_DEG, testID }: SlideTraceProps) {
+export default function SlideTrace({ slides, width, height, color = colors.green, believed = true, ceilingDeg = TRACE_CEILING_DEG, testID }: SlideTraceProps) {
   const plot = height ?? traceHeight(slides, { believed });
   const base = plot - TRACE_GUTTER_DP;
   const headroom = base - 6;

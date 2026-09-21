@@ -1,16 +1,20 @@
 /**
- * What a card and a row are allowed to print in their number slots.
+ * What a card and a row are allowed to print in their slots.
  *
  * These encode the engine's own contracts, so they are the tests that fail first if anyone
  * quietly reverses one: `SessionIntegrity.scoreTrusted` ("a consumer MUST NOT present the
  * total… offer the run as a recording") and `SessionBreakdown.angleDrifts` ("lower than
  * `drifts` means a screen should say so").
+ *
+ * The points slot the first of those was written against is gone. The rule is not: a run the
+ * engine refused publishes NO judged figure, and the slots that replaced the points — the
+ * angle, the slide count, the time sideways — each have to refuse in their own right.
  */
 import { describe, expect, it } from 'vitest';
 
-import type { SessionIndexEntry } from '../../platform';
-import { gradeStateColor, gradeStateOf } from './grade';
-import { angleText, pointsText, rowFootnote, slidesText } from './labels';
+import type { SessionIndexEntry, SlideMark } from '../../platform';
+import { angleText, holdText, rowFootnote, runShapeText, slidesText } from './labels';
+import { runStateColor, runStateOf } from './runState';
 
 function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
   return {
@@ -36,36 +40,33 @@ function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
   };
 }
 
-describe('the grade slot', () => {
-  it('is a letter only when the engine vouched for the run', () => {
-    expect(gradeStateOf('A', true)).toEqual({ kind: 'grade', grade: 'A' });
-    expect(gradeStateOf('A', false)).toEqual({ kind: 'void' });
-    // Unknown is not a licence to award one: an entry written before `trusted` existed.
-    expect(gradeStateOf('A', undefined)).toEqual({ kind: 'pending' });
+function slide(startFrac: number, endFrac: number, deg: number, spun: 0 | 1 = 0): SlideMark {
+  return [startFrac, endFrac, deg, spun];
+}
+
+describe('the state a run’s slot is in', () => {
+  it('is judged only when the engine vouched for the run', () => {
+    expect(runStateOf(true)).toEqual({ kind: 'judged' });
+    expect(runStateOf(false)).toEqual({ kind: 'void' });
+    // Unknown is not a licence to present one: an entry written before `trusted` existed.
+    expect(runStateOf(undefined)).toEqual({ kind: 'pending' });
   });
 
-  it('colours the refusal as a refusal, not as a grade', () => {
-    expect(gradeStateColor({ kind: 'void' })).not.toBe(gradeStateColor({ kind: 'grade', grade: 'A' }));
-    expect(gradeStateColor({ kind: 'pending' })).not.toBe(gradeStateColor({ kind: 'grade', grade: 'D' }));
-  });
-});
-
-describe('the points slot', () => {
-  it('prints the total of a run the engine published', () => {
-    expect(pointsText(entry(), 'grade')).toEqual({ value: '23,050', note: null });
-  });
-
-  it('prints NO total for a run the engine refused, and offers the recording instead', () => {
-    const slot = pointsText(entry({ total: 155, trusted: false }), 'void');
-    expect(slot.value).toBe('--');
-    expect(slot.value).not.toContain('155');
-    expect(slot.note).toBe('Recording · 2:07');
-    // "A floor, not a measurement" WAS the claim: a floor is a claim about the total.
-    expect(slot.note).not.toMatch(/floor/i);
+  it('colours the refusal as a refusal, not as an achievement', () => {
+    // The letters carried this signal and their colours went with them. Red for a run the
+    // engine threw out is the part that may not go: it is the one thing on the home screen a
+    // driver has to be able to pick out without reading anything.
+    const refused = runStateColor({ kind: 'void' }, 52.8);
+    expect(refused).not.toBe(runStateColor({ kind: 'judged' }, 52.8));
+    expect(refused).not.toBe(runStateColor({ kind: 'pending' }, 0));
+    // …and it does not depend on the angle the refused run claims, which is the number the
+    // refusal is about.
+    expect(runStateColor({ kind: 'void' }, 85)).toBe(refused);
   });
 
-  it('prints no total before the verdict has arrived either', () => {
-    expect(pointsText(entry(), 'pending').value).toBe('--');
+  it('gives a judged run the colour of the angle it held, and nothing for an angle it did not', () => {
+    expect(runStateColor({ kind: 'judged' }, 20)).not.toBe(runStateColor({ kind: 'judged' }, 68));
+    expect(runStateColor({ kind: 'judged' }, 0)).not.toBe(runStateColor({ kind: 'judged' }, 40));
   });
 });
 
@@ -81,6 +82,18 @@ describe('the angle slot', () => {
 
   it('claims no angle for a run that held nothing', () => {
     expect(angleText(entry({ heldPeakDeg: 0 }), false)).toBe('--');
+  });
+});
+
+describe('how long it was held', () => {
+  it('keeps a tenth while the number is small and drops it once it is not', () => {
+    expect(holdText(2.44)).toBe('2.4s');
+    expect(holdText(12.4)).toBe('12s');
+  });
+
+  it('says nothing when nothing was held', () => {
+    expect(holdText(0)).toBe('--');
+    expect(holdText(Number.NaN)).toBe('--');
   });
 });
 
@@ -111,10 +124,35 @@ describe('the slide count', () => {
   });
 });
 
+describe('what a row says a run was made of', () => {
+  it('counts the slides and adds up the time the car was sideways', () => {
+    const line = runShapeText(entry({ durationS: 100, drifts: 2, slides: [slide(0, 0.1, 40), slide(0.3, 0.42, 51)] }), 'judged');
+    expect(line).toBe('2 slides · 0:22 sideways');
+  });
+
+  it('names the spins in the same breath as the count', () => {
+    const line = runShapeText(entry({ durationS: 100, drifts: 11, spins: 3, slides: [slide(0, 0.1, 40)] }), 'judged');
+    expect(line).toMatch(/^8 of 11 slides · 3 spun/);
+  });
+
+  it('claims no time sideways at all on a run the monitor did not believe', () => {
+    // Time sideways is a claim about SLIDING, and the monitor did not believe the sliding. The
+    // recording's own length is a fact about the file, so that is what is offered instead.
+    const line = runShapeText(entry({ durationS: 127, drifts: 7, spins: 3, slides: [slide(0, 0.5, 80)] }), 'void');
+    expect(line).toBe('7 recorded · not judged');
+    expect(line).not.toMatch(/sideways/);
+    expect(runShapeText(entry({ drifts: 0, slides: [] }), 'void')).toBe('Recording · 2:07');
+  });
+
+  it('claims nothing before the verdict has arrived either', () => {
+    expect(runShapeText(entry({ durationS: 100, drifts: 2, slides: [slide(0, 0.1, 40)] }), 'pending')).not.toMatch(/sideways/);
+  });
+});
+
 describe('a row footnote', () => {
   it('names what the number above it is', () => {
-    expect(rowFootnote(entry(), 'grade')).toBe('53° held');
-    expect(rowFootnote(entry({ heldPeakDeg: 0 }), 'grade')).toBe('no angle held');
+    expect(rowFootnote(entry(), 'judged')).toBe('53° held');
+    expect(rowFootnote(entry({ heldPeakDeg: 0 }), 'judged')).toBe('no angle held');
   });
 
   it('says a recording is a recording', () => {

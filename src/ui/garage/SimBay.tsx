@@ -30,7 +30,7 @@ const RATES: SegmentOption<number>[] = [
 ];
 
 /** The three mounts the simulator actually models, in a driver's words. */
-export const MOUNT_LEVELS: Array<{ value: number; label: string; blurb: string }> = [
+export const MOUNT_LEVELS: { value: number; label: string; blurb: string }[] = [
   { value: 0, label: 'Bolted down', blurb: 'A rigid cradle. The phone only moves when the car does.' },
   { value: 0.25, label: 'Rattling', blurb: 'A cheap cradle with play in it — the monitor should get suspicious.' },
   { value: 1, label: 'In your hand', blurb: 'Not mounted at all. The engine should refuse to score the run.' },
@@ -61,21 +61,21 @@ export function SimBay({ params, onChange, testID }: SimBayProps) {
   return (
     <View style={[styles.bay, warn && styles.bayWarn]} testID={testID}>
       <View style={styles.head}>
-        <AppText variant="subheading" color="cyan">
+        <AppText variant="subheading" color="blue">
           Simulated drive
         </AppText>
-        <Micro color="cyan">No car involved</Micro>
+        <Micro color="blue">No car involved</Micro>
       </View>
       <Small style={styles.blurb}>
         This browser has no motion sensors, so nothing here is measured — a recorded drive is replayed through the real
-        engine. The grades are real; the driving is not.
+        engine. The angles are real; the driving is not.
       </Small>
 
       <Field label="Road">
-        <Segmented options={TRACKS} value={params.track} onChange={(track) => onChange({ ...params, track })} color={colors.cyan} testID="sim-track" />
+        <Segmented options={TRACKS} value={params.track} onChange={(track) => onChange({ ...params, track })} color={colors.blue} testID="sim-track" />
       </Field>
       <Field label="Playback">
-        <Segmented options={RATES} value={params.rate} onChange={(rate) => onChange({ ...params, rate })} color={colors.cyan} testID="sim-rate" />
+        <Segmented options={RATES} value={params.rate} onChange={(rate) => onChange({ ...params, rate })} color={colors.blue} testID="sim-rate" />
       </Field>
       <Field label="Phone mount" hint={mount.blurb}>
         <Segmented
@@ -91,7 +91,7 @@ export function SimBay({ params, onChange, testID }: SimBayProps) {
           options={GPS}
           value={params.gpsDropouts ? 'gaps' : 'clean'}
           onChange={(v) => onChange({ ...params, gpsDropouts: v === 'gaps' })}
-          color={params.gpsDropouts ? colors.gold : colors.green}
+          color={params.gpsDropouts ? colors.greenHot : colors.green}
           testID="sim-gps"
         />
       </Field>
@@ -124,13 +124,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg1,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: alpha(colors.cyan, 0.4),
-    borderLeftWidth: 3,
-    borderLeftColor: colors.cyan,
+    borderColor: alpha(colors.blue, 0.4),
     padding: space[4],
     gap: space[3],
   },
-  bayWarn: { borderColor: alpha(colors.gold, 0.4), borderLeftColor: colors.gold },
+  bayWarn: { borderColor: alpha(colors.greenHot, 0.4) },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space[2] },
   blurb: { maxWidth: 420 },
   field: { gap: space[2] },

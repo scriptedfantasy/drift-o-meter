@@ -25,10 +25,9 @@ export interface FaultNoticeProps {
 }
 
 export function FaultNotice({ fault, busy = false, onAct, testID }: FaultNoticeProps) {
-  const color = fault.level === 'bad' ? colors.red : colors.gold;
+  const color = fault.level === 'bad' ? colors.red : colors.greenHot;
   return (
     <View style={[styles.notice, { borderColor: alpha(color, 0.75), backgroundColor: alpha(color, 0.12) }]} testID={testID ?? `fault-${fault.kind}`}>
-      <View style={[styles.bar, { backgroundColor: color }]} />
       <View style={styles.text}>
         <AppText variant="subheading" color={color} numberOfLines={2} style={styles.title}>
           {fault.title}
@@ -55,7 +54,6 @@ export function FaultNotice({ fault, busy = false, onAct, testID }: FaultNoticeP
 
 const styles = StyleSheet.create({
   notice: { flexDirection: 'row', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[3] },
-  bar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
   text: { flex: 1, gap: space[2] },
   title: { fontSize: 18, lineHeight: 21 },
   action: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: space[4], minHeight: 44, justifyContent: 'center', marginTop: space[1] },

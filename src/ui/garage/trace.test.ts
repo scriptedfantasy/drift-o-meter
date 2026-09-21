@@ -14,35 +14,47 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
 import { radToDeg, type Session } from '../../engine/types';
 // Straight from the module, not the platform barrel: the barrel pulls in expo-sensors.
 import { summarizeSession, type SlideMark } from '../../platform/sessionStore';
+import { ANGLE_STOPS, angleColor, MAX_ANGLE_DEG } from '../theme';
 import { buildFixtureSession, FIXTURES } from '../results/fixture';
 import { measuredCount, traceBars, traceLegend, TRACE_CEILING_DEG } from './trace';
 
 /** Runs that between them cover every state the plot has: spins, none, and a refused run. */
 const CASES = ['spin', 'sloppy', 'touge', 'good', 'hero', 'handheld'] as const;
 
+/**
+ * The per-slide measurements, from whichever place this session keeps them — the same order
+ * `sessionStore`'s own accessor uses. `Session.driftStats` is the home; a run stored before it
+ * existed has them inside the scorer's per-drift record, and a test that only knew the old
+ * place would go green against a session that has neither.
+ */
 function statsOf(s: Session, id: number): { heldPeakDeg: number; spun: boolean } | null {
-  const per = s.score.perDrift as unknown as Record<number, { stats?: { heldPeakDeg: number; spun: boolean } }>;
-  return per[id]?.stats ?? null;
+  type Stats = { heldPeakDeg: number; spun: boolean };
+  const own = s.driftStats as Record<number, Stats> | undefined;
+  if (own?.[id]) return own[id];
+  const per = s.score?.perDrift as unknown as Record<number, { stats?: Stats }> | undefined;
+  return per?.[id]?.stats ?? null;
 }
 
 describe('the ceiling the axis is captioned with', () => {
-  it('is the scorer’s own angle curve, not a number typed in here', () => {
-    const curve = DEFAULT_SCORE_OPTIONS.angleCurve;
-    const [topDeg, topScore] = curve[curve.length - 1];
-    expect(TRACE_CEILING_DEG).toBe(topDeg);
-    // …and the last knot really is the top of the scale, so "60° top" means "the top of what the
-    // engine pays for". docs/ARCHITECTURE.md names this knot as the first thing to re-derive from
-    // real data; if it moves, the axis label moves with it, and if the curve stops being a scale
-    // that tops out at its end this fails instead of the label quietly going false.
-    for (const [deg, score] of curve) {
-      expect(deg).toBeLessThanOrEqual(topDeg);
-      expect(score).toBeLessThanOrEqual(topScore);
-    }
-    expect(topScore).toBe(100);
+  it('is the shared angle ramp’s own full scale, not a number typed in here', () => {
+    // It WAS the last knot of the scorer's angle curve, and the points took that curve with
+    // them. The rule the old assertion carried is the one that matters and it survives the
+    // move: the number the axis is captioned with has to come from somewhere else, or it goes
+    // quietly false the next time the scale changes. `ANGLE_STOPS` is where angles get their
+    // colour, so the top of this axis is now the same degree as the top of the dial's sweep —
+    // 60 here against 70 there is why one 64° hold drew full-height in the garage and
+    // nine-tenths of the way round on the drive screen.
+    expect(TRACE_CEILING_DEG).toBe(MAX_ANGLE_DEG);
+    expect(MAX_ANGLE_DEG).toBe(ANGLE_STOPS[ANGLE_STOPS.length - 1].deg);
+    // …and the last stop really is the top of the ramp, so the caption means "as far as this
+    // app draws an angle" rather than "as far as the stops happen to be listed".
+    for (const stop of ANGLE_STOPS) expect(stop.deg).toBeLessThanOrEqual(MAX_ANGLE_DEG);
+    // The colour at the ceiling is the colour the ramp ends on, which is what makes a mark at
+    // the top of the axis read as the limit rather than as a high score.
+    expect(angleColor(MAX_ANGLE_DEG).toLowerCase()).toBe(ANGLE_STOPS[ANGLE_STOPS.length - 1].color.toLowerCase());
   });
 });
 
@@ -117,12 +129,22 @@ describe('a spun slide', () => {
   });
 
   it('is drawn with no height either way — below the ceiling or above it', () => {
-    // The ambiguous case, which is where a partial-credit bug would live (rule 14): 44.2° would
-    // fit on the axis and 68.5° would not, and neither may be on it.
+    // The ambiguous case, which is where a partial-credit bug would live (rule 14): a spin the
+    // axis COULD hold and a spin it could not, and neither may be on it.
+    //
+    // The fixture used to supply both: at the old 60° ceiling its two spins held 44.2° and
+    // 68.5°, one either side. The ceiling is now the shared ramp's full scale (70°), so both of
+    // the real ones fit, and the over-ceiling half of the case is made here instead of asserted
+    // out of a fixture that no longer has it.
     const held = spunAt.map(([m]) => m[2]);
     expect(Math.min(...held)).toBeLessThan(TRACE_CEILING_DEG);
-    expect(Math.max(...held)).toBeGreaterThan(TRACE_CEILING_DEG);
-    for (const [, i] of spunAt) expect(traceBars(entry.slides)[i]).toEqual({ x0: expect.any(Number), x1: expect.any(Number), height: 0, kind: 'footprint' });
+    const footprint = { x0: expect.any(Number), x1: expect.any(Number), height: 0, kind: 'footprint' };
+    for (const [, i] of spunAt) expect(traceBars(entry.slides)[i]).toEqual(footprint);
+    const past: SlideMark = [0.1, 0.2, TRACE_CEILING_DEG + 12, 1];
+    expect(traceBars([past])[0]).toEqual(footprint);
+    // …and the same mark, unspun, WOULD have been drawn at the ceiling — so the zero above is
+    // the spin rule doing the work rather than the clamp swallowing it.
+    expect(traceBars([[past[0], past[1], past[2], 0]])[0].height).toBe(1);
   });
 
   it('leaves the tallest ridge agreeing with the number printed under it', () => {

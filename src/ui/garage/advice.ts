@@ -60,7 +60,7 @@ export function mountAdvice(entry: SessionIndexEntry | null): MountAdvice | null
       level: 'bad',
       title: 'Your last run was thrown out',
       quote: entry.integrityMessage ? monitorSentence(entry.integrityMessage) : null,
-      body: 'Nothing from that drive was scored. It is still here as a recording you can watch.',
+      body: 'No angle from that drive is claimed and it takes no place on the board. It is still here as a recording you can watch.',
       action: 'Check the mount',
     };
   }
@@ -71,7 +71,7 @@ export function mountAdvice(entry: SessionIndexEntry | null): MountAdvice | null
       level: 'bad',
       title: 'The phone was moving in its mount',
       quote: null,
-      body: 'It was scored, but movement in the cradle reads as slip the car never made, so last run’s angles are worth less than they look.',
+      body: 'It was judged, but movement in the cradle reads as slip the car never made, so last run’s angles are worth less than they look.',
       action: 'Check the mount',
     };
   }
@@ -80,7 +80,7 @@ export function mountAdvice(entry: SessionIndexEntry | null): MountAdvice | null
   // while the calibration screen carried 0.75 and the results screen wrote both as literals, so
   // one run at 0.33 was "ready to measure" on one screen and "never calibrated" on this one.
   // `calibrationBand` is the only thing that knows where the edges are, and its lower edge is
-  // the monitor's own veto — so the garage can no longer disown a run the engine scored.
+  // the monitor's own veto — so the garage can no longer disown a run the engine judged.
   // A negative quality means the entry predates the field: unknown, so nothing is claimed.
   const band = entry.calibrationQuality >= 0 ? calibrationBand(entry.calibrationQuality, entry.calibrationForwardResolved) : null;
   if (band !== null && !bandIsScorable(band)) {

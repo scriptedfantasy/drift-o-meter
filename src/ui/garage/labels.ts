@@ -1,22 +1,25 @@
 /**
- * The strings a session card and a session row put in their three number slots.
+ * The strings a session card and a session row put in their slots.
  *
  * Pure and separate from the components, because every one of them is an honesty rule rather
  * than a formatting choice, and a rule that cannot be tested is a rule that can be reversed by
  * a careless refactor:
  *
- *  • a run the engine refused to score publishes NO total (`SessionIntegrity.scoreTrusted`:
- *    "a consumer MUST NOT present the total… show `message` instead and offer the run as a
- *    recording"). It used to print "POINTS LOGGED 155 — A FLOOR, NOT A MEASUREMENT" at 52 px,
- *    which is exactly the claim the engine refuses to make;
  *  • the angle is the one the driver HELD, never the instantaneous peak, and never at all on a
  *    run that was not believed;
  *  • a slide count says how many of the slides the angle was measured over, because the
  *    engine's own `angleDrifts` doc asks a screen to ("8 of 11 slides — the three you spun do
- *    not count").
+ *    not count");
+ *  • a run the engine refused to vouch for publishes no judged figure of any kind. It used to
+ *    print "POINTS LOGGED 155 — A FLOOR, NOT A MEASUREMENT" at 52 px, which is exactly the
+ *    claim the engine refuses to make (`SessionIntegrity.scoreTrusted`: "a consumer MUST NOT
+ *    present the total… show `message` instead and offer the run as a recording"). The points
+ *    are gone; the rule they were the test case for is not.
  */
 import type { SessionIndexEntry } from '../../platform';
-import { formatDuration, formatScore } from '../format';
+import { formatDuration } from '../format';
+import type { RunStateKind } from './runState';
+import { sidewaysSeconds } from './runFacts';
 
 /** A number slot: what it says, and the line under it that qualifies it. */
 export interface Slot {
@@ -36,6 +39,19 @@ export interface Slot {
 export function angleText(entry: Pick<SessionIndexEntry, 'heldPeakDeg'>, untrusted: boolean): string {
   if (untrusted || !(entry.heldPeakDeg > 0)) return '--';
   return `${Math.round(entry.heldPeakDeg)}°`;
+}
+
+/**
+ * How long the slide that reached the biggest angle lasted, for the line under it.
+ *
+ * "SLIDE", never "HELD". The number is the length of the whole slide (`PeakHold.slideS`), and
+ * `27s HELD` under `53°` reads as twenty-seven seconds at fifty-three degrees — which nothing
+ * in the session index knows. The engine measures that as `DriftSummary.timeAtAngleS`; until
+ * the index carries it, this is the true thing the garage can say.
+ */
+export function holdText(slideS: number): string {
+  if (!Number.isFinite(slideS) || slideS <= 0) return '--';
+  return slideS >= 10 ? `${Math.round(slideS)}s` : `${slideS.toFixed(1)}s`;
 }
 
 /**
@@ -63,17 +79,28 @@ export function slidesText(entry: Pick<SessionIndexEntry, 'drifts' | 'spins'>, u
 }
 
 /**
- * The points slot. `--` for a run the engine would not publish, with the recording's length in
- * the caption instead — the run is offered as a recording, which is what the contract asks for.
+ * The middle line of a run row: what the run was made of.
+ *
+ * TIME SIDEWAYS IS A CLAIM ABOUT SLIDING, so a run the monitor did not believe does not get
+ * one. It gets the length of the recording instead, which is a fact about the file rather than
+ * about the driving — the same distinction the slide count makes one line up, and the same one
+ * the trace's own caption makes over the plot.
  */
-export function pointsText(entry: Pick<SessionIndexEntry, 'total' | 'durationS'>, kind: 'grade' | 'void' | 'pending'): Slot {
-  if (kind === 'void') return { value: '--', note: `Recording · ${formatDuration(entry.durationS)}` };
-  if (kind === 'pending') return { value: '--', note: null };
-  return { value: formatScore(entry.total), note: null };
+export function runShapeText(entry: Pick<SessionIndexEntry, 'drifts' | 'spins' | 'durationS' | 'slides'>, kind: RunStateKind): string {
+  const recorded = Math.max(0, Math.round(entry.drifts));
+  if (kind !== 'judged') {
+    // Short on purpose: with the driver's name in front of it this line is ~230 dp wide on a
+    // 390 pt screen, and "5 slides recorded · not j…" is a refusal that ellipsises away.
+    return recorded > 0 ? `${recorded} recorded · not judged` : `Recording · ${formatDuration(entry.durationS)}`;
+  }
+  const slides = slidesText(entry, false);
+  const counted = slides.note ? `${slides.value} slides · ${slides.note}` : `${slides.value} ${recorded === 1 ? 'slide' : 'slides'}`;
+  const sideways = sidewaysSeconds(entry);
+  return sideways > 0 ? `${counted} · ${formatDuration(sideways)} sideways` : counted;
 }
 
 /** The right-hand line of a list row: the run's best held angle, or what it is instead. */
-export function rowFootnote(entry: Pick<SessionIndexEntry, 'heldPeakDeg' | 'durationS'>, kind: 'grade' | 'void' | 'pending'): string {
+export function rowFootnote(entry: Pick<SessionIndexEntry, 'heldPeakDeg' | 'durationS'>, kind: RunStateKind): string {
   if (kind === 'void') return 'recording only';
   if (kind === 'pending') return '';
   const angle = angleText(entry, false);

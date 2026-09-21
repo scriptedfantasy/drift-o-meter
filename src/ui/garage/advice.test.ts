@@ -66,7 +66,11 @@ describe('mountAdvice', () => {
     expect(a?.level).toBe('bad');
     // On its own line, never concatenated into the body…
     expect(a?.body).not.toContain('hand-held');
-    expect(a?.body).toMatch(/nothing from that drive was scored/i);
+    // The rule is that the body states the CONSEQUENCE of the refusal, in the vocabulary the
+    // app still has: no angle claimed, and no place on the board. It used to say "nothing was
+    // scored", which said the same thing about a number that no longer exists.
+    expect(a?.body).toMatch(/no angle/i);
+    expect(a?.body).toMatch(/board/i);
     // …and ended, so the monitor's pill reads as prose instead of arriving glued.
     expect(a?.quote).toBe("100% of this run's sliding could not be trusted. Phone looks hand-held — clip it into a rigid mount to score drifts.");
   });
@@ -91,7 +95,7 @@ describe('mountAdvice', () => {
     expect(a?.quote).toBeNull();
   });
 
-  it('warns about a loose mount on a run that was scored anyway', () => {
+  it('warns about a loose mount on a run that was judged anyway', () => {
     const a = mountAdvice(entry({ mount: 'loose' }));
     expect(a?.concern).toBe('loose');
     expect(a?.level).toBe('bad');

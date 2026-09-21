@@ -13,10 +13,9 @@ import { alpha, colors, radii, space } from '../theme';
 import type { MountAdvice } from './advice';
 
 export function MountNotice({ advice, onPress, testID }: { advice: MountAdvice; onPress(): void; testID?: string }) {
-  const color = advice.level === 'bad' ? colors.red : colors.gold;
+  const color = advice.level === 'bad' ? colors.red : colors.greenHot;
   return (
     <View style={[styles.notice, { borderColor: alpha(color, 0.75), backgroundColor: alpha(color, 0.12) }]} testID={testID}>
-      <View style={[styles.bar, { backgroundColor: color }]} />
       <View style={styles.text}>
         <AppText variant="subheading" color={color} numberOfLines={2} style={styles.title}>
           {advice.title}
@@ -39,11 +38,11 @@ export function MountNotice({ advice, onPress, testID }: { advice: MountAdvice; 
 
 const styles = StyleSheet.create({
   notice: { flexDirection: 'row', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[3] },
-  bar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
   text: { flex: 1, gap: space[2] },
   title: { fontSize: 18, lineHeight: 21 },
-  // The monitor's own sentence, set apart rather than glued into a template sentence.
-  quote: { borderLeftWidth: 2, borderLeftColor: alpha(colors.text, 0.35), paddingLeft: space[3] },
+  // The monitor's own sentence, set apart rather than glued into a template sentence —
+  // in its own box, because a bar down its left edge is the banned earmark by another name.
+  quote: { backgroundColor: alpha(colors.text, 0.06), borderRadius: radii.sm, paddingHorizontal: space[3], paddingVertical: space[2] },
   action: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: space[3], paddingVertical: 5, marginTop: space[1] },
   pressed: { opacity: 0.7 },
 });

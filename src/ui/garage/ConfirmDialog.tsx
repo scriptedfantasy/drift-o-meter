@@ -64,7 +64,8 @@ const styles = StyleSheet.create({
   bar: { height: 3, width: 48, backgroundColor: colors.red, transform: [{ skewX: '-8deg' }] },
   title: { fontSize: 26, lineHeight: 28 },
   body: { maxWidth: 420 },
-  detail: { borderLeftWidth: 2, borderLeftColor: colors.line, paddingLeft: space[3] },
+  // No stripe down the side: the sheet is already red-edged, and severity is the words.
+  detail: { backgroundColor: colors.bg2, borderRadius: radii.sm, paddingHorizontal: space[3], paddingVertical: space[2] },
   actions: { flexDirection: 'row', gap: space[3], marginTop: space[2] },
   action: { flex: 1 },
 });

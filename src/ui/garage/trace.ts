@@ -20,18 +20,26 @@
  * The untrusted case was the same claim by another route: a run whose angle the card prints as
  * `--` cannot have its angles drawn either. Both are now footprints.
  */
-import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
 import type { SlideMark } from '../../platform';
+import { MAX_ANGLE_DEG } from '../theme';
 
 /**
- * Degrees at the top of the plot: the last knot of the scorer's own angle curve, which is where
- * the angle component stops paying more (100 at 60°). Taken from `DEFAULT_SCORE_OPTIONS`, never
- * typed out here — `docs/ARCHITECTURE.md` names that knot as "the first thing to re-derive from
- * real data", and a ceiling copied into this file would let the axis label go on saying "60°
- * TOP" after the curve had moved. `trace.test.ts` fails if the curve stops being a scale that
- * tops out at its last knot.
+ * Degrees at the top of the plot: full scale on the shared angle ramp.
+ *
+ * NEVER a number typed out here. It used to be the last knot of the scorer's angle curve —
+ * where the angle component stopped paying more, 60° — and when the points went, so did the
+ * only thing that knot meant. `MAX_ANGLE_DEG` is read off `ANGLE_STOPS`, the ramp the dial,
+ * the results screen and this plot all colour angles with, so the top of this axis and the
+ * top of the dial's sweep cannot drift apart. They had: at 60 here against 70 there, one
+ * 64° hold drew full-height in the garage and nine-tenths of the way round on the drive
+ * screen, for the same slide.
+ *
+ * Moving it from 60 to 70 makes every stored run's trace SHORTER — a 60° hold that reached
+ * the top of the old axis now reaches six-sevenths of it — which is the honest picture: the
+ * axis now runs to where a slide becomes a spin rather than to where a scoring curve
+ * flattened out. `trace.test.ts` fails if this stops being the ramp's own top.
  */
-export const TRACE_CEILING_DEG = DEFAULT_SCORE_OPTIONS.angleCurve[DEFAULT_SCORE_OPTIONS.angleCurve.length - 1][0];
+export const TRACE_CEILING_DEG = MAX_ANGLE_DEG;
 
 /** One drawn mark, in fractions so the geometry can be checked without a canvas. */
 export interface TraceBar {
