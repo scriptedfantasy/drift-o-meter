@@ -1,0 +1,157 @@
+
+=== CEILING — 2 tracks × 3 mounts × 8 seeds, rigid, default vibration ===
+track  mount           seed   peak  @ t     final   fwd   ok
+harbor portrait-vent   1     0.740    6.3s   0.698  yes   yes
+harbor portrait-vent   2     0.840    5.1s   0.821  yes   yes
+harbor portrait-vent   3     0.761    5.1s   0.744  yes   yes
+harbor portrait-vent   4     0.754    7.1s   0.733  yes   yes
+harbor portrait-vent   5     0.653    5.3s   0.563  yes   yes
+harbor portrait-vent   6     0.798    5.4s   0.773  yes   yes
+harbor portrait-vent   7     0.752    5.8s   0.742  yes   yes
+harbor portrait-vent   8     0.829    6.9s   0.802  yes   yes
+harbor landscape-dash  1     0.706    6.3s   0.675  yes   yes
+harbor landscape-dash  2     0.858    5.1s   0.842  yes   yes
+harbor landscape-dash  3     0.758    6.0s   0.725  yes   yes
+harbor landscape-dash  4     0.691    7.1s   0.656  yes   yes
+harbor landscape-dash  5     0.760    7.1s   0.721  yes   yes
+harbor landscape-dash  6     0.746    5.4s   0.725  yes   yes
+harbor landscape-dash  7     0.774    5.8s   0.763  yes   yes
+harbor landscape-dash  8     0.710    7.9s   0.677  yes   yes
+harbor flat-console    1     0.713    6.3s   0.680  yes   yes
+harbor flat-console    2     0.848    5.1s   0.831  yes   yes
+harbor flat-console    3     0.755    5.1s   0.732  yes   yes
+harbor flat-console    4     0.748    7.1s   0.728  yes   yes
+harbor flat-console    5     0.618    5.3s   0.504  yes   yes
+harbor flat-console    6     0.726    5.4s   0.705  yes   yes
+harbor flat-console    7     0.785    5.8s   0.776  yes   yes
+harbor flat-console    8     0.748    5.9s   0.733  yes   yes
+touge  portrait-vent   1     0.719    6.3s   0.715  yes   yes
+touge  portrait-vent   2     0.811    8.0s   0.808  yes   yes
+touge  portrait-vent   3     0.735    5.1s   0.729  yes   yes
+touge  portrait-vent   4     0.760    7.1s   0.735  yes   yes
+touge  portrait-vent   5     0.683    5.3s   0.657  yes   yes
+touge  portrait-vent   6     0.781    5.4s   0.773  yes   yes
+touge  portrait-vent   7     0.771    5.8s   0.759  yes   yes
+touge  portrait-vent   8     0.809    6.9s   0.801  yes   yes
+touge  landscape-dash  1     0.679    5.3s   0.676  yes   yes
+touge  landscape-dash  2     0.864    7.1s   0.861  yes   yes
+touge  landscape-dash  3     0.716    7.0s   0.708  yes   yes
+touge  landscape-dash  4     0.648    5.1s   0.625  yes   yes
+touge  landscape-dash  5     0.772    6.1s   0.748  yes   yes
+touge  landscape-dash  6     0.706    5.4s   0.699  yes   yes
+touge  landscape-dash  7     0.781    5.8s   0.771  yes   yes
+touge  landscape-dash  8     0.670    6.9s   0.661  yes   yes
+touge  flat-console    1     0.698    5.3s   0.695  yes   yes
+touge  flat-console    2     0.815    8.0s   0.813  yes   yes
+touge  flat-console    3     0.733    5.1s   0.728  yes   yes
+touge  flat-console    4     0.757    5.1s   0.736  yes   yes
+touge  flat-console    5     0.646    5.3s   0.620  yes   yes
+touge  flat-console    6     0.713    5.4s   0.706  yes   yes
+touge  flat-console    7     0.803    5.8s   0.789  yes   yes
+touge  flat-console    8     0.737    6.9s   0.730  yes   yes
+
+peak quality over 48 runs: min 0.618  median 0.750  max 0.864
+  >= 0.75: 24/48 (50 %)
+  >= 0.80: 9/48 (19 %)
+
+=== VIBRATION — the same grid at vibration 0 / 1 / 2 / 3 ===
+vib   runs   min   median   max   >=0.75
+0     48     0.639  0.774   0.869  34/48 (71 %)
+1     48     0.618  0.750   0.864  24/48 (50 %)
+2     48     0.593  0.730   0.836  17/48 (35 %)
+3     48     0.565  0.705   0.808  11/48 (23 %)
+
+=== TRAJECTORY — peak vs final over the rigid grid ===
+track  mount           seed   peak  @ t     final   final-peak
+harbor portrait-vent   1     0.740    6.3s   0.698  -0.041
+harbor portrait-vent   2     0.840    5.1s   0.821  -0.019
+harbor portrait-vent   3     0.761    5.1s   0.744  -0.017
+harbor portrait-vent   4     0.754    7.1s   0.733  -0.021
+harbor portrait-vent   5     0.653    5.3s   0.563  -0.090
+harbor portrait-vent   6     0.798    5.4s   0.773  -0.025
+harbor portrait-vent   7     0.752    5.8s   0.742  -0.010
+harbor portrait-vent   8     0.829    6.9s   0.802  -0.027
+harbor landscape-dash  1     0.706    6.3s   0.675  -0.030
+harbor landscape-dash  2     0.858    5.1s   0.842  -0.016
+harbor landscape-dash  3     0.758    6.0s   0.725  -0.033
+harbor landscape-dash  4     0.691    7.1s   0.656  -0.035
+harbor landscape-dash  5     0.760    7.1s   0.721  -0.039
+harbor landscape-dash  6     0.746    5.4s   0.725  -0.020
+harbor landscape-dash  7     0.774    5.8s   0.763  -0.011
+harbor landscape-dash  8     0.710    7.9s   0.677  -0.033
+harbor flat-console    1     0.713    6.3s   0.680  -0.033
+harbor flat-console    2     0.848    5.1s   0.831  -0.016
+harbor flat-console    3     0.755    5.1s   0.732  -0.023
+harbor flat-console    4     0.748    7.1s   0.728  -0.020
+harbor flat-console    5     0.618    5.3s   0.504  -0.114
+harbor flat-console    6     0.726    5.4s   0.705  -0.021
+harbor flat-console    7     0.785    5.8s   0.776  -0.009
+harbor flat-console    8     0.748    5.9s   0.733  -0.015
+touge  portrait-vent   1     0.719    6.3s   0.715  -0.004
+touge  portrait-vent   2     0.811    8.0s   0.808  -0.002
+touge  portrait-vent   3     0.735    5.1s   0.729  -0.006
+touge  portrait-vent   4     0.760    7.1s   0.735  -0.026
+touge  portrait-vent   5     0.683    5.3s   0.657  -0.026
+touge  portrait-vent   6     0.781    5.4s   0.773  -0.008
+touge  portrait-vent   7     0.771    5.8s   0.759  -0.012
+touge  portrait-vent   8     0.809    6.9s   0.801  -0.008
+touge  landscape-dash  1     0.679    5.3s   0.676  -0.003
+touge  landscape-dash  2     0.864    7.1s   0.861  -0.003
+touge  landscape-dash  3     0.716    7.0s   0.708  -0.008
+touge  landscape-dash  4     0.648    5.1s   0.625  -0.023
+touge  landscape-dash  5     0.772    6.1s   0.748  -0.024
+touge  landscape-dash  6     0.706    5.4s   0.699  -0.007
+touge  landscape-dash  7     0.781    5.8s   0.771  -0.009
+touge  landscape-dash  8     0.670    6.9s   0.661  -0.009
+touge  flat-console    1     0.698    5.3s   0.695  -0.003
+touge  flat-console    2     0.815    8.0s   0.813  -0.002
+touge  flat-console    3     0.733    5.1s   0.728  -0.005
+touge  flat-console    4     0.757    5.1s   0.736  -0.020
+touge  flat-console    5     0.646    5.3s   0.620  -0.026
+touge  flat-console    6     0.713    5.4s   0.706  -0.007
+touge  flat-console    7     0.803    5.8s   0.789  -0.014
+touge  flat-console    8     0.737    6.9s   0.730  -0.007
+
+final BELOW peak in 48/48 (100 %)   median delta -0.017   worst -0.114 (harbor/flat-console/seed 5: 0.618 → 0.504)
+peak reached between 5.1 s and 8.0 s (median 5.8 s)
+
+=== LOOSE — does a moving phone ever reach the engine's bar? ===
+looseness  track  seed   final q   fwd     ever ok   mount@end
+0.5        harbor 1     0.060   NO      no        loose
+0.5        harbor 2     0.000   yes     no        loose
+0.5        harbor 3     0.000   NO      no        loose
+0.5        harbor 4     0.006   NO      no        loose
+0.5        touge  1     0.042   NO      no        loose
+0.5        touge  2     0.000   NO      no        loose
+0.5        touge  3     0.000   NO      no        loose
+0.5        touge  4     0.014   NO      no        loose
+  looseness 0.5: ever calibrated 0/8 (0 %), final quality 0.000–0.060
+0.7        harbor 1     0.028   NO      no        loose
+0.7        harbor 2     0.000   NO      no        loose
+0.7        harbor 3     0.000   NO      no        loose
+0.7        harbor 4     0.008   NO      no        loose
+0.7        touge  1     0.045   NO      no        loose
+0.7        touge  2     0.000   NO      no        loose
+0.7        touge  3     0.000   NO      no        loose
+0.7        touge  4     0.010   NO      no        loose
+  looseness 0.7: ever calibrated 0/8 (0 %), final quality 0.000–0.045
+1          harbor 1     0.008   NO      no        loose
+1          harbor 2     0.000   NO      no        loose
+1          harbor 3     0.017   NO      no        loose
+1          harbor 4     0.031   NO      no        loose
+1          touge  1     0.022   NO      no        loose
+1          touge  2     0.000   NO      no        loose
+1          touge  3     0.012   NO      no        loose
+1          touge  4     0.046   NO      no        loose
+  looseness 1: ever calibrated 0/8 (0 %), final quality 0.000–0.046
+
+=== SUSPECT BAND — looseness 0.15 / 0.2, the state that reads "calibrated" ===
+track  looseness  seed   t=40s: q    mount     fwd   ok
+touge  0.2        1     0.339    suspect  yes   yes
+touge  0.2        2     0.355    suspect  yes   yes
+touge  0.2        3     0.311    suspect  yes   yes
+touge  0.2        4     0.315    suspect  yes   yes
+harbor 0.15       1     0.413    suspect  yes   yes
+harbor 0.15       2     0.419    suspect  yes   yes
+harbor 0.15       3     0.441    suspect  yes   yes
+harbor 0.15       4     0.419    rigid    yes   yes
