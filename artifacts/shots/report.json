@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T04:01:06.147Z",
+  "startedAt": "2026-09-21T04:07:59.918Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -1270,13 +1270,13 @@
     {
       "name": "sound-fault",
       "path": "/sound",
-      "url": "http://127.0.0.1:42001/sound",
+      "url": "http://127.0.0.1:45061/sound",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/sound-fault.png",
       "video": null,
-      "ms": 4387,
+      "ms": 5262,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1325,13 +1325,13 @@
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 58588,
-        "cyanPixels": 1984,
+        "redPixels": 60312,
+        "cyanPixels": 2104,
         "textPixels": 0,
-        "nonBgFraction": 0.8717,
+        "nonBgFraction": 0.8776,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:00:43.163Z"
+      "shotAt": "2026-09-21T04:08:05.293Z"
     },
     {
       "name": "sound-grades",
@@ -4751,13 +4751,13 @@
     {
       "name": "settings-wipe-broken",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:33505/?demo=night",
+      "url": "http://127.0.0.1:32997/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/settings-wipe-broken.png",
       "video": null,
-      "ms": 14767,
+      "ms": 14587,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4805,13 +4805,13 @@
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 38256,
+        "redPixels": 38404,
         "cyanPixels": 0,
         "textPixels": 5548,
         "nonBgFraction": 0.3092,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:58:03.856Z"
+      "shotAt": "2026-09-21T04:05:23.871Z"
     },
     {
       "name": "results-reveal",
@@ -6324,13 +6324,13 @@
     {
       "name": "settings-wipe-broken-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:42779/?demo=night",
+      "url": "http://127.0.0.1:33091/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/settings-wipe-broken-landscape.png",
       "video": null,
-      "ms": 14173,
+      "ms": 13800,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6378,24 +6378,26 @@
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 53956,
+        "redPixels": 49620,
         "cyanPixels": 0,
         "textPixels": 5584,
         "nonBgFraction": 0.6059,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:01:07.302Z"
+      "shotAt": "2026-09-21T04:05:38.430Z"
     },
     {
       "name": "drive-open",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "ok": true,
-      "errors": [],
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open.png",
       "video": null,
-      "ms": 4180,
+      "ms": 4073,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6414,53 +6416,20 @@
         "webgl": true,
         "canvasKit": true
       },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 2356,
-        "goldPixels": 0,
-        "redPixels": 14396,
-        "cyanPixels": 24052,
-        "textPixels": 3548,
-        "nonBgFraction": 0.143,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-start",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "ok": true,
-      "errors": [],
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 4548,
+      "ms": 4924,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6479,378 +6448,20 @@
         "webgl": true,
         "canvasKit": true
       },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 2160,
-        "goldPixels": 0,
-        "redPixels": 14396,
-        "cyanPixels": 21672,
-        "textPixels": 2568,
-        "nonBgFraction": 0.141,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=39.2",
-      "ok": true,
-      "errors": [],
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=39.2",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
       "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 8286,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 91,
-        "bodyTextNodes": 29,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 213944,
-        "goldPixels": 19620,
-        "redPixels": 16604,
-        "cyanPixels": 21012,
-        "textPixels": 6736,
-        "nonBgFraction": 0.5493,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
-    },
-    {
-      "name": "drive-peak",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-peak.png",
-      "video": null,
-      "ms": 6291,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 98,
-        "bodyTextNodes": 30,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 174532,
-        "goldPixels": 21348,
-        "redPixels": 14932,
-        "cyanPixels": 19392,
-        "textPixels": 5992,
-        "nonBgFraction": 0.5844,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
-    },
-    {
-      "name": "drive-transition",
-      "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-transition.png",
-      "video": null,
-      "ms": 6146,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 94,
-        "bodyTextNodes": 30,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 224144,
-        "goldPixels": 3896,
-        "redPixels": 15848,
-        "cyanPixels": 22856,
-        "textPixels": 5948,
-        "nonBgFraction": 0.544,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
-    },
-    {
-      "name": "drive-bank",
-      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-bank.png",
-      "video": null,
-      "ms": 6429,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 98,
-        "bodyTextNodes": 29,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 139392,
-        "goldPixels": 3784,
-        "redPixels": 14800,
-        "cyanPixels": 22988,
-        "textPixels": 5868,
-        "nonBgFraction": 0.2901,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
-    },
-    {
-      "name": "drive-loose",
-      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-loose.png",
-      "video": null,
-      "ms": 5288,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_700Bold_Italic",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 93,
-        "bodyTextNodes": 30,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 2,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 2136,
-        "goldPixels": 0,
-        "redPixels": 50560,
-        "cyanPixels": 21612,
-        "textPixels": 4460,
-        "nonBgFraction": 0.2933,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
-    },
-    {
-      "name": "drive-lost",
-      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-lost.png",
-      "video": null,
-      "ms": 4813,
+      "ms": 10621,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6869,6 +6480,100 @@
         "webgl": true,
         "canvasKit": true
       },
+      "shotAt": "2026-09-21T04:05:08.787Z"
+    },
+    {
+      "name": "drive-peak",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-peak.png",
+      "video": null,
+      "ms": 6787,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 98,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "shotAt": "2026-09-21T04:05:08.787Z"
+    },
+    {
+      "name": "drive-transition",
+      "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-transition.png",
+      "video": null,
+      "ms": 6124,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 94,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "shotAt": "2026-09-21T04:05:08.787Z"
+    },
+    {
+      "name": "drive-bank",
+      "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-bank.png",
+      "video": null,
+      "ms": 5611,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 98,
+        "bodyTextNodes": 29,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
       "pixels": {
         "width": 1179,
         "height": 2556,
@@ -6896,26 +6601,90 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 2136,
-        "goldPixels": 0,
-        "redPixels": 50560,
-        "cyanPixels": 21084,
-        "textPixels": 4780,
-        "nonBgFraction": 0.3104,
+        "emberPixels": 144000,
+        "goldPixels": 3784,
+        "redPixels": 14832,
+        "cyanPixels": 23740,
+        "textPixels": 5868,
+        "nonBgFraction": 0.3032,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
+    },
+    {
+      "name": "drive-loose",
+      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-loose.png",
+      "video": null,
+      "ms": 4811,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 93,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "shotAt": "2026-09-21T04:05:08.787Z"
+    },
+    {
+      "name": "drive-lost",
+      "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
+      "warnings": [],
+      "screenshot": "artifacts/shots/drive-lost.png",
+      "video": null,
+      "ms": 5259,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 95,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 2,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-gps",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps.png",
       "video": null,
-      "ms": 5100,
+      "ms": 5657,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6961,26 +6730,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 129052,
-        "goldPixels": 4748,
-        "redPixels": 31904,
-        "cyanPixels": 19928,
-        "textPixels": 9936,
-        "nonBgFraction": 0.4809,
+        "emberPixels": 130128,
+        "goldPixels": 4732,
+        "redPixels": 31884,
+        "cyanPixels": 19848,
+        "textPixels": 9904,
+        "nonBgFraction": 0.4794,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-discarded",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded.png",
       "video": null,
-      "ms": 5403,
+      "ms": 6115,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7031,21 +6800,21 @@
         "redPixels": 14076,
         "cyanPixels": 23436,
         "textPixels": 32376,
-        "nonBgFraction": 0.3603,
+        "nonBgFraction": 0.361,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-savefail",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail.png",
       "video": null,
-      "ms": 6500,
+      "ms": 7323,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7099,18 +6868,18 @@
         "nonBgFraction": 0.7243,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-chain",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain.png",
       "video": null,
-      "ms": 5046,
+      "ms": 5418,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7121,7 +6890,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 93,
-        "bodyTextNodes": 30,
+        "bodyTextNodes": 28,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7156,26 +6925,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 129332,
-        "goldPixels": 3680,
-        "redPixels": 14828,
-        "cyanPixels": 17532,
-        "textPixels": 4916,
-        "nonBgFraction": 0.2069,
+        "emberPixels": 133460,
+        "goldPixels": 3664,
+        "redPixels": 14860,
+        "cyanPixels": 18200,
+        "textPixels": 4992,
+        "nonBgFraction": 0.2196,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 5280,
+      "ms": 6124,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7185,8 +6954,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 98,
-        "bodyTextNodes": 30,
+        "displayTextNodes": 99,
+        "bodyTextNodes": 31,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7221,26 +6990,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 86204,
+        "emberPixels": 88368,
         "goldPixels": 21948,
         "redPixels": 14980,
-        "cyanPixels": 19580,
-        "textPixels": 16192,
-        "nonBgFraction": 0.5589,
+        "cyanPixels": 19728,
+        "textPixels": 16204,
+        "nonBgFraction": 0.5611,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-savefail-untrusted",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted.png",
       "video": null,
-      "ms": 9255,
+      "ms": 6921,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7294,18 +7063,20 @@
         "nonBgFraction": 0.4759,
         "regions": []
       },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "drive-loose-peak",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:45555/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "ok": true,
-      "errors": [],
+      "url": "http://127.0.0.1:38097/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "ok": false,
+      "errors": [
+        "harness: region 'gauge': no element with testID 'hud-gauge'"
+      ],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak.png",
       "video": null,
-      "ms": 6098,
+      "ms": 5964,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7324,42 +7095,7 @@
         "webgl": true,
         "canvasKit": true
       },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 1948,
-        "goldPixels": 0,
-        "redPixels": 14396,
-        "cyanPixels": 19552,
-        "textPixels": 12888,
-        "nonBgFraction": 0.2337,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T03:57:37.069Z"
+      "shotAt": "2026-09-21T04:05:08.787Z"
     },
     {
       "name": "sound-banked",
@@ -7428,10 +7164,10 @@
       "shotAt": "2026-09-21T04:01:10.922Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:01:10.922Z",
+  "finishedAt": "2026-09-21T04:08:05.293Z",
   "failed": 0,
-  "failedAll": 0,
+  "failedAll": 8,
   "shotThisRun": [
-    "sound-banked"
+    "sound-fault"
   ]
 }

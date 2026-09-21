@@ -37,7 +37,7 @@
  *   5. THE BELIEF GATE.  Scoring cues are dropped while `LiveFrame.integrity.believable` is
  *      false — the engine's OWN answer to "is this reading worth showing in colour", which it
  *      publishes precisely so that no screen re-derives it. On a hand-held recording the
- *      detector still fires 44 entry edges and the scorer still fires 11 initiation callouts;
+ *      detector still fires 50 entry edges and the scorer still fires 12 initiation callouts;
  *      the drive display refuses to bloom for them and the feel layer refuses to speak.
  *
  *      NOT `score.counting`, which answers a different question — "is the scorer paying on THIS
@@ -45,14 +45,16 @@
  *      lands about two seconds after a drift ends, so gating it on `counting` would swallow the
  *      loudest moment in the run.
  *   6. THE FAULT REPORT.  Rule 5's silence is correct and, on its own, indistinguishable from a
- *      broken app. Measured: a hand-held recording offers 56 cues and plays none of them for two
- *      whole laps. So the FIRST time the gate actually drops a cue, one quiet clip and a warning
+ *      broken app. Measured: a hand-held recording offers 96 cues, has 95 of them refused by the
+ *      gate, and without this row plays nothing and buzzes nothing for two whole laps. So the FIRST time the gate actually drops a cue, one quiet clip and a warning
  *      haptic say why — once, latched, never repeated — and RECOVERED says when it is over.
  *
  *      It hangs off the DROPPED CUE, not off the belief flag, and that is a measurement rather
  *      than a preference: every clean run is unbelievable for its first 5.0–5.5 s while the
  *      calibrator finds forward (harbour s1 5.3 s, s2 5.0 s, touge s1 5.3 s), so a report on the
- *      flag alone would fire at the start of every single drive. In those seconds the car is
+ *      flag alone would fire at the start of every single drive. (Every count in rules 5 and 6 is
+ *      a row of `npx tsx tools/audio/coverage.ts` and moves with the detector and the monitor;
+ *      run it rather than trusting the figures here.) In those seconds the car is
  *      standing still and the gate drops nothing at all — measured zero gated cues on every
  *      believable run tried — so hanging it off the drop makes it fire exactly when the silence
  *      costs the driver something.

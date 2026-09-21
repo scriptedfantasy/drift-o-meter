@@ -422,7 +422,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     minGapS: 0.56,
     gated: false,
     haptic: 'warning',
-    why: 'The one thing a driver cannot work out from silence is why it is silent. Before this row existed, a hand-held recording (harbour seed 1, 2 laps, looseness 1, GPS dropouts) offered the mixer 56 cues, played none of them and fired no haptic for two whole laps, while the detector was finding 44 entry edges. Exactly one sound now comes out of that run, and this is it. It fires when the gate actually COSTS a cue, not on the belief flag itself: every clean run is unbelievable for its first five seconds while the calibrator finds forward, offers nothing in that time, and so is never told off for it. Ungated by definition, and latched — once per fault, never a nag. Both halves are printed by tools/audio/coverage.ts.',
+    why: 'The one thing a driver cannot work out from silence is why it is silent. Before this row existed, a hand-held recording (harbour seed 1, 2 laps, looseness 1, GPS dropouts) offered the mixer 96 cues, played none of them and fired no haptic for two whole laps, while the detector was finding 50 entry edges and the scorer 12 initiation callouts. Exactly one sound now comes out of that run, and this is it. It fires when the gate actually COSTS a cue, not on the belief flag itself: every clean run is unbelievable for its first five seconds while the calibrator finds forward, offers nothing in that time, and so is never told off for it. Ungated by definition, and latched — once per fault, never a nag. Every count here is a row of `npx tsx tools/audio/coverage.ts` and moves with the detector, so read it from the command rather than from this sentence.',
   },
   {
     id: 'recovered',

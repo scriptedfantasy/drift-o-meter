@@ -486,10 +486,12 @@ const CLIPS = {
    * FAULT — the engine has stopped believing the reading, and the feel layer is about to go
    * quiet for a reason.
    *
-   * Measured: a hand-held recording (harbour seed 1, 2 laps, looseness 1, GPS dropouts) offers
-   * the mixer 56 cues and plays NONE of them, with no haptic either, while the detector is still
-   * firing 44 entry edges. Silence is the correct answer to every one of those cues and the
-   * wrong answer to the driver, whose eyes are on the road. So one sound reports the CAUSE.
+   * Measured by `npx tsx tools/audio/coverage.ts` (the figures move with the detector, so read
+   * them from the command): a hand-held recording (harbour seed 1, 2 laps, looseness 1, GPS
+   * dropouts) offers the mixer 96 cues and, without this row, plays NONE of them and fires no
+   * haptic either, while the detector is still firing 50 entry edges. Silence is the correct
+   * answer to every one of those cues and the wrong answer to the driver, whose eyes are on the
+   * road. So one sound reports the CAUSE.
    *
    * It has to be unmistakably not a drift beat: two dull pitched pulses falling a whole tone,
    * through a band of noise that CLOSES — the exact opposite gesture to BANKED's riser — with
