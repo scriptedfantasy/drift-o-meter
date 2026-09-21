@@ -1,3 +1,4 @@
+export { sessionIntegrity, type IntegrityInput, type MonitorVerdict } from './verdict';
 export { calibrationBand, bandIsScorable, calibrationHeadroom, verticalSettled, CALIBRATION_SHARP, CALIBRATION_BAR, type CalibrationBand } from './band';
 export {
   IntegrityMonitor,

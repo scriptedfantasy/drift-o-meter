@@ -2,6 +2,7 @@
  * scoreSession — replays the chain rules over a whole run and aggregates the
  * 0–100 components + grade. See index.ts for the rule set.
  */
+import { sessionIntegrity } from '../integrity/verdict';
 import type { DriftEvent, SessionIntegrity, SessionScore, SlipState, StyleCalloutKind, TrackCorner, TrackModel } from '../types';
 import { clamp, radToDeg } from '../types';
 import { scoreDrift, type ScoredDrift } from './drift';
@@ -535,24 +536,16 @@ export function scoreSession(
     : 0;
   const pointsPerDriftSecond = driftTimeS > 0 ? total / driftTimeS : 0;
 
-  // ---- integrity: may this run publish a score at all? -------------------------------------
-  const suppressedS = scored.reduce((a, d) => a + d.stats.implausibleS, 0);
-  const observedDriftS = driftTimeS + suppressedS;
-  const implausibleDriftFraction = observedDriftS > 0 ? suppressedS / observedDriftS : 0;
-  const iv = ctx?.integrity ?? null;
-  const trusted = implausibleDriftFraction <= o.integrityMaxImplausibleFraction;
-  const integrity: SessionIntegrity = {
-    mount: iv?.mount ?? 'rigid',
-    physics: iv?.physics ?? 'ok',
-    gps: iv?.gps ?? 'good',
-    implausibleDriftFraction: round1(implausibleDriftFraction * 100) / 100,
-    suppressedS: Math.round(suppressedS * 100) / 100,
-    scoreTrusted: n === 0 || trusted,
-    message: trusted
-      ? ''
-      : `${Math.round(implausibleDriftFraction * 100)}% of this run's sliding could not be trusted` +
-        `${iv?.message ? ` — ${iv.message}` : ' — check the phone is rigidly mounted'}`,
-  };
+  // ---- integrity: may this run be presented as a result at all? ----------------------------
+  // The verdict moved to `integrity/verdict.ts`. It was assembled here, which made the run's
+  // honesty a by-product of counting its points — so the day the points go, the verdict would
+  // have gone with them and a run recorded with the phone loose would publish like any other.
+  const integrity = sessionIntegrity({
+    implausiblePerDrift: scored.map((d) => d.stats.implausibleS),
+    believedDriftS: driftTimeS,
+    monitor: ctx?.integrity ?? null,
+    maxImplausibleFraction: o.integrityMaxImplausibleFraction,
+  });
 
   return {
     total: Math.round(total),
