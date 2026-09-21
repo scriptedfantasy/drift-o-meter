@@ -74,7 +74,7 @@ export function traceBars(slides: readonly SlideMark[], { believed = true, ceili
     const held = measured(mark, believed);
     // `Math.max(0.06, …)` only for a slide that DOES have an angle: a two-degree flick still has
     // to be visible. A footprint has no height at all, ever.
-    const height = Math.min(1, Math.max(0.06, (Number.isFinite(deg) ? deg : 0) / ceiling)); // FALSIFY: old rule
+    const height = held ? Math.min(1, Math.max(0.06, (Number.isFinite(deg) ? deg : 0) / ceiling)) : 0;
     out.push({ x0, x1, height, kind: held ? 'held' : 'footprint' });
   }
   return out;

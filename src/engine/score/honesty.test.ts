@@ -350,6 +350,77 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
   }, 120_000);
 });
 
+// ── the display's gate and the scorer's gate cannot diverge without bound ──────────────────
+
+describe("the display's gate and the scorer's gate cannot diverge without bound", () => {
+  /**
+   * `score.counting` and `integrity.believable` answer two different questions on purpose — "is
+   * the scorer paying right now" and "is this reading worth showing in colour" — and they were
+   * allowed to disagree without limit. Measured before: at simulator looseness 0.25 the mount
+   * reads `suspect` rather than `loose`, so `believable` was true on 95.9 % of a run the scorer
+   * paid for on 0.0 % of (0.3 → 95.5 % vs 0.0 %, touge → 94.3 % vs 0.0 %). Every colour decision
+   * on the drive display reads `believable` through `trustIn`, so that run drew a gold 56° hero
+   * numeral with a full gold arc and bloom, PEAK 56° in gold, FLICKS ×3 in magenta, three
+   * full-colour callout chips and a gold ×5.0 — the maximum the game has — beside SCORE 0.
+   *
+   * `DriftPipeline` now bounds it with a window over SLIDING time (`PaidWindow`): once enough
+   * sliding has gone by unpaid, the reading stops being worth showing in colour. A red light
+   * still greys nothing, because idle samples never enter the window.
+   *
+   * The second column is what the drive display's own rule keeps off the screen: `useDriveRun`
+   * holds `runPeakDeg` only from samples where `integrity.believable` is true, with the comment
+   * "a hand-held phone must not leave a 68° trophy on the screen". At looseness 0.3 it was
+   * leaving a 69° one.
+   */
+  it('a run the scorer pays nothing for stops being drawn in colour', () => {
+    const rows: string[] = [];
+    for (const track of ['harbor', 'touge'] as TrackId[]) {
+      for (const seed of [1, 2, 3]) {
+        for (const looseness of [0, 0.1, 0.2, 0.25, 0.3]) {
+          const run = simulateRun(track, { seed, laps: 2, looseness });
+          const p = new DriftPipeline({});
+          const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+          let j = 0;
+          let n = 0;
+          let counting = 0;
+          let believable = 0;
+          let trophyDeg = 0;
+          for (let i = 0; i < run.motion.length; i++) {
+            while (j < gps.length && gps[j].t <= run.motion[i].t) p.pushGps(gps[j++]);
+            const f = p.pushMotion(run.motion[i]);
+            n++;
+            if (f.score.counting) counting++;
+            if (f.integrity.believable) believable++;
+            // exactly `useDriveRun`'s own rule for `runPeakDeg`
+            if (f.live && f.integrity.believable) trophyDeg = Math.max(trophyDeg, Math.abs(radToDeg(f.state.beta)));
+          }
+          while (j < gps.length) p.pushGps(gps[j++]);
+          const session = p.finish();
+          const pc = (x: number) => (100 * x) / n;
+          const where = `${track}/${seed}/${looseness}`;
+          rows.push(
+            `  ${where.padEnd(16)} counting ${pc(counting).toFixed(1).padStart(5)} %  believable ${pc(believable).toFixed(1).padStart(5)} %  ` +
+              `gap ${(pc(believable) - pc(counting)).toFixed(1).padStart(5)}  biggest angle kept ${trophyDeg.toFixed(0).padStart(2)}°  ` +
+              `total ${String(session.score.total).padStart(6)} trusted ${session.score.trusted}`,
+          );
+          // THE BOUND. A run the scorer pays nothing for may not be shown in colour for most of
+          // itself; the residue is the first fraction of a second of sliding, before the engine
+          // has been shown anything at all.
+          if (counting === 0) {
+            expect(pc(believable), `${where}: believable on ${pc(believable).toFixed(1)} % of a run counted on 0 % of`).toBeLessThan(20);
+            expect(trophyDeg, `${where}: left a ${trophyDeg.toFixed(0)}° trophy on a run worth nothing`).toBeLessThan(35);
+            expect(session.score.trusted, where).toBe(false);
+          }
+          // and a run the scorer DOES pay for keeps its colour: the window must not grey a
+          // healthy screen, which is the failure mode in the other direction
+          if (pc(counting) > 85) expect(pc(believable), `${where}: greyed a run it was paying for`).toBeGreaterThan(85);
+        }
+      }
+    }
+    process.stdout.write(`\nDISPLAY GATE vs SCORER GATE\n${rows.join('\n')}\n`);
+  }, 300_000);
+});
+
 // ── GPS dropouts: dead reckoning is a measurement for a few seconds, then it is not ────────
 
 describe('a GPS dropout keeps scoring while the estimate is still a measurement', () => {

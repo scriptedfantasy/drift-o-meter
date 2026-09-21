@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   gradeLabel: { marginBottom: -space[2] },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   /** A tall rail stacks it: the letter on its own line, the score reading under it. */
-  heroTopStacked: { flexDirection: 'column', alignItems: 'stretch', gap: space[2] },
+  heroTopStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: space[2] },
   gradeBox: { justifyContent: 'flex-start' },
   grade: {
     letterSpacing: -6,

@@ -16,7 +16,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { colors } from '../theme';
+import { DriftPipeline } from '../../engine/pipeline';
+import { simulateRun } from '../../sim';
 import { columnOffset, columnsUsed, columnVisible, movingReading, renderedDigits, CARRY_FRACTION } from './odometerColumns';
+import { nextDisplayTotal, TAU_S } from './odometerValue';
 import { readIntegrity, CALIBRATION_GRACE_S } from './integrityView';
 import { createTrail, fitTrail, pushTrail, resetTrail } from './trail';
 import { DEFAULT_HUD_PARAMS, parseHudParams } from './hudParams';
@@ -152,6 +155,89 @@ describe('odometer columns', () => {
   });
 });
 
+// ── the odometer's VALUE: does the score roll, or does it step? ────────────────────────────
+
+describe('odometer value', () => {
+  it('parks on a whole digit the moment the engine stops paying, and only then', () => {
+    // the two halves of the rule, as a unit statement: nothing moving → an exact integer;
+    // anything paid → the fraction is kept, which is what puts the units drum mid-turn
+    expect(nextDisplayTotal(1234.2, 1234.6, 0, 0.01)).toBe(1235);
+    expect(nextDisplayTotal(1234.6, 1234.6, 0, 0.01)).toBe(1235);
+    // still paying: no park, even when the display has caught up to within a point
+    const chasing = nextDisplayTotal(1234.2, 1234.6, 0.4, 0.01);
+    expect(Number.isInteger(chasing)).toBe(false);
+    expect(chasing).toBeGreaterThan(1234.2);
+    expect(chasing).toBeLessThan(1234.6);
+    // a big gap is chased, not jumped: τ = 0.12 s, so one 10 ms sample closes ~8 % of it
+    expect(nextDisplayTotal(0, 10000, 1500, 0.01)).toBeCloseTo(10000 * (1 - Math.exp(-0.01 / TAU_S)), 6);
+    // a CHAIN LOST unwinds the same way rather than cutting
+    expect(nextDisplayTotal(10000, 0, -9000, 0.01)).toBeLessThan(10000);
+    expect(nextDisplayTotal(10000, 0, -9000, 0.01)).toBeGreaterThan(0);
+  });
+
+  it('rolls on every frame the engine pays on, over a real run', () => {
+    // THE DESIGN ASKS FOR A ROLL — "odometer roll (digits slide), never a jump cut" — and the
+    // old rule parked whenever the display was within `max(25, 0.2 %)` of the total, which on a
+    // live run is almost always. Replayed over the real pipeline: 90.20 % of harbor frames and
+    // 76.50 % of touge frames took that branch, so a drum was mid-turn on 9.47 % / 23.50 % of
+    // frames and on only 14.62 % / 34.55 % of the frames the engine was actually paying on.
+    // The score STEPPED for the whole of every slide.
+    const OLD = (display: number, total: number, dt: number) => {
+      const gap = total - display;
+      return Math.abs(gap) < Math.max(25, total * 0.002) ? Math.round(total) : display + gap * (1 - Math.exp(-dt / TAU_S));
+    };
+    const midTurn = (v: number) => {
+      for (let place = 0; place < 6; place++) {
+        const o = columnOffset(v, place);
+        if (Math.abs(o - Math.round(o)) > 1e-9) return true;
+      }
+      return false;
+    };
+    const rows: string[] = [];
+    for (const track of ['harbor', 'touge'] as const) {
+      const run = simulateRun(track, { seed: 1, laps: 2 });
+      const p = new DriftPipeline({});
+      const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+      let j = 0;
+      let prevT = NaN;
+      let now = 0;
+      let old = 0;
+      let paying = 0;
+      let rollNow = 0;
+      let rollOld = 0;
+      let parked = 0;
+      for (let i = 0; i < run.motion.length; i++) {
+        while (j < gps.length && gps[j].t <= run.motion[i].t) p.pushGps(gps[j++]);
+        const f = p.pushMotion(run.motion[i]);
+        const dt = Number.isFinite(prevT) ? Math.min(0.1, Math.max(0, f.t - prevT)) : 0.01;
+        prevT = f.t;
+        now = nextDisplayTotal(now, f.score.total, f.score.delta, dt);
+        old = OLD(old, f.score.total, dt);
+        if (f.score.delta === 0) {
+          parked++;
+          continue;
+        }
+        paying++;
+        if (midTurn(now)) rollNow++;
+        if (midTurn(old)) rollOld++;
+      }
+      while (j < gps.length) p.pushGps(gps[j++]);
+      const finished = p.finish();
+      rows.push(
+        `  ${track}: ${paying} paying frames, a drum mid-turn on ${((100 * rollNow) / paying).toFixed(2)} % of them ` +
+          `(old rule ${((100 * rollOld) / paying).toFixed(2)} %); ${parked} idle frames; parked at ${now}, engine live total ${finished.score.total}`,
+      );
+      // EVERY frame the engine pays on has a drum in motion. That is the whole finding.
+      expect(rollNow / paying, `${track} rolled on only ${((100 * rollNow) / paying).toFixed(1)} % of its paying frames`).toBeGreaterThan(0.95);
+      // and the old rule, run over the same frames, does not — so this is not a vacuous test
+      expect(rollOld / paying, `${track}: the old rule would also have passed this`).toBeLessThan(0.5);
+      // whatever it did while moving, it lands on a whole digit when the run stops
+      expect(Number.isInteger(now), `${track} did not park on a whole digit`).toBe(true);
+    }
+    process.stdout.write(`\nODOMETER ROLL (real pipeline)\n${rows.join('\n')}\n`);
+  }, 120_000);
+});
+
 // ── readIntegrity: the words on the screen ─────────────────────────────────────────────────
 
 const BASE: HudSnapshot = {
@@ -275,6 +361,32 @@ describe('readIntegrity', () => {
       expect(got.message).toBe(snapshot.integrity.message);
     });
   }
+
+  it('marks the stop sentence, and only the stop sentence, as the one the odometer greys for', () => {
+    // `scoreStopped` is what `ScorePanel` reads to decide whether the big number is still a
+    // score. It has to mean exactly "this note says NOT SCORING" — the odometer used to lose its
+    // ember only at `trust === 0`, which on a shaking mount or a weak fix is never, so a
+    // full-ember five-digit total sat directly above the words NOT SCORING.
+    for (const mount of ['rigid', 'suspect', 'loose'] as const) {
+      for (const physics of ['ok', 'implausible'] as const) {
+        for (const gps of ['good', 'poor', 'none'] as const) {
+          for (const counting of [true, false]) {
+            for (const forwardResolved of [true, false]) {
+              for (const elapsedS of [2, 30]) {
+                for (const gpsEverGood of [true, false]) {
+                  const v = readIntegrity(snap({ counting, forwardResolved, elapsedS, gpsEverGood, integrity: { mount, physics, gps } }));
+                  const where = `${mount}/${physics}/${gps}/counting=${counting}/fwd=${forwardResolved}/t=${elapsedS}/everGood=${gpsEverGood}`;
+                  expect(v.scoreStopped, where).toBe(v.scoreNote !== null && v.scoreNote.includes('NOT SCORING'));
+                  // and it can never be true while the scorer says it IS counting
+                  if (v.scoreStopped) expect(counting, where).toBe(false);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
 
   it('says NOT SCORING when, and only when, the SCORER says it is not counting', () => {
     // the finding this function exists for, as a property over every combination it can see

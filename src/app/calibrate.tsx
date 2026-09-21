@@ -269,6 +269,11 @@ export default function CalibrateScreen() {
           <TopBar kicker="Mount calibration" right={source} />
 
           {arrival ? <Banner title={arrival.title} body={arrival.body} tone={arrival.tone} testID="calibrate-arrival" /> : null}
+          {/* In landscape a caution spans, like the arrival banner above it: the right column is
+              508 px and wraps a caution body onto two or three lines, which costs more height
+              than the banner saves by sitting in a column. Measured on the flat-phone frame,
+              820 px puts it on one line and the whole column ends 19 px higher. */}
+          {landscape ? <Cautions cautions={cautions} /> : null}
 
           {landscape ? (
             <View style={styles.row}>
@@ -287,7 +292,6 @@ export default function CalibrateScreen() {
                   (the measured claim about what leaving costs) off the bottom in its place. */}
               <View style={styles.right}>
                 {verdict}
-                <Cautions cautions={cautions} />
                 <Lights lights={lights} compact />
                 <Steps steps={steps} compact />
               </View>

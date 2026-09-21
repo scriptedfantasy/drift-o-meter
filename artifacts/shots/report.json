@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T04:13:49.018Z",
+  "startedAt": "2026-09-21T04:17:51.068Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -3776,13 +3776,13 @@
     {
       "name": "garage",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:36169/?demo=night",
+      "url": "http://127.0.0.1:35429/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage.png",
       "video": null,
-      "ms": 11508,
+      "ms": 12152,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -3857,7 +3857,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:14:32.664Z"
+      "shotAt": "2026-09-21T04:17:49.405Z"
     },
     {
       "name": "garage-bests",
@@ -4122,13 +4122,13 @@
     {
       "name": "garage-flagged",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:36169/?demo=flagged",
+      "url": "http://127.0.0.1:35429/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged.png",
       "video": null,
-      "ms": 10103,
+      "ms": 10763,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4182,7 +4182,7 @@
         "nonBgFraction": 0.7338,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:14:32.664Z"
+      "shotAt": "2026-09-21T04:17:49.405Z"
     },
     {
       "name": "garage-delete",
@@ -4447,13 +4447,13 @@
     {
       "name": "garage-spun",
       "path": "/?demo=spun",
-      "url": "http://127.0.0.1:36169/?demo=spun",
+      "url": "http://127.0.0.1:35429/?demo=spun",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-spun.png",
       "video": null,
-      "ms": 9657,
+      "ms": 9872,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4528,18 +4528,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:14:32.664Z"
+      "shotAt": "2026-09-21T04:17:49.405Z"
     },
     {
       "name": "garage-flagged-stats",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:36169/?demo=flagged",
+      "url": "http://127.0.0.1:35429/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged-stats.png",
       "video": null,
-      "ms": 12077,
+      "ms": 13201,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4634,7 +4634,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:14:32.664Z"
+      "shotAt": "2026-09-21T04:17:49.405Z"
     },
     {
       "name": "settings-stored",
@@ -5300,13 +5300,13 @@
     {
       "name": "garage-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:42779/?demo=night",
+      "url": "http://127.0.0.1:43057/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-landscape.png",
       "video": null,
-      "ms": 10688,
+      "ms": 16607,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5352,15 +5352,36 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 551696,
+        "emberPixels": 549164,
         "goldPixels": 0,
         "redPixels": 0,
         "cyanPixels": 3856,
         "textPixels": 38816,
         "nonBgFraction": 0.479,
-        "regions": []
+        "regions": [
+          {
+            "name": "trace-spins",
+            "colour": "red",
+            "rect": {
+              "x": 0.5413161678403756,
+              "y": 0.8736638040712468,
+              "w": 0.41925660211267607,
+              "h": 0.1555826972010178
+            },
+            "box": {
+              "x0": 1384,
+              "y0": 1030,
+              "x1": 2455,
+              "y1": 1179
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T04:01:07.302Z"
+      "shotAt": "2026-09-21T04:18:44.885Z"
     },
     {
       "name": "garage-bests-landscape",
@@ -5625,13 +5646,13 @@
     {
       "name": "garage-flagged-landscape",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:42779/?demo=flagged",
+      "url": "http://127.0.0.1:43057/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged-landscape.png",
       "video": null,
-      "ms": 9765,
+      "ms": 13524,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5685,7 +5706,7 @@
         "nonBgFraction": 0.6179,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:01:07.302Z"
+      "shotAt": "2026-09-21T04:18:44.885Z"
     },
     {
       "name": "garage-delete-landscape",
@@ -6082,13 +6103,13 @@
     {
       "name": "garage-spun-landscape",
       "path": "/?demo=spun",
-      "url": "http://127.0.0.1:42779/?demo=spun",
+      "url": "http://127.0.0.1:43057/?demo=spun",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-spun-landscape.png",
       "video": null,
-      "ms": 9323,
+      "ms": 11041,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6140,20 +6161,41 @@
         "cyanPixels": 3856,
         "textPixels": 38816,
         "nonBgFraction": 0.479,
-        "regions": []
+        "regions": [
+          {
+            "name": "axis",
+            "colour": "red",
+            "rect": {
+              "x": 0.5453161678403756,
+              "y": 0.8776638040712468,
+              "w": 0.41125660211267606,
+              "h": 0.1272264631043257
+            },
+            "box": {
+              "x0": 1394,
+              "y0": 1035,
+              "x1": 2445,
+              "y1": 1179
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T04:01:07.302Z"
+      "shotAt": "2026-09-21T04:18:44.885Z"
     },
     {
       "name": "garage-flagged-stats-landscape",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:42779/?demo=flagged",
+      "url": "http://127.0.0.1:43057/?demo=flagged",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged-stats-landscape.png",
       "video": null,
-      "ms": 10499,
+      "ms": 12478,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6205,9 +6247,50 @@
         "cyanPixels": 0,
         "textPixels": 44668,
         "nonBgFraction": 0.6469,
-        "regions": []
+        "regions": [
+          {
+            "name": "axis",
+            "colour": "red",
+            "rect": {
+              "x": 0.5453161678403756,
+              "y": 0.06870229007633588,
+              "w": 0.41125660211267606,
+              "h": 0.05597964376590331
+            },
+            "box": {
+              "x0": 1394,
+              "y0": 81,
+              "x1": 2445,
+              "y1": 147
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "plot",
+            "colour": "ember",
+            "rect": {
+              "x": 0.5413161678403756,
+              "y": 0.06470229007633588,
+              "w": 0.41925660211267607,
+              "h": 0.08433587786259542
+            },
+            "box": {
+              "x0": 1384,
+              "y0": 76,
+              "x1": 2455,
+              "y1": 176
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T04:01:07.302Z"
+      "shotAt": "2026-09-21T04:18:44.885Z"
     },
     {
       "name": "settings-stored-landscape",
@@ -7247,13 +7330,13 @@
       "shotAt": "2026-09-21T04:01:10.922Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:14:32.664Z",
+  "finishedAt": "2026-09-21T04:18:44.885Z",
   "failed": 0,
   "failedAll": 8,
   "shotThisRun": [
-    "garage",
-    "garage-flagged",
-    "garage-spun",
-    "garage-flagged-stats"
+    "garage-landscape",
+    "garage-flagged-landscape",
+    "garage-spun-landscape",
+    "garage-flagged-stats-landscape"
   ]
 }

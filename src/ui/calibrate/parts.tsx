@@ -54,6 +54,11 @@ export function Lights({ lights, compact = false, style }: { lights: readonly Li
  * A step that is neither done nor doable yet keeps its title and loses its reason: the driver
  * cannot act on it, and those two lines were part of what pushed the call to action off the
  * bottom of the frame on the commonest route into this screen (`?why=rejected`).
+ *
+ * `compact` extends that rule to a DONE step, and holds the rest to one line. 393 px of
+ * landscape has to carry the instrument, the verdict, a caution banner, the three lights and
+ * the way out before it gets here; a reason the driver has already acted on, wrapped onto a
+ * second line, is the 57 px that decides whether the last step clears the fold.
  */
 export function Steps({ steps, compact = false, style }: { steps: readonly Step[]; compact?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
@@ -73,7 +78,7 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
               <AppText variant="bodyStrong" color={done ? colors.muted : colors.text} style={done ? styles.stepDone : undefined}>
                 {s.title}
               </AppText>
-              {s.state === 'todo' ? null : <Small numberOfLines={2}>{s.because}</Small>}
+              {s.state === 'todo' || (compact && done) ? null : <Small numberOfLines={compact ? 1 : 2}>{s.because}</Small>}
               {active && s.progress > 0.02 && s.progress < 1 ? (
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${Math.round(s.progress * 100)}%` }]} />
@@ -151,7 +156,8 @@ const styles = StyleSheet.create({
 
   steps: { backgroundColor: colors.bg1, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.line, paddingHorizontal: space[4] },
   step: { flexDirection: 'row', gap: space[3], paddingVertical: 10 },
-  stepCompact: { paddingVertical: 4 },
+  // 2 pt, not 4: the last 7 px of the two-step list on a landscape caution frame. Measured.
+  stepCompact: { paddingVertical: 2 },
   stepBorder: { borderTopWidth: 1, borderTopColor: colors.line },
   stepMark: { width: 32, alignItems: 'center' },
   stepNo: { fontStyle: 'italic', fontSize: 24, lineHeight: 26 },
