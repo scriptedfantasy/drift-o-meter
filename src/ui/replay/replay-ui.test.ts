@@ -19,7 +19,7 @@ import { degToRad, radToDeg, type Session } from '../../engine/types';
 import { FIXTURES, buildFixtureSession } from '../results/fixture';
 import { crosses, FOLD_SPAN, kerbContours, MAX_TURN_RAD, offsetRuns, segmentsCross, selfIntersections, smoothPolyline, splitAtSpikes, type Pt } from './kerbs';
 import { replayLayout } from './layout';
-import { heatColor, fmtTime } from './palette';
+import { fmtTime, heatColor, isPointsClaim } from './palette';
 import { buildReplayView, gapWindows } from './view';
 import { parseReplayParams } from './params';
 
