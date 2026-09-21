@@ -1,4 +1,4 @@
-# Getting Drift-O-Meter onto your iPhone
+# Getting Drift-O-Mania onto your iPhone
 
 Written for someone who does not write code. Every command is copy-and-paste. Nothing here is
 reversible in a way that costs money except step 1, which is Apple's $99/year fee.
@@ -37,6 +37,7 @@ Then open a terminal (Mac: **Terminal**, in Applications → Utilities. Windows:
 which the Git installer put in your Start menu) and paste these one line at a time:
 
 ```bash
+# The repository is still called drift-o-meter; only the app was renamed.
 git clone https://github.com/scriptedfantasy/drift-o-meter.git
 cd drift-o-meter
 git checkout claude/quirky-hopper-cfu8ng
@@ -90,7 +91,7 @@ You are not expected to understand anything it prints.
 ## Getting it onto the phone
 
 1. Apple needs **5 to 20 minutes** to process the upload. You get an email when it is done.
-2. Go to <https://appstoreconnect.apple.com> → **My Apps** → Drift-O-Meter → **TestFlight**.
+2. Go to <https://appstoreconnect.apple.com> → **My Apps** → Drift-O-Mania → **TestFlight**.
 3. There may be a yellow "Missing Compliance" warning. There should not be — `app.json` already
    declares `ITSAppUsesNonExemptEncryption: false` — but if it appears, click it and answer
    **No** to "does your app use encryption".
@@ -149,6 +150,6 @@ car actually did. Bring the numbers back and they can be fixed.
 
 Copy the whole error and bring it back. Almost every failure at this stage is one of four things:
 a missing Apple Developer membership, an expired certificate, a bundle identifier already taken
-by someone else (`com.driftometer.app` — if Apple says it is in use, any other reverse-domain
+by someone else (`com.driftomania.app` — if Apple says it is in use, any other reverse-domain
 string works), or a version number Apple has already seen. All four are quick to fix and none of
 them means the app is broken.
