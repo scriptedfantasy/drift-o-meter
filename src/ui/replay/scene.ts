@@ -1250,6 +1250,10 @@ function drawGradeReveal(canvas: SkCanvas, f: Frame): void {
   const k = f.ui.reduceMotion ? 1 : f.reveal;
   const st = f.action;
   const cx = f.layout.w / 2;
+  // The stack is the letter plus two lines under it, and in landscape the stage is 221 pt tall —
+  // at full size the points fell through the scrubber. `fit` shrinks the whole block to the band
+  // it has, rather than letting one orientation overflow.
+  const fit = clamp(Math.min(1, (st.h * 0.62) / (TYPE.slam * 1.35)), 0.45, 1);
   const cy = st.y + st.h * 0.44;
   const col = (gradeColors as Record<string, string>)[grade] ?? colors.ember;
   // the world dims so the letter is the only lit thing on the frame
@@ -1275,18 +1279,19 @@ function drawGradeReveal(canvas: SkCanvas, f: Frame): void {
   }
   // the letter: slams 2.2 → 1.0 with the same overshoot the callouts use
   const eased = 1 - Math.pow(1 - k, 3);
-  const scale = f.ui.reduceMotion ? 1 : 2.2 - 1.2 * eased - (k < 1 ? Math.sin(k * Math.PI) * 0.08 : 0);
+  const slam = f.ui.reduceMotion ? 1 : 2.2 - 1.2 * eased - (k < 1 ? Math.sin(k * Math.PI) * 0.08 : 0);
+  const baseline = cy + TYPE.slam * fit * 0.36;
   canvas.save();
-  canvas.translate(cx, cy);
-  canvas.scale(scale, scale);
-  canvas.translate(-cx, -cy);
-  drawGlowStr(canvas, f, f.fonts.slam, grade, cx, cy + TYPE.slam * 0.36, WHITE, col, 0.9, 'middle', TYPE.slam);
+  canvas.translate(cx, baseline);
+  canvas.scale(slam * fit, slam * fit);
+  canvas.translate(-cx, -baseline);
+  drawGlowStr(canvas, f, f.fonts.slam, grade, cx, baseline, WHITE, col, 0.9, 'middle', TYPE.slam);
   canvas.restore();
-  drawStr(canvas, f, f.fonts.label, 'FINAL GRADE', cx, cy + TYPE.slam * 0.36 + 34, { color: col, anchor: 'middle', tracking: 4, alpha: k });
+  drawStr(canvas, f, f.fonts.label, 'FINAL GRADE', cx, baseline + 34 * fit, { color: col, anchor: 'middle', tracking: 4, alpha: k });
   const total = f.replay.info.totalPoints;
   if (total !== null) {
-    drawStr(canvas, f, f.fonts.value, pts(total), cx, cy + TYPE.slam * 0.36 + 76, { color: WHITE, anchor: 'middle', alpha: k });
-    drawStr(canvas, f, f.fonts.label, 'POINTS', cx, cy + TYPE.slam * 0.36 + 94, { color: MUTED, anchor: 'middle', tracking: 3, alpha: k });
+    drawStr(canvas, f, f.fonts.value, pts(total), cx, baseline + 76 * fit, { color: WHITE, anchor: 'middle', alpha: k });
+    drawStr(canvas, f, f.fonts.label, 'POINTS', cx, baseline + 96 * fit, { color: MUTED, anchor: 'middle', tracking: 3, alpha: k });
   }
 }
 
