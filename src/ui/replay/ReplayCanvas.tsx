@@ -247,7 +247,12 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       if (chipNow && sv.playing.value !== 1 && sv.scrubbing.value !== 1) chipNow.until = Math.max(chipNow.until, Date.now() + 200);
       const chipAlpha = chipNow ? clamp((chipNow.until - Date.now()) / 400, 0, 1) : 0;
       const moving = sv.playing.value === 1 || scrubbing || cutFade > 0 || chipAlpha > 0 || now < dirtyUntil.current;
-      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}${s.fonts.body ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.controlsVisible ? 1 : 0}${s.warningsOpen ? 1 : 0}`;
+      // EVERY INPUT THE FRAME DRAWS FROM, or the screen stops agreeing with the controls. The
+      // playback rate is one of them — `drawTopHud` prints a "2×" chip — and it was not in this
+      // key and not in `moving` either, so tapping 2× while paused changed the rate and left the
+      // last frame on screen without the chip. Loading with `rate=2` showed it, which is what a
+      // route-by-route screenshot check cannot catch: the difference was in the transition.
+      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}${s.fonts.body ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.controlsVisible ? 1 : 0}${s.warningsOpen ? 1 : 0}|${sv.rate.value}|${sv.playing.value}`;
       if (!moving && t === lastDrawnT && inputs === lastInputs) return;
       lastDrawnT = t;
       lastInputs = inputs;

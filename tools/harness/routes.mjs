@@ -242,10 +242,16 @@ export const defaultRoutes = [
   // setPointerCapture, which throws for a pointer id the browser never issued.
   { name: 'replay-scrub', path: '/replay/demo?cam=chase&scrub=0.36&ui=1', waitMs: 2600, expectCanvas: true, minEmber: 800 },
   // A hand-held recording: it still replays, and it must not present points or a grade.
-  // deliberately almost ember-free: on a recording the engine does not believe, the slip angle
-  // loses its escalation colours along with the points, so `minEmber` is only a "something drew"
-  // floor here
-  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true, minEmber: 150 },
+  // On a recording the engine does not believe, the slip angle loses its escalation colours
+  // along with the points: EVERY colour off `heatColor` is greyed — the trail ribbon and its
+  // halo, the core chunks, the mini-map trail and the scrubber's own |β| gradient. The frame
+  // measures 24 ember pixels, so it really is ember-free rather than nearly.
+  // NO `minEmber`, on purpose: an ember floor on this frame is a check on the defect. It had one
+  // (150) and the frame passed it at 240 px while the lap was still drawn in full ember, because
+  // t=17 is BEFORE the hand-held car has slid — the route could not tell the two states apart.
+  // `expectCanvas` is the "something drew" floor; `replay-untrusted-slid` below is the frame
+  // that can tell them apart, at t=46, where the ungated trail measured 39 716 ember pixels.
+  { name: 'replay-untrusted', path: '/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0', waitMs: 4200, expectCanvas: true },
   // Bad data: `gaps=6` blanks six seconds of recorded position (a tunnel), so buildReplay's own
   // warnings fire and the dead-reckoned stretch is dashed instead of glowing.
   { name: 'replay-warnings', path: '/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 1200 },
@@ -489,4 +495,32 @@ export const defaultRoutes = [
       { type: 'wait', ms: 700 },
     ],
   },
+
+  // ---- replay: the five frames the eight default fixtures could not show, appended ---------
+  // A SLIDE THE ENGINE PAID NOTHING FOR. `hero` on seed 13 is a trusted S-grade run whose drift
+  // 3 (44.4–47.3 s) had all 2.9 s of it refused by the integrity monitor — `suppressedS` 2.93 —
+  // so the scorer published `total: 0` for it while the run as a whole scored 23 982. The replay used to read that 0 as "no score data", run its own estimate
+  // and slam "+127" over the road at the exit — a number the engine had refused to pay. This is
+  // that exit, 0.14 s after it fires: the beat still plays and it says nothing, because there is
+  // nothing to say. The eight default fixtures all happen to have every per-drift total above
+  // zero, which is why this needs a seed.
+  { name: 'replay-zero-paid', path: '/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0', waitMs: 3600, expectCanvas: true, minEmber: 400 },
+  // …and the same drift's HIGHLIGHT CHIP, which used to read "19° · 127 PTS" and now reads the
+  // one thing that is true about it: 19°.
+  { name: 'replay-zero-chip', path: '/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1', waitMs: 3600, expectCanvas: true, minEmber: 400 },
+  // THE UNTRUSTED RUN AFTER IT HAS SLID. `replay-untrusted` freezes at t=17, before the
+  // hand-held car has slid, so it could not tell a greyed trail from an ember one. At t=46 the
+  // ungated trail measured 39 716 ember pixels beside a NOT SCORED plate and grey peak labels.
+  // No `minEmber`: the point of this frame is that the heat ramp is withheld, so a floor on
+  // ember pixels would be a check on the defect.
+  { name: 'replay-untrusted-slid', path: '/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0', waitMs: 4200, expectCanvas: true },
+  // A CLEAN LAP'S TELEMETRY STRIP. `clean` peaks at 4.18°, and the scrub band used to rescale
+  // itself to that peak — so a lap with nothing in it drew full-height in gold and red, under a
+  // footer reading 0 DRIFTS. The band is absolute now and this is what a clean lap looks like:
+  // a flat line. No `minEmber` for the same reason as above.
+  { name: 'replay-clean-band', path: '/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1', waitMs: 3200, expectCanvas: true },
+  // The same zero-paid slide as a HIGHLIGHT chip (it ranks 8th of 8 on this seed), which is the
+  // other string that carried the invented number: "19° · 127 PTS". `replay-zero-chip` above
+  // shows the deep-linked THIS DRIFT chip, which has always been measurements only.
+  { name: 'replay-zero-highlight', path: '/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1', waitMs: 3600, expectCanvas: true, minEmber: 300 },
 ];

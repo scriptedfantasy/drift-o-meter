@@ -47,6 +47,12 @@ export interface SceneResources {
   glyphs(font: SkFont, key: string, s: string, tracking: number): { ids: number[]; pos: SkPoint[]; width: number };
   setGlowBlur(sigma: number): void;
   setStrokeGlowBlur(sigma: number): void;
+  /**
+   * The paint for a `saveLayer` that fades a whole group at once — the car and its arc, its
+   * under-glow and its velocity vector are a dozen draws that have to fade as ONE thing, or the
+   * overlaps show through each other as they go.
+   */
+  layerAlpha(alpha: number): SkPaint;
   dispose(): void;
 }
 
@@ -113,6 +119,7 @@ export function createSceneResources(): SceneResources {
   glowStroke.setStyle(PaintStyle.Stroke);
   glowStroke.setStrokeCap(StrokeCap.Round);
   glowStroke.setStrokeJoin(StrokeJoin.Round);
+  const layer = Skia.Paint();
 
   const smoke = gradient(
     [
@@ -250,6 +257,10 @@ export function createSceneResources(): SceneResources {
       }
       return run;
     },
+    layerAlpha(alpha: number): SkPaint {
+      layer.setAlphaf(Math.max(0, Math.min(1, Number.isFinite(alpha) ? alpha : 1)));
+      return layer;
+    },
     setGlowBlur(sigma: number): void {
       if (Math.abs(sigma - blurSigma) < 0.05) return;
       blurSigma = sigma;
@@ -262,7 +273,7 @@ export function createSceneResources(): SceneResources {
       glowStroke.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(1e-3, sigma), true));
     },
     dispose(): void {
-      for (const o of [fill, stroke, dashed, shaded, text, glow, glowStroke, smoke, smokeHot, pool, vignette, ribbon, topFade, bottomFade, grain]) {
+      for (const o of [fill, stroke, dashed, shaded, text, glow, glowStroke, layer, smoke, smokeHot, pool, vignette, ribbon, topFade, bottomFade, grain]) {
         try {
           o.dispose();
         } catch {

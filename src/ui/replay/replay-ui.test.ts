@@ -14,12 +14,28 @@
  */
 import { describe, expect, it, beforeAll } from 'vitest';
 
-import { buildReplay, SEVERITY_EDGES, type Replay } from '../../engine/replay';
+import { buildReplay, formatPoints, SEVERITY_EDGES, type Replay } from '../../engine/replay';
 import { degToRad, radToDeg, type Session } from '../../engine/types';
 import { FIXTURES, buildFixtureSession } from '../results/fixture';
-import { crosses, FOLD_SPAN, kerbContours, MAX_TURN_RAD, offsetRuns, segmentsCross, selfIntersections, smoothPolyline, splitAtSpikes, type Pt } from './kerbs';
+import {
+  crosses,
+  distanceToPath,
+  FOLD_SPAN,
+  KERB_OPTIONS,
+  kerbContours,
+  MAX_TURN_RAD,
+  minSeparation,
+  offsetRuns,
+  pathLength,
+  segmentsCross,
+  selfIntersections,
+  smoothPolyline,
+  splitAtSpikes,
+  splitBetweenRuns,
+  type Pt,
+} from './kerbs';
 import { replayLayout } from './layout';
-import { fmtTime, heatColor, isPointsClaim } from './palette';
+import { fmtTime, headlinePoints, heatColor, isPointsClaim, ribbonScale } from './palette';
 import { buildReplayView, gapWindows } from './view';
 import { parseReplayParams } from './params';
 
@@ -118,7 +134,45 @@ describe('kerbs: an offset that cannot fold', () => {
         // and nothing zig-zags: a drawn contour never turns more sharply than a hairpin
         expect(sharpestTurn(run)).toBeLessThanOrEqual(MAX_TURN_RAD + 1e-9);
       }
+      // …AND NOT ACROSS THE BREAKS EITHER. Every test above is inside ONE run, which is how
+      // `handheld` came to draw its left edge as 35 pieces with 20 crossings BETWEEN them —
+      // overlapping quads on the verge and a Y-shaped spur into empty space. A fold that
+      // straddles a break is still a fold.
+      for (let i = 0; i < runs.length; i++) {
+        for (let j = i + 1; j < runs.length; j++) {
+          expect(crosses(runs[i], runs[j]), `${name} d=${d}: run ${i} crosses run ${j}`).toBe(false);
+        }
+      }
     }
+  });
+
+  it('cuts two pieces of one contour apart where they cross, and leaves separate ones alone', () => {
+    const a: Pt[] = Array.from({ length: 9 }, (_, i) => [i, 0] as Pt);
+    const b: Pt[] = Array.from({ length: 9 }, (_, i) => [4, i - 4] as Pt);
+    const kept = splitBetweenRuns([a, b]);
+    for (let i = 0; i < kept.length; i++) {
+      for (let j = i + 1; j < kept.length; j++) expect(crosses(kept[i], kept[j])).toBe(false);
+    }
+    // the first run is kept whole and the second is cut, not thrown away
+    expect(kept.length).toBeGreaterThanOrEqual(2);
+    expect(kept.flat().length).toBeGreaterThan(a.length);
+    const apart: Pt[][] = [a, a.map(([x, y]) => [x, y + 30] as Pt)];
+    expect(splitBetweenRuns(apart)).toEqual(apart);
+  });
+
+  it('a 60° turn on a 2 m step is not a kerb', () => {
+    // the old bound was 100°, which passed a 94° kerb turn and a 99° road-edge turn on the
+    // hand-held fixture: a 1.7 m radius on a road 9.5 m wide
+    expect((MAX_TURN_RAD * 180) / Math.PI).toBeCloseTo(60, 6);
+    const elbow: Pt[] = [
+      [0, 0],
+      [2, 0],
+      [4, 0],
+      [5, 1.9],
+      [7, 1.9],
+      [9, 1.9],
+    ];
+    for (const run of splitAtSpikes(elbow)) expect(sharpestTurn(run)).toBeLessThanOrEqual(MAX_TURN_RAD + 1e-9);
   });
 
   it('a spike is cut out, and a smooth line is left alone', () => {
@@ -129,6 +183,28 @@ describe('kerbs: an offset that cannot fold', () => {
     expect(cut.length).toBeGreaterThan(1);
     for (const run of cut) expect(sharpestTurn(run)).toBeLessThanOrEqual(MAX_TURN_RAD + 1e-9);
     expect(cut.flat()).not.toContainEqual([4.2, 6]);
+  });
+
+  it.each(TRACKED)('%s: every drawn kerb is a stripe on the edge of the road, not debris', (name) => {
+    // WHAT THE FOLD TESTS LET THROUGH IS NOT AUTOMATICALLY A KERB. On `handheld` they left 28
+    // runs, 14 of them 3.2–8.6 m fragments, some sitting 0.5–2.7 m from the centre line of a
+    // 9.5 m road (i.e. on the racing line) and eight pairs within 1.6 m of each other — which is
+    // the floating red-and-grey chevron and the overlapping quads on the verge. Ten survive now.
+    const { replay } = built.get(name)!;
+    const roadPts: Pt[] = replay.track!.path.map((p) => [p.x, p.y] as Pt);
+    const parts = kerbContours(roadPts, replay.track!.closed, replay.track!.corners);
+    expect(parts.length).toBeGreaterThan(0);
+    for (const run of parts) {
+      expect(pathLength(run), 'a fragment is not a painted stripe').toBeGreaterThanOrEqual(KERB_OPTIONS.minDrawM);
+      const nearest = Math.min(...run.map((p) => distanceToPath(p, roadPts)));
+      expect(nearest, 'a kerb is on the EDGE of the road').toBeGreaterThanOrEqual(KERB_OPTIONS.minOffsetFrac * KERB_OPTIONS.offsetM);
+    }
+    for (let i = 0; i < parts.length; i++) {
+      for (let j = i + 1; j < parts.length; j++) {
+        // they are stroked 1.1 m wide, so two nearer than that are one smear
+        expect(minSeparation(parts[i], parts[j]), `kerb ${i} smears into kerb ${j}`).toBeGreaterThanOrEqual(KERB_OPTIONS.minGapM);
+      }
+    }
   });
 
   it.each(TRACKED)('%s: no kerb crosses itself or the road it belongs to', (name) => {
@@ -237,6 +313,30 @@ describe('palette', () => {
     expect(fmtTime(119.46)).toBe('01:59.5');
     expect(fmtTime(NaN)).toBe('00:00.0');
   });
+
+  /**
+   * The scrubber's |β| band is ABSOLUTE, and it has to be on every run or it is not a scale.
+   *
+   * The band's shader is a gradient in normalised space — red at the top means a spin — so a run
+   * scaled to its own maximum draws red at whatever its maximum happens to be. A clean lap did:
+   * 4.18° at 80 % of the band, next to `good`'s real 55.54° at 85 %.
+   */
+  it('the scrub band is the same scale on a clean lap as on a lap full of spins', () => {
+    const clean = built.get('clean')!.replay;
+    const good = built.get('good')!.replay;
+    expect(clean.segments.length).toBe(0);
+    expect(ribbonScale(clean)).toBeGreaterThanOrEqual(SEVERITY_EDGES.spin);
+    // and a clean lap draws a flat line rather than filling the band
+    expect(clean.telemetry.maxAngle / ribbonScale(clean)).toBeLessThan(0.15);
+    expect(good.telemetry.maxAngle / ribbonScale(good)).toBeGreaterThan(0.6);
+    // same |β|, same height, whichever run it is in
+    expect(ribbonScale(clean)).toBe(SEVERITY_EDGES.spin);
+    for (const name of Object.keys(FIXTURES)) {
+      const r = built.get(name)!.replay;
+      expect(ribbonScale(r)).toBeGreaterThanOrEqual(SEVERITY_EDGES.spin);
+      expect(ribbonScale(r)).toBeGreaterThanOrEqual(r.telemetry.maxAngle);
+    }
+  });
 });
 
 describe('what the screen prints about a run', () => {
@@ -246,26 +346,73 @@ describe('what the screen prints about a run', () => {
       expect(replay.info.totalPoints).toBeNull();
       return;
     }
-    // what `drawTopHud` prints once the run has finished is `info.totalPoints`
-    expect(replay.info.totalPoints).toBe(session.score.total);
-    // and what it prints while playing ends at exactly the same number
+    // `info.totalPoints` IS `session.score.total` by construction, so comparing them is an
+    // identity. What the screen has to agree with is the running number it draws while playing.
     expect(Math.round(replay.trail.score[replay.trail.n - 1])).toBe(session.score.total);
   });
 
-  it('an untrusted run shows no points anywhere, and still shows what it measured', () => {
+  /**
+   * THE STRING THE TOP HUD DRAWS, run rather than described.
+   *
+   * This used to be a comment \u2014 "what `drawTopHud` prints once the run has finished is
+   * `info.totalPoints`" \u2014 with nothing executing it, which is how the renderer came to print
+   * `pose.points` there for a whole round while the suite stayed green. `headlinePoints` is that
+   * choice, lifted out of the Skia call so a test can make it.
+   */
+  describe('headlinePoints: which number the top-right readout is', () => {
+    it('prints the running total while the run is playing', () => {
+      expect(headlinePoints({ trusted: true, reveal: 0, totalPoints: 23050, posePoints: 17410 })).toBe('17410');
+    });
+
+    it('hands over to the SESSION TOTAL the moment the grade starts landing', () => {
+      // the trail's own sum is a hair short of the total until its very last sample; the frame
+      // the driver reads at the end has to be the number the results screen prints
+      expect(headlinePoints({ trusted: true, reveal: 0.3, totalPoints: 23050, posePoints: 23049 })).toBe('23050');
+    });
+
+    it('prints nothing once the reveal owns the frame, so the total is never on screen twice', () => {
+      expect(headlinePoints({ trusted: true, reveal: 1, totalPoints: 23050, posePoints: 23050 })).toBeNull();
+    });
+
+    it('prints nothing at all on a run the engine will not vouch for', () => {
+      expect(headlinePoints({ trusted: false, reveal: 0, totalPoints: null, posePoints: 812 })).toBeNull();
+      expect(headlinePoints({ trusted: false, reveal: 0.5, totalPoints: null, posePoints: 812 })).toBeNull();
+    });
+
+    it.each(Object.keys(FIXTURES))('%s: the last frame draws the session total, or no points', (name) => {
+      const { session, replay: r } = built.get(name)!;
+      const drawn = headlinePoints({ trusted: r.info.trusted, reveal: 0.5, totalPoints: r.info.totalPoints, posePoints: 0 });
+      expect(drawn).toBe(session.score.trusted === false ? null : formatPoints(session.score.total));
+    });
+  });
+
+  it('an untrusted run makes no points claim to withhold, and still shows what it measured', () => {
     const { session, replay: r } = built.get('handheld')!;
     expect(session.score.trusted).toBe(false);
     expect(r.info.totalPoints).toBeNull();
     expect(r.info.grade).toBeNull();
-    // the renderer withholds any label `isPointsClaim` matches; what is left has to be the
-    // measurements, or the refusal has quietly become a silence
-    const shown = r.events.filter((e) => e.label && !isPointsClaim(e.label)).map((e) => e.label);
-    const withheld = r.events.filter((e) => e.label && isPointsClaim(e.label)).map((e) => e.label);
-    expect(withheld.length).toBeGreaterThan(0);
-    for (const label of withheld) expect(label).toMatch(/CHAIN LOST|AT RISK|^\+/);
+    // Every slide on this recording was refused, so every one of them is worth exactly 0 and the
+    // replay makes no claim about points ANYWHERE \u2014 there is nothing for the renderer's gate to
+    // withhold. This used to assert the opposite (`withheld.length > 0`), which only held
+    // because the replay was inventing the numbers it was then careful not to show.
+    for (const e of r.events) expect(isPointsClaim(e.label), `event "${e.label}"`).toBe(false);
+    for (const m of r.markers) expect(isPointsClaim(m.label), `marker "${m.label}"`).toBe(false);
+    for (const h of r.highlights) expect(h.label).not.toMatch(/PTS/);
+    const shown = r.events.filter((e) => e.label !== '').map((e) => e.label);
     expect(shown.some((l) => /^LOST IT \d+\u00b0$/.test(l))).toBe(true);
     expect(shown.some((l) => /^TRANSITION/.test(l))).toBe(true);
-    for (const label of shown) expect(isPointsClaim(label)).toBe(false);
+  });
+
+  it('a scored run with a lost chain DOES make claims, and the gate catches every one', () => {
+    // the other half of the same rule: the withholding path has to have something real to
+    // withhold, or "no points on screen" is true for the wrong reason
+    const { replay: r } = built.get('spin')!;
+    const claims = r.events.filter((e) => e.label && isPointsClaim(e.label)).map((e) => e.label);
+    expect(claims.length).toBeGreaterThan(0);
+    for (const label of claims) expect(label).toMatch(/CHAIN LOST|AT RISK|^\+/);
+    for (const label of r.events.filter((e) => e.label && !isPointsClaim(e.label)).map((e) => e.label)) {
+      expect(label).not.toMatch(/\d+\s*(PTS|POINTS)/);
+    }
   });
 
   it('the points-claim rule keeps measurements and catches scores', () => {

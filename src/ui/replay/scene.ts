@@ -35,9 +35,31 @@ import {
 import { clamp, wrapAngle } from '../../engine/types';
 import { colors, gradeColors } from '../theme';
 import type { SceneGeometry, WorldBounds } from './geometry';
-import { ribbonScale, ROAD_W } from './geometry';
+import { ROAD_W } from './geometry';
+import { smoothPolyline } from './kerbs';
 import type { ReplayLayout } from './layout';
-import { ASPHALT_HI, ASPHALT_LO, CENTRE_LINE, EDGE_LINE, GROUND, HOT, KERB_PALE, RUNOFF, TYPE, VERGE, deg, eventColor, fmtTime, heatColor, isPointsClaim, kmh, mix, severityWeight } from './palette';
+import {
+  ASPHALT_HI,
+  ASPHALT_LO,
+  CENTRE_LINE,
+  EDGE_LINE,
+  GROUND,
+  HOT,
+  KERB_PALE,
+  RUNOFF,
+  TYPE,
+  VERGE,
+  deg,
+  eventColor,
+  fmtTime,
+  headlinePoints,
+  heatColor,
+  isPointsClaim,
+  kmh,
+  mix,
+  ribbonScale,
+  severityWeight,
+} from './palette';
 import type { SceneResources } from './resources';
 import type { ReplayView } from './source';
 
@@ -123,6 +145,19 @@ const REVEAL_S = 1.1;
  */
 function heat(f: Frame, beta: number): string {
   return f.noScore ? MUTED : heatColor(beta);
+}
+
+/**
+ * The same gate for a heat colour something else already worked out — the trail ribbon's halo,
+ * its core chunks (coloured in `geometry.ts`, once, off the same ramp) and the mini-map.
+ *
+ * It exists because the gate was applied at thirteen draw sites and missed the three BIGGEST:
+ * a run stamped NOT SCORED drew its whole lap in full ember and gold, with the peak labels
+ * beside it in grey and the slip numeral grey — one frame saying both things at once. Every
+ * colour that comes off `heatColor`, wherever it was computed, goes through here or `heat`.
+ */
+function tint(f: Frame, hex: string): string {
+  return f.noScore ? MUTED : hex;
 }
 
 const BG = colors.bg0;
@@ -386,21 +421,32 @@ function partialPath(f: Frame, from: number, to: number): SkPath | null {
   // the engine's own mask: 1 where a GPS fix really brackets this sample
   const measured = tr.measured;
   const b = Skia.PathBuilder.Make();
-  let open = false;
   let drawn = 0;
-  for (let i = from; i <= to; i++) {
-    if (measured[i] === 0) {
-      open = false;
-      continue;
+  // The SAME smoothing the finished ribbon is built with (`geometry.ts`), or the piece being
+  // drawn right now would be a faceted polyline that visibly changes shape the instant the
+  // segment completes. Endpoints are held, so the tip stays exactly under the car.
+  let run: Array<[number, number]> = [];
+  const flush = () => {
+    if (run.length < 2) {
+      run = [];
+      return;
     }
-    if (!open) {
-      b.moveTo(tr.x[i], tr.y[i]);
-      open = true;
-    } else {
-      b.lineTo(tr.x[i], tr.y[i]);
+    const s = run.length > 2 ? smoothPolyline(run, 2) : run;
+    b.moveTo(s[0][0], s[0][1]);
+    for (let i = 1; i < s.length; i++) {
+      b.lineTo(s[i][0], s[i][1]);
       drawn++;
     }
+    run = [];
+  };
+  for (let i = from; i <= to; i++) {
+    if (measured[i] === 0) {
+      flush();
+      continue;
+    }
+    run.push([tr.x[i], tr.y[i]]);
   }
+  flush();
   if (drawn === 0) {
     const p = b.detach();
     p.dispose();
@@ -456,7 +502,7 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
     const w = severityWeight(seg.severity);
     const focus = f.ui.focusDriftId !== null && f.ui.focusDriftId === seg.driftId;
     // the halo's heat is the peak SO FAR, never the peak this slide will reach
-    const col = heatColor(sg.peakTo[Math.max(0, Math.min(seg.endIndex, cur) - seg.startIndex)]);
+    const col = heat(f, sg.peakTo[Math.max(0, Math.min(seg.endIndex, cur) - seg.startIndex)]);
     canvas.drawPath(path, glowStroke(f, col, haloW * (0.55 + 0.5 * w), (0.09 + 0.13 * w) * boost, haloW * 0.28));
     canvas.drawPath(path, strokePaint(f, col, glowW * (0.8 + 0.5 * w), (0.18 + 0.22 * w) * boost));
     if (focus) canvas.drawPath(path, strokePaint(f, WHITE, haloW * 1.1, 0.16));
@@ -469,7 +515,7 @@ function drawTrail(canvas: SkCanvas, f: Frame): void {
       if (!overlaps(f, chunk.bounds)) continue;
       const i = chunk.intensity;
       const width = chunk.hot ? mOrPx(f, 0.05 + 0.3 * i, 0.4) : mOrPx(f, 0.3 + 0.75 * i, 1.2);
-      const paint = strokePaint(f, chunk.color, width, chunk.hot ? 0.92 : 1);
+      const paint = strokePaint(f, tint(f, chunk.color), width, chunk.hot ? 0.92 : 1);
       if (chunk.endIndex <= cur) {
         canvas.drawPath(chunk.path, paint);
       } else if (chunk.startIndex < cur) {
@@ -653,6 +699,17 @@ function drawCar(canvas: SkCanvas, f: Frame): void {
   const col = heat(f, p.beta);
   const slip = Math.abs(p.beta);
 
+  // THE REVEAL OWNS THE FRAME, and that includes the car. The world labels and the callout are
+  // already taken off as the grade lands; the sprite was not, so on the last frame the grey body
+  // sat inside the "23050" and through the word POINTS. It fades on the same ramp as everything
+  // else the letter takes the frame from, rather than popping. The layer is only paid for while
+  // the reveal is running — an offscreen on every frame of the run would cost the whole replay
+  // for a second and a bit of it.
+  const fading = f.reveal > 0;
+  if (fading) {
+    if (f.reveal >= 0.99) return;
+    canvas.saveLayer(f.res.layerAlpha(1 - f.reveal));
+  }
   canvas.save();
   canvas.translate(p.x, p.y);
 
@@ -713,6 +770,7 @@ function drawCar(canvas: SkCanvas, f: Frame): void {
   if (p.intensity > 0.25) canvas.drawPath(f.geo.car.body, strokePaint(f, col, 0.18 + 0.22 * p.intensity, 0.5 + 0.5 * p.intensity));
   canvas.restore();
   canvas.restore();
+  if (fading) canvas.restore();
 }
 
 // ---------------------------------------------------------------- screen space
@@ -973,7 +1031,7 @@ function drawMinimap(canvas: SkCanvas, f: Frame): void {
     const sp: Array<{ x: number; y: number }> = [];
     for (let i = seg.startIndex; i <= end; i += 3) sp.push({ x: mx(r.trail.x[i]), y: my(r.trail.y[i]) });
     if (sp.length > 1) {
-      const col = heatColor(sg.peakTo[Math.max(0, end - seg.startIndex)]);
+      const col = heat(f, sg.peakTo[Math.max(0, end - seg.startIndex)]);
       canvas.drawPoints(PointMode.Polygon, sp, strokePaint(f, col, 1.7, 0.95, StrokeCap.Round));
     }
   }
@@ -1065,14 +1123,14 @@ function drawTopHud(canvas: SkCanvas, f: Frame): void {
   // as well, and again in the footer, and hedge the slip-angle label, and print two lines of
   // uppercase body copy — seven pieces of bad news in the top fifth of the frame.
   // …and it hands the total over to the reveal rather than printing it twice on the last frame.
-  if (!f.noScore && f.reveal < 1) {
+  // WHICH number this is, and whether there is one at all, is `headlinePoints` — a pure rule in
+  // palette.ts that a test can run, rather than a ternary buried in a Skia call that only a
+  // screenshot could catch getting it wrong (and did not, for a whole round).
+  const headline = headlinePoints({ trusted: !f.noScore, reveal: f.reveal, totalPoints: r.info.totalPoints, posePoints: p.points });
+  if (headline !== null) {
     const fade = 1 - f.reveal;
-    // The running total is the trail's, which now ends exactly at the session total; once the
-    // run is over the screen prints `info.totalPoints`, the trust-gated headline itself, so the
-    // final frame and the results screen cannot differ by a rounding, let alone by a chain.
-    const total = f.reveal > 0 && r.info.totalPoints !== null ? r.info.totalPoints : p.points;
     const ptsCol = p.phase === 'drifting' ? colors.ember : WHITE;
-    const w = drawStr(canvas, f, f.fonts.value, pts(total), rx, rb + 12, { color: ptsCol, anchor: 'end', alpha: fade });
+    const w = drawStr(canvas, f, f.fonts.value, headline, rx, rb + 12, { color: ptsCol, anchor: 'end', alpha: fade });
     drawStr(canvas, f, f.fonts.label, 'POINTS', rx, rb + 26, { color: MUTED, anchor: 'end', tracking: 2, alpha: fade });
     if (p.multiplier > 1.05) {
       const cw = 34;
@@ -1123,15 +1181,27 @@ function drawBottomHud(canvas: SkCanvas, f: Frame): void {
   canvas.restore();
   canvas.save();
   canvas.clipRect({ x: s.x0, y: s.yTop - 2, width: Math.max(0, playX - s.x0), height: s.yBot - s.yTop + 2 }, ClipOp.Intersect, false);
-  ribbonPaint.setStyle(PaintStyle.Fill);
-  ribbonPaint.setShader(f.res.ribbon);
-  ribbonPaint.setColor(f.res.color('#FFFFFF'));
-  ribbonPaint.setAlphaf(0.95);
-  canvas.save();
-  canvas.translate(s.x0, s.yTop);
-  canvas.scale(Math.max(1e-4, s.x1 - s.x0), Math.max(1e-4, s.yBot - s.yTop));
-  canvas.drawPath(f.geo.ribbon, ribbonPaint);
-  canvas.restore();
+  // THE SAME GATE AS THE WORLD. This gradient IS the heat ramp, drawn in band space — red at the
+  // top, gold, then ember — so on a recording the engine does not believe it makes exactly the
+  // claim the trail was just stopped from making. It goes grey with everything else; the played
+  // part stays brighter than the unplayed one so the strip is still a map of the run.
+  if (f.noScore) {
+    canvas.save();
+    canvas.translate(s.x0, s.yTop);
+    canvas.scale(Math.max(1e-4, s.x1 - s.x0), Math.max(1e-4, s.yBot - s.yTop));
+    canvas.drawPath(f.geo.ribbon, fillPaint(f, MUTED, 0.62));
+    canvas.restore();
+  } else {
+    ribbonPaint.setStyle(PaintStyle.Fill);
+    ribbonPaint.setShader(f.res.ribbon);
+    ribbonPaint.setColor(f.res.color('#FFFFFF'));
+    ribbonPaint.setAlphaf(0.95);
+    canvas.save();
+    canvas.translate(s.x0, s.yTop);
+    canvas.scale(Math.max(1e-4, s.x1 - s.x0), Math.max(1e-4, s.yBot - s.yTop));
+    canvas.drawPath(f.geo.ribbon, ribbonPaint);
+    canvas.restore();
+  }
   canvas.restore();
 
   // drift windows as ticks under the baseline: grey ahead of the playhead, heat behind it
@@ -1205,7 +1275,9 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   const lapStr = r.laps.length === 0 ? 'STAGE' : lap ? `LAP ${lap.index + 1}/${r.laps.length}` : last && f.t > last.endT ? 'FINISH' : `LAP 1/${r.laps.length}`;
   let x = lay.info.x + drawStr(canvas, f, f.fonts.label, lapStr, lay.info.x, ly, { tracking: 1.6 }) + 14;
   // the run's name gets whatever room the total leaves it, and an ellipsis when that is not enough
-  const titleRoom = lay.info.right - x - (compact ? 150 : 84);
+  // the room the drift count + the running best need on the same row (landscape) — the name
+  // gives way to them, not the other way round
+  const titleRoom = lay.info.right - x - (compact ? 205 : 84);
   const title = f.fonts.label ? fitTitle(f, f.fonts.label, f.view.title, titleRoom, 1.4) : '';
   x += drawStr(canvas, f, f.fonts.label, title, x, ly, { color: MUTED, tracking: 1.4 }) + 14;
 
@@ -1219,7 +1291,12 @@ function drawInfoLine(canvas: SkCanvas, f: Frame): void {
   const driftStr = `${done} DRIFT${done === 1 ? '' : 'S'}`;
   // `seg.peakAngle` is the DETECTOR's peak, the same number the results screen prints under
   // PEAK ANGLE; the trail's own maximum (a degree or four higher on a loose mount) colours it.
-  const bestStr = best > 0 ? `BEST ${Math.round(deg(best))}\u00B0` : '';
+  //
+  // SO FAR, because it is a RUNNING best over the slides whose peak the playhead has passed,
+  // while the numeral at the top of the frame is this instant's |\u03B2|. Unlabelled, the two read as
+  // a contradiction in one frame: `replay-touge` showed 52\u00B0 at the top and BEST 48\u00B0 at the
+  // bottom, which is a screen arguing with itself unless the footer says which moment it means.
+  const bestStr = best > 0 ? `BEST SO FAR ${Math.round(deg(best))}\u00B0` : '';
 
   // The total is NOT repeated here. It is already set at 34 pt in the top-right readout, and the
   // same number twice at the same size on every frame is one of them saying nothing.

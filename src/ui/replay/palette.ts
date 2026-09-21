@@ -6,7 +6,7 @@
  * on what a given |β| looks like. The escalation ramp in particular is absolute: the same slip
  * angle is the same colour in every session, on both renderers.
  */
-import { SEVERITY_EDGES, type DriftSeverity, type ReplayEventKind } from '../../engine/replay';
+import { SEVERITY_EDGES, formatPoints, type DriftSeverity, type Replay, type ReplayEventKind } from '../../engine/replay';
 import { clamp } from '../../engine/types';
 import { colors } from '../theme';
 
@@ -68,6 +68,49 @@ export function severityWeight(s: DriftSeverity): number {
  */
 export function isPointsClaim(label: string): boolean {
   return /[+−-]\s*\d/.test(label);
+}
+
+/**
+ * The POINTS the top HUD prints, as the string it prints — or null when it prints none.
+ *
+ * This lives out here, away from Skia, because it is the one decision on this screen that has
+ * been wrong twice and cannot be seen from a test that only reads the replay model. The round
+ * before last, `Replay.info.totalPoints` was computed correctly, trust-gated correctly, and the
+ * renderer drew `pose.points` beside it — a different number on the last frame from the one the
+ * results screen printed. The test that was supposed to catch it asserted the two model fields
+ * against each other and stated the renderer's behaviour IN A COMMENT; nothing executed the
+ * choice. Now the choice is a function, and `replay-ui.test.ts` runs it.
+ *
+ * The rules, in order:
+ *  • an untrusted recording prints no points at all, ever (`SessionScore.trusted`);
+ *  • once the grade has fully landed the reveal owns the number and the HUD prints none;
+ *  • while it is landing, and afterwards, the number is the SESSION TOTAL — the same figure the
+ *    results screen prints — not the trail's running sum, which is a hair short of it until the
+ *    last sample;
+ *  • before the reveal starts it is the running total at the playhead, which is the whole point
+ *    of watching.
+ */
+export function headlinePoints(opts: { trusted: boolean; reveal: number; totalPoints: number | null; posePoints: number }): string | null {
+  if (!opts.trusted || opts.reveal >= 1) return null;
+  const finished = opts.reveal > 0 && opts.totalPoints !== null;
+  return formatPoints(finished ? (opts.totalPoints as number) : opts.posePoints);
+}
+
+/**
+ * Widest |β| the scrubber ribbon is scaled to.
+ *
+ * ABSOLUTE, with no exception: never less than the spin edge, so a given |β| is the same height
+ * in every run and two runs are comparable at a glance.
+ *
+ * There used to be an exception for a run with no drift in it — scale to its own maximum, "so
+ * the shape of the few degrees is visible" — and it made the band lie. The ribbon is a gradient
+ * in NORMALISED band space: red at the top means a spin. A clean lap peaking at 4.18° filled
+ * 80 % of the band, which put a clean lap's telemetry strip in full gold and red under a footer
+ * reading 0 DRIFTS, a hair below where `good`'s genuine 55.54° sits at 85 %. A clean lap draws a
+ * flat line now, which is the honest picture of one.
+ */
+export function ribbonScale(replay: Replay): number {
+  return Math.max(SEVERITY_EDGES.spin, replay.telemetry.maxAngle * 1.05);
 }
 
 /** Callout colour by beat, as the reference renderer assigns it. */

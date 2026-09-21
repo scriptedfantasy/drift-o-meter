@@ -25,7 +25,8 @@ import {
   type Replay,
 } from './index';
 import { sessionFromSimulation } from './fixtures';
-import { peakCallout, lostToSpin, IDENTITY_TOLERANCE } from './build';
+import { peakCallout, IDENTITY_TOLERANCE } from './build';
+import { replayChains, resolveOptions } from '../score';
 import { FIXTURES, buildFixtureSession } from '../../ui/results/fixture';
 
 let run: SimulatedRun;
@@ -1069,10 +1070,12 @@ describe('the replay and the results screen count the same run', () => {
     const { session, replay: r } = built.get(name)!;
     const sc = r.trail.score;
     for (let i = 1; i < sc.length; i++) expect(sc[i]).toBeGreaterThanOrEqual(sc[i - 1] - 1e-6);
+    // THE REAL ASSERTION. `info.totalPoints` is DEFINED as `session.score.total` when it is
+    // finite, so comparing the two is an identity that cannot fail — that is what let the
+    // fabricated per-drift scores through for a whole round. What has to agree is the number the
+    // replay BUILDS for itself, sample by sample, and the number the results screen prints.
     expect(Math.round(sc[sc.length - 1])).toBe(session.score.total);
-    // and what the screen is allowed to print agrees with it, or is withheld
-    if (r.info.trusted) expect(r.info.totalPoints).toBe(session.score.total);
-    else expect(r.info.totalPoints).toBeNull();
+    if (!r.info.trusted) expect(r.info.totalPoints).toBeNull();
   });
 
   it.each(names)('%s: every scored slide exists on the replay too', (name) => {
@@ -1095,16 +1098,26 @@ describe('the replay and the results screen count the same run', () => {
 
   it.each(names)('%s: a lost chain adds nothing, and says so', (name) => {
     const { session, replay: r } = built.get(name)!;
-    const lost = lostToSpin(session.drifts);
+    // AGAINST THE SCORER, NOT AGAINST ITSELF. This used to compute the expectation by calling
+    // the replay's own copy of the chain rule, so it asserted the implementation against the
+    // implementation and could not see the two disagreeing about which drifts banked.
+    // `replayChains` is the rule's owner (src/engine/score/session.ts) and is reached here
+    // independently of anything the replay builder touched.
+    const lost = new Set(
+      replayChains(session.drifts, session.states, resolveOptions())
+        .scored.filter((d) => d.lost)
+        .map((d) => d.id),
+    );
     for (const seg of r.segments) {
-      expect(seg.lost).toBe(lost.has(seg.driftId));
+      expect(seg.lost, `drift ${seg.driftId}`).toBe(lost.has(seg.driftId));
       if (!seg.lost) continue;
       expect(seg.points).toBe(0);
       expect(seg.grossPoints).toBeGreaterThanOrEqual(0);
       const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId)!;
       expect(exit.points).toBe(0);
       expect(exit.label).not.toMatch(/^\+/);
-      expect(exit.label).toMatch(seg.spin ? /^CHAIN LOST −/ : /^AT RISK \+/);
+      // a slide that risked nothing announces nothing; one that risked points names them
+      expect(exit.label).toMatch(seg.grossPoints > 0 ? (seg.spin ? /^CHAIN LOST −/ : /^AT RISK \+/) : /^$/);
       // nothing accrues across a drift whose chain was lost
       expect(r.trail.score[seg.endIndex]).toBeCloseTo(r.trail.score[seg.startIndex], 6);
     }
@@ -1112,6 +1125,59 @@ describe('the replay and the results screen count the same run', () => {
     const banked = r.segments.filter((g) => !g.lost).reduce((a, g) => a + g.points, 0);
     expect(Math.round(banked)).toBe(session.score.total);
   });
+
+  /**
+   * THE SWEEP, and it is where the headline defect lived.
+   *
+   * The eight default fixtures all happen to have every `perDrift.total > 0`, so a replay that
+   * treated "scored zero" as "no score data" agreed with the results screen on every one of them
+   * and fabricated points on 28 of 112 fixture × seed runs — `rough` on 12 of 14 seeds, with a
+   * running total reaching 7 953 on runs the engine scored 0. Nothing here reads a number off
+   * the replay and compares it with the same number; every assertion crosses from the replay to
+   * the scorer.
+   */
+  it('over a seed sweep: the replay never invents a score and never disagrees about what banked', () => {
+    const seeds = [1, 2, 3, 5, 7, 11, 13, 17, 23, 42, 77, 101];
+    let runs = 0;
+    let driftsChecked = 0;
+    const fabricated: string[] = [];
+    const disagreed: string[] = [];
+    const mismatched: string[] = [];
+    for (const name of Object.keys(FIXTURES)) {
+      for (const seed of seeds) {
+        const s = buildFixtureSession({ ...FIXTURES[name], seed });
+        const r = buildReplay(s);
+        runs++;
+        const lost = new Set(
+          replayChains(s.drifts, s.states, resolveOptions())
+            .scored.filter((d) => d.lost)
+            .map((d) => d.id),
+        );
+        for (const seg of r.segments) {
+          const ds = s.score.perDrift[seg.driftId];
+          driftsChecked++;
+          // what the scorer published is what the replay draws — including a published 0
+          if (ds && Math.abs(seg.grossPoints - ds.total) > 1e-6) fabricated.push(`${name} s${seed} drift ${seg.driftId}: scorer ${ds.total.toFixed(1)} → replay ${seg.grossPoints.toFixed(1)}`);
+          if (seg.lost !== lost.has(seg.driftId)) disagreed.push(`${name} s${seed} drift ${seg.driftId}`);
+          // and a slide worth nothing makes no claim about points, anywhere it is named
+          if (!(seg.points > 0)) {
+            const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId);
+            if (exit && /\+\s*0\b/.test(exit.label)) fabricated.push(`${name} s${seed} drift ${seg.driftId}: exit ticker "${exit.label}"`);
+            const hl = r.highlights.find((h) => h.driftId === seg.driftId);
+            if (hl && /PTS/.test(hl.label)) fabricated.push(`${name} s${seed} drift ${seg.driftId}: highlight "${hl.label}"`);
+          }
+        }
+        if (Math.round(r.trail.score[r.trail.n - 1]) !== s.score.total) {
+          mismatched.push(`${name} s${seed}: trail ${r.trail.score[r.trail.n - 1].toFixed(1)} vs session ${s.score.total}`);
+        }
+      }
+    }
+    expect(runs).toBeGreaterThanOrEqual(90);
+    expect(driftsChecked).toBeGreaterThan(300);
+    expect(fabricated.slice(0, 6).join('\n')).toBe('');
+    expect(disagreed.slice(0, 6).join('\n')).toBe('');
+    expect(mismatched.slice(0, 6).join('\n')).toBe('');
+  }, 600_000);
 
   it.each(names)('%s: β = course − heading holds, sample by sample', (name) => {
     const { session, replay: r } = built.get(name)!;
@@ -1126,6 +1192,49 @@ describe('the replay and the results screen count the same run', () => {
     expect(trail).toBeLessThan(IDENTITY_TOLERANCE);
     expect(r.warnings.join(' ')).not.toMatch(/disagrees with the heading/);
   });
+
+  /**
+   * THE PAN LIMITER IS A RAIL, NOT THE SHAPE OF THE SHOT — and the claim is now measured per
+   * fixture rather than asserted once on the harbour run the rest of the camera suite uses.
+   *
+   * "The camera never touches its own limiter" stopped being true and nothing noticed: on
+   * `handheld` the clamp fires on 74 chase frames and 78 cinematic ones. It fires because the
+   * RECORDING teleports — the estimated position steps 9.28 m between two trail samples 50 ms
+   * apart, 186 m/s against a reported 19.6 m/s — and turning that into a 0.15 s pan instead of a
+   * one-frame jump is exactly what the rail is for. The property that has to hold is therefore
+   * the conditional one, which is falsifiable: a clamped frame requires a recording that jumped,
+   * and a recording that does not jump leaves the spring real headroom.
+   */
+  it('the pan limiter only fires where the recording itself jumps', () => {
+    const dt = 1 / 60;
+    const vp = { w: 393, h: 560 };
+    for (const name of names) {
+      const { replay: r } = built.get(name)!;
+      let implied = 0;
+      for (let i = 1; i < r.trail.n; i++) implied = Math.max(implied, Math.hypot(r.trail.x[i] - r.trail.x[i - 1], r.trail.y[i] - r.trail.y[i - 1]) * r.trail.hz);
+      // a position that moves three times faster than the car ever did is not the car
+      const teleports = implied > 3 * Math.max(1, r.info.maxSpeed);
+      for (const mode of ['chase', 'cinematic'] as CameraMode[]) {
+        const cam = new ReplayCamera(mode, vp);
+        let prev = cam.update(r, 0, dt);
+        let clamped = 0;
+        let worst = 0;
+        for (let t = dt; t <= r.durationS; t += dt) {
+          const s = cam.update(r, t, dt);
+          const pan = Math.hypot(s.cx - prev.cx, s.cy - prev.cy) / dt;
+          worst = Math.max(worst, pan);
+          if (pan > CAMERA_LIMITS.maxPan - 1e-6) clamped++;
+          prev = s;
+        }
+        const where = `${name}/${mode}: ${clamped} clamped frames, peak ${worst.toFixed(1)} m/s, worst recorded step ${implied.toFixed(1)} m/s against ${r.info.maxSpeed.toFixed(1)} m/s driven`;
+        if (!teleports) {
+          expect(clamped, where).toBe(0);
+          // and with room to spare, so the spring is what the viewer is watching
+          expect(worst, where).toBeLessThan(0.8 * CAMERA_LIMITS.maxPan);
+        }
+      }
+    }
+  }, 300_000);
 
   it.each(names)('%s: the run is drawn to the end of it', (name) => {
     const { session, replay: r } = built.get(name)!;

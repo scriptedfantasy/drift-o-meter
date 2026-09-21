@@ -44,6 +44,32 @@ export interface KerbOptions {
   maxCurvatureFrac: number;
   /** Two apexes closer together than this are the same bend found twice, not a chicane. */
   sameBendM: number;
+  /**
+   * The shortest stripe that may be DRAWN as a kerb, metres.
+   *
+   * What survives the fold tests is not automatically a kerb. On the hand-held fixture — whose
+   * centre line is an estimate that wanders metres between samples — half the runs came out as
+   * 3.2–8.6 m fragments of three to five points, and those are what the verge was littered with.
+   * On every rigidly-mounted fixture the shortest run is 48.6 m and the median is 75 m.
+   */
+  minDrawM: number;
+  /**
+   * How far the drawn contour may be pulled off its intended offset before it stops being the
+   * edge of the road, as a fraction of `offsetM`.
+   *
+   * The per-vertex curvature clamp exists to stop a fold, and where it bites hardest it can pull
+   * the contour most of the way back to the centre line: `handheld` produced "kerbs" sitting
+   * 0.5–2.7 m out on a road 9.5 m wide, i.e. on the racing line. A stripe that is not on the
+   * edge is not a kerb, and the honest thing to draw is nothing.
+   */
+  minOffsetFrac: number;
+  /**
+   * How close two kerbs may come, metres. They are stroked 1.1 m wide (`scene.ts`), so two runs
+   * nearer than this overlap into one smear whether or not their segments actually cross — which
+   * is what "two quads visibly overlapping" was. On every rigid fixture the nearest pair is
+   * 10.6 m apart; on `handheld` eight pairs were within 1.6 m and two within 0.3 m.
+   */
+  minGapM: number;
 }
 
 export const KERB_OPTIONS: KerbOptions = {
@@ -53,6 +79,9 @@ export const KERB_OPTIONS: KerbOptions = {
   stepM: 2,
   maxCurvatureFrac: 0.55,
   sameBendM: 5,
+  minDrawM: 8,
+  minOffsetFrac: 0.6,
+  minGapM: 1.6,
 };
 
 const len = (dx: number, dy: number): number => Math.hypot(dx, dy);
@@ -166,11 +195,83 @@ export function offsetRuns(raw: Pt[], d: number, maxCurvatureFrac = KERB_OPTIONS
   // any hairpin vertex, and at any self-crossing, dropping the piece between the two ends. What
   // is drawn is then a line along the road or nothing at all.
   // (both wrapped: `flatMap` passes the index as the second argument, which is a threshold here)
-  return runs.flatMap((r) => splitAtSpikes(r)).flatMap((r) => splitAtCrossings(r));
+  const cut = runs.flatMap((r) => splitAtSpikes(r)).flatMap((r) => splitAtCrossings(r));
+  // …AND THEN BETWEEN THE PIECES. Every test above runs INSIDE one run, so a fold that straddles
+  // a break — the offset doubling back across the gap the break just made — was never looked at.
+  // Measured on `handheld`: the left road edge came out as 35 runs with 20 crossings BETWEEN
+  // them and the right as 25 with 12, which draw as overlapping quads and a Y-shaped spur into
+  // the verge. Two pieces of contour that cross are not a contour.
+  return splitBetweenRuns(cut);
 }
 
-/** The sharpest turn a drawn contour may make. Beyond this it is a spike, not a corner. */
-export const MAX_TURN_RAD = (100 * Math.PI) / 180;
+/**
+ * The sharpest turn a drawn contour may make. Beyond this it is a spike, not a corner.
+ *
+ * 60°, down from 100°. These contours are sampled at `stepM` = 2 m, and no kerb or road edge on
+ * a drivable road turns 60° in two metres — that is a 1.7 m radius. The old 100° passed a 94°
+ * turn on `handheld` and a 99° one on its road edge, which is what the floating chevron across
+ * the verge was made of. A contour that claims one is not being mitred badly, it is wrong, and
+ * the honest thing to draw is the road on either side of it and nothing in between.
+ */
+export const MAX_TURN_RAD = (60 * Math.PI) / 180;
+
+/**
+ * Cut every run of a contour SET where it crosses another run of the same set.
+ *
+ * Order matters and is the input's: a run is kept whole if it crosses nothing already kept, and
+ * otherwise cut at its first offending edge — the crossing edge itself is dropped and the rest
+ * re-tested, so a run that folds twice loses both folds and keeps the road between them. Pieces
+ * of two vertices or fewer are not contours and are dropped.
+ *
+ * This is deliberately NOT span-limited the way `splitAtCrossings` is: the runs of one offset
+ * contour are already the pieces a fold broke it into, so two of them meeting is a fold, not the
+ * harbour circuit's two legs passing each other (those are one run, and the span limit inside it
+ * is what protects them).
+ */
+export function splitBetweenRuns(runs: Pt[][]): Pt[][] {
+  // each kept run carries its own box, so the pairwise test stays cheap on a lap-long contour
+  const kept: Array<{ pts: Pt[]; box: number[] }> = [];
+  const boxOf = (pts: Pt[]): number[] => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [x, y] of pts) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    return [minX, minY, maxX, maxY];
+  };
+  for (const run of runs) {
+    let rest = run;
+    while (rest.length > 2) {
+      const box = boxOf(rest);
+      const near = kept.filter((k) => box[0] <= k.box[2] && box[2] >= k.box[0] && box[1] <= k.box[3] && box[3] >= k.box[1]);
+      let cut = -1;
+      for (let i = 0; i + 1 < rest.length && cut < 0; i++) {
+        for (const other of near) {
+          for (let j = 0; j + 1 < other.pts.length; j++) {
+            if (segmentsCross(rest[i], rest[i + 1], other.pts[j], other.pts[j + 1])) {
+              cut = i;
+              break;
+            }
+          }
+          if (cut >= 0) break;
+        }
+      }
+      if (cut < 0) {
+        kept.push({ pts: rest, box });
+        break;
+      }
+      const head = rest.slice(0, cut + 1);
+      if (head.length > 2) kept.push({ pts: head, box: boxOf(head) });
+      rest = rest.slice(cut + 2);
+    }
+  }
+  return kept.map((k) => k.pts);
+}
 
 /** Cut a run at every vertex sharper than `MAX_TURN_RAD`, dropping that vertex. */
 export function splitAtSpikes(run: Pt[], maxTurn = MAX_TURN_RAD): Pt[][] {
@@ -275,13 +376,52 @@ export function kerbContours(roadPts: Pt[], closed: boolean, corners: KerbCorner
     const seg = [...back, ai, ...fwd].map((i) => [roadPts[i][0], roadPts[i][1]] as Pt);
     if (seg.length < 3) continue;
     for (const run of offsetRuns(seg, c.direction * opts.offsetM, opts.maxCurvatureFrac)) {
-      // …and no kerb is ever drawn across another one. Two of them crossing renders as a
-      // translucent red X over the asphalt, which is what a viewer reads as a broken polygon.
-      if (parts.some((other) => crosses(run, other))) continue;
+      // WHAT SURVIVES THE FOLD TESTS IS NOT AUTOMATICALLY A KERB. Three more things have to be
+      // true of a painted stripe, and on an estimated centre line none of them comes for free:
+      // it has to be long enough to read as a stripe, it has to be ON THE EDGE of the road
+      // rather than somewhere the curvature clamp dragged it, and it must not lie on top of
+      // another one. Everything that fails is debris — and the honest thing to draw is the road
+      // with no kerb on it, not a fragment on the verge.
+      if (pathLength(run) < opts.minDrawM) continue;
+      if (Math.min(...run.map((p) => distanceToPath(p, roadPts))) < opts.minOffsetFrac * opts.offsetM) continue;
+      // …and no kerb is ever drawn across another one, or close enough to smear into it. Two of
+      // them crossing renders as a translucent red X over the asphalt, which is what a viewer
+      // reads as a broken polygon.
+      if (parts.some((other) => crosses(run, other) || minSeparation(run, other) < opts.minGapM)) continue;
       parts.push(run);
     }
   }
   return parts;
+}
+
+/** Length of a polyline, metres. */
+export function pathLength(run: Pt[]): number {
+  let total = 0;
+  for (let i = 1; i < run.length; i++) total += len(run[i][0] - run[i - 1][0], run[i][1] - run[i - 1][1]);
+  return total;
+}
+
+/** Shortest distance from a point to a polyline. */
+export function distanceToPath(p: Pt, path: Pt[]): number {
+  let best = Infinity;
+  for (let i = 1; i < path.length; i++) {
+    const ax = path[i - 1][0];
+    const ay = path[i - 1][1];
+    const dx = path[i][0] - ax;
+    const dy = path[i][1] - ay;
+    const l2 = dx * dx + dy * dy;
+    const t = l2 > 1e-12 ? Math.max(0, Math.min(1, ((p[0] - ax) * dx + (p[1] - ay) * dy) / l2)) : 0;
+    best = Math.min(best, len(p[0] - (ax + t * dx), p[1] - (ay + t * dy)));
+  }
+  return best;
+}
+
+/** How close two polylines come to each other, metres. */
+export function minSeparation(a: Pt[], b: Pt[]): number {
+  let best = Infinity;
+  for (const p of a) best = Math.min(best, distanceToPath(p, b));
+  for (const p of b) best = Math.min(best, distanceToPath(p, a));
+  return best;
 }
 
 /** True when any segment of `a` crosses any segment of `b`. */

@@ -36,6 +36,21 @@ export interface CameraState {
  * A mode switch is deliberately NOT smoothed: it is a CUT with a 120 ms cross-fade (film
  * language), because a rate-limited 180° rotation takes >1 s of nauseating spin on a phone.
  * The cut frame is flagged `cut: true`; every other frame obeys the bounds.
+ *
+ * WHEN THE PAN LIMITER ACTUALLY FIRES, measured rather than asserted (`camera.test` —
+ * "the limiter is a rail, not the shape of the shot"). Over every shipped fixture × three modes
+ * at 60 fps it is untouched on seven of eight: peak demand 26.2–40.3 m/s, 44–67 % of the bound,
+ * on zero frames.
+ *
+ * It saturates on ONE fixture, `handheld`, on 74 chase frames and 78 cinematic frames of 7 147 —
+ * and that is the rail doing its job rather than the tuning being wrong. The hand-held
+ * recording's own estimated position steps 9.28 m between two trail samples 50 ms apart at
+ * t = 19.95 s: 186 m/s, against a reported speed of 19.6 m/s at that instant. The camera is
+ * being asked to follow a teleport, and it turns it into a 0.15 s pan instead of a one-frame
+ * jump. Raising the bound would not smooth anything; it would let the glitch through.
+ *
+ * So the property to keep true is NOT "the camera never touches its limiter" — it did, on the
+ * fixture whose data jumps — but "the limiter only fires where the recording itself jumps".
  */
 export const CAMERA_LIMITS = {
   /** m/s */

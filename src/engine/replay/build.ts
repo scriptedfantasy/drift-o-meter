@@ -1,5 +1,4 @@
-import { DEFAULT_SCORE_OPTIONS } from '../score/rules';
-import { clamp, degToRad, radToDeg, wrapAngle, type DriftEvent, type Session, type SlipState, type StyleCallout } from '../types';
+import { clamp, degToRad, radToDeg, wrapAngle, type DriftEvent, type DriftScore, type Session, type SlipState, type StyleCallout } from '../types';
 import type {
   DriftSeverity,
   Replay,
@@ -64,43 +63,16 @@ export function peakCallout(spun: boolean, peakAngle: number): string {
 }
 
 /**
- * Which drifts never banked their points, by the SCORER's chain rule (`replayChains` in
- * src/engine/score/session.ts) replayed over the drift times and `DriftEvent.spin`:
+ * What the scorer said about one drift, or `undefined` when it said nothing at all.
  *
- *  - a drift that starts within `chainGapS` of the previous exit is in the same chain;
- *  - `bankDelayS` after an exit the chain's points are banked and can no longer be taken;
- *  - a spin discards every un-banked point of its chain ("CHAIN LOST -N").
- *
- * The replay needs this because `session.score.perDrift[id].total` is what a drift EARNED, and a
- * lost chain earned points the session total does not contain. Summing them raw gave the replay
- * a running score 49 % above the results screen on the `spin` fixture and 9.7x on `sloppy`.
- *
- * The thresholds are the scorer's own (`DEFAULT_SCORE_OPTIONS`), not copies, and the fixture-wide
- * test that `trail.score[n-1] === session.score.total` is what proves this replay of the rule
- * still agrees with the scorer that owns it.
+ * THE PRESENCE of the entry is the only test of whether the scorer spoke. Its VALUE never is:
+ * `total === 0` is a real answer (a slide the integrity monitor refused to believe earns exactly
+ * nothing) and `lost === true` is a real answer (a spin took the chain). Both used to be read as
+ * "no data" somewhere on this screen. See the doc blocks on `DriftScore.total` and
+ * `DriftScore.lost` in src/engine/types.ts.
  */
-export function lostToSpin(drifts: DriftEvent[], chainGapS = DEFAULT_SCORE_OPTIONS.chainGapS, bankDelayS = DEFAULT_SCORE_OPTIONS.bankDelayS): Set<number> {
-  const sorted = drifts.slice().sort((a, b) => a.startT - b.startT || a.id - b.id);
-  const lost = new Set<number>();
-  let unbanked: number[] = [];
-  let lastEndT = -Infinity;
-  let lastSpun = false;
-  let open = false;
-  for (const e of sorted) {
-    const gap = e.startT - lastEndT;
-    const chained = open && !lastSpun && gap <= chainGapS;
-    if (!chained || gap >= bankDelayS) unbanked = [];
-    unbanked.push(e.id);
-    open = true;
-    if (e.spin === true) {
-      for (const id of unbanked) lost.add(id);
-      unbanked = [];
-      lastSpun = true;
-      open = false;
-    } else lastSpun = false;
-    lastEndT = e.endT;
-  }
-  return lost;
+function scoreOf(session: Session, id: number): DriftScore | undefined {
+  return session.score?.perDrift?.[id];
 }
 
 /** |β| → drama band. Absolute, so it means the same in every session. */
@@ -186,6 +158,9 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
   let havePos = false;
   let badPos = 0;
   let badScalar = 0;
+  /** The same two holes in the units a driver reads them in: metres of road, seconds of run. */
+  let badPosM = 0;
+  let badScalarS = 0;
   // last known-good scalars, so one NaN sample holds the previous value instead of poisoning
   // every later sample (dist is a running sum: a single NaN used to destroy the whole run).
   let lastHeading = 0;
@@ -244,6 +219,8 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
       lastX = b.x;
       lastY = b.y;
     } else badPos++;
+    const posBad = !(ax || bx);
+    const scalarBefore = badScalar;
     x[k] = havePos ? lastX : 0;
     y[k] = havePos ? lastY : 0;
     // angles interpolate on the shortest arc — β too: a slide through ±π must not read as 0°
@@ -251,10 +228,22 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
     lastCourse = course[k] = pickAngle(a.course, b.course, f, lastCourse);
     lastBeta = beta[k] = pickAngle(a.beta, b.beta, f, lastBeta);
     lastSpeed = speed[k] = Math.max(0, pick(a.speed, b.speed, f, lastSpeed));
+    // the same hole said in road units: how far the car travelled while nothing was known
+    if (posBad) badPosM += speed[k] / hz;
+    if (badScalar > scalarBefore) badScalarS += 1 / hz;
     intensity[k] = intensityOf(beta[k], opts);
   }
-  if (badPos > 0) warnings.push(badPos === n ? 'no usable positions in this session (SIGNAL LOST)' : `${badPos} trail samples had no usable position`);
-  if (badScalar > 0) warnings.push(`${badScalar} trail samples were affected by a non-finite speed/angle input and were held steady`);
+  // A DRIVER HAS NO IDEA WHAT A TRAIL SAMPLE IS. This plate is read at arm's length by someone
+  // who wants to know what is wrong with their recording, so it is stated in the units the road
+  // is in — seconds of the run and metres of it — not in the renderer's own 20 Hz grid.
+  if (badPos > 0) {
+    warnings.push(
+      badPos === n
+        ? 'no usable positions in this session (SIGNAL LOST)'
+        : `${(badPos / hz).toFixed(1)} s of the run had no usable position — about ${Math.round(badPosM)} m of road`,
+    );
+  }
+  if (badScalar > 0) warnings.push(`${badScalarS.toFixed(1)} s of speed or angle was missing and was held steady`);
   // β = course − heading is the engine's DEFINITION of a slip angle (src/engine/types.ts), and
   // three arrays copied independently can quietly stop obeying it — a fixture that rewrote β
   // without touching heading drew a car pointing straight down the road under a 118° numeral,
@@ -381,36 +370,42 @@ function buildLaps(session: Session, t0: number, trail: ReplayTrail, durationS: 
 /**
  * What a drift is worth on the replay's running total: what it BANKED, not what it earned.
  *
- * `gross` is the scorer's per-drift total (or a fallback estimate for a session that was never
- * scored). `total` is 0 when the chain rule says a later spin took it, which is what keeps the
- * replay's running score equal to the session total the results screen prints.
+ * `gross` is the scorer's per-drift total. `total` is 0 when the scorer says a spin took it,
+ * which is what keeps the replay's running score equal to the session total the results screen
+ * prints.
+ *
+ * THE FALLBACK IS FOR A SESSION THAT WAS NEVER SCORED, and for nothing else. This used to test
+ * `ds.total > 0`, so a drift the integrity monitor refused to believe — base 0, bonus 0, total
+ * exactly 0 — fell through to a synthetic generator and the replay drew a number the engine had
+ * refused to pay. Measured over 112 fixture × seed runs: 28 of them fabricated at least one
+ * segment score, `rough` on 12 of 14 seeds, where the replay's running total reached 7 953–8 402
+ * on runs the engine scored 0. The entry existing means the scorer spoke; `Number.isFinite`
+ * decides whether what it said is usable; the value itself decides nothing.
  */
 function driftPoints(
-  session: Session,
-  d: DriftEvent,
+  ds: DriftScore | undefined,
   trail: ReplayTrail,
   startIndex: number,
   endIndex: number,
   opts: ReplayOptions,
   lost: boolean,
 ): { total: number; gross: number; callouts: StyleCallout[] } {
-  const ds = session.score?.perDrift?.[d.id];
-  const gross =
-    ds && Number.isFinite(ds.total) && ds.total > 0
-      ? ds.total
-      : (() => {
-          let pts = 0;
-          for (let k = startIndex; k <= endIndex; k++) {
-            pts += (opts.fallbackPointsPerS * clamp(Math.abs(trail.beta[k]) / degToRad(30), 0, 1.5)) / trail.hz;
-          }
-          return Math.round(pts);
-        })();
+  const gross = ds
+    ? Number.isFinite(ds.total)
+      ? Math.max(0, ds.total)
+      : 0
+    : (() => {
+        let pts = 0;
+        for (let k = startIndex; k <= endIndex; k++) {
+          pts += (opts.fallbackPointsPerS * clamp(Math.abs(trail.beta[k]) / degToRad(30), 0, 1.5)) / trail.hz;
+        }
+        return Math.round(pts);
+      })();
   return { total: lost ? 0 : gross, gross, callouts: lost ? [] : (ds?.callouts ?? []) };
 }
 
 function buildSegments(session: Session, t0: number, trail: ReplayTrail, durationS: number, opts: ReplayOptions, warnings: string[]): ReplaySegment[] {
   const drifts = [...(session.drifts ?? [])].filter((d) => Number.isFinite(d.startT) && Number.isFinite(d.endT)).sort((a, b) => a.startT - b.startT);
-  const lost = lostToSpin(drifts);
   const segments: ReplaySegment[] = [];
   for (const d of drifts) {
     const startT = clamp(d.startT - t0, 0, durationS);
@@ -439,8 +434,13 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
         lastStrong = sg;
       }
     }
-    const isLost = lost.has(d.id);
-    const { total, gross } = driftPoints(session, d, trail, startIndex, endIndex, opts, isLost);
+    // WHO DECIDES a drift never banked: the scorer, which publishes it. The replay used to
+    // replay the chain rule itself off `DriftEvent.spin`, and the scorer's spin rule is broader
+    // (any sample past `spinAngleDeg`, which the detector's peak can miss) — so one screen paid
+    // out points the other had taken away. See `DriftScore.lost` in src/engine/types.ts.
+    const ds = scoreOf(session, d.id);
+    const isLost = ds?.lost === true;
+    const { total, gross } = driftPoints(ds, trail, startIndex, endIndex, opts, isLost);
     const peakT = Number.isFinite(d.peakAngleT) && d.peakAngleT >= d.startT && d.peakAngleT <= d.endT ? d.peakAngleT - t0 : trail.t[peakIndex];
     // The DETECTOR's peak is the one that gets printed, because it is the one the results screen
     // prints; the trail maximum runs up to a few degrees higher on a noisy mount and is kept only
@@ -484,14 +484,20 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
 function fillScore(session: Session, t0: number, trail: ReplayTrail, segments: ReplaySegment[]): void {
   const inc = new Float64Array(trail.n);
   for (const seg of segments) {
-    const ds = session.score?.perDrift?.[seg.driftId];
-    // A lost chain adds nothing — not its base, not its callout bonuses. The multiplier ramp
-    // below still runs, because the driver really did have it while the slide was alive.
-    const callouts = seg.lost ? [] : (ds?.callouts ?? []);
+    const ds = scoreOf(session, seg.driftId);
+    // A lost chain adds nothing — not its base, not its callout bonuses. Neither does a slide
+    // the monitor refused to believe, which earns exactly 0: its callouts cannot step in over a
+    // total of nothing, or the running score would climb past a session total of 0. The
+    // multiplier ramp below still runs, because the driver really did have it while the slide
+    // was alive.
+    const callouts = seg.lost || !(seg.points > 0) ? [] : (ds?.callouts ?? []);
     const mult = ds && Number.isFinite(ds.multiplier) && ds.multiplier > 0 ? ds.multiplier : 1 + 0.5 * seg.transitions;
-    let bonus = 0;
-    for (const c of callouts) if (Number.isFinite(c.points) && c.points > 0) bonus += c.points;
-    const base = Math.max(0, seg.points - bonus);
+    let raw = 0;
+    for (const c of callouts) if (Number.isFinite(c.points) && c.points > 0) raw += c.points;
+    // the bonuses can never add up to more than the drift banked, whatever a stored session's
+    // callout list says: the running total has to land on the session total, not past it
+    const keep = raw > seg.points && raw > 0 ? seg.points / raw : 1;
+    const base = Math.max(0, seg.points - raw * keep);
     let wsum = 0;
     for (let k = seg.startIndex; k <= seg.endIndex; k++) wsum += 0.15 + trail.intensity[k];
     if (wsum > 0) {
@@ -501,7 +507,7 @@ function fillScore(session: Session, t0: number, trail: ReplayTrail, segments: R
       if (!(Number.isFinite(c.points) && c.points > 0)) continue;
       const tc = clamp(Number.isFinite(c.t) ? c.t - t0 : seg.startT, seg.startT, seg.endT);
       const k = clamp(Math.round(tc * trail.hz), seg.startIndex, seg.endIndex);
-      inc[k] += c.points;
+      inc[k] += c.points * keep;
     }
     // multiplier ramps with the transitions banked so far inside this drift
     let done = 0;
@@ -656,8 +662,10 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
       kind: 'drift-end',
       t: seg.endT,
       ...poseFields(trail, seg.endT),
-      // a drift whose chain was lost never banked these: it is marked as taken away, not awarded
-      label: seg.lost ? `\u2212${formatPoints(seg.grossPoints)}` : `+${formatPoints(seg.points)}`,
+      // A drift whose chain was lost never banked these: it is marked as taken away, not awarded.
+      // A drift the scorer paid NOTHING for gets no number at all \u2014 "+0" over the road is the
+      // replay announcing an award the engine refused to make. The dot still marks the exit.
+      label: seg.lost ? (seg.grossPoints > 0 ? `\u2212${formatPoints(seg.grossPoints)}` : '') : seg.points > 0 ? `+${formatPoints(seg.points)}` : '',
       driftId: seg.driftId,
       points: seg.points,
     });
@@ -716,14 +724,19 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
     // itself (`LiveScorer` fires CHAIN LOST on the tick after the drift ends) rather than on top
     // of it. A drift the spin will later take exits with its points still AT RISK: they are
     // never added to the running total, so its exit must not read as an award either.
-    const lostLabel = seg.spin ? `CHAIN LOST \u2212${formatPoints(loss || seg.grossPoints)}` : `AT RISK +${formatPoints(seg.grossPoints)}`;
+    //
+    // A slide the monitor refused to believe banked nothing and risked nothing: there is no
+    // number to announce, so the beat plays with an EMPTY label rather than a "+0" or an
+    // "AT RISK +0". The ticker is a claim about a score; zero points is not a score to claim.
+    const risked = seg.lost ? (seg.spin ? loss || seg.grossPoints : seg.grossPoints) : 0;
+    const lostLabel = risked > 0 ? (seg.spin ? `CHAIN LOST \u2212${formatPoints(risked)}` : `AT RISK +${formatPoints(risked)}`) : '';
     events.push({
       kind: 'exit',
       t: seg.lost && seg.spin ? Math.min(seg.endT + 0.35, endOfRun) : seg.endT,
       holdS: 1.3,
       magnitude: seg.lost ? (seg.spin ? 1 : 0.35) : clamp(seg.grossPoints / maxPoints, 0.25, 1),
       priority: seg.lost && seg.spin ? 92 : 50,
-      label: seg.lost ? lostLabel : `+${formatPoints(seg.points)}`,
+      label: seg.lost ? lostLabel : seg.points > 0 ? `+${formatPoints(seg.points)}` : '',
       points: seg.points,
       driftId: seg.driftId,
       lapIndex: seg.lapIndex,
@@ -753,11 +766,15 @@ function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[], lead: nu
       cueT: Math.max(inT, seg.peakT - lead),
       inT,
       outT: Math.min(trail.t[trail.n - 1], seg.endT + 1.2),
+      // A chip that reads "23° · 0 PTS" is the replay putting a score on a slide the engine paid
+      // nothing for. With nothing banked, the angle is the whole of what is true about it.
       label: seg.spin
         ? `${Math.round((seg.peakAngle * 180) / Math.PI)}° · SPUN`
         : seg.transitions >= 2
           ? `${seg.transitions}-LINK CHAIN`
-          : `${Math.round((seg.peakAngle * 180) / Math.PI)}° · ${formatPoints(seg.points)} PTS`,
+          : seg.points > 0
+            ? `${Math.round((seg.peakAngle * 180) / Math.PI)}° · ${formatPoints(seg.points)} PTS`
+            : `${Math.round((seg.peakAngle * 180) / Math.PI)}°`,
       kind,
       driftId: seg.driftId,
       // a spin is worth watching and worth nothing: rank it by what it was worth before it went
@@ -984,7 +1001,10 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   for (let k = 0; k < trail.n; k++) if (trail.segmentOf[k] >= 0) driftAngles.push(Math.abs(trail.beta[k]));
   driftAngles.sort((a, b) => a - b);
   const typicalAngle = driftAngles.length ? driftAngles[Math.min(driftAngles.length - 1, Math.floor(driftAngles.length * 0.9))] : 0;
-  const rawTotal = session.score && Number.isFinite(session.score.total) && session.score.total > 0 ? session.score.total : trail.score[trail.n - 1];
+  // Same rule as `driftPoints`, one level up: the SCORE OBJECT existing is what says the scorer
+  // spoke, and a session total of exactly 0 is a run that earned nothing rather than a run
+  // nobody judged. Only a session with no score at all falls back to the trail's own sum.
+  const rawTotal = session.score && Number.isFinite(session.score.total) ? session.score.total : trail.score[trail.n - 1];
   // `SessionScore.trusted` mirrors `SessionIntegrity.scoreTrusted`; either saying no means the
   // run may not be presented as an achievement, so the headline is null rather than merely
   // flagged — a renderer cannot print it by forgetting to look.

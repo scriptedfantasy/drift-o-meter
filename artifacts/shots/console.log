@@ -1,24 +1,24 @@
-===== replay-overview-landscape  http://127.0.0.1:34745/replay/demo?cam=overview&t=60&play=0&ui=0
+===== replay-overview-landscape  http://127.0.0.1:39617/replay/demo?cam=overview&t=60&play=0&ui=0
 
-===== replay-chase-landscape  http://127.0.0.1:34745/replay/demo?cam=chase&t=95.9&play=0&ui=1
+===== replay-chase-landscape  http://127.0.0.1:39617/replay/demo?cam=chase&t=95.9&play=0&ui=1
 
-===== replay-cinematic-landscape  http://127.0.0.1:34745/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+===== replay-cinematic-landscape  http://127.0.0.1:39617/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
 
-===== replay-ghost-landscape  http://127.0.0.1:34745/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+===== replay-ghost-landscape  http://127.0.0.1:39617/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
 
-===== replay-highlight-landscape  http://127.0.0.1:34745/replay/demo?hl=1&play=0&cam=chase&ui=1
+===== replay-highlight-landscape  http://127.0.0.1:39617/replay/demo?hl=1&play=0&cam=chase&ui=1
 
-===== replay-scrub-landscape  http://127.0.0.1:34745/replay/demo?cam=chase&scrub=0.36&ui=1
+===== replay-scrub-landscape  http://127.0.0.1:39617/replay/demo?cam=chase&scrub=0.36&ui=1
 
-===== replay-untrusted-landscape  http://127.0.0.1:34745/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
+===== replay-untrusted-landscape  http://127.0.0.1:39617/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
 
-===== replay-warnings-landscape  http://127.0.0.1:34745/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0
+===== replay-warnings-landscape  http://127.0.0.1:39617/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0
 
-===== replay-warnings-open-landscape  http://127.0.0.1:34745/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1
+===== replay-warnings-open-landscape  http://127.0.0.1:39617/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1
 
-===== replay-end-landscape  http://127.0.0.1:34745/replay/demo?cam=overview&t=999&play=0&ui=0
+===== replay-end-landscape  http://127.0.0.1:39617/replay/demo?cam=overview&t=999&play=0&ui=0
 
-===== replay-touge-landscape  http://127.0.0.1:34745/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
+===== replay-touge-landscape  http://127.0.0.1:39617/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
 
 ===== home  http://127.0.0.1:38625/
 
@@ -41,3 +41,80 @@
 ===== sound-grades  http://127.0.0.1:43783/sound
 
 
+
+===== replay  http://127.0.0.1:38447/replay/demo?cam=chase&t=94.9
+
+===== replay-motion  http://127.0.0.1:38447/replay/demo?cam=chase&t=95&rate=0.25&ui=0
+
+===== replay-cut  http://127.0.0.1:38447/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0
+
+===== replay-shake  http://127.0.0.1:38447/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0
+
+===== replay-overview  http://127.0.0.1:38447/replay/demo?cam=overview&t=60&play=0&ui=0
+
+===== replay-chase  http://127.0.0.1:38447/replay/demo?cam=chase&t=95.9&play=0&ui=1
+
+===== replay-cinematic  http://127.0.0.1:38447/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+
+===== replay-ghost  http://127.0.0.1:38447/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+
+===== replay-highlight  http://127.0.0.1:38447/replay/demo?hl=1&play=0&cam=chase&ui=1
+
+===== replay-scrub  http://127.0.0.1:38447/replay/demo?cam=chase&scrub=0.36&ui=1
+
+===== replay-untrusted  http://127.0.0.1:38447/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
+
+===== replay-warnings  http://127.0.0.1:38447/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0
+
+===== replay-warnings-open  http://127.0.0.1:38447/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1
+
+===== replay-end  http://127.0.0.1:38447/replay/demo?cam=overview&t=999&play=0&ui=0
+
+===== replay-from-results  http://127.0.0.1:38447/results/fixture-good?reveal=off
+
+===== replay-touge  http://127.0.0.1:38447/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
+
+===== replay-grade  http://127.0.0.1:38447/replay/demo?cam=overview&t=118.2&rate=0.25&play=1&ui=0
+
+===== replay-spin  http://127.0.0.1:38447/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0
+
+===== replay-chain-lost  http://127.0.0.1:38447/replay/fixture-spin?cam=chase&t=98.1&play=0&ui=0
+
+===== replay-spin-end  http://127.0.0.1:38447/replay/fixture-spin?cam=overview&t=999&play=0&ui=0
+
+===== replay-zero-paid  http://127.0.0.1:38447/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0
+
+===== replay-zero-chip  http://127.0.0.1:38447/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1
+
+===== replay-untrusted-slid  http://127.0.0.1:38447/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0
+
+===== replay-clean-band  http://127.0.0.1:38447/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1
+
+===== replay-landscape  http://127.0.0.1:39617/replay/demo?cam=chase&t=94.9
+
+===== replay-motion-landscape  http://127.0.0.1:39617/replay/demo?cam=chase&t=95&rate=0.25&ui=0
+
+===== replay-cut-landscape  http://127.0.0.1:39617/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0
+
+===== replay-shake-landscape  http://127.0.0.1:39617/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0
+
+===== replay-from-results-landscape  http://127.0.0.1:39617/results/fixture-good?reveal=off
+
+===== replay-grade-landscape  http://127.0.0.1:39617/replay/demo?cam=overview&t=118.2&rate=0.25&play=1&ui=0
+
+===== replay-spin-landscape  http://127.0.0.1:39617/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0
+
+===== replay-chain-lost-landscape  http://127.0.0.1:39617/replay/fixture-spin?cam=chase&t=98.1&play=0&ui=0
+
+===== replay-spin-end-landscape  http://127.0.0.1:39617/replay/fixture-spin?cam=overview&t=999&play=0&ui=0
+
+===== replay-zero-paid-landscape  http://127.0.0.1:39617/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0
+
+===== replay-zero-chip-landscape  http://127.0.0.1:39617/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1
+
+===== replay-untrusted-slid-landscape  http://127.0.0.1:39617/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0
+
+===== replay-clean-band-landscape  http://127.0.0.1:39617/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1
+
+===== replay-zero-highlight  http://127.0.0.1:38447/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1
+===== replay-zero-highlight-landscape  http://127.0.0.1:39617/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1

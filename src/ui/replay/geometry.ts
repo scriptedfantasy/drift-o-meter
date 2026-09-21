@@ -14,10 +14,10 @@
  */
 import { Skia, type SkPath } from '@shopify/react-native-skia';
 
-import { SEVERITY_EDGES, type Replay, type ReplaySegment } from '../../engine/replay';
+import { type Replay, type ReplaySegment } from '../../engine/replay';
 import { clamp } from '../../engine/types';
-import { kerbContours, offsetRuns } from './kerbs';
-import { HOT, heatColor, mix } from './palette';
+import { kerbContours, offsetRuns, smoothPolyline } from './kerbs';
+import { HOT, heatColor, mix, ribbonScale } from './palette';
 
 export interface WorldBounds {
   minX: number;
@@ -103,6 +103,41 @@ export const ROAD_W = 9.5;
 const VERGE_W = ROAD_W + 7;
 
 type Pt = [number, number];
+
+/**
+ * How much road one colour band of the ribbon covers, metres.
+ *
+ * A LENGTH, not a count of samples. It used to be a fixed 3-sample stride of a 20 Hz trail,
+ * which is 2.5 m at 60 km/h and 0.7 m through a hairpin — so the colour stepped coarsely exactly
+ * where the slide was most interesting and finely where nothing was happening.
+ */
+const BAND_M = 2;
+
+/** The last trail index within `BAND_M` of `from` (always > `from`, never past `end`). */
+function bandEnd(tr: Replay['trail'], from: number, end: number): number {
+  let run = 0;
+  for (let i = from + 1; i <= end; i++) {
+    const d = Math.hypot(tr.x[i] - tr.x[i - 1], tr.y[i] - tr.y[i - 1]);
+    if (Number.isFinite(d)) run += d;
+    if (run >= BAND_M) return i;
+  }
+  return end;
+}
+
+/**
+ * THE ONE SMOOTHING RULE for a drawn world contour, and it is `kerbs.ts`'s — the same [1 2 1]
+ * pass with the endpoints held that the kerbs and the road edges are drawn off.
+ *
+ * The trail arrives at 20 Hz, which is a vertex every 0.7–1.0 m at speed. At chase zoom
+ * (~21 px/m) that is a 15–21 px segment carrying a stroke up to 21 px wide, so every vertex
+ * reads as a facet and the ribbon comes out as a chain of beads; on the loose-mount fixtures the
+ * estimated path additionally turns 95° and 169° at single vertices, which stroke as spikes.
+ * Holding the endpoints matters: the last vertex is where the car is, and the ribbon has to end
+ * under the sprite rather than near it.
+ */
+function smoothRun(run: Pt[]): Pt[] {
+  return run.length > 2 ? smoothPolyline(run, 2) : run;
+}
 
 function boundsOf(pts: Pt[]): WorldBounds {
   let minX = Infinity;
@@ -243,7 +278,7 @@ export function buildSceneGeometry(replay: Replay): SceneGeometry {
     // one 1 200-point path, and only a few metres of it are ever on screen
     const MAX_RUN = 40;
     const flush = (endIndex: number) => {
-      if (run.length > 1) runs.push({ path: keep(polyline(run)), bounds: boundsOf(run), startIndex, endIndex, dead: false });
+      if (run.length > 1) runs.push({ path: keep(polyline(smoothRun(run))), bounds: boundsOf(run), startIndex, endIndex, dead: false });
       run = [];
     };
     for (let i = 0; i < tr.n; i++) {
@@ -309,9 +344,8 @@ export function buildSceneGeometry(replay: Replay): SceneGeometry {
     for (const hot of [false, true]) {
       const bands: Array<{ parts: Pt[][]; part: Pt[]; inten: number; mag: number; n: number; from: number; to: number }> = [];
       for (let k = 0; k < BANDS; k++) bands.push({ parts: [], part: [], inten: 0, mag: 0, n: 0, from: -1, to: -1 });
-      const step = 3;
-      for (let a = seg.startIndex; a < seg.endIndex; a += step) {
-        const b = Math.min(seg.endIndex, a + step);
+      for (let a = seg.startIndex; a < seg.endIndex; a = Math.max(a + 1, bandEnd(tr, a, seg.endIndex))) {
+        const b = Math.max(a + 1, bandEnd(tr, a, seg.endIndex));
         let inten = 0;
         let mag = 0;
         const cp: Pt[] = [];
@@ -346,7 +380,7 @@ export function buildSceneGeometry(replay: Replay): SceneGeometry {
         const flat = band.parts.flat();
         const meanAngle = band.mag / Math.max(1, band.n);
         chunks.push({
-          path: keep(contours(band.parts)),
+          path: keep(contours(band.parts.map(smoothRun))),
           color: hot ? mix(HOT, heatColor(meanAngle), 0.35) : heatColor(meanAngle),
           intensity: band.inten / Math.max(1, band.n),
           hot,
@@ -362,7 +396,7 @@ export function buildSceneGeometry(replay: Replay): SceneGeometry {
       running = Math.max(running, Math.abs(tr.beta[i]));
       peakTo[i - seg.startIndex] = running;
     }
-    segments.push({ seg, ribbon: keep(contours(parts)), bounds: boundsOf(pts), peakTo, chunks });
+    segments.push({ seg, ribbon: keep(contours(parts.map(smoothRun))), bounds: boundsOf(pts), peakTo, chunks });
   }
 
   const car = carShapes();
@@ -423,17 +457,4 @@ export function buildSceneGeometry(replay: Replay): SceneGeometry {
       owned.length = 0;
     },
   };
-}
-
-/**
- * Widest |β| the scrubber ribbon is scaled to.
- *
- * Absolute (never less than the spin edge) so a given |β| is the same height in every run — that
- * is what makes two runs comparable at a glance. The exception is a run with NO drift in it:
- * there is nothing to compare, and a flat empty band tells the driver less than the shape of the
- * few degrees the car actually carried, so it scales to its own maximum.
- */
-export function ribbonScale(replay: Replay): number {
-  if (replay.segments.length === 0) return Math.max(0.02, replay.telemetry.maxAngle * 1.25);
-  return Math.max(SEVERITY_EDGES.spin, replay.telemetry.maxAngle * 1.05);
 }
