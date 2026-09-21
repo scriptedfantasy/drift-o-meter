@@ -6,16 +6,23 @@ import { alpha, colors, radii, space } from './theme';
 export interface PanelProps {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** Left accent stripe colour. */
+  /**
+   * @deprecated Ignored, and being deleted.
+   *
+   * This used to paint a 3 px stripe down the left edge in whatever colour the caller
+   * thought the card meant. There were 23 of them across the app and they are banned:
+   * severity is the text colour, not a bar down the side. The prop still exists only so
+   * that the callers still carrying one keep compiling; it draws nothing.
+   */
   accent?: string;
   padded?: boolean;
   testID?: string;
 }
 
 /** A raised card on the asphalt. */
-export function Panel({ children, style, accent, padded = true, testID }: PanelProps) {
+export function Panel({ children, style, padded = true, testID }: PanelProps) {
   return (
-    <View testID={testID} style={[styles.panel, padded && styles.padded, accent ? { borderLeftWidth: 3, borderLeftColor: accent } : null, style]}>
+    <View testID={testID} style={[styles.panel, padded && styles.padded, style]}>
       {children}
     </View>
   );
@@ -53,7 +60,7 @@ export interface MeterProps {
 }
 
 /** A labelled horizontal bar. */
-export function Meter({ label, value, display, color = colors.cyan }: MeterProps) {
+export function Meter({ label, value, display, color = colors.blue }: MeterProps) {
   const pct = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
   return (
     <View style={styles.meter}>

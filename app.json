@@ -1,29 +1,31 @@
 {
   "expo": {
-    "name": "Drift-O-Meter",
-    "slug": "drift-o-meter",
+    "name": "Drift-O-Mania",
+    "slug": "drift-o-mania",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "driftometer",
+    "scheme": "driftomania",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#07090D",
-    "primaryColor": "#FF5A1F",
+    "backgroundColor": "#070D18",
+    "primaryColor": "#8AF606",
     "ios": {
-      "bundleIdentifier": "com.driftometer.app",
+      "bundleIdentifier": "com.driftomania.app",
       "supportsTablet": false,
       "infoPlist": {
-        "NSMotionUsageDescription": "Drift-O-Meter reads the gyroscope and accelerometer to measure how far the car is sliding.",
-        "NSLocationWhenInUseUsageDescription": "Drift-O-Meter uses GPS speed and direction of travel to judge your drifts and map the track.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Drift-O-Meter keeps reading GPS while a run is in progress so a locked screen does not end the session.",
-        "UIBackgroundModes": ["location"],
+        "NSMotionUsageDescription": "Drift-O-Mania reads the gyroscope and accelerometer to measure how far the car is sliding.",
+        "NSLocationWhenInUseUsageDescription": "Drift-O-Mania uses GPS speed and direction of travel to judge your drifts and map the track.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Drift-O-Mania keeps reading GPS while a run is in progress so a locked screen does not end the session.",
+        "UIBackgroundModes": [
+          "location"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.driftometer.app",
+      "package": "com.driftomania.app",
       "adaptiveIcon": {
-        "backgroundColor": "#07090D",
+        "backgroundColor": "#070D18",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -40,7 +42,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#07090D",
+          "backgroundColor": "#070D18",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain"
@@ -49,15 +51,15 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Drift-O-Meter uses GPS speed and direction of travel to judge your drifts and map the track.",
-          "locationAlwaysAndWhenInUsePermission": "Drift-O-Meter keeps reading GPS while a run is in progress so a locked screen does not end the session.",
+          "locationWhenInUsePermission": "Drift-O-Mania uses GPS speed and direction of travel to judge your drifts and map the track.",
+          "locationAlwaysAndWhenInUsePermission": "Drift-O-Mania keeps reading GPS while a run is in progress so a locked screen does not end the session.",
           "isIosBackgroundLocationEnabled": true
         }
       ],
       [
         "expo-sensors",
         {
-          "motionPermission": "Drift-O-Meter reads the gyroscope and accelerometer to measure how far the car is sliding."
+          "motionPermission": "Drift-O-Mania reads the gyroscope and accelerometer to measure how far the car is sliding."
         }
       ]
     ],

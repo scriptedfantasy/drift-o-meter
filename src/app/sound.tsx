@@ -169,7 +169,7 @@ export default function SoundLabScreen() {
           <TopBar kicker="Feel layer" title="Sound lab" />
 
           {/* ── what the platform is doing ─────────────────────────────────────────────── */}
-          <Panel style={styles.panel} accent={STATUS_COLOR[status]} testID="sound-status">
+          <Panel style={styles.panel} testID="sound-status">
             <View style={styles.statusHead}>
               <AppText variant="heading" uppercase style={{ color: STATUS_COLOR[status] }}>
                 {STATUS_WORD[status]}
@@ -244,7 +244,7 @@ export default function SoundLabScreen() {
           </Panel>
 
           {/* ── the continuous layer ───────────────────────────────────────────────────── */}
-          <Panel style={styles.panel} accent={colors.ember}>
+          <Panel style={styles.panel}>
             <AppText variant="heading" uppercase>
               The slide
             </AppText>
@@ -294,7 +294,7 @@ export default function SoundLabScreen() {
           </Panel>
 
           {/* ── the sequences ──────────────────────────────────────────────────────────── */}
-          <Panel style={styles.panel} accent={colors.magenta}>
+          <Panel style={styles.panel}>
             <AppText variant="heading" uppercase>
               In sequence
             </AppText>
@@ -408,7 +408,7 @@ function ClipRow({ spec, onPlay }: { spec: SoundSpec; onPlay: () => void }) {
   const m = spec.file === null ? null : CLIP_MEASUREMENTS[spec.id];
   const tone = toneColor(spec.tone);
   return (
-    <Panel style={styles.clip} accent={tone} testID={`clip-${spec.id}`}>
+    <Panel style={styles.clip} testID={`clip-${spec.id}`}>
       <View style={styles.clipHead}>
         <View style={styles.clipTitle}>
           <AppText variant="subheading" color={tone} numberOfLines={1}>
