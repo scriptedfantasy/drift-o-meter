@@ -104,6 +104,7 @@ export function replayReadings(spec: ReplaySpec, snapshotHz = 12): Frame[] {
         mount: state.mount,
         mountConfident: state.mountConfident,
         mountMessage: state.mountMessage,
+        gpsMessage: state.gpsMessage,
         handheld: state.flags.includes('handheld'),
         looseScore: state.looseScore,
         message: state.message,

@@ -112,6 +112,20 @@ export interface MountOptions {
    * which that residual drives the up-axis quality to 0. */
   fitTau: number;
   fitQualityRad: number;
+  /**
+   * Weighted seconds of gravity data after which the up axis is ESTABLISHED — the engine's own
+   * name for the edge, so a screen never has to pick one.
+   *
+   * It was already here as a bare `/ 1.5` inside the up-axis quality, where it is the age term
+   * that ramps `upQuality` in from 0.3 of its steady value. Naming it lets `diagnostics()`
+   * publish `upSettled` off the same number, which matters because the calibration screen was
+   * deciding "the vertical has settled" for itself, from `upQuality >= 0.6`. `upQuality` is a
+   * PRODUCT of age and accelerometer fit, and the fit is degraded by a shaking cradle, so at
+   * simulator looseness 0.1–0.15 that screen read `CALIBRATED / Ready to measure` over a
+   * VERTICAL light saying "Settling" on 72–100 % of its READY frames. Age is the question
+   * "has the vertical stopped moving around"; fit is a different question.
+   */
+  upSettleS: number;
   /** Cut-off (seconds) between the inertial up's trusted fast content and its drifting slow part. */
   upSepTau: number;
   /**
@@ -244,6 +258,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   parkedAccel: 0.25,
   fitTau: 1,
   fitQualityRad: 0.06,
+  upSettleS: 1.5,
   upSepTau: 3,
   reseedGravityDeg: 40,
   reseedGravityHoldS: 1.5,
@@ -316,6 +331,12 @@ export interface MountDiagnostics {
   gyroBias: [number, number, number];
   meanTrust: number;
   upQuality: number;
+  /**
+   * The up axis is established: `upSettleS` weighted seconds of gravity data behind it, and not
+   * re-converging from a knock (a knock sets that clock back to zero). This is the ENGINE
+   * naming the edge a screen would otherwise pick for itself — see `upSettleS`.
+   */
+  upSettled: boolean;
   /** Long-term axis line: anisotropy (0..1), evidence seconds, quality. */
   lineAnisotropy: number;
   lineEvidence: number;
@@ -347,6 +368,15 @@ export interface MountDiagnostics {
   forwardResolvedAt: number;
   forwardResolved: boolean;
   quality: number;
+  /**
+   * The highest `quality` this calibration has reached, so a screen can say "best so far"
+   * without keeping its own history of a number the engine owns — and without having to
+   * promise anything about where the number goes next.
+   *
+   * Reset by a knock, along with everything else the knock throws away: after the phone moves,
+   * the best reading of the OLD position is not the best reading of this one.
+   */
+  peakQuality: number;
   /** Road pitch actually applied to the up axis, degrees (+ = nose down / the body's up leans forward). */
   gradeTiltDeg: number;
   /** Slip proxy β̂ (rad) from the GPS course rate vs the integrated gyro yaw. */
@@ -417,6 +447,8 @@ export class MountCalibrator {
   private devEma = 0; // rad
   private fitEma = 0; // rad: trust-weighted EMA of the angle between −f̂ and the inertial up
   private upAge = 0; // seconds of gravity data since (re)start
+  private upSettled = false;
+  private qualityPeak = 0;
   private jumpSince = -1;
   private stationaryUntil = -1;
   private fastUpUntil = -1;
@@ -570,6 +602,7 @@ export class MountCalibrator {
       gyroBias: [this.gbx, this.gby, this.gbz],
       meanTrust: this.trustN > 0 ? this.trustSum / this.trustN : 0,
       upQuality: this.upQuality,
+      upSettled: this.upSettled,
       lineAnisotropy: this.lineAniso,
       lineEvidence: this.mE,
       lineQuality: this.lineQuality,
@@ -590,6 +623,7 @@ export class MountCalibrator {
       forwardResolvedAt: this.forwardResolvedAt,
       forwardResolved: this.forwardResolved,
       quality: this.quality,
+      peakQuality: this.qualityPeak,
       gradeTiltDeg: (this.appliedPitch() * 180) / Math.PI,
       betaHat: this.betaHat,
       leverDx: this.leverDx,
@@ -631,6 +665,8 @@ export class MountCalibrator {
     this.devEma = 0;
     this.fitEma = 0;
     this.upAge = 0;
+    this.upSettled = false;
+    this.qualityPeak = 0;
     this.jumpSince = -1;
     this.stationaryUntil = -1;
     this.fastUpUntil = -1;
@@ -1446,6 +1482,8 @@ export class MountCalibrator {
    */
   private knock(dev: number): void {
     this.knocks++;
+    // the phone is somewhere else now: the best this mount ever read is not this mount's
+    this.qualityPeak = 0;
     this.fastUpUntil = this.lastT + this.opts.knockFastS;
     this.fwdBlockUntil = this.lastT + this.opts.forwardBlockS;
     this.devEma = dev;
@@ -1677,8 +1715,9 @@ export class MountCalibrator {
     const o = this.opts;
     // ---- quality of the up axis: accelerometer fit and age
     const steady = clamp(1 - this.fitEma / o.fitQualityRad, 0, 1);
-    const age = clamp(this.upAge / 1.5, 0, 1);
+    const age = clamp(this.upAge / o.upSettleS, 0, 1);
     this.upQuality = this.gravInit ? steady * (0.3 + 0.7 * age) : 0;
+    this.upSettled = this.gravInit && this.upAge >= o.upSettleS;
 
     // ---- line quality
     const lineQ = this.lineValid ? this.lineAniso * clamp(this.mE / o.lineMinEvidence, 0, 1) : 0;
@@ -1757,6 +1796,7 @@ export class MountCalibrator {
       if (q > 0.4) q = 0.4;
     }
     this.quality = Number.isFinite(q) ? clamp(q, 0, 1) : 0;
+    if (this.quality > this.qualityPeak) this.qualityPeak = this.quality;
   }
 }
 

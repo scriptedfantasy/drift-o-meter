@@ -130,24 +130,39 @@ export class Lp3 {
 /**
  * Exponentially-weighted mean square with window τ (seconds). Starts at zero, so a fresh
  * monitor never raises an alarm from its very first sample; it needs ~τ of evidence.
+ *
+ * `evidenceS` is how much data has actually gone in, so a caller can tell a LOW READING FROM AN
+ * EMPTY ONE. Starting at zero means the average is biased towards "quiet" until it has filled:
+ * after evidence E the reading is the true RMS times √(1 − e^(−E/τ)), i.e. 79 % of it at one
+ * window and 93 % at two. A verdict of "nothing found" taken before then is an absence of
+ * evidence, not a finding, and `IntegrityMonitor.mountConfident` is how that is published.
  */
 export class ExpRms {
   ms = 0;
+  /** Seconds of data integrated since the last reset. */
+  evidenceS = 0;
   constructor(public tau: number) {}
   step(x: number, dt: number): number {
+    this.evidenceS += dt;
     this.ms += ((x * x - this.ms) * dt) / this.tau;
     return this.ms;
   }
   /** Feed an already-squared quantity (e.g. |v|²). */
   stepSquared(x2: number, dt: number): number {
+    this.evidenceS += dt;
     this.ms += ((x2 - this.ms) * dt) / this.tau;
     return this.ms;
   }
   get rms(): number {
     return Math.sqrt(Math.max(0, this.ms));
   }
+  /** True once a full averaging window has gone in: the reading is data, not the zero start. */
+  get filled(): boolean {
+    return this.evidenceS >= this.tau;
+  }
   reset(): void {
     this.ms = 0;
+    this.evidenceS = 0;
   }
 }
 

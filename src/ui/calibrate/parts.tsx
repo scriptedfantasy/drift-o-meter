@@ -5,7 +5,14 @@ import { AppText, Micro, Small } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
 import type { Caution, Light, Step } from './model';
 
-const LIGHT_COLORS = { on: colors.green, working: colors.cyan, bad: colors.red } as const;
+/**
+ * Four tiers, because the engine reaches four states and the lights are read at arm's length.
+ * `warn` (gold) is the one that was missing: `suspect` is a verdict the monitor HAS delivered,
+ * and it shared cyan with `unknown` — "still listening" — while the headline two rows above
+ * painted the same state gold. A light that cannot tell a verdict from an absence is not doing
+ * the one job it has.
+ */
+const LIGHT_COLORS = { on: colors.green, working: colors.cyan, warn: colors.gold, bad: colors.red } as const;
 
 /**
  * Three states the driver can check at a glance: vertical, forward, mount. `compact` puts each
@@ -19,7 +26,7 @@ export function Lights({ lights, compact = false, style }: { lights: readonly Li
         return (
           <View
             key={l.key}
-            style={[styles.light, compact && styles.lightCompact, { borderColor: alpha(color, l.state === 'on' ? 0.75 : 0.4) }]}
+            style={[styles.light, compact && styles.lightCompact, { borderColor: alpha(color, l.state === 'on' || l.state === 'warn' ? 0.75 : 0.4) }]}
             testID={`light-${l.key}`}>
             <View style={styles.lightHead}>
               <View style={[styles.dot, { backgroundColor: color, opacity: l.state === 'working' ? 0.55 : 1 }]} />
@@ -29,7 +36,7 @@ export function Lights({ lights, compact = false, style }: { lights: readonly Li
             </View>
             <AppText
               variant="bodyStrong"
-              color={l.state === 'on' ? colors.text : colors.muted}
+              color={l.state === 'working' ? colors.muted : colors.text}
               numberOfLines={compact ? 1 : 2}
               style={[styles.lightDetail, compact && styles.lightDetailCompact]}>
               {l.detail}

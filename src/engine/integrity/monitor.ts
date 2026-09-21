@@ -85,9 +85,48 @@ export interface IntegrityState {
    * the calibrator itself reports 8 % confidence and an unresolved forward axis.
    */
   calibrationOk: boolean;
+  /**
+   * True when `mount` is a VERDICT rather than an absence of one.
+   *
+   * Every mount cue is an exponentially-weighted RMS that starts at zero, so before it has
+   * filled it reads quiet whatever the mount is doing, and `rigid` is then "nothing found yet",
+   * not "nothing to find". `suspect` and `loose` are always verdicts — they need a threshold
+   * crossed by measured energy, which an empty average cannot do — so this is false only while
+   * the label is `rigid` and the cues are still filling.
+   *
+   * Published because a screen was guessing at it: the calibration screen kept its own
+   * `MOUNT_WARMUP_S = 2 × windowS` and reported the mount as unknown for four wall-clock
+   * seconds. That doubling existed to outlast a startup transient that has since been fixed at
+   * its source (`MountCalibrator` used to publish the first sample of every run in a frame it
+   * had not built yet, and a 0.3 Hz high-pass rang on it into the 2 s RMS for ~4.6 s). What is
+   * left is the honest wait: ONE window of evidence, counted in motion actually fed to the cues
+   * rather than in seconds the screen has been open.
+   *
+   * It does NOT promise the verdict is final. A mount at the bottom of the sway band crosses
+   * late or not at all — measured over 2 tracks × 4 seeds, the first `suspect` at simulator
+   * looseness 0.25 lands at 0.45–3.0 s, at 0.2 at 0.89–10.6 s, and at 0.15 only 2 of 8 runs
+   * ever cross (`npx tsx tools/analysis/calibration-sweep.ts warmup`). That band is the known
+   * residual `docs/ARCHITECTURE.md` already names; no waiting fixes it.
+   */
+  mountConfident: boolean;
   flags: IntegrityFlag[];
   /** Plain-language, driver-facing, never empty. */
   message: string;
+  /**
+   * What the monitor has to say ABOUT THE MOUNT, and nothing else. `''` when it has nothing.
+   *
+   * `message` answers a different question: of everything wrong right now, what is the ROOT
+   * CAUSE — a strict priority list in which an unresolved calibration and a lost GPS fix both
+   * outrank a shifting cradle. That is the right answer for the HUD's single integrity line and
+   * the wrong one for any caller that has already chosen to head a row "Mount": the calibration
+   * screen drew `MOUNT LOOKS UNSTEADY` over `message` and printed a forward-axis sentence under
+   * it on 105,439 of 105,439 caution frames, and a GPS sentence under `MOUNT SHAKING` on 2.7 %
+   * of the rest. One string cannot both rank causes and answer per-topic, so the monitor
+   * publishes both and the caller picks the one its own heading is asking for.
+   */
+  mountMessage: string;
+  /** The same, for the GPS fix. `''` while it is good. */
+  gpsMessage: string;
 }
 
 /** Raw cues behind the verdicts, for debug panels and tuning. All finite. */
@@ -324,6 +363,9 @@ export class IntegrityMonitor {
   private flagMask = -1;
   private flags: IntegrityFlag[] = [];
   private message = '';
+  private mountMessage = '';
+  private gpsMessage = '';
+  private mountConfident = false;
 
   constructor(opts: Partial<IntegrityOptions> = {}) {
     const given = Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)) as Partial<IntegrityOptions>;
@@ -400,6 +442,7 @@ export class IntegrityMonitor {
     this.calForward = true;
     this.calOk = true;
     this.flagMask = -1;
+    this.mountConfident = false;
     this.recompute();
   }
 
@@ -435,8 +478,11 @@ export class IntegrityMonitor {
       hAcc: this.hAcc,
       driftPlausible: this.driftPlausible,
       calibrationOk: this.calOk,
+      mountConfident: this.mountConfident,
       flags: this.flags.slice(),
       message: this.message,
+      mountMessage: this.mountMessage,
+      gpsMessage: this.gpsMessage,
     };
   }
 
@@ -709,15 +755,58 @@ export class IntegrityMonitor {
       this.flagMask = mask;
       this.flags = FLAG_ORDER.filter((_, i) => mask & (1 << i));
     }
+    // `suspect` and `loose` need a threshold crossed by measured energy, so an average that is
+    // still filling cannot reach them; `rigid` is what an empty average reads whatever the
+    // mount is doing, so that one — and only that one — waits for a full window.
+    this.mountConfident = this.mount !== 'rigid' || this.mountCueEvidenceS() >= o.windowS;
+    const mountMsg = this.mountSentence();
+    if (mountMsg !== this.mountMessage) this.mountMessage = mountMsg;
+    // "Waiting for a GPS fix" is not NEWS until a fix has had as long to arrive as one is
+    // allowed to be stale — before that it is just the normal first seconds of every session.
+    // `message` still says it, because that line is never empty and there is nothing better to
+    // say; `gpsMessage` is a row a caller draws, so it stays empty until there is one to draw.
+    const gpsMsg = this.gps === 'poor' || this.hasFix || this.gpsAgeS >= o.gpsMaxAgeS ? this.gpsSentence() : '';
+    if (gpsMsg !== this.gpsMessage) this.gpsMessage = gpsMsg;
     const msg = this.composeMessage();
     if (msg !== this.message) this.message = msg;
   }
 
+  /** The least evidence any mount cue is running on, seconds of motion. */
+  private mountCueEvidenceS(): number {
+    return Math.min(this.gravRateRms.evidenceS, this.gravSwingRms.evidenceS, this.offYawRms.evidenceS, this.azRms.evidenceS);
+  }
+
+  /** What the monitor has to say about the MOUNT, whatever else is also wrong. */
+  private mountSentence(): string {
+    if (this.handheld) return 'Phone looks hand-held — clip it into a rigid mount to score drifts';
+    if (this.mount === 'loose') return 'Phone is moving in its mount — tighten it';
+    if (this.mount === 'suspect') return 'Phone may be shifting in its mount — check it is tight';
+    return '';
+  }
+
+  /** What the monitor has to say about the GPS FIX, whatever else is also wrong. */
+  private gpsSentence(): string {
+    if (this.gps === 'none') {
+      return this.hasFix ? `GPS signal lost ${this.gpsAgeS.toFixed(0)} s ago — waiting for it to come back` : 'Waiting for a GPS fix — drift angles need it';
+    }
+    if (this.gps === 'poor') return `GPS accuracy is poor (±${Math.round(this.hAcc)} m) — drift angles may be off`;
+    return '';
+  }
+
+  /**
+   * The ONE thing to say: of everything wrong at this instant, the root cause.
+   *
+   * The order is the point, and it is not the order the conditions are measured in — a
+   * hand-held phone explains most implausible readings, and a calibration that cannot say which
+   * way the car points explains a slide that does not match its g-forces. Each sentence comes
+   * from the same function that answers about that topic on its own, so a caller quoting
+   * `mountMessage` and a caller quoting `message` can never describe one condition in two
+   * different ways.
+   */
   private composeMessage(): string {
     const o = this.opts;
     // root causes first: a hand-held / loose phone explains most implausible readings
-    if (this.handheld) return 'Phone looks hand-held — clip it into a rigid mount to score drifts';
-    if (this.mount === 'loose') return 'Phone is moving in its mount — tighten it';
+    if (this.handheld || this.mount === 'loose') return this.mountSentence();
     if (!this.calOk) {
       return this.calForward
         ? 'Still working out how the phone sits in the car — drive straight for a few seconds'
@@ -729,14 +818,11 @@ export class IntegrityMonitor {
         r & PHYS_YAW ? 'spinning faster than any car can turn' : r & PHYS_LATERAL ? 'showing more sideways g than tyres can make' : 'showing more braking/launch g than a car can make';
       return `Sensor readings are ${what} — check the phone is fixed to the car`;
     }
-    if (this.gps === 'none') {
-      return this.hasFix ? `GPS signal lost ${this.gpsAgeS.toFixed(0)} s ago — waiting for it to come back` : 'Waiting for a GPS fix — drift angles need it';
-    }
-    if (this.gps === 'poor') return `GPS accuracy is poor (±${Math.round(this.hAcc)} m) — drift angles may be off`;
+    if (this.gps !== 'good') return this.gpsSentence();
     // A shifting cradle outranks the speed gate and the slip-consistency gate: both of those are
     // symptoms a moving phone produces, and telling a driver to go FASTER because the mount is
     // rattling sends them at the problem with more speed.
-    if (this.mount === 'suspect') return 'Phone may be shifting in its mount — check it is tight';
+    if (this.mount === 'suspect') return this.mountSentence();
     if (this.slideClaimed && (!this.speedOk || this.gpsVeto)) {
       return `Too slow to count as a drift — get above ${Math.round(o.minDriftSpeed * 3.6)} km/h`;
     }

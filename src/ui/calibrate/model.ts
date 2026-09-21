@@ -40,35 +40,31 @@ export const TRUST_QUALITY = DEFAULT_INTEGRITY_OPTIONS.minCalibrationQuality;
  */
 export const SHARP_QUALITY = CALIBRATION_SHARP;
 
-/** Up-axis quality at which the vertical has stopped moving around. */
-export const SETTLED_UP = 0.6;
-
 /** Degrees of recline past which the phone is lying down rather than standing up. */
 export const FLAT_DEG = 62;
 
 /**
- * How long the integrity monitor needs before its mount verdict means anything.
+ * The mount verdict, or `unknown` while the monitor's averages are still filling.
  *
- * Every mount cue is an exponential RMS over `windowS`, so for the first couple of windows the
- * averages are still filling and a perfectly bolted phone reads `suspect` — on the simulator's
- * own rigid mount it does exactly that from 0.2 s to 4.1 s. Shouting "your mount is loose" at a
- * driver who has done nothing wrong is worse than saying nothing, so until the cues have had
- * two windows this screen reports the mount as still listening.
+ * THE MONITOR SAYS WHEN, not this file. It used to be `elapsedS < 2 × windowS` — four
+ * wall-clock seconds, chosen to outlast a startup transient, and measured to be shorter than
+ * it: 30 of 48 rigid runs still read `suspect` past the guard, the longest to 4.81 s, so a
+ * bolted-down phone got a gold MOUNT LOOKS UNSTEADY banner exactly where the guard existed to
+ * prevent one. The transient is now fixed at its source (`MountCalibrator` was publishing the
+ * first sample of every run in a frame it had not built yet) and what is left is the engine's
+ * own `mountConfident`: one window of evidence, counted in motion fed to the cues.
  */
-export const MOUNT_WARMUP_S = 2 * DEFAULT_INTEGRITY_OPTIONS.windowS;
-
-/** The mount verdict, or `unknown` while the monitor's averages are still filling. */
 export function mountVerdict(r: CalibrationReading): MountState | 'unknown' {
-  return r.samples === 0 || r.elapsedS < MOUNT_WARMUP_S ? 'unknown' : r.mount;
+  return r.samples === 0 || !r.mountConfident ? 'unknown' : r.mount;
 }
 
 /**
  * The monitor has SAID the mount is rigid.
  *
  * The only function allowed to conclude anything good about the mount. `unknown` is not a pass:
- * the whole point of `MOUNT_WARMUP_S` is that the verdict does not exist yet, and a screen that
- * ticks "clip it to something rigid" during the warm-up is asserting exactly what it is waiting
- * to find out. Note this implies `samples > 0` — `mountVerdict` returns 'unknown' with none.
+ * the whole point of `mountConfident` is that the verdict does not exist yet, and a screen that
+ * ticks "clip it to something rigid" while the cues are filling is asserting exactly what it is
+ * waiting to find out. Note this implies `samples > 0` — `mountVerdict` is 'unknown' with none.
  */
 export function mountIsRigid(r: CalibrationReading): boolean {
   return mountVerdict(r) === 'rigid';
@@ -203,12 +199,27 @@ export interface CalibrationReading {
   forwardResolved: boolean;
   /** The engine's own verdict on whether this calibration may be believed. */
   calibrationOk: boolean;
+  /** The engine's own verdict on whether the vertical has stopped moving around. */
+  upSettled: boolean;
+  /** The highest confidence this calibration has reached, from `MountCalibrator`. */
+  peakQuality: number;
   mount: MountState;
+  /** The engine's own verdict on whether `mount` is a verdict yet. */
+  mountConfident: boolean;
   /** The monitor's own `handheld` flag: a loose mount that is swinging like a hand, not a cradle. */
   handheld: boolean;
   looseScore: number;
-  /** IntegrityMonitor's own sentence. Never rewritten here. */
+  /**
+   * IntegrityMonitor's own sentence about the ROOT CAUSE. Never rewritten here — and never
+   * printed under a heading of this screen's own choosing either: it answers "of everything
+   * wrong, what is most wrong", so under a MOUNT title it will happily print a GPS or
+   * forward-axis sentence. Anything this screen heads "Mount" quotes `mountMessage`.
+   */
   message: string;
+  /** The monitor's sentence about the MOUNT alone; `''` when it has nothing to say about it. */
+  mountMessage: string;
+  /** The monitor's sentence about the GPS FIX alone; `''` when there is nothing to report. */
+  gpsMessage: string;
   gps: GpsState;
   speedKmh: number;
   /** Seconds of straight-line acceleration evidence the forward axis is built from. */
@@ -235,12 +246,17 @@ export const IDLE_READING: CalibrationReading = {
   reclineDeg: 0,
   quality: 0,
   upQuality: 0,
+  upSettled: false,
+  peakQuality: 0,
   forwardResolved: false,
   calibrationOk: false,
   mount: 'rigid',
+  mountConfident: false,
   handheld: false,
   looseScore: 0,
   message: '',
+  mountMessage: '',
+  gpsMessage: '',
   gps: 'none',
   speedKmh: 0,
   lineEvidenceS: 0,
@@ -288,8 +304,19 @@ export function isFlat(r: CalibrationReading): boolean {
   return r.has && Math.abs(r.reclineDeg) >= FLAT_DEG;
 }
 
+/**
+ * The vertical has settled — the ENGINE's edge (`MountCalibrator.diagnostics().upSettled`),
+ * not a number kept here.
+ *
+ * It used to be `upQuality >= 0.6`, the last threshold this screen owned on an engine quantity,
+ * and it contradicted the screen's own headline: `upQuality` is age × accelerometer fit, and a
+ * shaking cradle degrades the fit, so at simulator looseness 0.1 the phase was READY while the
+ * VERTICAL light read "Settling" on 29,476 of 40,864 READY frames, and on 18,932 of 18,932 at
+ * looseness 0.15. `upSettled` asks the question the light is actually asking — has the up axis
+ * had its settling time — and `band.ts`'s rule holds again: this screen knows no edges.
+ */
 export function isSettled(r: CalibrationReading): boolean {
-  return r.upQuality >= SETTLED_UP;
+  return r.upSettled;
 }
 
 export type CalibrationPhase = 'failed' | 'blocked' | 'unsteady' | 'ready' | 'seeking' | 'levelling' | 'starting';
@@ -321,7 +348,13 @@ export function phaseOf(r: CalibrationReading): CalibrationPhase {
 export interface Light {
   key: 'level' | 'forward' | 'mount';
   label: string;
-  state: 'on' | 'working' | 'bad';
+  /**
+   * `working` is "still listening" (cyan), `warn` is a verdict that is not fatal (gold), `bad`
+   * is one that is (red). `suspect` used to share cyan with `unknown`, so a mount the engine HAD
+   * judged looked exactly like one it had not — while the headline above painted that same
+   * state gold. Three lights read at arm's length have one job, which is to carry the verdict.
+   */
+  state: 'on' | 'working' | 'warn' | 'bad';
   detail: string;
 }
 
@@ -350,7 +383,7 @@ export function lightsOf(r: CalibrationReading): Light[] {
     {
       key: 'mount',
       label: 'Mount',
-      state: mount === 'rigid' ? 'on' : mount === 'loose' ? 'bad' : 'working',
+      state: mount === 'rigid' ? 'on' : mount === 'loose' ? 'bad' : mount === 'suspect' ? 'warn' : 'working',
       detail: mount === 'rigid' ? 'Rigid' : mount === 'loose' ? 'Moving' : mount === 'suspect' ? 'Unsteady' : 'Listening',
     },
   ];
@@ -371,15 +404,16 @@ export function headlineOf(r: CalibrationReading): Headline {
     case 'blocked':
       // The biggest words on the loudest frame have to be the condition, not a noise. The name
       // is the HUD's own heading for the same state, and the sentence under it is the
-      // monitor's, verbatim and once — there is no second banner repeating it.
-      return { kicker: 'Mount', title: r.handheld ? 'Hand-held' : 'Loose mount', because: r.message, color: 'red' };
+      // monitor's ABOUT THE MOUNT, verbatim and once — there is no second banner repeating it.
+      return { kicker: 'Mount', title: r.handheld ? 'Hand-held' : 'Loose mount', because: r.mountMessage, color: 'red' };
     case 'unsteady':
-      // Same rule as `blocked`: the HUD's own heading for `mount === 'suspect'` is MOUNT
-      // SHAKING (`HudChrome.tsx`), and the sentence is the monitor's own, said once —
-      // `cautionsOf` drops its duplicate banner while this headline is carrying it.
+      // `mountMessage`, NOT `message`. The HUD's own heading for `mount === 'suspect'` is MOUNT
+      // SHAKING (`HudChrome.tsx`), and `message` answers a different question — the root cause —
+      // so under this title it printed "GPS signal lost 5 s ago" on 2,760 of 102,944 measured
+      // frames. A heading and its reason have to be about the same thing.
       return mountVerdict(r) === 'suspect'
-        ? { kicker: 'Mount', title: 'Mount shaking', because: r.message, color: 'gold' }
-        : { kicker: 'Mount', title: 'Still listening', because: `the sway cues need ${MOUNT_WARMUP_S} s of data before they mean anything`, color: 'cyan' };
+        ? { kicker: 'Mount', title: 'Mount shaking', because: r.mountMessage, color: 'gold' }
+        : { kicker: 'Mount', title: 'Still listening', because: 'the sway cues want a full window of data before they mean anything', color: 'cyan' };
     case 'ready':
       // The clause moves with the number: one sentence cannot honestly cover 30 % to 86 %.
       return {
@@ -449,38 +483,60 @@ export function stepsOf(r: CalibrationReading): Step[] {
 /** The button that leaves this screen, and what leaving actually costs. */
 export interface Leave {
   label: string;
-  /** Ember slab, or the quieter secondary: this is not the finished action in every phase. */
+  /** Ember slab, or the quieter secondary. */
   primary: boolean;
   /** One sentence. It has to be TRUE in this phase, which is why it is not one sentence. */
   note: string;
 }
 
 /**
- * Leaving is allowed — the calibrator needs no gesture and finishes while driving — but what
- * that costs depends entirely on the phase, and one reassurance for all of them was wrong in
- * two directions at once. Both replacements are measurements
- * (`npx tsx tools/analysis/calibration-sweep.ts`):
+ * The way out, and what leaving costs.
  *
- *  • READY said "the calibration keeps sharpening during the run — nothing here is final".
- *    Over 2 tracks × 3 mounts × 8 seeds the confidence peaks between 5.1 s and 8.0 s (median
- *    5.8 s, i.e. within a few seconds of driving off) and the FINAL value is below the peak in
- *    48 of 48 — median −0.017, worst −0.114 (harbor / flat-console / seed 5: 0.618 → 0.504).
- *    The number on screen is the best it will ever be, so the screen says so.
+ * THE SHAPE FIRST. This screen gates nothing: the calibrator needs no gesture, and 288 measured
+ * runs — 48 rigid + 240 across aggression, vibration, track, mount and seed — resolved the
+ * forward axis 288 times with nobody touching anything, at 5.1–6.1 s of DRIVING. A parked
+ * driver therefore cannot reach READY at all. So reserving the ember slab for READY, and
+ * labelling it "Done — drive", gave the biggest brightest button on the screen to a state that
+ * only arrives after the driver has already left, and called finishing something they had not
+ * done. Driving IS the action, in every phase a parked driver can be in, so driving gets the
+ * slab — and the two states where the screen has something better to offer than leaving keep
+ * the quiet button: a loose mount (leaving costs the whole run) and a shaking one (leaving
+ * costs part of every angle).
+ *
+ * THEN THE SENTENCE. Every note is a measurement
+ * (`npx tsx tools/analysis/calibration-sweep.ts`), and it has to hold on EVERY frame of the
+ * phase, not on the frame it was measured from:
+ *
+ *  • READY said "As sharp as it gets — it peaks seconds after you drive off, and never climbs
+ *    later". The measurement behind it compared FINAL to PEAK, and it was right about that: the
+ *    final value is below the peak in 48 of 48. But the sentence is read at FIRST READY, which
+ *    lands at 4.6–5.3 s while the peak lands at 5.1–8.0 s — so it answered a different
+ *    question from the one it was asked. Re-measured at the moment it is read, the number
+ *    climbs afterwards in 33 of 48 runs, by ≥ 0.05 in 13 and ≥ 0.10 in 8, worst +0.209
+ *    (harbor / portrait-vent / seed 6: 0.589 at 4.6 s → 0.798 at 5.5 s), and the screen's own
+ *    band flips trusted → sharp under the word "never" in 22 of 48. The replacement says only
+ *    what the engine can back on every frame: `MountCalibrator` publishes its own running peak,
+ *    so "best so far" is a fact rather than a forecast, and "moves both ways" covers both the
+ *    33 that climb and the 48 that end below their peak.
  *  • BLOCKED said "you do not have to sit here, the run calibrates itself on the way to the
  *    first corner". At looseness ≥ 0.5, across 2 tracks × 4 seeds × 3 looseness levels, 0 of 24
  *    runs ever reached the engine's bar: final confidence 0.000–0.060, the forward axis
  *    unresolved in 23 of 24. This is the ONE state where leaving costs the whole run.
  *
- * The other phases keep the reassurance, because for a rigid mount it is true: the same 48 runs
- * resolved the forward axis and cleared the bar by themselves, with no gesture, 48 times.
+ * It switches on the MOUNT VERDICT as well as the phase, because `unsteady` holds two states:
+ * the monitor has said `suspect`, or its cues are still filling. Switching on the phase alone
+ * printed "It scores, but part of every angle is the cradle" on the same frame whose headline
+ * correctly said "Still listening" — the screen naming a cradle the engine had not judged,
+ * which is the one class this file exists to keep out.
  */
 export function leaveOf(r: CalibrationReading): Leave {
-  switch (phaseOf(r)) {
+  const phase = phaseOf(r);
+  switch (phase) {
     case 'ready':
       return {
-        label: 'Done — drive',
+        label: 'Drive',
         primary: true,
-        note: 'As sharp as it gets — it peaks seconds after you drive off, and never climbs later.',
+        note: `Best so far ${Math.round(Math.max(0, Math.min(1, r.peakQuality)) * 100)}%. It moves both ways as you drive — past the bar is what counts.`,
       };
     case 'blocked':
       return {
@@ -489,15 +545,21 @@ export function leaveOf(r: CalibrationReading): Leave {
         note: 'Leave now and nothing in it is scored: a moving phone never reaches the judge’s bar.',
       };
     case 'unsteady':
-      return {
-        label: 'Drive anyway',
-        primary: false,
-        note: 'It scores, but part of every angle is the cradle. Re-clip it and it is worth more.',
-      };
+      return mountVerdict(r) === 'suspect'
+        ? {
+            label: 'Drive anyway',
+            primary: false,
+            note: 'It scores, but part of every angle is the cradle. Re-clip it and it is worth more.',
+          }
+        : {
+            label: 'Drive',
+            primary: true,
+            note: 'Past the bar already — the sway cues are still filling, and driving is what fills them.',
+          };
     default:
       return {
-        label: 'Finish it while driving',
-        primary: false,
+        label: 'Drive',
+        primary: true,
         note: 'You need not sit here: the run calibrates itself before the first corner.',
       };
   }
@@ -528,14 +590,31 @@ export function cautionsOf(r: CalibrationReading): Caution[] {
       tone: moving ? 'red' : 'gold',
     });
   }
-  // Only when the headline is not already carrying it, in the monitor's own words.
-  if (mount === 'suspect' && !isFlat(r) && phaseOf(r) !== 'unsteady') {
-    out.push({ title: 'Mount looks unsteady', body: r.message, tone: 'gold' });
+  // Only when the headline is not already carrying it, in the monitor's own words ABOUT THE
+  // MOUNT. Quoting `message` here put a forward-axis sentence under this title on 105,439 of
+  // 105,439 measured caution frames — 100 %, and structurally so: `message` answers the root
+  // cause, and the only way to reach this branch is for `calibrationOk` to be false, which IS
+  // the cause that outranks the mount. A title and its body have to be about one thing.
+  if (mount === 'suspect' && !isFlat(r) && phaseOf(r) !== 'unsteady' && r.mountMessage) {
+    out.push({ title: 'Mount looks unsteady', body: r.mountMessage, tone: 'gold' });
+  }
+  // A GPS condition gets its OWN row rather than a stolen reason line. This screen has no GPS
+  // light — three lights is what fits at arm's length — so before this the only place a
+  // dropout surfaced was as the body of a mount banner, which named the cradle for it. The
+  // monitor decides when there is something to say: `gpsMessage` stays empty through the normal
+  // first seconds of a session, when no fix has arrived yet and none is late.
+  if (r.gpsMessage) {
+    out.push({ title: r.gps === 'poor' ? 'GPS is vague' : 'No GPS fix', body: r.gpsMessage, tone: 'gold' });
   }
   if (r.knocks > 0) {
     out.push({
       title: r.knocks === 1 ? 'The phone was knocked' : `The phone was knocked ${r.knocks} times`,
-      body: 'It started again from the new position. Nothing is lost, but the mount is not holding.',
+      // "Nothing is lost" was unconditional, and it sat two rows above a footer reading "Leave
+      // now and nothing in it is scored" on a 0 % frame. What a knock costs depends on whether
+      // the calibration that followed it got anywhere, which the engine already says.
+      body: r.calibrationOk
+        ? 'It started again from the new position and has caught up. The mount is not holding, though.'
+        : 'It started again from the new position and has not caught up yet. The mount is not holding.',
       tone: 'gold',
     });
   }

@@ -5,14 +5,23 @@
  * own" — and for four hundred lines of pure decision logic it had no test at all. The severity-1
  * that failed this screen the first time lived in `phaseOf`; the one that failed it the second
  * time was the identical mistake in `stepsOf`, one component over. So this file tests the CLASS
- * as well as the cases: the sweep at the bottom asserts across every combination of readings
- * that nothing here reports an absence of evidence as a verdict, which is the shape both bugs
- * had. A fixture table catches the bug you thought of; the sweep catches the next one.
+ * as well as the cases: the sweep asserts across every combination of readings that nothing here
+ * reports an absence of evidence as a verdict, which is the shape both bugs had.
+ *
+ * AND THEN A FIXTURE CANNOT BE THE TEST. The third severity-1 was that every mount-titled row on
+ * this screen printed a sentence about something else — 100 % of caution frames — and nothing
+ * here could catch it, because the fixtures were hand-written: one of them paired
+ * `mount: 'suspect'` with `message: 'Mount looks solid'`, a banner the engine can never produce,
+ * and the test that used it asserted only the title. So the last block in this file drives every
+ * branch from a REAL `MountCalibrator` + `IntegrityMonitor` replay (`testkit.ts`), asserts the
+ * claims are TRUE rather than merely present, and asserts that the replays reach every branch —
+ * so a test that has stopped being able to fail shows up as a coverage failure.
  */
 import { describe, expect, it } from 'vitest';
 
 import { SensorSourceError } from '../../platform/sensorSource';
 import { simulateRun, type MountPreset } from '../../sim';
+import { replayReadings, type Frame } from './testkit';
 import {
   arrivalOf,
   attitudeWords,
@@ -26,7 +35,6 @@ import {
   lightsOf,
   mountIsRigid,
   mountVerdict,
-  MOUNT_WARMUP_S,
   orientationOf,
   phaseOf,
   qualityBand,
@@ -35,6 +43,7 @@ import {
   TRUST_QUALITY,
   type CalibrationFaultKind,
   type CalibrationReading,
+  type CalibrationPhase,
 } from './model';
 
 function reading(over: Partial<CalibrationReading> = {}): CalibrationReading {
@@ -49,31 +58,58 @@ function reading(over: Partial<CalibrationReading> = {}): CalibrationReading {
     rollDeg: 0.9,
     reclineDeg: 15.3,
     upQuality: 0.9,
+    upSettled: true,
     quality: 0.7,
+    peakQuality: 0.7,
     forwardResolved: true,
     calibrationOk: true,
     mount: 'rigid',
-    message: 'Mount looks solid',
+    mountConfident: true,
+    // A rigid mount past the bar: the monitor has nothing to say ABOUT THE MOUNT, and the one
+    // line it does say is about everything. `message: 'Mount looks solid'` used to sit here,
+    // which is a sentence `IntegrityMonitor.composeMessage` cannot produce on any input.
+    message: 'Sensors look good — phone is solid and GPS is locked',
+    mountMessage: '',
     ...over,
   };
 }
 
 /** Measured states, from `npx tsx tools/analysis/calibration-sweep.ts` and the harness routes. */
 const NOTHING = { ...IDLE_READING };
-/** `?sim=harbor&at=0.5` — gravity seen, inside the 4 s mount warm-up, nothing worked out. */
-const EARLY = reading({ samples: 50, elapsedS: 0.5, upQuality: 0.5, quality: 0.05, forwardResolved: false, calibrationOk: false, mount: 'suspect' });
-/** `?sim=harbor&looseness=1&at=2` — a real hand-held recording, still inside the warm-up. */
-const HANDHELD_EARLY = reading({ samples: 200, elapsedS: 2, upQuality: 0.55, quality: 0.09, forwardResolved: false, calibrationOk: false, mount: 'loose', handheld: true });
+/** `?sim=harbor&at=0.5` — gravity seen, the mount cues still filling, nothing worked out. */
+const EARLY = reading({
+  samples: 50, elapsedS: 0.5, upQuality: 0.5, upSettled: false, quality: 0.05, peakQuality: 0.05,
+  forwardResolved: false, calibrationOk: false, mountConfident: false,
+  message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
+});
+/** `?sim=harbor&looseness=1&at=2` — a real hand-held recording, cues not yet confident. */
+const HANDHELD_EARLY = reading({
+  samples: 200, elapsedS: 2, upQuality: 0.55, upSettled: true, quality: 0.09, peakQuality: 0.09,
+  forwardResolved: false, calibrationOk: false, mount: 'loose', mountConfident: false, handheld: true,
+  message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
+  mountMessage: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
+});
 /** `?sim=harbor&at=3` — the vertical has settled, the forward axis has not resolved. */
-const LEVELLED = reading({ samples: 300, elapsedS: 3, upQuality: 0.9, quality: 0.28, forwardResolved: false, calibrationOk: false });
+const LEVELLED = reading({
+  samples: 300, elapsedS: 3, upQuality: 0.9, quality: 0.28, peakQuality: 0.28, forwardResolved: false, calibrationOk: false,
+  message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
+});
 /** `?sim=touge&looseness=0.2&at=40` — confidence 34 %, forward resolved, mount 'suspect'. */
-const CRADLE = reading({ elapsedS: 40, quality: 0.339, mount: 'suspect', message: 'Phone may be shifting in its mount — check it is tight' });
-/** `?sim=harbor&looseness=1&at=12` — hand-held, past the warm-up. */
-const LOOSE = reading({ quality: 0.03, forwardResolved: false, calibrationOk: false, mount: 'loose', handheld: true, message: 'Phone looks hand-held — clip it into a rigid mount to score drifts' });
+const CRADLE = reading({
+  elapsedS: 40, quality: 0.339, peakQuality: 0.352, mount: 'suspect',
+  message: 'Phone may be shifting in its mount — check it is tight',
+  mountMessage: 'Phone may be shifting in its mount — check it is tight',
+});
+/** `?sim=harbor&looseness=1&at=12` — hand-held, cues confident. */
+const LOOSE = reading({
+  quality: 0.03, peakQuality: 0.06, forwardResolved: false, calibrationOk: false, mount: 'loose', handheld: true,
+  message: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
+  mountMessage: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
+});
 /** The best seed measured at the simulator's default vibration: 0.864. */
-const SHARP = reading({ quality: 0.864 });
+const SHARP = reading({ quality: 0.864, peakQuality: 0.864 });
 /** A flat phone on a console, from `?mount=flat-console`. */
-const FLAT = reading({ gravity: { x: 0.64, y: 0.07, z: -9.78 }, rollDeg: 96.3, reclineDeg: 86.3, quality: 0.68 });
+const FLAT = reading({ gravity: { x: 0.64, y: 0.07, z: -9.78 }, rollDeg: 96.3, reclineDeg: 86.3, quality: 0.68, peakQuality: 0.68 });
 
 describe('phaseOf', () => {
   it('claims nothing with no samples', () => {
@@ -85,10 +121,12 @@ describe('phaseOf', () => {
   });
 
   it('is not READY while the mount verdict is still unknown', () => {
-    const warming = reading({ elapsedS: MOUNT_WARMUP_S - 0.1 });
+    // and the SCREEN does not decide when that is: `mountConfident` is the monitor's own word
+    // for "the cues have a full window behind them", so no wall-clock guard lives here.
+    const warming = reading({ mountConfident: false });
     expect(mountVerdict(warming)).toBe('unknown');
     expect(phaseOf(warming)).toBe('unsteady');
-    expect(phaseOf(reading({ elapsedS: MOUNT_WARMUP_S + 0.1 }))).toBe('ready');
+    expect(phaseOf(reading({ mountConfident: true }))).toBe('ready');
   });
 
   it('is not READY over a shaking mount', () => {
@@ -148,9 +186,13 @@ describe('stepsOf', () => {
 
 describe('headlineOf', () => {
   it('names the condition the HUD names, in the monitor’s own words', () => {
-    expect(headlineOf(LOOSE)).toMatchObject({ title: 'Hand-held', because: LOOSE.message, color: 'red' });
-    expect(headlineOf(reading({ mount: 'loose', handheld: false, message: 'm' })).title).toBe('Loose mount');
-    expect(headlineOf(CRADLE)).toMatchObject({ title: 'Mount shaking', because: CRADLE.message, color: 'gold' });
+    expect(headlineOf(LOOSE)).toMatchObject({ title: 'Hand-held', because: LOOSE.mountMessage, color: 'red' });
+    expect(headlineOf(reading({ mount: 'loose', handheld: false, mountMessage: 'm' })).title).toBe('Loose mount');
+    expect(headlineOf(CRADLE)).toMatchObject({ title: 'Mount shaking', because: CRADLE.mountMessage, color: 'gold' });
+    // and it quotes the MOUNT sentence, not the root-cause one: `message` answers a different
+    // question and printed "GPS signal lost 5 s ago" under MOUNT SHAKING on 2.7 % of frames.
+    const shakingWithNoFix = reading({ mount: 'suspect', message: 'GPS signal lost 5 s ago — waiting for it to come back', mountMessage: 'Phone may be shifting in its mount — check it is tight' });
+    expect(headlineOf(shakingWithNoFix).because).toBe(shakingWithNoFix.mountMessage);
   });
 
   it('moves the reason with the number instead of one clause for the whole range', () => {
@@ -197,7 +239,7 @@ describe('qualityBand', () => {
     const sharpButShaking = reading({ quality: 0.86, mount: 'suspect', elapsedS: 40 });
     expect(qualityBand(sharpButShaking).label).not.toMatch(/nothing will be qualified/);
     expect(qualityBand(sharpButShaking).color).toBe('gold');
-    expect(qualityBand(reading({ quality: 0.86, elapsedS: MOUNT_WARMUP_S - 0.1 })).color).toBe('cyan');
+    expect(qualityBand(reading({ quality: 0.86, mountConfident: false })).color).toBe('cyan');
   });
 
   it('bands a resolved, rigid mount by the number', () => {
@@ -306,7 +348,7 @@ describe('orientationOf / attitudeWords', () => {
 
 describe('cautionsOf', () => {
   it('does not accuse a mount the monitor has not judged', () => {
-    const flatEarly = reading({ elapsedS: 1, reclineDeg: 86, mount: 'loose' });
+    const flatEarly = reading({ elapsedS: 1, reclineDeg: 86, mount: 'loose', mountConfident: false });
     expect(mountVerdict(flatEarly)).toBe('unknown');
     expect(cautionsOf(flatEarly)[0]).toMatchObject({ tone: 'gold' });
     expect(cautionsOf(flatEarly)[0].body).not.toMatch(/already moving/);
@@ -323,9 +365,32 @@ describe('cautionsOf', () => {
     expect(phaseOf(CRADLE)).toBe('unsteady');
     expect(cautionsOf(CRADLE).some((c) => c.title === 'Mount looks unsteady')).toBe(false);
     // …but it still gets a banner when the headline is about something else
-    const stillSeeking = reading({ elapsedS: 12, mount: 'suspect', forwardResolved: false, calibrationOk: false });
+    const stillSeeking = reading({
+      elapsedS: 12, mount: 'suspect', forwardResolved: false, calibrationOk: false,
+      message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
+      mountMessage: 'Phone may be shifting in its mount — check it is tight',
+    });
     expect(phaseOf(stillSeeking)).toBe('seeking');
-    expect(cautionsOf(stillSeeking).some((c) => c.title === 'Mount looks unsteady')).toBe(true);
+    const banner = cautionsOf(stillSeeking).find((c) => c.title === 'Mount looks unsteady');
+    // THE COUPLING, which is what was missing: a banner titled about the mount says what the
+    // monitor says about the MOUNT. Quoting `message` here printed the forward-axis sentence
+    // on 105,439 of 105,439 measured frames — and structurally so, because the only way to
+    // reach this branch is for `calibrationOk` to be false, which is the cause that outranks it.
+    expect(banner?.body).toBe(stillSeeking.mountMessage);
+    expect(banner?.body).not.toBe(stillSeeking.message);
+  });
+
+  it('gives a GPS condition its own row instead of a mount banner\u2019s body', () => {
+    // This screen has no GPS light, so before this the only place a dropout surfaced was under
+    // a mount heading. The words are the monitor's; the title names GPS.
+    const lost = reading({ gps: 'none', gpsMessage: 'GPS signal lost 5 s ago — waiting for it to come back' });
+    expect(cautionsOf(lost).map((c) => c.title)).toContain('No GPS fix');
+    expect(cautionsOf(lost).find((c) => c.title === 'No GPS fix')!.body).toBe(lost.gpsMessage);
+    const vague = reading({ gps: 'poor', gpsMessage: 'GPS accuracy is poor (±16 m) — drift angles may be off' });
+    expect(cautionsOf(vague).map((c) => c.title)).toContain('GPS is vague');
+    // and nothing is drawn while the monitor has nothing to say — which is the normal first
+    // seconds of a session, before a first fix is late rather than missing.
+    expect(cautionsOf(reading({ gps: 'none', gpsMessage: '' })).some((c) => /GPS/.test(c.title))).toBe(false);
   });
 
   it('reports knocks and impossible gravity', () => {
@@ -333,17 +398,59 @@ describe('cautionsOf', () => {
     expect(cautionsOf(reading({ knocks: 3 })).some((c) => c.title === 'The phone was knocked 3 times')).toBe(true);
     expect(cautionsOf(reading({ gMag: 14 })).some((c) => c.title === 'Gravity reads wrong')).toBe(true);
   });
+
+  it('does not promise a knock cost nothing on a frame that says it cost everything', () => {
+    // "Nothing is lost" was unconditional, ~200 px above a footer reading "Leave now and
+    // nothing in it is scored", on a 0 % frame.
+    const lost = cautionsOf(reading({ knocks: 1, quality: 0, peakQuality: 0, calibrationOk: false, forwardResolved: false })).find((c) => /knocked/.test(c.title))!;
+    expect(lost.body).not.toMatch(/Nothing is lost/i);
+    expect(lost.body).toMatch(/not caught up/);
+    expect(cautionsOf(reading({ knocks: 1 })).find((c) => /knocked/.test(c.title))!.body).toMatch(/caught up/);
+  });
 });
 
 describe('leaveOf', () => {
-  it('does not promise the number will improve, because it does not', () => {
-    // Measured over 2 tracks × 3 mounts × 8 seeds: the final confidence is BELOW the peak in
-    // 48 of 48, median −0.017, worst −0.114. The old sentence was "the calibration keeps
-    // sharpening during the run — nothing here is final".
+  it('claims nothing about the number it cannot back on the frame it is read', () => {
+    // Two absolutes have now been wrong here in opposite directions: "the calibration keeps
+    // sharpening during the run" (the final value is below the peak in 48 of 48) and then "it
+    // peaks seconds after you drive off, and NEVER climbs later" (read at first READY, which
+    // lands at 4.6–5.3 s while the peak lands at 5.1–8.0 s — so it climbs afterwards in 33 of
+    // 48 runs, worst +0.209, and the screen's own band flips trusted → sharp under the word
+    // "never" in 22 of 48). What is left is a fact the engine publishes and a direction that
+    // holds both ways.
     const note = leaveOf(SHARP).note;
-    expect(note).not.toMatch(/sharpen|keeps? improving|nothing here is final/i);
-    expect(note).toMatch(/peaks seconds after you drive off/);
-    expect(leaveOf(SHARP)).toMatchObject({ primary: true, label: 'Done — drive' });
+    expect(note).not.toMatch(/sharpen|keeps? improving|nothing here is final|never|as sharp as it gets|peaks/i);
+    expect(note).toMatch(/^Best so far 86%\./);
+    // and the number in it is the ENGINE's running peak, not the current reading
+    expect(leaveOf(reading({ quality: 0.59, peakQuality: 0.8 })).note).toMatch(/^Best so far 80%\./);
+    expect(leaveOf(SHARP)).toMatchObject({ primary: true, label: 'Drive' });
+  });
+
+  it('gives the slab to the action, not to a state a parked driver cannot reach', () => {
+    // 288 measured runs resolved the forward axis with no gesture, at 5.1–6.1 s of DRIVING, so
+    // READY only ever arrives after the driver has left. Reserving the ember slab for it, and
+    // calling it "Done", put the loudest button on the screen out of reach and then claimed a
+    // step the driver had not taken.
+    for (const r of [NOTHING, EARLY, LEVELLED, SHARP]) {
+      expect(leaveOf(r).primary).toBe(true);
+      expect(leaveOf(r).label).toBe('Drive');
+      expect(leaveOf(r).label).not.toMatch(/done/i);
+    }
+    // the two states where the screen has something better to offer keep the quiet button
+    expect(leaveOf(LOOSE).primary).toBe(false);
+    expect(leaveOf(CRADLE).primary).toBe(false);
+  });
+
+  it('does not name a cradle the engine has not judged', () => {
+    // `leaveOf` switched on the phase alone, so an `unsteady` phase whose mount verdict is
+    // still `unknown` printed "part of every angle is the cradle" on the same frame whose
+    // headline correctly said "Still listening".
+    const warming = reading({ mount: 'suspect', mountConfident: false });
+    expect(phaseOf(warming)).toBe('unsteady');
+    expect(mountVerdict(warming)).toBe('unknown');
+    expect(headlineOf(warming).title).toBe('Still listening');
+    expect(leaveOf(warming).note).not.toMatch(/cradle/);
+    expect(leaveOf(warming).primary).toBe(true);
   });
 
   it('does not tell a driver with a loose mount that leaving is free', () => {
@@ -361,12 +468,13 @@ describe('leaveOf', () => {
     // A rigid mount really does finish by itself: 48 of 48 resolved the forward axis and
     // cleared the bar with no gesture at all.
     for (const r of [NOTHING, EARLY, LEVELLED]) {
-      expect(leaveOf(r)).toMatchObject({ primary: false, label: 'Finish it while driving' });
+      expect(leaveOf(r)).toMatchObject({ primary: true, label: 'Drive' });
       expect(leaveOf(r).note).toMatch(/calibrates itself/);
     }
   });
 
   it('tells a shaking mount what it is trading', () => {
+    expect(mountVerdict(CRADLE)).toBe('suspect');
     expect(leaveOf(CRADLE)).toMatchObject({ primary: false, label: 'Drive anyway' });
     expect(leaveOf(CRADLE).note).toMatch(/cradle/);
   });
@@ -480,12 +588,28 @@ describe('arrivalOf', () => {
 describe('nothing is claimed without evidence', () => {
   const readings: CalibrationReading[] = [];
   for (const samples of [0, 1, 1200]) {
-    for (const elapsedS of [0, 1, MOUNT_WARMUP_S - 0.01, MOUNT_WARMUP_S, 40]) {
+    for (const mountConfident of [false, true]) {
       for (const mount of ['rigid', 'suspect', 'loose'] as const) {
         for (const forwardResolved of [false, true]) {
           for (const calibrationOk of [false, true]) {
             for (const quality of [0, 0.1, 0.29, 0.5, 0.86]) {
-              readings.push(reading({ samples, elapsedS, mount, forwardResolved, calibrationOk, quality, has: samples > 0, upQuality: samples > 0 ? 0.9 : 0 }));
+              readings.push(
+                reading({
+                  samples,
+                  elapsedS: samples ? 40 : 0,
+                  mountConfident,
+                  mount,
+                  forwardResolved,
+                  calibrationOk,
+                  quality,
+                  peakQuality: quality,
+                  has: samples > 0,
+                  upQuality: samples > 0 ? 0.9 : 0,
+                  upSettled: samples > 0 && quality > 0,
+                  // the per-topic sentence the monitor would publish for this mount
+                  mountMessage: mount === 'loose' ? 'Phone is moving in its mount — tighten it' : mount === 'suspect' ? 'Phone may be shifting in its mount — check it is tight' : '',
+                }),
+              );
             }
           }
         }
@@ -493,8 +617,14 @@ describe('nothing is claimed without evidence', () => {
     }
   }
 
-  it('covers the grid', () => {
-    expect(readings.length).toBe(3 * 5 * 3 * 2 * 2 * 5);
+  it('reaches every phase, so the assertions below have something to bite on', () => {
+    // `expect(readings.length).toBe(3 * 5 * 3 * 2 * 2 * 5)` used to sit here, which restates
+    // the loop bounds above it and cannot fail. What a coverage check is FOR is noticing when
+    // a grid has stopped reaching a branch, so it asserts the branches.
+    const phases = new Set(readings.map(phaseOf));
+    expect([...phases].sort()).toEqual(['blocked', 'levelling', 'ready', 'seeking', 'starting', 'unsteady']);
+    expect(new Set(readings.map(mountVerdict))).toEqual(new Set(['unknown', 'rigid', 'suspect', 'loose']));
+    expect(new Set(readings.flatMap((r) => lightsOf(r).map((l) => l.state)))).toEqual(new Set(['on', 'working', 'warn', 'bad']));
   });
 
   it('never ticks a step, or says READY, without a rigid verdict', () => {
@@ -517,10 +647,13 @@ describe('nothing is claimed without evidence', () => {
   it('never paints a light red for something the engine has not found', () => {
     for (const r of readings) {
       for (const l of lightsOf(r)) {
-        if (l.state !== 'bad') continue;
-        // the only red light is the mount, and only on a delivered 'loose' verdict
-        expect(l.key).toBe('mount');
-        expect(mountVerdict(r)).toBe('loose');
+        if (l.state === 'bad') {
+          // the only red light is the mount, and only on a delivered 'loose' verdict
+          expect(l.key).toBe('mount');
+          expect(mountVerdict(r)).toBe('loose');
+        }
+        // gold is for a verdict too — never for an absence of one
+        if (l.state === 'warn') expect([l.key, mountVerdict(r)]).toEqual(['mount', 'suspect']);
       }
     }
   });
@@ -541,9 +674,25 @@ describe('nothing is claimed without evidence', () => {
       expect(h.because.length).toBeGreaterThan(0);
       const l = leaveOf(r);
       expect(l.label.length).toBeGreaterThan(0);
-      expect(l.note.length).toBeGreaterThan(0);
-      // only the finished state gets the ember slab
-      expect(l.primary).toBe(p === 'ready');
+      // `expect(l.note.length).toBeGreaterThan(0)` used to be the whole of this: proof that a
+      // string existed, on a function whose entire contract is that the string is TRUE in this
+      // phase. Every branch's claim is now checked against the state it is claimed about.
+      const mount = mountVerdict(r);
+      if (p === 'ready') {
+        expect(l.note).toBe(`Best so far ${Math.round(r.peakQuality * 100)}%. It moves both ways as you drive — past the bar is what counts.`);
+      } else if (p === 'blocked') {
+        expect(mount).toBe('loose');
+        expect(l.note).toMatch(/nothing in it is scored/);
+      } else if (p === 'unsteady' && mount === 'suspect') {
+        expect(l.note).toMatch(/part of every angle is the cradle/);
+      } else {
+        // nothing else may name a cradle, a lost run, or a number it is not showing
+        expect(l.note).not.toMatch(/cradle|nothing in it is scored|Best so far/);
+      }
+      // and no note in any phase promises the number will get better
+      expect(l.note).not.toMatch(/sharpen|keeps? improving|never climbs|as sharp as it gets|peaks seconds/i);
+      // the slab is the action, and it is withheld only where the screen has a better offer
+      expect(l.primary).toBe(!(p === 'blocked' || (p === 'unsteady' && mount === 'suspect')));
     }
   });
 
@@ -554,6 +703,153 @@ describe('nothing is claimed without evidence', () => {
       if (ticked) expect(mountLight.detail).toBe('Rigid');
       if (mountLight.detail === 'Listening') expect(ticked).toBe(false);
       if (phaseOf(r) === 'ready') expect(qualityBand(r).color).not.toBe('red');
+    }
+  });
+});
+
+/**
+ * DRIVEN BY THE ENGINE, not by a fixture.
+ *
+ * Everything above hands `model.ts` a `CalibrationReading` somebody typed. That is how the
+ * third severity-1 survived a 559-line suite: the fixture for "a shaking mount whose headline
+ * is about something else" carried `message: 'Mount looks solid'`, a sentence
+ * `IntegrityMonitor` cannot produce on any input, and the test asserted only the title — so
+ * the suite was green while every mount-titled row on the screen printed a forward-axis
+ * sentence, on 105,439 of 105,439 caution frames.
+ *
+ * These readings come out of a real `MountCalibrator` + `IntegrityMonitor` fed a simulated
+ * recording, with every field filled exactly as `useCalibration.publish` fills it. Five
+ * recordings reach every branch this screen has; the first test asserts that they do, so a
+ * branch that stops being exercised fails here rather than quietly going untested.
+ */
+describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
+  const RIGID = replayReadings({ track: 'harbor', mount: 'portrait-vent', seed: 1 });
+  const FLAT_RUN = replayReadings({ track: 'touge', mount: 'flat-console', seed: 2 });
+  // looseness 0.2, not 0.25: at 0.25 the confidence itself falls under the engine's bar, so the
+  // phase is `seeking` and the `unsteady` branch never runs. 0.2 is the band
+  // `docs/ARCHITECTURE.md` names — scorable, and inflated by sway that nothing else flags.
+  const SHAKING = replayReadings({ track: 'touge', mount: 'portrait-vent', seed: 3, looseness: 0.2 });
+  const HELD = replayReadings({ track: 'harbor', mount: 'portrait-vent', seed: 1, looseness: 1 });
+  const DROPOUTS = replayReadings({ track: 'harbor', mount: 'portrait-vent', seed: 2, dropouts: true });
+  const ALL: Frame[] = [...RIGID, ...FLAT_RUN, ...SHAKING, ...HELD, ...DROPOUTS];
+
+  /** Every sentence `IntegrityMonitor` can publish about a mount, and nothing else. */
+  const MOUNT_SENTENCES = new Set([
+    'Phone looks hand-held \u2014 clip it into a rigid mount to score drifts',
+    'Phone is moving in its mount \u2014 tighten it',
+    'Phone may be shifting in its mount \u2014 check it is tight',
+  ]);
+
+  it('reaches every phase, every mount verdict and every light state', () => {
+    const phases = new Set(ALL.map((f) => phaseOf(f.reading)));
+    // `starting` is the state before the first sample, which a replay by definition never
+    // publishes; `IDLE_READING` covers it above. `failed` needs a sensor that will not open.
+    for (const p of ['levelling', 'seeking', 'ready', 'unsteady', 'blocked'] as CalibrationPhase[]) {
+      expect(`${p}: ${phases.has(p)}`).toBe(`${p}: true`);
+    }
+    expect(new Set(ALL.map((f) => mountVerdict(f.reading)))).toEqual(new Set(['unknown', 'rigid', 'suspect', 'loose']));
+    expect(new Set(ALL.flatMap((f) => lightsOf(f.reading).map((l) => l.state)))).toEqual(new Set(['on', 'working', 'warn', 'bad']));
+    // and a GPS row really does appear, which is what the dropout recording is for
+    expect(DROPOUTS.some((f) => cautionsOf(f.reading).some((c) => /GPS/.test(c.title)))).toBe(true);
+  });
+
+  it('never puts a sentence about something else under a heading about the mount', () => {
+    // THE CLASS. Not "the caution is right on this fixture" — every frame of every recording,
+    // for every row this screen heads with the mount.
+    let checked = 0;
+    for (const f of ALL) {
+      const h = headlineOf(f.reading);
+      if (h.kicker === 'Mount' && h.title !== 'Still listening') {
+        expect(`${h.title} / ${h.because}`).toBe(`${h.title} / ${f.reading.mountMessage}`);
+        expect(MOUNT_SENTENCES.has(h.because)).toBe(true);
+        checked++;
+      }
+      for (const c of cautionsOf(f.reading)) {
+        if (!/mount/i.test(c.title)) continue;
+        expect(MOUNT_SENTENCES.has(c.body)).toBe(true);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(1000);
+  });
+
+  it('never puts a mount sentence under a heading about GPS', () => {
+    let checked = 0;
+    for (const f of ALL) {
+      for (const c of cautionsOf(f.reading)) {
+        if (!/GPS/.test(c.title)) continue;
+        expect(c.body).toBe(f.reading.gpsMessage);
+        expect(MOUNT_SENTENCES.has(c.body)).toBe(false);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it('says nothing unsteady about a mount the simulator bolted down', () => {
+    // The 4 s warm-up was shorter than the artefact it was sized to hide: 30 of 48 rigid runs
+    // still read `suspect` past it, to 4.81 s, so a bolted phone got the gold banner the guard
+    // existed to prevent. The artefact is fixed in `MountCalibrator` now, and this asserts the
+    // consequence rather than the guard: on a rigid recording nothing ever says otherwise.
+    for (const f of [...RIGID, ...FLAT_RUN]) {
+      expect(`${f.t.toFixed(2)}s ${mountVerdict(f.reading)}`).not.toMatch(/suspect|loose/);
+      expect(`${f.t.toFixed(2)}s ${headlineOf(f.reading).title}`).not.toMatch(/shaking|Loose|Hand-held/);
+      expect(lightsOf(f.reading)[2].state).not.toBe('warn');
+    }
+  });
+
+  it('is READY only with the vertical settled, so the light cannot contradict the headline', () => {
+    // `SETTLED_UP = 0.6` was the last threshold this screen owned on an engine quantity, and
+    // it disagreed with the screen's own headline on 72–100 % of READY frames at looseness
+    // 0.1–0.15, because `upQuality` is age × accelerometer fit and a rattling cradle spoils
+    // the fit. `upSettled` asks only the question the light asks.
+    let ready = 0;
+    for (const f of [...RIGID, ...SHAKING, ...DROPOUTS, ...replayReadings({ track: 'harbor', mount: 'landscape-dash', seed: 4, looseness: 0.1 })]) {
+      if (phaseOf(f.reading) !== 'ready') continue;
+      ready++;
+      expect(`${f.t.toFixed(2)}s ${lightsOf(f.reading)[0].detail}`).toBe(`${f.t.toFixed(2)}s Settled`);
+    }
+    expect(ready).toBeGreaterThan(100);
+  });
+
+  it('tells the truth about the number on every frame it is read, not on the last one', () => {
+    // The previous sentence was measured by comparing FINAL to PEAK and then read at FIRST
+    // READY — a sound measurement answering a different question. This asserts the claim where
+    // it is made: on each READY frame the note's number is the best the calibration has
+    // actually reached by that instant.
+    let total = 0;
+    for (const run of [RIGID, FLAT_RUN, DROPOUTS]) {
+      let best = 0;
+      let readyFrames = 0;
+      for (const f of run) {
+        if (f.reading.quality > best) best = f.reading.quality;
+        if (phaseOf(f.reading) !== 'ready') continue;
+        readyFrames++;
+        const claimed = leaveOf(f.reading).note.match(/^Best so far (\d+)%/);
+        expect(`${f.t.toFixed(2)}s ${claimed?.[1]}`).toBe(`${f.t.toFixed(2)}s ${Math.round(best * 100)}`);
+      }
+      total += readyFrames;
+    }
+    // and the number really does move under the sentence: the run that motivated this climbs
+    // +0.209 after its first READY frame, which is why no absolute belongs in it.
+    expect(total).toBeGreaterThan(1000);
+  });
+
+  it('agrees with itself on every frame of every recording', () => {
+    for (const f of ALL) {
+      const r = f.reading;
+      const where = `${f.t.toFixed(2)}s`;
+      const phase = phaseOf(r);
+      const mount = mountVerdict(r);
+      // a tick is a verdict
+      if (stepsOf(r)[0].state === 'done') expect(`${where} ${mount}`).toBe(`${where} rigid`);
+      // READY is the engine's own two conditions plus a rigid mount
+      if (phase === 'ready') expect(`${where} ${r.calibrationOk} ${r.forwardResolved} ${mount}`).toBe(`${where} true true rigid`);
+      // the headline, the band and the way out never describe three different mounts
+      if (mount === 'suspect' && r.forwardResolved) expect(`${where} ${qualityBand(r).color}`).toBe(`${where} gold`);
+      if (phase === 'blocked') expect(`${where} ${leaveOf(r).primary}`).toBe(`${where} false`);
+      // every way-out note fits the landscape rail
+      expect(`${where} ${leaveOf(r).note.length <= 90}`).toBe(`${where} true`);
     }
   });
 });
