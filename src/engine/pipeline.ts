@@ -101,10 +101,18 @@ export interface LiveFrame {
      *
      * IT GUARANTEES SOMETHING, and that is the whole point of it: on a frame with
      * `counting: false` the scorer paid nothing, so `score.total` cannot have gone UP and the
-     * frame's callouts are all worth 0. `honesty.test.ts` asserts exactly that over the whole
-     * looseness sweep. It used to be `plausible && state.valid` computed HERE — what the
-     * scorer was told, not what it did — and the scorer meanwhile paid 4 925 points of callout
-     * bonus on a run every frame of which said `counting: false`.
+     * frame's callouts are all worth 0. `honesty.test.ts` asserts exactly that PER FRAME over
+     * the partially-believed band, which is where the guarantee has twice been broken — the
+     * all-or-nothing ends cannot show it. It used to be `plausible && state.valid` computed
+     * HERE — what the scorer was told, not what it did — and the scorer meanwhile paid 4 925
+     * points of callout bonus on a run every frame of which said `counting: false`.
+     *
+     * The two paths that broke it afterwards are both PAYMENTS MADE BETWEEN SAMPLES, which is
+     * the shape to look for next time: CLEAN LAP, decided when a lap closes rather than per
+     * sample (1 725 points at looseness 0 on the harbor fixture), and the end-of-drift callouts
+     * `onDriftCompleted` banks after this method has already built its frame (PERFECT EXIT +45
+     * at harbor/2/0.1, t = 5.18 s). Both now settle on a frame the scorer pays on, or not at
+     * all — see `LiveScorer.onLapCompleted` and the `pending.unpriced` drain in `LiveScorer.push`.
      *
      * A display that wants to say "NOT SCORING" must read THIS, never guess from `integrity`:
      * a HUD that inferred it from `gps: 'none'` announced "NO FIX — NOT SCORING" through
