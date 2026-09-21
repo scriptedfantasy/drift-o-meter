@@ -523,46 +523,54 @@ export interface Leave {
  *    runs ever reached the engine's bar: final confidence 0.000–0.060, the forward axis
  *    unresolved in 23 of 24. This is the ONE state where leaving costs the whole run.
  *
- * It switches on the MOUNT VERDICT as well as the phase, because `unsteady` holds two states:
- * the monitor has said `suspect`, or its cues are still filling. Switching on the phase alone
- * printed "It scores, but part of every angle is the cradle" on the same frame whose headline
- * correctly said "Still listening" — the screen naming a cradle the engine had not judged,
- * which is the one class this file exists to keep out.
+ * It switches on the MOUNT VERDICT as well as the phase, and both halves of that were bugs.
+ * Switching on the phase alone printed "It scores, but part of every angle is the cradle" on
+ * the same frame whose headline correctly said "Still listening" — the screen naming a cradle
+ * the engine had not judged. And the reassurance was measured on RIGID runs only: on a mount
+ * the monitor has called `suspect` but which has not yet cleared the bar, the screen went on
+ * promising that "the run calibrates itself before the first corner" for 54,289 frames across
+ * 31 measured runs, of which only 3 ever reached READY (final confidence 0.130–0.352 against
+ * a bar of 0.300). So `suspect` is answered once, before the phase, and what it costs depends
+ * on whether the engine will believe the run yet.
  */
 export function leaveOf(r: CalibrationReading): Leave {
   const phase = phaseOf(r);
-  switch (phase) {
-    case 'ready':
-      return {
-        label: 'Drive',
-        primary: true,
-        note: `Best so far ${Math.round(Math.max(0, Math.min(1, r.peakQuality)) * 100)}%. It moves both ways as you drive — past the bar is what counts.`,
-      };
-    case 'blocked':
-      return {
-        label: 'Drive without a score',
-        primary: false,
-        note: 'Leave now and nothing in it is scored: a moving phone never reaches the judge’s bar.',
-      };
-    case 'unsteady':
-      return mountVerdict(r) === 'suspect'
-        ? {
-            label: 'Drive anyway',
-            primary: false,
-            note: 'It scores, but part of every angle is the cradle. Re-clip it and it is worth more.',
-          }
-        : {
-            label: 'Drive',
-            primary: true,
-            note: 'Past the bar already — the sway cues are still filling, and driving is what fills them.',
-          };
-    default:
-      return {
-        label: 'Drive',
-        primary: true,
-        note: 'You need not sit here: the run calibrates itself before the first corner.',
-      };
+  const mount = mountVerdict(r);
+  if (phase === 'ready') {
+    return {
+      label: 'Drive',
+      primary: true,
+      note: `Best so far ${Math.round(Math.max(0, Math.min(1, r.peakQuality)) * 100)}%. It moves both ways as you drive — past the bar is what counts.`,
+    };
   }
+  if (phase === 'blocked') {
+    return {
+      label: 'Drive without a score',
+      primary: false,
+      note: 'Leave now and nothing in it is scored: a moving phone never reaches the judge’s bar.',
+    };
+  }
+  if (mount === 'suspect') {
+    return {
+      label: 'Drive anyway',
+      primary: false,
+      note: r.calibrationOk
+        ? 'It scores, but part of every angle is the cradle. Re-clip it and it is worth more.'
+        : 'The cradle is what holds it under the bar. Re-clip it — driving on rarely clears it.',
+    };
+  }
+  if (phase === 'unsteady') {
+    return {
+      label: 'Drive',
+      primary: true,
+      note: 'Past the bar already — the sway cues are still filling, and driving is what fills them.',
+    };
+  }
+  return {
+    label: 'Drive',
+    primary: true,
+    note: 'You need not sit here: the run calibrates itself before the first corner.',
+  };
 }
 
 /** A caution that is true but not fatal — the phone is flat, or it has been knocked. */

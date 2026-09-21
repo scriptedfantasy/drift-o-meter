@@ -20,9 +20,8 @@ import { useSettings } from '@/platform';
 import { AppText, Body, Button, colors, fontFamilies, formatDuration, gradeColors, gutter, Micro, Panel, radii, space } from '@/ui';
 import { useDriftFeel } from '@/ui/audio';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
-import { CalloutStack, ScoreBanner } from '@/ui/hud/CalloutStack';
+import { CalloutStack, CALLOUT_GAP, ScoreBanner } from '@/ui/hud/CalloutStack';
 import { DriftStrip, EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
-import { readIntegrity } from '@/ui/hud/integrityView';
 import MiniMapView from '@/ui/hud/MiniMapView';
 import ScorePanel from '@/ui/hud/ScorePanel';
 import { useHudSignals } from '@/ui/hud/signals';
@@ -74,11 +73,29 @@ export default function DriveScreen() {
   const map = landscape ? { w: 168, h: 116 } : { w: 124, h: Math.max(148, Math.min(280, stageH)) };
 
   // Landscape gives the callout stack whatever the right column has left, and an integrity
-  // banner takes most of it: with MOUNT SHAKING on screen the third chip was cut across its
-  // middle by the clip that keeps the stack inside its column, which reads as a broken chip
-  // rather than as a full stack. One chip always fits under a banner, three fit without one.
-  const tier = readIntegrity(run.snapshot).tier;
-  const landscapeEvents = tier === 'ok' ? run.events : run.events.slice(0, 1);
+  // banner takes most of it: with MOUNT SHAKING on screen a chip was cut across its middle by
+  // the clip that keeps the stack inside its column, which reads as a broken chip rather than as
+  // a full stack.
+  //
+  // COUNTED, NOT GUESSED, and BOTH numbers are measured. The rule here used to be "one chip fits
+  // under a banner, three fit without one", which was true of the banner it was measured against
+  // and false of a three-line one: `drive-loose-peak-landscape` showed EXTREME ANGLE sliced in
+  // half under a wrapped FINDING FORWARD. So the column measures its own height, the chip
+  // measures its own — a chip's height is a font's line box, not anything this file can compute —
+  // and the column shows as many WHOLE chips as those two allow. None, if the banner took the lot.
+  const [calloutBox, setCalloutBox] = useState(0);
+  const [chipPitch, setChipPitch] = useState(LANDSCAPE_CHIP_PITCH_GUESS);
+  const onCalloutsLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    setCalloutBox((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+  }, []);
+  const onChipPitch = useCallback((pitch: number) => {
+    setChipPitch((prev) => (Math.abs(prev - pitch) < 0.5 ? prev : pitch));
+  }, []);
+  // the last chip carries no gap under it, so the box holds `n` chips when
+  // n·pitch − gap ≤ box, i.e. n ≤ (box + gap) / pitch
+  const calloutSlots = Math.max(0, Math.floor((calloutBox - CALLOUT_COLUMN_PAD + CALLOUT_GAP) / Math.max(1, chipPitch)));
+  const landscapeEvents = run.events.slice(0, calloutSlots);
 
   return (
     <View style={styles.root} testID="screen-drive">
@@ -104,8 +121,8 @@ export default function DriveScreen() {
 
                 <View style={styles.rightColumn}>
                   {live ? <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" /> : null}
-                  <View style={styles.calloutsLandscape} pointerEvents="none">
-                    <CalloutStack events={landscapeEvents} fromRight size={22} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
+                  <View style={styles.calloutsLandscape} pointerEvents="none" onLayout={onCalloutsLayout}>
+                    <CalloutStack events={landscapeEvents} fromRight size={22} muted={run.snapshot.trust <= 0} onChipPitch={onChipPitch} testID="hud-callouts" />
                   </View>
                   {live ? (
                     <>
@@ -291,6 +308,15 @@ function SavingOverlay() {
 
 /** Height reserved for the docked STOP control. */
 const STOP_DOCK_H = 54;
+/**
+ * What one landscape chip is assumed to cost — its height plus the gap under it — until a real
+ * one has laid out and reported the truth (`CalloutStack.onChipPitch`). Only the very first
+ * frame of a run ever uses it, and it is deliberately on the generous side, because guessing
+ * high shows one chip too few for a frame and guessing low cuts one in half.
+ */
+const LANDSCAPE_CHIP_PITCH_GUESS = 44;
+/** `calloutsLandscape`'s own `paddingTop`, which is not room for a chip. */
+const CALLOUT_COLUMN_PAD = space[2];
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },

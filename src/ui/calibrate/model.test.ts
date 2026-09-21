@@ -441,6 +441,24 @@ describe('leaveOf', () => {
     expect(leaveOf(CRADLE).primary).toBe(false);
   });
 
+  it('does not promise a shaking mount will calibrate itself, because it usually does not', () => {
+    // The reassurance was measured on RIGID runs. On a mount the monitor calls `suspect` and
+    // which has not cleared the engine's bar, it went on saying "the run calibrates itself
+    // before the first corner" for 54,289 frames across 31 measured runs — 3 of which ever
+    // reached READY.
+    const shakingUnderTheBar = reading({
+      mount: 'suspect', quality: 0.29, peakQuality: 0.3, calibrationOk: false, forwardResolved: false,
+      message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
+      mountMessage: 'Phone may be shifting in its mount — check it is tight',
+    });
+    expect(phaseOf(shakingUnderTheBar)).toBe('seeking');
+    expect(mountVerdict(shakingUnderTheBar)).toBe('suspect');
+    const l = leaveOf(shakingUnderTheBar);
+    expect(l.note).not.toMatch(/calibrates itself/);
+    expect(l.note).toMatch(/holds it under the bar/);
+    expect(l).toMatchObject({ primary: false, label: 'Drive anyway' });
+  });
+
   it('does not name a cradle the engine has not judged', () => {
     // `leaveOf` switched on the phase alone, so an `unsteady` phase whose mount verdict is
     // still `unknown` printed "part of every angle is the cradle" on the same frame whose
@@ -683,16 +701,20 @@ describe('nothing is claimed without evidence', () => {
       } else if (p === 'blocked') {
         expect(mount).toBe('loose');
         expect(l.note).toMatch(/nothing in it is scored/);
-      } else if (p === 'unsteady' && mount === 'suspect') {
-        expect(l.note).toMatch(/part of every angle is the cradle/);
+      } else if (mount === 'suspect') {
+        // a cradle the engine HAS judged, and what it costs depends on the engine's own verdict
+        expect(l.note).toMatch(/cradle/);
+        expect(l.note).toMatch(r.calibrationOk ? /part of every angle/ : /holds it under the bar/);
       } else {
         // nothing else may name a cradle, a lost run, or a number it is not showing
         expect(l.note).not.toMatch(/cradle|nothing in it is scored|Best so far/);
+        // …and only a mount the engine has not objected to gets the self-calibration promise
+        if (/calibrates itself/.test(l.note)) expect(mount).not.toBe('suspect');
       }
       // and no note in any phase promises the number will get better
       expect(l.note).not.toMatch(/sharpen|keeps? improving|never climbs|as sharp as it gets|peaks seconds/i);
       // the slab is the action, and it is withheld only where the screen has a better offer
-      expect(l.primary).toBe(!(p === 'blocked' || (p === 'unsteady' && mount === 'suspect')));
+      expect(l.primary).toBe(!(p === 'blocked' || mount === 'suspect'));
     }
   });
 
@@ -847,7 +869,9 @@ describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
       if (phase === 'ready') expect(`${where} ${r.calibrationOk} ${r.forwardResolved} ${mount}`).toBe(`${where} true true rigid`);
       // the headline, the band and the way out never describe three different mounts
       if (mount === 'suspect' && r.forwardResolved) expect(`${where} ${qualityBand(r).color}`).toBe(`${where} gold`);
-      if (phase === 'blocked') expect(`${where} ${leaveOf(r).primary}`).toBe(`${where} false`);
+      if (phase === 'blocked' || mount === 'suspect') expect(`${where} ${leaveOf(r).primary}`).toBe(`${where} false`);
+      // the self-calibration promise is measured on rigid runs, so it is only made about them
+      if (/calibrates itself/.test(leaveOf(r).note)) expect(`${where} ${mount}`).not.toMatch(/suspect|loose/);
       // every way-out note fits the landscape rail
       expect(`${where} ${leaveOf(r).note.length <= 90}`).toBe(`${where} true`);
     }

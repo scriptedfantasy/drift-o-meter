@@ -9,8 +9,8 @@
  * `ScoreBanner` is the chain verdict: "BANKED +1,240" rising over 900 ms in green, or
  * "CHAIN LOST −2,345" in red.
  */
-import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { AppText } from '../Text';
@@ -27,20 +27,43 @@ export interface CalloutStackProps {
   size?: number;
   /** Drawn in grey: the engine does not stand behind the reading these were awarded for. */
   muted?: boolean;
+  /**
+   * Reports the RENDERED height of one chip, plus the gap under it, the first time a chip lays
+   * out at this size. The landscape column uses it to work out how many whole chips it has room
+   * for — a number that has to be measured, because a chip's height is a font's line box and not
+   * anything this file can compute. See `src/app/drive.tsx`.
+   */
+  onChipPitch?: (pitch: number) => void;
   testID?: string;
 }
 
-export function CalloutStack({ events, fromRight = false, size = 26, muted = false, testID }: CalloutStackProps) {
+export const CALLOUT_GAP = space[2];
+
+export function CalloutStack({ events, fromRight = false, size = 26, muted = false, onChipPitch, testID }: CalloutStackProps) {
   return (
     <View style={[styles.stack, fromRight && styles.stackRight]} pointerEvents="none" testID={testID}>
       {events.map((e, i) => (
-        <Callout key={e.key} event={e} depth={i} fromRight={fromRight} size={size} muted={muted} />
+        <Callout key={e.key} event={e} depth={i} fromRight={fromRight} size={size} muted={muted} onChipPitch={i === 0 ? onChipPitch : undefined} />
       ))}
     </View>
   );
 }
 
-function Callout({ event, depth, fromRight, size, muted }: { event: HudEvent; depth: number; fromRight: boolean; size: number; muted: boolean }) {
+function Callout({
+  event,
+  depth,
+  fromRight,
+  size,
+  muted,
+  onChipPitch,
+}: {
+  event: HudEvent;
+  depth: number;
+  fromRight: boolean;
+  size: number;
+  muted: boolean;
+  onChipPitch?: (pitch: number) => void;
+}) {
   const tone = muted ? colors.muted : TONES[event.tone];
   const enter = useSharedValue(0);
   const depthV = useSharedValue(depth);
@@ -68,8 +91,15 @@ function Callout({ event, depth, fromRight, size, muted }: { event: HudEvent; de
     };
   });
 
+  const report = useCallback(
+    (e: LayoutChangeEvent) => {
+      if (onChipPitch) onChipPitch(e.nativeEvent.layout.height + CALLOUT_GAP);
+    },
+    [onChipPitch],
+  );
+
   return (
-    <Animated.View style={[styles.callout, fromRight && styles.calloutRight, { backgroundColor: alpha(tone, 0.12) }, style]}>
+    <Animated.View style={[styles.callout, fromRight && styles.calloutRight, { backgroundColor: alpha(tone, 0.12) }, style]} onLayout={onChipPitch ? report : undefined}>
       <View style={[styles.bar, { backgroundColor: tone }]} />
       {/* the label yields first if a chip ever does run out of room; the points never do, so a
           "+N" can never be cut in half by the clip that keeps the slam inside its column */}

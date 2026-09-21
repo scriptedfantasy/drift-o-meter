@@ -55,10 +55,12 @@ export function Lights({ lights, compact = false, style }: { lights: readonly Li
  * cannot act on it, and those two lines were part of what pushed the call to action off the
  * bottom of the frame on the commonest route into this screen (`?why=rejected`).
  *
- * `compact` extends that rule to a DONE step, and holds the rest to one line. 393 px of
- * landscape has to carry the instrument, the verdict, a caution banner, the three lights and
- * the way out before it gets here; a reason the driver has already acted on, wrapped onto a
- * second line, is the 57 px that decides whether the last step clears the fold.
+ * `compact` extends that rule to a DONE step. 393 px of landscape has to carry the instrument,
+ * the verdict, a caution banner, the three lights and the way out before it gets here, and a
+ * reason for something the driver has already done is the 38 px that decides whether the last
+ * step clears the fold. The reason on the step they CAN act on keeps both its lines: capping it
+ * to one turned "nothing else can fix the axis" into "nothing else can fix th…", and an
+ * ellipsis mid-clause is worse than a row that ends at the fold.
  */
 export function Steps({ steps, compact = false, style }: { steps: readonly Step[]; compact?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
@@ -78,7 +80,7 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
               <AppText variant="bodyStrong" color={done ? colors.muted : colors.text} style={done ? styles.stepDone : undefined}>
                 {s.title}
               </AppText>
-              {s.state === 'todo' || (compact && done) ? null : <Small numberOfLines={compact ? 1 : 2}>{s.because}</Small>}
+              {s.state === 'todo' || (compact && done) ? null : <Small numberOfLines={2}>{s.because}</Small>}
               {active && s.progress > 0.02 && s.progress < 1 ? (
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${Math.round(s.progress * 100)}%` }]} />

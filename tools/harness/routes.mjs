@@ -174,7 +174,10 @@ export const defaultRoutes = [
   // loud, and could never have failed on the gauge. A floor cannot certify "muted". This is the
   // ceiling that can, measured inside the gauge's own box.
   { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120)] },
-  // The same run 0.2 s after the slide became a spin: CHAIN LOST, the chain bar emptied.
+  // The same run 0.2 s after the slide became a spin. There is deliberately NO "CHAIN LOST −N"
+  // banner on it: nothing was ever paid for this run, so there is nothing to lose, and a banner
+  // for nothing is a lie in the other direction. What the frame does show is the same muted
+  // dial, the same unpriced chips and the same NOT SCORING note as `drive-loose`.
   { name: 'drive-lost', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // A REAL GPS dropout (`dropouts=1`), 1.2 s into the second gap: GPS LOST is severe here
   // because a fix HAS been held before — "no fix yet" at the start of a run is not an alarm.
