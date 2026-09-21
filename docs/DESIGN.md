@@ -124,7 +124,10 @@ drive", put the loudest button out of reach and then claimed a step nobody had t
 is the action in every phase a parked driver can be in, so driving gets the slab and the label
 is DRIVE. The two states where the screen has something better to offer than leaving keep the
 quiet button: a loose mount (leaving costs the whole run — 0 of 24 runs at looseness ≥ 0.5 ever
-reached the bar) and a shaking one (leaving costs part of every angle).
+reached the bar) and a shaking one. What a shaking one costs depends on whether the engine
+believes it yet: past the bar it costs part of every angle, and under the bar the cradle is what
+is holding it there — of 31 measured runs that read `suspect` while still under the bar, 3
+reached READY.
 
 A CORRECTION, LEFT IN PLACE AS A WARNING. This doc previously said DONE at quality ≥ 0.8.
 It was then changed on the strength of a measurement that the ceiling is 0.74 — which a

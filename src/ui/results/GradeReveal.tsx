@@ -85,13 +85,13 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
   // wide: everything between the two bars has to fit BETWEEN them — letter, rule, word, rating
   // and kicker — so the letter takes a little over half the height and the meta closes up under it
   const letterSize = wide ? Math.min(width * 0.28, height * 0.54) : Math.min(width * 0.62, height * 0.34);
-  const burstSize = wide ? Math.min(width * 0.78, height * 1.7) : Math.min(width * 1.5, height * 0.9);
+  const burstSize = (wide ? Math.min(width * 0.78, height * 1.7) : Math.min(width * 1.5, height * 0.9)) * 0.5;
   const barH = Math.round(height * (wide ? 0.13 : 0.18));
   // What the letterbox leaves open. The burst's canvas is cropped to it — a blurred draw costs
   // its pixels whether or not they are on screen, and at 852 x 393 a square 664 dp canvas spent
   // 41 % of every blur behind the bars.
   const stageH = Math.max(120, height - barH * 2);
-  const burstH = Math.min(burstSize, stageH);
+  const burstH = Math.min(burstSize, stageH) * 0.5;
 
   // The grade cue, scheduled for the instant the letter lands rather than for the instant this
   // effect runs: the impact is at sample 0 of the clip, so SLAM is the cue time. It is NOT tied to
