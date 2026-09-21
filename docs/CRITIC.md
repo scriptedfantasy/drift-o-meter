@@ -61,7 +61,15 @@ that the reported fix exists. Check for them explicitly.
     screen asserts something false, reproduce the underlying fact a second way. Say in the finding
     which of the two you verified. (The third timestamp WAS invented, so the finding was still
     worth making; being two-thirds wrong is not the same as being wrong.)
-12. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
+12. **A harness check measured at one moment can become a check ON the defect.** The
+    `replay-untrusted` route asserted `minEmber: 150` — proof that "something drew" — and it
+    passed at 240 ember pixels while the same run drew its entire lap in full ember on a frame
+    stamped NOT SCORED. The route was shot at t=17 s, before the car had slid; at t=46 s the
+    figure was 39,716. So a green check was quietly certifying the bug, and its comment described
+    the frame as "deliberately almost ember-free". When a route carries a pixel threshold, ask
+    what the number would be at a DIFFERENT moment of the same run, and whether the threshold is
+    still measuring what its comment claims.
+13. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
     on screen is itself a finding: `replay.test.ts` asserted the label `SAVED IT` for every spin,
     and the cumulative-score test ran only against a session whose total was by construction the
     sum of its parts, so neither could ever fail. Name those tests in your findings.
