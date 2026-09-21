@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SessionIndexEntry, SlideMark } from '../../platform';
-import { angleText, holdText, rowFootnote, runShapeText, slidesText } from './labels';
+import { angleText, holdText, rowFootnote, runShapeText, slidesText, speedText } from './labels';
 import { runStateColor, runStateOf } from './runState';
 
 function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
@@ -88,6 +88,9 @@ describe('the angle slot', () => {
 });
 
 describe('how long it was held', () => {
+  // `SessionIndexEntry.peakHeldS`, which is the engine's `timeAtAngleS` for the slide the angle
+  // came off — not the whole slide's length, which this printed while the index had nothing
+  // better and which claimed 27 s at 53° for a slide that was at 53° for four of them.
   it('keeps a tenth while the number is small and drops it once it is not', () => {
     expect(holdText(2.44)).toBe('2.4s');
     expect(holdText(12.4)).toBe('12s');
@@ -96,6 +99,20 @@ describe('how long it was held', () => {
   it('says nothing when nothing was held', () => {
     expect(holdText(0)).toBe('--');
     expect(holdText(Number.NaN)).toBe('--');
+  });
+});
+
+describe('the speed the slide was entered at', () => {
+  it('is whole km/h', () => {
+    expect(speedText(78)).toBe('78');
+    expect(speedText(71.4)).toBe('71');
+  });
+
+  it('is a dash at zero, never the figure 0', () => {
+    // Zero means the run named no slide at all — the three figures a row prints arrive together
+    // or not at all — and "0" under KM/H would be claiming the car was standing still.
+    expect(speedText(0)).toBe('--');
+    expect(speedText(Number.NaN)).toBe('--');
   });
 });
 

@@ -32,7 +32,6 @@
  */
 import { driverById, NO_DRIVER_LABEL, type Roster } from '../../platform/drivers';
 import type { SessionIndexEntry } from '../../platform';
-import { peakHold, sidewaysSeconds } from './runFacts';
 
 export const UNTRACKED = 'Unnamed road';
 
@@ -58,22 +57,18 @@ export interface DriverStanding {
   /** The biggest angle they have held, in degrees. 0 when they hold none. */
   peakDeg: number;
   /**
-   * How long the slide that reached it lasted. The tie-break, and the caption under the angle.
+   * Seconds that angle was HELD at a committed angle, and the speed the slide was entered at.
    *
-   * A slide length, NOT a time at that angle — see `PeakHold.slideS`. The caption says "slide"
-   * for that reason, and the day `SessionIndexEntry` carries the engine's `timeAtAngleS` it can
-   * say "held" and mean it.
-   */
-  slideS: number;
-  /**
-   * Seconds sideways across the runs the engine vouched for, spins included.
+   * Both come off the SAME slide as `peakDeg`: `summarizeSession` picks one slide in one pass
+   * and publishes all three, so a row printing them side by side is one sentence about one
+   * thing that happened. The garage used to derive the duration from the slide trace instead —
+   * the whole slide's length, which is not what "held" means, and which could come off a
+   * different slide than the angle whenever two peaks tied.
    *
-   * Gated on `trusted` like everything else on this board, because time sideways is a claim
-   * about SLIDING and the monitor did not believe the sliding on a run it threw out. The
-   * unassigned row's only run in the `night` set is the hand-held one, and this column read
-   * "1:19 sideways" beside an angle the same row refuses to state.
+   * Three figures or three zeros, never one figure and two gaps.
    */
-  sidewaysS: number;
+  heldS: number;
+  entryKmh: number;
   /** The run that holds the angle, for opening it. Empty when there is none. */
   id: string;
   /** When that run was driven, ms since epoch. */
@@ -97,16 +92,22 @@ interface Bucket {
  * holds no angle at all, and a row reading "0°, 1st" would be the board awarding a place for
  * failing to get sideways.
  */
-function bestRun(entries: readonly SessionIndexEntry[]): { entry: SessionIndexEntry; deg: number; slideS: number } | null {
-  let best: { entry: SessionIndexEntry; deg: number; slideS: number } | null = null;
+function bestRun(entries: readonly SessionIndexEntry[]): SessionIndexEntry | null {
+  let best: SessionIndexEntry | null = null;
   for (const entry of entries) {
     if (!entry.trusted) continue;
     const deg = entry.heldPeakDeg;
     if (!Number.isFinite(deg) || deg <= 0) continue;
-    // The angle is the index's own authoritative figure; the trace says how long the slide ran.
-    const slideS = peakHold(entry).slideS;
-    if (!best || deg > best.deg || (deg === best.deg && slideS > best.slideS) || (deg === best.deg && slideS === best.slideS && entry.startedAt > best.entry.startedAt)) {
-      best = { entry, deg, slideS };
+    // The same tie-break `summarizeSession` uses to pick the slide WITHIN a run, applied across
+    // a driver's runs: biggest angle, then the longer hold, then the newer night. Two identical
+    // peaks is usually the same corner twice, and the one they stayed in is the better of them.
+    if (
+      !best ||
+      deg > best.heldPeakDeg ||
+      (deg === best.heldPeakDeg && entry.peakHeldS > best.peakHeldS) ||
+      (deg === best.heldPeakDeg && entry.peakHeldS === best.peakHeldS && entry.startedAt > best.startedAt)
+    ) {
+      best = entry;
     }
   }
   return best;
@@ -140,11 +141,11 @@ export function driverStandings(entries: readonly SessionIndexEntry[], roster: R
       rank: 0,
       runs: bucket.entries.length,
       scored: bucket.entries.filter((e) => e.trusted).length,
-      peakDeg: best?.deg ?? 0,
-      slideS: best?.slideS ?? 0,
-      sidewaysS: bucket.entries.reduce((a, e) => a + (e.trusted ? sidewaysSeconds(e) : 0), 0),
-      id: best?.entry.id ?? '',
-      when: best?.entry.startedAt ?? 0,
+      peakDeg: best?.heldPeakDeg ?? 0,
+      heldS: best?.peakHeldS ?? 0,
+      entryKmh: best?.peakEntryKmh ?? 0,
+      id: best?.id ?? '',
+      when: best?.startedAt ?? 0,
       lastAt: bucket.entries.reduce((m, e) => Math.max(m, e.startedAt), 0),
       empty: best === null,
     });
@@ -153,7 +154,7 @@ export function driverStandings(entries: readonly SessionIndexEntry[], roster: R
   rows.sort((a, b) => {
     if (a.empty !== b.empty) return a.empty ? 1 : -1;
     if (a.empty) return b.lastAt - a.lastAt;
-    return b.peakDeg - a.peakDeg || b.slideS - a.slideS || b.when - a.when;
+    return b.peakDeg - a.peakDeg || b.heldS - a.heldS || b.when - a.when;
   });
   let place = 0;
   for (const row of rows) row.rank = row.empty ? 0 : ++place;
@@ -210,7 +211,7 @@ export function lastRunStanding(standings: readonly DriverStanding[], last: Sess
   const line = onlyScoredRun
     ? `First judged run in here — ${Math.round(row.peakDeg)}° is the bar to beat`
     : isBest
-      ? `New biggest angle — ${Math.round(row.peakDeg)}°${row.slideS > 0 ? `, in a ${row.slideS.toFixed(1)} s slide` : ''}`
+      ? `New biggest angle — ${Math.round(row.peakDeg)}°${row.heldS > 0 ? `, held ${row.heldS.toFixed(1)} s` : ''}`
       : behindDeg === 0
         ? 'Level with the biggest angle on this board'
         : `${behindDeg}° off the biggest angle on this board`;

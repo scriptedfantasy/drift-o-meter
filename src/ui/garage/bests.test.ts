@@ -40,8 +40,11 @@ function entry(over: Partial<SessionIndexEntry> & { id: string }): SessionIndexE
   return {
     name: `Run ${over.id}`,
     driverId: null,
-    peakHeldS: 0,
-    peakEntryKmh: 0,
+    // The three figures a board row prints come off ONE slide in the index, so they move
+    // together here by default — a fixture that set them independently would let a bug that
+    // mixes two slides through unnoticed. A run that held nothing reports all three as zero.
+    peakHeldS: heldPeakDeg > 0 ? 3 : 0,
+    peakEntryKmh: heldPeakDeg > 0 ? 70 : 0,
     startedAt: 1_000,
     durationS: 100,
     total: 10_000,
@@ -100,25 +103,41 @@ describe('the board', () => {
   });
 
   it('breaks a tie on the angle with how long it was held', () => {
-    // The definition of "best drift" is biggest angle, LONGEST HELD. Same 56° either side, so
-    // the only thing left to separate them is the slide that carried it: 8 s against 2 s.
+    // The definition of "best drift" is biggest angle, LONGEST HELD — the same rule
+    // `summarizeSession` uses to pick the slide inside one run, applied across a driver's runs.
     const standings = driverStandings(
       [
-        entry({ id: 'brief', driverId: LUKAS.id, heldPeakDeg: 56, slides: [slide(0, 0.02, 56)] }),
-        entry({ id: 'long', driverId: MARCO.id, heldPeakDeg: 56, slides: [slide(0, 0.08, 56)] }),
+        entry({ id: 'brief', driverId: LUKAS.id, heldPeakDeg: 56, peakHeldS: 2 }),
+        entry({ id: 'long', driverId: MARCO.id, heldPeakDeg: 56, peakHeldS: 8 }),
       ],
       roster([LUKAS, MARCO]),
     );
     expect(standings.map((s) => s.name)).toEqual(['Marco', 'Lukas']);
-    expect(row(standings, MARCO.id)?.slideS).toBeCloseTo(8, 6);
-    expect(row(standings, LUKAS.id)?.slideS).toBeCloseTo(2, 6);
+    expect(row(standings, MARCO.id)?.heldS).toBe(8);
+    expect(row(standings, LUKAS.id)?.heldS).toBe(2);
+  });
+
+  it('takes the angle, the hold and the speed off the one run, never three across two', () => {
+    // A row prints all three side by side and they read as one sentence, so they have to be one
+    // slide. The losing run here beats the winner on both of the other two figures; if either
+    // leaks through, the board is describing a corner nobody drove.
+    const standings = driverStandings(
+      [
+        entry({ id: 'longer-slower', driverId: LUKAS.id, startedAt: 1, heldPeakDeg: 47, peakHeldS: 9.9, peakEntryKmh: 99 }),
+        entry({ id: 'biggest', driverId: LUKAS.id, startedAt: 2, heldPeakDeg: 61, peakHeldS: 4.4, peakEntryKmh: 78 }),
+      ],
+      roster([LUKAS]),
+    );
+    const lukas = row(standings, LUKAS.id);
+    expect([lukas?.peakDeg, lukas?.heldS, lukas?.entryKmh]).toEqual([61, 4.4, 78]);
+    expect(lukas?.id).toBe('biggest');
   });
 
   it('takes the driver’s own best run when they have several, and the longer of two equals', () => {
     const standings = driverStandings(
       [
-        entry({ id: 'later', driverId: LUKAS.id, startedAt: 3, heldPeakDeg: 52, slides: [slide(0, 0.03, 52)] }),
-        entry({ id: 'longer', driverId: LUKAS.id, startedAt: 2, heldPeakDeg: 52, slides: [slide(0, 0.09, 52)] }),
+        entry({ id: 'later', driverId: LUKAS.id, startedAt: 3, heldPeakDeg: 52, peakHeldS: 3 }),
+        entry({ id: 'longer', driverId: LUKAS.id, startedAt: 2, heldPeakDeg: 52, peakHeldS: 9 }),
         entry({ id: 'smaller', driverId: LUKAS.id, startedAt: 1, heldPeakDeg: 47 }),
       ],
       roster([LUKAS]),
@@ -141,27 +160,27 @@ describe('the board', () => {
     const lukas = row(standings, LUKAS.id);
     expect(lukas?.empty).toBe(true);
     expect(lukas?.rank).toBe(0);
-    expect(lukas?.peakDeg).toBe(0);
-    // …and the run is still counted as a run, and its time sideways is still measured: the car
-    // WAS sideways, which is a fact about the clock rather than a claim about control.
+    // Three zeros, not one figure and two gaps: there is no slide to take any of them off.
+    expect([lukas?.peakDeg, lukas?.heldS, lukas?.entryKmh]).toEqual([0, 0, 0]);
+    // …and the run is still counted as a run.
     expect(lukas?.runs).toBe(1);
-    expect(lukas?.sidewaysS).toBeCloseTo(10, 6);
   });
 
-  it('claims no time sideways for a run the engine refused', () => {
-    // Time sideways is a claim about SLIDING, and the monitor did not believe the sliding. The
-    // unassigned row in the shipped `night` set holds exactly one run — the hand-held one — and
-    // this column read "1:19 sideways" next to an angle the same row prints as a dash.
+  it('takes no figure at all from a run the engine refused, not even the cold one', () => {
+    // The refused run wins on every raw number. None of the three may come off it: the speed is
+    // as much a claim about that slide as the angle is, and the slide is the thing the monitor
+    // did not believe.
     const standings = driverStandings(
       [
-        entry({ id: 'refused', driverId: LUKAS.id, trusted: false, slides: [slide(0, 0.6, 85)] }),
-        entry({ id: 'believed', driverId: LUKAS.id, heldPeakDeg: 44, slides: [slide(0, 0.1, 44)] }),
+        entry({ id: 'refused', driverId: LUKAS.id, startedAt: 2, trusted: false, heldPeakDeg: 85, peakHeldS: 9, peakEntryKmh: 120 }),
+        entry({ id: 'believed', driverId: LUKAS.id, startedAt: 1, heldPeakDeg: 44, peakHeldS: 2.5, peakEntryKmh: 66 }),
       ],
       roster([LUKAS]),
     );
-    expect(row(standings, LUKAS.id)?.runs).toBe(2);
-    // 10 s from the believed run, and not one of the refused run's 60.
-    expect(row(standings, LUKAS.id)?.sidewaysS).toBeCloseTo(10, 6);
+    const lukas = row(standings, LUKAS.id);
+    expect(lukas?.runs).toBe(2);
+    expect(lukas?.scored).toBe(1);
+    expect([lukas?.peakDeg, lukas?.heldS, lukas?.entryKmh]).toEqual([44, 2.5, 66]);
   });
 
   it('never lets a spin be the angle that ranks a driver', () => {
@@ -170,7 +189,7 @@ describe('the board', () => {
       roster([LUKAS]),
     );
     expect(row(standings, LUKAS.id)?.peakDeg).toBe(38);
-    expect(row(standings, LUKAS.id)?.slideS).toBeCloseTo(10, 6);
+    expect(row(standings, LUKAS.id)?.heldS).toBe(3);
   });
 });
 
@@ -279,11 +298,11 @@ describe('what the last run did to the board', () => {
 
   it('says so when the run just done is the driver’s biggest angle', () => {
     const old = entry({ id: 'old', driverId: LUKAS.id, startedAt: 1, heldPeakDeg: 56 });
-    const last = entry({ id: 'new', driverId: LUKAS.id, startedAt: 2, heldPeakDeg: 64, slides: [slide(0, 0.024, 64)] });
+    const last = entry({ id: 'new', driverId: LUKAS.id, startedAt: 2, heldPeakDeg: 64, peakHeldS: 2.4 });
     const standing = lastRunStanding(driverStandings([last, old], only), last, only);
     expect(standing?.isBest).toBe(true);
     expect(standing?.behindDeg).toBeNull();
-    expect(standing?.line).toBe('New biggest angle — 64°, in a 2.4 s slide');
+    expect(standing?.line).toBe('New biggest angle — 64°, held 2.4 s');
   });
 
   it('measures the gap in degrees when it took nothing', () => {
@@ -310,8 +329,8 @@ describe('what the last run did to the board', () => {
   it('measures an unassigned run against the unassigned board row', () => {
     // Same 60° either side, so the board keeps the one that held it longer — which is the
     // ranking rule, and which leaves the run just done level rather than ahead.
-    const old = entry({ id: 'old', driverId: null, startedAt: 1, heldPeakDeg: 60, slides: [slide(0, 0.12, 60)] });
-    const last = entry({ id: 'new', driverId: null, startedAt: 2, heldPeakDeg: 60, slides: [slide(0, 0.03, 60)] });
+    const old = entry({ id: 'old', driverId: null, startedAt: 1, heldPeakDeg: 60, peakHeldS: 12 });
+    const last = entry({ id: 'new', driverId: null, startedAt: 2, heldPeakDeg: 60, peakHeldS: 3 });
     const standing = lastRunStanding(driverStandings([last, old], only), last, only);
     expect(standing?.line).toBe('Level with the biggest angle on this board');
   });

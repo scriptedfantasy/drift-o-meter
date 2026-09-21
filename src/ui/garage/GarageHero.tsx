@@ -12,10 +12,11 @@
  * a bundle. The `360°` tag says which of the two this is, so the screen does not quietly
  * promise a turntable it has not got.
  *
- * The geometry is measured rather than guessed: the image is 1.144 × the hero's width and its
- * centre sits at 48 % of the hero's height, which is what puts the car's wheels just above the
- * scrim and the mark's shoulders inside the frame at 390 pt. `onLayout` supplies the width, so
- * it holds at any screen size; the 216 dp height is fixed, so nothing jumps when it arrives.
+ * The geometry is measured rather than guessed: the art is scaled so its INK — not its file
+ * edges — spans the frame, and its centre sits at 48 % of the hero's height, which puts the
+ * car's wheels on the top of the scrim with both ends of the mark still on screen. `onLayout`
+ * supplies the width, so it holds at any screen size; the 216 dp height is fixed, so nothing
+ * jumps when it arrives.
  */
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,24 +30,35 @@ const HERO_H = 216;
 /** The still's own aspect, from `assets/brand/README.md`. */
 const ART_ASPECT = 1200 / 448;
 /**
- * How much wider than the frame the car is drawn, and where its centre sits down the frame.
+ * Where the ARTWORK is inside the file, as fractions of its width.
  *
- * The overscan is what crops the mark's first and last letters at the screen edges, which is
- * the approved framing — the mark is a backdrop, not a wordmark to be read.
+ * Measured off `assets/brand/garage-hero.webp` rather than eyeballed: scanning the 1200x448
+ * file for pixels more than 18/255 off its own corner colour puts the ink at x 27..1184, so it
+ * reaches 2.25 % and 98.75 % of the width with 27 px of margin on one side and 15 on the other.
+ * It is NOT centred in its own file, which is why the art is positioned by its ink rather than
+ * by its edges — centring the image leaves a 12 px lean and clips the tail of "Mania" first.
+ *
+ * The approved mockup draws this 446 px wide on a 390 pt board, which cuts 28 px off each side
+ * and therefore cuts the `D` of "Drift" and the tail of "Mania" with them. Sizing from the ink
+ * box instead keeps every stroke inside at a cost of about 9 % of the car (a 152 dp tall render
+ * against the mockup's 167), which is the better trade for a mark that is the product's name.
  */
-const ART_OVERSCAN = 1.144;
+const ART_INK_X0 = 0.0225;
+const ART_INK_X1 = 0.9875;
+/** Fraction of the art's width that is ink. Make THIS span the frame, and nothing is cut. */
+const ART_INK_W = ART_INK_X1 - ART_INK_X0;
+/** Where the art's centre sits down the frame, so the wheels meet the top of the scrim. */
 const ART_CENTRE_Y = 0.48;
 /**
  * The most of the hero's height the art may take, and the reason it is a SECOND bound.
  *
  * Width alone is right on a phone and wrong the moment the screen is turned: at 852 pt the
- * overscan asks for 975 px of art, 364 px tall inside a 216 px band, so the clipped art ran to
+ * frame asks for 883 px of art, 330 px tall inside a 216 px band, so the clipped art ran to
  * every edge and the mark's green sat in the frame's top-left corner — which the harness reads,
- * correctly, as the page background no longer being the page background. Taking the smaller of
- * the two bounds keeps the portrait framing exactly (they agree to the pixel at phone width)
- * and lets the art letterbox in the middle of a wide one instead of bursting out of it.
+ * correctly, as the page background no longer being the page background. Set just above what
+ * the ink bound asks for at phone width, so it binds only on a wide screen.
  */
-const ART_MAX_H_FRAC = 0.777;
+const ART_MAX_H_FRAC = 0.71;
 
 const source = require('../../../assets/brand/garage-hero.webp') as number;
 
@@ -54,8 +66,12 @@ export function GarageHero({ testID }: { testID?: string }) {
   const [width, setWidth] = useState(0);
   const onLayout = useCallback((e: LayoutChangeEvent) => setWidth(Math.round(e.nativeEvent.layout.width)), []);
 
-  const artW = Math.min(width * ART_OVERSCAN, HERO_H * ART_MAX_H_FRAC * ART_ASPECT);
+  const artW = Math.min(width / ART_INK_W, HERO_H * ART_MAX_H_FRAC * ART_ASPECT);
   const artH = artW / ART_ASPECT;
+  // Anchored by its ink when the ink fills the frame, centred when it cannot — the file's
+  // uneven margins mean those are two different positions, and only the first keeps both ends
+  // of the mark on screen.
+  const artX = artW * ART_INK_W >= width ? -artW * ART_INK_X0 : (width - artW) / 2;
 
   return (
     <View style={styles.hero} onLayout={onLayout} testID={testID}>
@@ -64,7 +80,7 @@ export function GarageHero({ testID }: { testID?: string }) {
           source={source}
           alt="A Nissan 200SX RPS13 turning in front of the Drift-O-Mania mark"
           contentFit="contain"
-          style={[styles.art, { width: artW, height: artH, left: (width - artW) / 2, top: HERO_H * ART_CENTRE_Y - artH / 2 }]}
+          style={[styles.art, { width: artW, height: artH, left: artX, top: HERO_H * ART_CENTRE_Y - artH / 2 }]}
         />
       ) : null}
       {/* Bottom-weighted, so the labels sit on a dark base while the car stays lit. */}

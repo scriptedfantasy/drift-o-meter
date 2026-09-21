@@ -29,7 +29,7 @@ import { mountAdvice } from '../../src/ui/garage/advice';
 import { driverStandings, lastRunStanding, runsOf } from '../../src/ui/garage/bests';
 import { runStateOf } from '../../src/ui/garage/runState';
 import { groupByNight } from '../../src/ui/garage/groups';
-import { angleText, rowFootnote, runShapeText, slidesText } from '../../src/ui/garage/labels';
+import { angleText, holdText, rowFootnote, runShapeText, slidesText, speedText } from '../../src/ui/garage/labels';
 import { traceBars, traceLegend } from '../../src/ui/garage/trace';
 import { buildFixtureSession, FIXTURES } from '../../src/ui/results/fixture';
 
@@ -94,7 +94,7 @@ const ROSTER: Roster = sanitizeRoster({
   ],
   activeId: 'd-lukas',
 });
-const SEATS: Array<string | null> = ['d-lukas', 'd-marco', null, 'd-sam'];
+const SEATS: (string | null)[] = ['d-lukas', 'd-marco', null, 'd-sam'];
 
 function trim(session: Session): Session {
   return { ...session, motion: [], gps: [], states: session.states.length > 0 ? [session.states[0]] : [], truth: undefined };
@@ -124,6 +124,11 @@ interface Drawn {
 /** Everything the garage draws, from the index alone. */
 function drawGarage(entries: SessionIndexEntry[]): Drawn {
   const standings = driverStandings(entries, ROSTER);
+  // The three figures a board row prints, formatted the way the row formats them.
+  for (const row of standings) {
+    holdText(row.heldS);
+    speedText(row.entryKmh);
+  }
   // The list the screen actually shows: the active driver's runs, filtered before grouping.
   const shown = runsOf(entries, ROSTER, ROSTER.activeId);
   lastRunStanding(standings, shown[0] ?? null, ROSTER);

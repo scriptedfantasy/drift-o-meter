@@ -42,16 +42,30 @@ export function angleText(entry: Pick<SessionIndexEntry, 'heldPeakDeg'>, untrust
 }
 
 /**
- * How long the slide that reached the biggest angle lasted, for the line under it.
+ * How long the biggest angle was HELD, for the line under it.
  *
- * "SLIDE", never "HELD". The number is the length of the whole slide (`PeakHold.slideS`), and
- * `27s HELD` under `53°` reads as twenty-seven seconds at fifty-three degrees — which nothing
- * in the session index knows. The engine measures that as `DriftSummary.timeAtAngleS`; until
- * the index carries it, this is the true thing the garage can say.
+ * `SessionIndexEntry.peakHeldS` — the engine's `DriftSummary.sustainedS` for the same slide the
+ * angle came off, which is the field the run review already prints under HELD. Two screens
+ * describing one slide with two definitions of that word is how a driver stops trusting both.
+ *
+ * This said "slide" for a while and printed the whole slide's length, the only duration the
+ * index could then yield, which counts the ramp in and the gather at the end as time sideways.
  */
-export function holdText(slideS: number): string {
-  if (!Number.isFinite(slideS) || slideS <= 0) return '--';
-  return slideS >= 10 ? `${Math.round(slideS)}s` : `${slideS.toFixed(1)}s`;
+export function holdText(heldS: number): string {
+  if (!Number.isFinite(heldS) || heldS <= 0) return '--';
+  return heldS >= 10 ? `${Math.round(heldS)}s` : `${heldS.toFixed(1)}s`;
+}
+
+/**
+ * The speed the peak slide was entered at, in whole km/h.
+ *
+ * `--` at zero rather than "0", because zero here means the run named no slide at all — the
+ * three figures the board prints come off one slide and arrive together or not at all — and a
+ * board reading "0" under KM/H would be claiming the car was stationary.
+ */
+export function speedText(entryKmh: number): string {
+  if (!Number.isFinite(entryKmh) || entryKmh <= 0) return '--';
+  return String(Math.round(entryKmh));
 }
 
 /**

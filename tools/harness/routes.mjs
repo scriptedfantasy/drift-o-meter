@@ -169,7 +169,21 @@ export const defaultRoutes = [
     path: '/?demo=night',
     waitMs: 8000,
     actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }],
-    regions: [{ name: 'trace-spins', colour: 'red', testId: 'last-run-plot', padFrac: 0.004, max: 0 }],
+    // THE BLUE IS MEASURED NOW. `isBlue` (205-232) finally names the repaint's `#6C9BEA` at
+    // hue 218, and the board's KM/H column is the only blue inside a row — so a floor on one
+    // driver's row proves the speed drew, and a ceiling on the UNASSIGNED row proves the row
+    // with no slide behind it names no speed. Measured on this build at 3x: 728 blue inside
+    // `board-lukas` (the two-digit "71"), 864 for Marco, 1080 for Sam, and 72 inside
+    // `board-unassigned`, whose dash is drawn in the grey that means the engine vouches for
+    // nothing — 72 is Chromium's subpixel fringe along the white glyphs, not a speed. The
+    // thresholds sit an order of magnitude either side of that gap rather than beside it.
+    regions: [
+      { name: 'trace-spins', colour: 'red', testId: 'last-run-plot', padFrac: 0.004, max: 0 },
+      { name: 'speed-drew', colour: 'blue', testId: 'board-lukas', min: 300 },
+      { name: 'no-speed-unassigned', colour: 'blue', testId: 'board-unassigned', max: 200 },
+      // …and the same row claims no angle either, which is the green half of the same absence.
+      { name: 'no-angle-unassigned', colour: 'green', testId: 'board-unassigned', max: 0 },
+    ],
   },
   // Scrolled to the run list. The list follows WHO IS DRIVING, so the hand-held recording — which
   // nobody claimed — is not in Lukas's list at all; tapping his chip puts nobody at the wheel,

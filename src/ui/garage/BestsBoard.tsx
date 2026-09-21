@@ -17,12 +17,11 @@
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { formatDuration } from '../format';
 import { AppText, Micro } from '../Text';
 import { angleColor, colors, radii, space } from '../theme';
 import type { DriverStanding } from './bests';
 import { driverHandle } from './driverCopy';
-import { holdText } from './labels';
+import { holdText, speedText } from './labels';
 
 export interface BestsBoardProps {
   standings: readonly DriverStanding[];
@@ -40,8 +39,8 @@ export function BestsBoard({ standings, activeId = null, wide = false, onOpen }:
         <BoardRow key={s.driverId ?? 'unassigned'} standing={s} active={s.driverId !== null && s.driverId === activeId} wide={wide} onOpen={onOpen} />
       ))}
       <Micro numberOfLines={2} style={styles.footnote}>
-        Only runs the engine vouched for can take a place — and the angle is one you held and drove out of, not one you
-        spun into
+        Only runs the engine vouched for take a place, and all three figures come off one slide — held and driven out of,
+        never spun into
       </Micro>
     </View>
   );
@@ -50,7 +49,9 @@ export function BestsBoard({ standings, activeId = null, wide = false, onOpen }:
 function BoardRow({ standing, active, wide, onOpen }: { standing: DriverStanding; active: boolean; wide: boolean; onOpen(s: DriverStanding): void }) {
   const { empty, peakDeg } = standing;
   const angle = empty ? '--' : `${Math.round(peakDeg)}°`;
-  const slide = empty ? '--' : holdText(standing.slideS);
+  // All three off one slide, so they are shown together or not at all.
+  const held = empty ? '--' : holdText(standing.heldS);
+  const speed = empty ? '--' : speedText(standing.entryKmh);
   return (
     <Pressable
       disabled={empty}
@@ -59,7 +60,7 @@ function BoardRow({ standing, active, wide, onOpen }: { standing: DriverStanding
       accessibilityLabel={
         empty
           ? `${standing.name}, ${standing.runs === 1 ? '1 run' : `${standing.runs} runs`}, nothing judged yet`
-          : `${standing.name}, place ${standing.rank}, biggest angle ${angle}, in a ${slide} slide`
+          : `${standing.name}, place ${standing.rank}, biggest angle ${angle}, held ${held}, entered at ${speed} kilometres per hour`
       }
       testID={`board-${driverHandle(standing.driverId ? { id: standing.driverId, name: standing.name } : null)}`}
       style={({ pressed }) => [
@@ -84,13 +85,16 @@ function BoardRow({ standing, active, wide, onOpen }: { standing: DriverStanding
         <AppText variant="display" numeric numberOfLines={1} color={empty ? colors.muted : angleColor(peakDeg)} style={styles.angle}>
           {angle}
         </AppText>
-        <Micro numberOfLines={1}>{empty ? 'no angle yet' : `${slide} slide`}</Micro>
+        <Micro numberOfLines={1}>{empty ? 'no angle yet' : `${held} held`}</Micro>
       </View>
-      <View style={styles.sideways}>
-        <AppText variant="subheading" numeric numberOfLines={1} color={colors.blue} style={styles.sidewaysValue}>
-          {standing.sidewaysS > 0 ? formatDuration(standing.sidewaysS) : '--'}
+      <View style={styles.speed}>
+        {/* Blue is for a cold fact, and a dash is not one — an empty row has no slide to take a
+            speed off, so it takes the grey that means the engine vouches for nothing here. That
+            is also what makes "no blue inside the unassigned row" a checkable claim. */}
+        <AppText variant="subheading" numeric numberOfLines={1} color={empty ? colors.muted : colors.blue} style={styles.speedValue}>
+          {speed}
         </AppText>
-        <Micro numberOfLines={1}>Sideways</Micro>
+        <Micro numberOfLines={1}>km/h</Micro>
       </View>
     </Pressable>
   );
@@ -118,8 +122,10 @@ const styles = StyleSheet.create({
   name: { letterSpacing: 0.8 },
   figure: { alignItems: 'flex-end', minWidth: 0 },
   angle: { fontSize: 28, lineHeight: 28, letterSpacing: -1 },
-  sideways: { alignItems: 'flex-end', width: 62 },
-  sidewaysValue: { fontSize: 18, lineHeight: 22, letterSpacing: 0 },
+  // The one cold fact on this board, in the blue that means exactly that. Fixed width so the
+  // angles stay in a column while the speeds go from two digits to three.
+  speed: { alignItems: 'flex-end', width: 52 },
+  speedValue: { fontSize: 18, lineHeight: 22, letterSpacing: 0 },
   footnote: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.75, maxWidth: 420, marginTop: space[1] },
   pressed: { opacity: 0.7 },
 });

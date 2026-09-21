@@ -27,7 +27,7 @@ import { AppText, Micro, Small } from '../Text';
 import { alpha, angleColor, colors, radii, space } from '../theme';
 import { monitorSentence } from './advice';
 import { angleText, holdText, rowFootnote, runShapeText, slidesText } from './labels';
-import { peakHold, sidewaysSeconds } from './runFacts';
+import { sidewaysSeconds } from './runFacts';
 import { runStateColor, runStateOf } from './runState';
 import SlideTraceView from './SlideTraceView';
 import { traceHeight, traceLegend, TRACE_GUTTER_DP } from './trace';
@@ -77,7 +77,7 @@ export function LastRunCard({ entry, standing, who = null, onOpen, onDelete, sho
   const untrusted = state.kind === 'void';
   const accent = runStateColor(state, entry.heldPeakDeg);
   const angle = angleText(entry, untrusted);
-  const slide = untrusted ? 0 : peakHold(entry).slideS;
+  const held = untrusted ? 0 : entry.peakHeldS;
   const slides = slidesText(entry, untrusted);
   const sideways = sidewaysSeconds(entry);
 
@@ -117,7 +117,7 @@ export function LastRunCard({ entry, standing, who = null, onOpen, onDelete, sho
             {angle}
           </AppText>
           <Micro color={untrusted ? 'red' : 'muted'} numberOfLines={1}>
-            {untrusted ? `Recording · ${formatDuration(entry.durationS)}` : slide > 0 ? `In a ${holdText(slide)} slide` : 'Nothing held'}
+            {untrusted ? `Recording · ${formatDuration(entry.durationS)}` : held > 0 ? `Held ${holdText(held)}${entry.peakEntryKmh > 0 ? ` · in at ${entry.peakEntryKmh} km/h` : ''}` : 'Nothing held'}
           </Micro>
         </View>
       </View>
@@ -228,7 +228,7 @@ export function RunRow({ entry, who = null, onOpen, onDelete, testID }: RunProps
   const state = runStateOf(entry.trusted);
   const untrusted = state.kind === 'void';
   const angle = angleText(entry, untrusted);
-  const slide = untrusted ? 0 : peakHold(entry).slideS;
+  const held = untrusted ? 0 : entry.peakHeldS;
 
   return (
     <Pressable
@@ -262,7 +262,7 @@ export function RunRow({ entry, who = null, onOpen, onDelete, testID }: RunProps
           {angle}
         </AppText>
         <Micro color={untrusted ? 'red' : 'muted'} numberOfLines={1}>
-          {state.kind === 'judged' && slide > 0 ? `${holdText(slide)} slide` : rowFootnote(entry, state.kind)}
+          {state.kind === 'judged' && held > 0 ? `${holdText(held)} held` : rowFootnote(entry, state.kind)}
         </Micro>
       </View>
     </Pressable>
