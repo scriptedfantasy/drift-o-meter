@@ -45,7 +45,7 @@ const SKEW = '-8deg';
 const UNSKEW = '8deg';
 
 const VARIANTS: Record<ButtonVariant, { container: ViewStyle; text: string }> = {
-  primary: { container: { backgroundColor: colors.ember, ...glow(colors.ember, 1) }, text: colors.bg0 },
+  primary: { container: { backgroundColor: colors.green, ...glow(colors.green, 1) }, text: colors.bg0 },
   secondary: { container: { backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line }, text: colors.text },
   ghost: { container: { backgroundColor: 'transparent', borderWidth: 1, borderColor: alpha(colors.muted, 0.35) }, text: colors.muted },
   danger: { container: { backgroundColor: alpha(colors.red, 0.14), borderWidth: 1, borderColor: alpha(colors.red, 0.7) }, text: colors.red },

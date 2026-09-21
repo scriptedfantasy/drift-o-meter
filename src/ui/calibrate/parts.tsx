@@ -12,7 +12,7 @@ import type { Caution, Light, Step } from './model';
  * painted the same state gold. A light that cannot tell a verdict from an absence is not doing
  * the one job it has.
  */
-const LIGHT_COLORS = { on: colors.green, working: colors.cyan, warn: colors.gold, bad: colors.red } as const;
+const LIGHT_COLORS = { on: colors.green, working: colors.blue, warn: colors.greenHot, bad: colors.red } as const;
 
 /**
  * Three states the driver can check at a glance: vertical, forward, mount. `compact` puts each
@@ -68,7 +68,7 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
       {steps.map((s, i) => {
         const done = s.state === 'done';
         const active = s.state === 'active';
-        const color = done ? colors.green : active ? colors.ember : colors.muted;
+        const color = done ? colors.green : active ? colors.green : colors.muted;
         return (
           <View key={s.n} style={[styles.step, compact && styles.stepCompact, i > 0 && styles.stepBorder]} testID={`step-${s.n}`}>
             <View style={styles.stepMark}>
@@ -96,7 +96,7 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
 
 /** The loud state. Wording comes in from outside; this only decides how hard it shouts. */
 export function Banner({ title, body, tone, testID }: { title: string; body: string; tone: 'red' | 'gold'; testID?: string }) {
-  const color = tone === 'red' ? colors.red : colors.gold;
+  const color = tone === 'red' ? colors.red : colors.greenHot;
   return (
     <View style={[styles.banner, { borderColor: alpha(color, 0.85), backgroundColor: alpha(color, 0.14) }]} testID={testID}>
       <View style={[styles.bannerBar, { backgroundColor: color }]} />
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   stepText: { flex: 1, gap: 3 },
   stepDone: { textDecorationLine: 'line-through' },
   progressTrack: { height: 4, borderRadius: 2, backgroundColor: colors.bg2, overflow: 'hidden', marginTop: space[1] },
-  progressFill: { height: '100%', backgroundColor: colors.ember, borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: colors.green, borderRadius: 2 },
 
   banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, paddingHorizontal: space[3], paddingVertical: space[2] },
   bannerBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },

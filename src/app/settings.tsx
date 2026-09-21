@@ -106,10 +106,10 @@ export default function SettingsScreen() {
 
           <Section title="Simulated run" hint="Which recording the simulator plays.">
             <Field label="Road">
-              <Segmented options={TRACK_OPTIONS} value={settings.simTrack} onChange={(v) => void update({ simTrack: v })} color={colors.cyan} testID="setting-track" />
+              <Segmented options={TRACK_OPTIONS} value={settings.simTrack} onChange={(v) => void update({ simTrack: v })} color={colors.blue} testID="setting-track" />
             </Field>
             <Field label="Playback speed">
-              <Segmented options={RATE_OPTIONS} value={settings.simRate} onChange={(v) => void update({ simRate: v })} color={colors.cyan} testID="setting-rate" />
+              <Segmented options={RATE_OPTIONS} value={settings.simRate} onChange={(v) => void update({ simRate: v })} color={colors.blue} testID="setting-rate" />
             </Field>
             <Field label="Seed">
               <Stepper value={settings.simSeed} min={0} max={9999} onChange={(simSeed) => void update({ simSeed })} testID="setting-seed" />
@@ -146,7 +146,7 @@ export default function SettingsScreen() {
                 ]}
                 value={settings.haptics ? 'on' : 'off'}
                 onChange={(v) => void update({ haptics: v === 'on' })}
-                color={colors.magenta}
+                color={colors.blue}
                 testID="setting-haptics"
               />
             </Field>
@@ -158,7 +158,7 @@ export default function SettingsScreen() {
                 ]}
                 value={settings.sound ? 'on' : 'off'}
                 onChange={(v) => void update({ sound: v === 'on' })}
-                color={colors.magenta}
+                color={colors.blue}
                 testID="setting-sound"
               />
               {/* The other switch, the one this screen does not own. `src/platform/audio.ts`

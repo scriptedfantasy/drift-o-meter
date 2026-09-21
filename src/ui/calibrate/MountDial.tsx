@@ -75,7 +75,7 @@ export default function MountDial({
   const faceR = arcR - stroke * 2.1;
   const pct = clamp01(quality);
   const arcColor = colors[tone];
-  const faceColor = loose ? colors.red : settled ? colors.cyan : colors.muted;
+  const faceColor = loose ? colors.red : settled ? colors.blue : colors.muted;
 
   const rect = useMemo(() => ({ x: c - arcR, y: c - arcR, width: 2 * arcR, height: 2 * arcR }), [c, arcR]);
 
@@ -171,7 +171,7 @@ export default function MountDial({
       <Group clip={face}>
         <Path path={ground} color={rgba(faceColor, settled ? 0.16 : 0.07)} />
         <Path path={horizon} color={rgba(faceColor, settled ? 0.75 : 0.32)} style="stroke" strokeWidth={1.6} />
-        {resolved ? <Path path={foreAft} color={rgba(colors.ember, 0.5)} style="stroke" strokeWidth={1.4} /> : null}
+        {resolved ? <Path path={foreAft} color={rgba(colors.green, 0.5)} style="stroke" strokeWidth={1.4} /> : null}
       </Group>
       <Circle cx={c} cy={c} r={faceR} color={rgba(colors.line, 1)} style="stroke" strokeWidth={1.2} />
 

@@ -219,7 +219,7 @@ export default function SoundLabScreen() {
                 ]}
                 value={settings.sound ? 'on' : 'off'}
                 onChange={(v) => void update({ sound: v === 'on' })}
-                color={colors.ember}
+                color={colors.green}
                 testID="lab-sound"
               />
             </View>
@@ -232,7 +232,7 @@ export default function SoundLabScreen() {
                 ]}
                 value={settings.haptics ? 'on' : 'off'}
                 onChange={(v) => void update({ haptics: v === 'on' })}
-                color={colors.magenta}
+                color={colors.blue}
                 testID="lab-haptics"
               />
             </View>
@@ -260,8 +260,8 @@ export default function SoundLabScreen() {
                 </AppText>
               </AppText>
               <View style={styles.bedMeters}>
-                <LayerMeter label={`Dark ${hz(BED_LOW_HZ)}`} value={bed.low} color={colors.ember} />
-                <LayerMeter label={`Bright ${hz(BED_HIGH_HZ)}`} value={bed.high} color={colors.gold} />
+                <LayerMeter label={`Dark ${hz(BED_LOW_HZ)}`} value={bed.low} color={colors.green} />
+                <LayerMeter label={`Bright ${hz(BED_HIGH_HZ)}`} value={bed.high} color={colors.greenHot} />
               </View>
             </View>
             <View style={styles.row}>
@@ -270,7 +270,7 @@ export default function SoundLabScreen() {
                   key={deg}
                   label={`${deg}°`}
                   active={!sweeping && angle === deg}
-                  color={colors.ember}
+                  color={colors.green}
                   testID={`bed-${deg}`}
                   onPress={() => {
                     setSweeping(false);
@@ -282,7 +282,7 @@ export default function SoundLabScreen() {
               <LabButton
                 label={sweeping ? 'Stop' : 'Sweep'}
                 active={sweeping}
-                color={colors.cyan}
+                color={colors.blue}
                 testID="bed-sweep"
                 onPress={() => {
                   setSweeping((s) => !s);
@@ -301,7 +301,7 @@ export default function SoundLabScreen() {
             <Small>Real moments, found in real runs by the bench and written into a generated file — never typed out on this page. Each one names the command that reproduces it, so the timing under it can be checked rather than believed. The gaps are the point.</Small>
             {SOUND_SEQUENCES.map((seq) => (
               <View key={seq.key} style={styles.sequence}>
-                <LabButton label={seq.label} color={colors.magenta} testID={`seq-${seq.key}`} onPress={() => runSequence(seq.steps)} wide />
+                <LabButton label={seq.label} color={colors.blue} testID={`seq-${seq.key}`} onPress={() => runSequence(seq.steps)} wide />
                 {/* Sentence-case body, the same treatment the bank rows' `why` gets. These three
                     sentences are the measurements the panel exists to make checkable, and they
                     were set in letter-spaced all-caps Micro — the least readable text on a page
@@ -371,22 +371,22 @@ const STATUS_WORD: Record<StatusKey, string> = {
 const STATUS_COLOR: Record<StatusKey, string> = {
   loading: colors.muted,
   unavailable: colors.red,
-  locked: colors.gold,
+  locked: colors.greenHot,
   audible: colors.green,
   off: colors.muted,
 };
 
 const OUTCOME_COLOR: Record<string, string> = {
   played: colors.green,
-  stole: colors.gold,
-  felt: colors.magenta,
+  stole: colors.greenHot,
+  felt: colors.blue,
   busy: colors.muted,
   family: colors.muted,
   flick: colors.muted,
   debounce: colors.muted,
   gated: colors.red,
   muted: colors.red,
-  silent: colors.cyan,
+  silent: colors.blue,
 };
 
 /** |β| for the sweep: up to 55° and back, over eight seconds, with a dwell at the top. */
@@ -445,8 +445,8 @@ function ClipRow({ spec, onPlay }: { spec: SoundSpec; onPlay: () => void }) {
         ) : (
           <Micro>no clip · haptic only</Micro>
         )}
-        <Micro color={colors.cyan}>prio {spec.priority}</Micro>
-        <Micro color={spec.haptic ? colors.magenta : colors.muted}>{spec.haptic ?? 'no haptic'}</Micro>
+        <Micro color={colors.blue}>prio {spec.priority}</Micro>
+        <Micro color={spec.haptic ? colors.blue : colors.muted}>{spec.haptic ?? 'no haptic'}</Micro>
       </View>
       <Small style={styles.why}>{spec.why}</Small>
     </Panel>

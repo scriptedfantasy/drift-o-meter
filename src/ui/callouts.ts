@@ -49,11 +49,11 @@ export function toneFor(kind: string): EventTone {
 }
 
 export const TONE_COLORS: Record<EventTone, string> = {
-  ember: colors.ember,
-  magenta: colors.magenta,
-  gold: colors.gold,
+  ember: colors.green,
+  magenta: colors.blue,
+  gold: colors.greenHot,
   green: colors.green,
-  cyan: colors.cyan,
+  cyan: colors.blue,
   red: colors.red,
   muted: colors.muted,
 };

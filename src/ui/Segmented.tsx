@@ -19,7 +19,7 @@ export interface SegmentedProps<T extends string | number> {
 }
 
 /** A row of exclusive choices. The active segment burns in the accent colour. */
-export function Segmented<T extends string | number>({ options, value, onChange, color = colors.ember, style, testID }: SegmentedProps<T>) {
+export function Segmented<T extends string | number>({ options, value, onChange, color = colors.green, style, testID }: SegmentedProps<T>) {
   return (
     <View style={[styles.row, style]} testID={testID} accessibilityRole="radiogroup">
       {options.map((o) => {

@@ -26,7 +26,7 @@ const START_DEG = 135;
 const SWEEP_DEG = 270;
 const TICKS = 27;
 
-export default function GlowRing({ size, progress = 0.72, color = colors.ember, accent = colors.cyan, animated = true, testID }: GlowRingProps) {
+export default function GlowRing({ size, progress = 0.72, color = colors.green, accent = colors.blue, animated = true, testID }: GlowRingProps) {
   const stroke = Math.max(6, size * 0.045);
   const c = size / 2;
   const r = c - stroke * 2.4;

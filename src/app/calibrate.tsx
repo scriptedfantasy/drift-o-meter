@@ -77,7 +77,7 @@ export default function CalibrateScreen() {
 
   // No source pill while the sensors are refusing to start: "STARTING" over a fault is a lie.
   const source =
-    phase === 'failed' ? null : <Tag label={reading.sourceLabel ?? 'STARTING'} color={reading.sourceKind === 'device' ? colors.green : colors.cyan} filled />;
+    phase === 'failed' ? null : <Tag label={reading.sourceLabel ?? 'STARTING'} color={reading.sourceKind === 'device' ? colors.green : colors.blue} filled />;
 
   // ---- the fault states: the whole reason this screen exists ------------------------------
   if (phase === 'failed' && reading.fault) {
@@ -216,7 +216,7 @@ export default function CalibrateScreen() {
         <Micro style={styles.legend} numberOfLines={1}>
           Bar {Math.round(TRUST_QUALITY * 100)}% · no caveats {Math.round(SHARP_QUALITY * 100)}%
         </Micro>
-        <Tag label={attitudeWords(reading)} color={colors.cyan} style={styles.attitude} />
+        <Tag label={attitudeWords(reading)} color={colors.blue} style={styles.attitude} />
       </View>
     </View>
   );
