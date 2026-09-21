@@ -125,7 +125,28 @@ recordings knows what to look for rather than re-tuning on a hunch.
   continue, whether their timestamps stay on the same clock, and whether the GPS stream survives
   a locked screen at all.
 * **Haptics.** Never exercised — the web harness has no haptic engine, so every callout's feel
-  is unverified. Symptom: buzzing on every frame, or nothing at all.
+  is unverified. Symptom: buzzing on every frame, or nothing at all. The vocabulary is verified
+  against what SDK 57 declares and the requests are verified to be made; whether a Rigid tick on
+  top of a Medium impact reads as crisp or as a stutter is unknown.
+* **Whether the mix works against a car.** The sound bank is levelled to four RMS tiers spanning
+  10.8 dB, which is a coherent design *on a meter*. Nobody has heard it at 60 km/h with road
+  noise, tyre roar and the driver's own music mixed underneath. Two specific things could be
+  wrong and cannot be told apart from here. The whole ladder may simply need shifting up. Or
+  tier D — the quietest clip, at −27.9 dBFS, given to the event that fires on every drift
+  precisely because it carries no news — may be inaudible in a moving car, in which case the
+  honest answer to "carries no news" was never "quietest clip" but "no clip". **Symptom: a driver
+  reporting they can hear the bank and the spin but have never noticed an initiation, or that
+  they turned the sound off because it disappeared under the engine note.** Measure it by playing
+  the bank in a moving car before changing a single level; the tiers are the design, so shifting
+  them on a hunch throws the design away.
+* **Whether an AVPlayer is audible within a frame.** The dispatch latency measured here (9 µs
+  typical, 0.21 ms worst) stops at the port: everything after `play()` belongs to the OS audio
+  stack, which this box does not have. Three things need a phone: whether a player created at
+  mount really sounds within a frame of `play()`; whether the async `seekTo(0)` that rewinds a
+  finished clip completes inside the tightest gap the bank allows; and whether a clip cut short
+  by a screen teardown on web behaves the same on iOS, where the navigation animation may defer
+  the unmount. Symptom: a callout that lands visibly before it lands audibly, or a repeated cue
+  that swallows its own first syllable.
 * **Drift durations.** The detector's linked-drift cap (`maxDurationS + chainBonusS × n`) is set
   to the tightest bound that cuts nothing the simulator's commanded plan calls a single drift
   (14 + 12 n). A real driver's longest genuine linked run is unknown. Symptom: real drifts being
