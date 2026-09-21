@@ -30,7 +30,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -61,11 +65,19 @@
         {
           "motionPermission": "Drift-O-Mania reads the gyroscope and accelerometer to measure how far the car is sliding."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "50fe249d-8b34-4e86-aae5-a24cda816c0f"
+      }
+    },
+    "owner": "scriptedfantasy"
   }
 }
