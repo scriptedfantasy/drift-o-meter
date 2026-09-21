@@ -986,8 +986,11 @@ function drawMinimap(canvas: SkCanvas, f: Frame): void {
 function drawCallout(canvas: SkCanvas, f: Frame): void {
   const e = f.events.find((ev) => ev.label !== '');
   if (!e || !f.fonts.callout) return;
-  // a points award is a claim; the beat still plays, without the number
-  const label = f.noScore && /^[+−-]?[\d ,. ]+$/.test(e.label) ? '' : e.label;
+  // A points award is a claim; the beat still plays, without the number. The test is for a
+  // SIGNED number anywhere in the label, because the beats that carry points are no longer
+  // bare numbers: "+1250", "CHAIN LOST \u22128981" and "AT RISK +1380" are all claims about a
+  // score, while "LOST IT 118\u00b0" is a measurement of the recording and stays.
+  const label = f.noScore && /[+\u2212-]\s*\d/.test(e.label) ? '' : e.label;
   if (!label) return;
   const color = eventColor(e.kind);
   const y = Math.round(f.action.y + f.action.h * 0.3);
@@ -1389,15 +1392,18 @@ function drawStageNotices(canvas: SkCanvas, f: Frame): void {
   const h = f.ui.highlight;
   if (h && h.alpha > 0.02 && f.fonts.peak) {
     const kicker = h.index > 0 ? `HIGHLIGHT ${h.index}/${h.total}` : 'THIS DRIFT';
+    // "54° · 1250 PTS" is half measurement, half claim: an untrusted run keeps the angle and
+    // loses the points, like everything else on this screen that would put a score on the run.
+    const hl = f.noScore ? h.label.split(' \u00b7 ').filter((part) => !/PTS$/.test(part)).join(' \u00b7 ') : h.label;
     const wk = measure(f, label, kicker, 1.6);
-    const wl = measure(f, f.fonts.peak, h.label, 0.6);
+    const wl = measure(f, f.fonts.peak, hl, 0.6);
     const w = Math.max(wk, wl) + 24;
     const x = lay.w / 2 - w / 2;
     const top = Math.max(y - 12, f.action.y + 18);
     canvas.drawRect({ x, y: top, width: w, height: 46 }, fillPaint(f, BG, 0.82 * h.alpha));
     canvas.drawRect({ x, y: top, width: w, height: 46 }, strokePaint(f, colors.gold, 1, 0.55 * h.alpha, StrokeCap.Butt));
     drawStr(canvas, f, label, kicker, lay.w / 2, top + 17, { color: colors.gold, anchor: 'middle', tracking: 1.6, alpha: h.alpha });
-    drawStr(canvas, f, f.fonts.peak, h.label, lay.w / 2, top + 37, { color: WHITE, anchor: 'middle', tracking: 0.6, alpha: h.alpha });
+    drawStr(canvas, f, f.fonts.peak, hl, lay.w / 2, top + 37, { color: WHITE, anchor: 'middle', tracking: 0.6, alpha: h.alpha });
   }
 }
 
