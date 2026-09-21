@@ -1422,7 +1422,12 @@ function drawGapNotice(canvas: SkCanvas, f: Frame): void {
     const y = f.replay.trail.y[i];
     if (!inView(f, x, y)) continue;
     const sp = toS(f, x, y);
-    drawStr(canvas, f, f.fonts.label, `NO FIX ${g.durationS.toFixed(1)}S`, sp.x, sp.y - 10, { color: MUTED, anchor: 'middle', tracking: 1.2, outline: BG, outlineW: 3 });
+    // the label belongs to a stretch of road that may sit half off the frame; it is kept on
+    // screen rather than sliced by the edge ("O FIX 7.1S")
+    const label = `NO FIX ${g.durationS.toFixed(1)}S`;
+    const half = measure(f, f.fonts.label, label, 1.2) / 2 + 6;
+    const lx = clamp(sp.x, f.layout.insets.left + half, f.layout.w - f.layout.insets.right - half);
+    drawStr(canvas, f, f.fonts.label, label, lx, sp.y - 10, { color: MUTED, anchor: 'middle', tracking: 1.2, outline: BG, outlineW: 3 });
   }
 }
 
