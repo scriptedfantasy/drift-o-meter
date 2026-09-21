@@ -84,11 +84,21 @@ function parseArgs(argv) {
 }
 
 async function loadRoutes(file) {
-  if (!file) return defaultRoutes;
-  if (file.endsWith('.json')) return JSON.parse(readFileSync(file, 'utf8'));
+  // The default list is checked too. It is the one every agent appends to, so it is the one that
+  // grows a hole; a guard that skips it guards the wrong file.
+  if (!file) {
+    assertRouteList(defaultRoutes, 'tools/harness/routes.mjs');
+    return defaultRoutes;
+  }
+  if (file.endsWith('.json')) {
+    const json = JSON.parse(readFileSync(file, 'utf8'));
+    assertRouteList(json, file);
+    return json;
+  }
   const mod = await import(pathToFileURL(file).href);
   const routes = mod.default ?? mod.routes ?? mod.defaultRoutes;
   if (!Array.isArray(routes)) throw new Error(`${file} must export an array of routes (default export or "routes")`);
+  assertRouteList(routes, file);
   return routes;
 }
 
@@ -166,6 +176,39 @@ function mergeReport(args, shot, report) {
     shotThisRun: shot,
     routes: merged,
   };
+}
+
+/**
+ * A route list is checked BEFORE the browser starts, because the alternative is finding out 105
+ * frames into a forty-minute capture.
+ *
+ * The hole this catches is specific and it has happened: two agents appended near the same place
+ * and left `},,`, which in JavaScript is a sparse array. `routes.length` still says 114, the
+ * module still parses, and every check anyone had run — "114 routes, no duplicates" — still
+ * passed. The undefined only surfaces when something iterates far enough to reach it.
+ *
+ * Append-only editing stopped one file being clobbered and produced this instead; a rule that
+ * makes concurrent edits safe does not make them correct.
+ */
+function assertRouteList(routes, where) {
+  const problems = [];
+  const seen = new Map();
+  for (let i = 0; i < routes.length; i++) {
+    const r = routes[i];
+    if (!r || typeof r !== 'object') {
+      problems.push(`index ${i} is ${r === undefined ? 'a hole (look for a double comma)' : JSON.stringify(r)}, between ${routes[i - 1]?.name ?? 'the start'} and ${routes[i + 1]?.name ?? 'the end'}`);
+      continue;
+    }
+    if (typeof r.name !== 'string' || !r.name) problems.push(`index ${i} has no name`);
+    else if (seen.has(r.name)) problems.push(`duplicate name "${r.name}" at ${seen.get(r.name)} and ${i}`);
+    else seen.set(r.name, i);
+    if (typeof r.path !== 'string' || !r.path.startsWith('/')) problems.push(`route "${r.name ?? i}" has no usable path`);
+  }
+  if (problems.length) {
+    console.error(`[shoot] ${where} is not a usable route list:`);
+    for (const p of problems) console.error(`          - ${p}`);
+    process.exit(1);
+  }
 }
 
 function build(dist) {

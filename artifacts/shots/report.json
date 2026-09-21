@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T04:53:13.798Z",
+  "startedAt": "2026-09-21T07:29:00.711Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -734,13 +734,13 @@
     {
       "name": "home",
       "path": "/",
-      "url": "http://127.0.0.1:42833/",
+      "url": "http://127.0.0.1:41151/",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/home.png",
       "video": null,
-      "ms": 4133,
+      "ms": 2621,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -786,15 +786,15 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 384516,
+        "emberPixels": 382652,
         "goldPixels": 0,
         "redPixels": 0,
         "cyanPixels": 3956,
         "textPixels": 99616,
-        "nonBgFraction": 0.7518,
+        "nonBgFraction": 0.7513,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:23:03.843Z"
+      "shotAt": "2026-09-21T07:29:03.407Z"
     },
     {
       "name": "settings",
@@ -14970,48 +14970,10 @@
       "shotAt": "2026-09-21T04:56:15.493Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:56:15.493Z",
+  "finishedAt": "2026-09-21T07:29:03.407Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "drive-open-landscape",
-    "drive-start-landscape",
-    "drive-landscape",
-    "drive-peak-landscape",
-    "drive-transition-landscape",
-    "drive-bank-landscape",
-    "drive-loose-landscape",
-    "drive-lost-landscape",
-    "drive-gps-landscape",
-    "drive-discarded-landscape",
-    "drive-savefail-landscape",
-    "results-reveal-landscape",
-    "results-skip-landscape",
-    "results-reveal-hold-landscape",
-    "results-reveal-slam-landscape",
-    "results-landscape",
-    "results-sloppy-landscape",
-    "results-spin-landscape",
-    "results-clean-landscape",
-    "results-best-landscape",
-    "results-drifts-landscape",
-    "results-laps-landscape",
-    "results-untrusted-landscape",
-    "results-untrusted-foot-landscape",
-    "results-integrity-landscape",
-    "results-pipeline-landscape",
-    "results-reduced-landscape",
-    "results-missing-landscape",
-    "results-wide-breakdown-landscape",
-    "results-wide-best-landscape",
-    "results-wide-drifts-landscape",
-    "results-wide-laps-landscape",
-    "results-reveal-settle-landscape",
-    "results-why-open-landscape",
-    "results-why-foot-landscape",
-    "drive-chain-landscape",
-    "drive-warn-landscape",
-    "drive-savefail-untrusted-landscape",
-    "drive-loose-peak-landscape"
+    "home"
   ]
 }

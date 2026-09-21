@@ -748,7 +748,7 @@ export const defaultRoutes = [
       { type: 'eval', js: "document.querySelector('[data-testid=\"sound-decisions\"]').scrollIntoView({ block: 'center' })" },
       { type: 'wait', ms: 700 },
     ],
-  },,
+  },
   // ---- drive display: the two frames nothing was shooting, appended ------------------------
   // THE SAVE-FAIL OVERLAY ON A RUN THE ENGINE REFUSED. `drive-savefail` only ever shoots a clean
   // recording, so nothing caught the overlay building its verdict out of `score.grade` and

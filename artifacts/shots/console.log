@@ -20,8 +20,7 @@
 
 ===== replay-touge-landscape  http://127.0.0.1:40661/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
 
-===== home  http://127.0.0.1:42833/
-
+===== home  http://127.0.0.1:41151/
 ===== settings  http://127.0.0.1:42833/settings
 
 ===== sound  http://127.0.0.1:42001/sound
@@ -436,4 +435,6 @@
 ===== results-why-open-landscape  http://127.0.0.1:35605/results/fixture-handheld?reveal=off
 
 ===== results-why-foot-landscape  http://127.0.0.1:35605/results/fixture-handheld?reveal=off
+
+
 
