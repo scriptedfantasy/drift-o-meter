@@ -52,7 +52,16 @@ that the reported fix exists. Check for them explicitly.
     its results total only because a truncation dropped the drift whose points were being
     double-counted. When a value comes out right, confirm it comes out right for the right
     reason, on more than one case.
-11. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
+11. **When the screen and your instrument disagree, suspect the instrument too.** A critic failed
+    the sound lab for printing three measured timestamps that the command it cited did not
+    produce. Two of the three were correct: the bench kept only its last 64 decisions and then
+    printed them as offsets from the first one it still held, so every number it reported was the
+    real one minus 11.61 s. The screen was right and the tool was lying — and a finding written
+    from the tool alone would have sent a builder to "fix" correct copy. Before writing that a
+    screen asserts something false, reproduce the underlying fact a second way. Say in the finding
+    which of the two you verified. (The third timestamp WAS invented, so the finding was still
+    worth making; being two-thirds wrong is not the same as being wrong.)
+12. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
     on screen is itself a finding: `replay.test.ts` asserted the label `SAVED IT` for every spin,
     and the cumulative-score test ran only against a session whose total was by construction the
     sum of its parts, so neither could ever fail. Name those tests in your findings.
