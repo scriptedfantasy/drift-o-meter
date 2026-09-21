@@ -7,13 +7,14 @@
  * for a reproducible screenshot (`?reveal=hold|slam`), and reduce-motion is a different, shorter
  * timeline rather than a pile of conditionals — state changes keep, shake and embers go.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, Extrapolation, interpolate, runOnJS, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import type { Grade } from '../../engine/types';
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies, gutter, space } from '../theme';
+import { feelCue } from '../audio';
 import GradeBurstView from './skia/GradeBurstView';
 import { resultsLayout } from './layout';
 import { gradeWord } from './palette';
@@ -68,6 +69,20 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
   const burstSize = wide ? Math.min(width * 0.78, height * 1.7) : Math.min(width * 1.5, height * 0.9);
   const barH = Math.round(height * (wide ? 0.13 : 0.18));
 
+  // The grade cue, scheduled for the instant the letter lands rather than for the instant this
+  // effect runs: the impact is at sample 0 of the clip, so SLAM is the cue time. It is NOT tied to
+  // reduce-motion — sound is information, and a driver who has asked for less movement has not
+  // asked to be told less.
+  const gradeCue = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gradeHeard = useRef(false);
+  const hearGrade = () => {
+    if (gradeHeard.current) return;
+    gradeHeard.current = true;
+    if (gradeCue.current) clearTimeout(gradeCue.current);
+    gradeCue.current = null;
+    feelCue('grade');
+  };
+
   useEffect(() => {
     cancelAnimation(t);
     if (frozenAt !== undefined) {
@@ -75,17 +90,25 @@ export function GradeReveal({ grade, color, rating, kicker, drifts = 1, mode = '
       return;
     }
     t.value = 0;
+    gradeHeard.current = false;
+    gradeCue.current = setTimeout(hearGrade, SLAM);
     t.value = withTiming(total, { duration: total, easing: Easing.linear }, (finished) => {
       if (finished) runOnJS(onDone)();
     });
-    return () => cancelAnimation(t);
-    // onDone is stable for the life of the screen
+    return () => {
+      if (gradeCue.current) clearTimeout(gradeCue.current);
+      gradeCue.current = null;
+      cancelAnimation(t);
+    };
+    // onDone and hearGrade are stable for the life of the screen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frozenAt, total]);
 
   // A tap ends the reveal — including a frozen one, so a screenshot run can prove the skip works
-  // without having to catch a 2-second window.
+  // without having to catch a 2-second window. Skipping puts the letter on screen NOW, so the
+  // grade is heard now too: a driver who skips the animation has not asked for silence.
   const skip = () => {
+    hearGrade();
     cancelAnimation(t);
     t.value = total;
     onDone();

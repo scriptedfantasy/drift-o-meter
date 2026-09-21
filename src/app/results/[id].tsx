@@ -24,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Session } from '@/engine/types';
 import { useSession } from '@/platform';
+import { useDriftFeel } from '@/ui/audio';
 import { alpha, AppText, Button, colors, formatDate, formatDuration, formatScore, gutter, space } from '@/ui';
 import {
   BestDriftCard,
@@ -61,6 +62,9 @@ function flatten(params: Record<string, string | string[] | undefined>): Record<
 }
 
 export default function ResultsScreen() {
+  // Loads the sound bank and configures the audio session for this screen. Without a port mounted
+  // here the grade cue is a no-op, because `feelCue` has nowhere to play.
+  useDriftFeel();
   const raw = useLocalSearchParams() as Record<string, string | string[] | undefined>;
   const params = useMemo(() => flatten(raw), [raw]);
   const id = params.id;
