@@ -5,7 +5,7 @@
  */
 import type { StyleCalloutKind, Grade } from '../types';
 import { clamp, radToDeg } from '../types';
-import { SPIN_ANGLE_DEG, TRANSITION_RULE, type TransitionRule } from '../detect/options';
+import { DEFAULT_DETECT_OPTIONS, SPIN_ANGLE_DEG, TRANSITION_RULE, type TransitionRule } from '../detect/options';
 
 /** A piecewise-linear curve: sorted [x, y] knots, flat (clamped) outside the knots. */
 export type Curve = Array<[number, number]>;
@@ -102,6 +102,23 @@ export interface ScoreOptions {
   maxDtS: number;
   /** Seconds of SlipStates the LiveScorer keeps, to replay a drift it never saw live. */
   ringKeepS: number;
+  /**
+   * Shortest drift the DETECTOR will publish (`DetectOptions.minDurationS`). ONE number with the
+   * detector, for the same reason the spin threshold and the transition rule are: a slide shorter
+   * than this never becomes a `DriftEvent`, so the live scorer must not keep one in its running
+   * total either — the verdict screen scores the events, and a drift that is not an event is a
+   * drift the screen will never see.
+   */
+  minDriftDurationS: number;
+  /**
+   * How far the DETECTOR may back-date a drift's start behind the sample that confirms it
+   * (`onsetMaxLookbackS` / `feintLookbackS`, plus `entryHoldS`). The live scorer cannot know a
+   * slide has begun until then, so it is how long "no drift has started" has to hold before the
+   * chain's points may be called BANKED. Without it the HUD banked a chain 0.33 s before a slide
+   * whose own start was 0.5 s earlier than the frame it appeared on — and a spin in that slide
+   * then took points the driver had been told were safe (harbor seed 6, looseness 0.15: 2,241).
+   */
+  chainLookbackS: number;
 
   // ---- session components (0–100) ----------------------------------------------------------
   /** Peak |β| (deg) → angle score. */
@@ -270,6 +287,9 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
   levelChangeSpanS: 3,
   maxDtS: 0.1,
   ringKeepS: 120,
+  minDriftDurationS: DEFAULT_DETECT_OPTIONS.minDurationS,
+  chainLookbackS:
+    Math.max(DEFAULT_DETECT_OPTIONS.onsetMaxLookbackS, DEFAULT_DETECT_OPTIONS.feintLookbackS) + DEFAULT_DETECT_OPTIONS.entryHoldS,
 
   // The top of the scale must not be reachable by anyone who gets sideways once: it used to
   // pay 100 at 43°, so a 43° driver and a 60° driver were indistinguishable on the component

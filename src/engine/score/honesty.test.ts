@@ -14,7 +14,7 @@ import { SPIN_ANGLE_DEG } from '../detect/options';
 import { DriftPipeline } from '../pipeline';
 import { simulateRun, type SimulatedRun, type TrackId } from '../../sim';
 import { degToRad, radToDeg, type Grade, type Session, type SlipState } from '../types';
-import { scoreSession, countTransitions, steadinessScore, angleScore, DEFAULT_SCORE_OPTIONS, LiveScorer } from './index';
+import { scoreSession, countTransitions, steadinessScore, angleScore, DEFAULT_SCORE_OPTIONS, LiveScorer, type ScoredDrift } from './index';
 
 /** Just enough of a scored drift for the callout sums below. */
 interface ScoredDriftLike {
@@ -292,14 +292,28 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
           calloutPointsWhileNotCounting += c.points;
           expect(c.points, `${where}: ${c.label} paid at t=${f.t.toFixed(2)} on a frame stamped counting:false`).toBe(0);
         }
-        // …and the total itself cannot have gone UP, which is the guarantee `pipeline.ts`
-        // publishes on `LiveFrame.score.counting` and the one a HUD reads it for.
-        if (dTotal > 0) {
-          paidWhileNotCounting += dTotal;
+        // …and NOTHING WAS EARNED FOR THIS INSTANT, which is the guarantee `pipeline.ts`
+        // publishes on `LiveFrame.score.counting` and the one a HUD reads it for. The total may
+        // still move by `score.settled`: a drift is scored over the window the DETECTOR published
+        // for it, and the scorer only has that window `exitHoldS` after the car straightened, so
+        // a slide that ended while the monitor believed the car can be finalised on a frame it no
+        // longer does. That is a correction to a past slide, not a payment for now, and the
+        // engine says how much of the delta it is rather than leaving it to be inferred — the
+        // whole point of the field. What must never happen is a frame earning on its own account.
+        const earned = dTotal - (f.score.settled ?? 0);
+        if (earned > 1e-9) {
+          paidWhileNotCounting += earned;
           paidFrames++;
-          if (!firstBad) firstBad = `t=${f.t.toFixed(2)} +${dTotal.toFixed(1)} [${f.score.callouts.map((c) => c.label).join(', ') || 'no callout on this frame'}]`;
+          if (!firstBad) firstBad = `t=${f.t.toFixed(2)} +${earned.toFixed(1)} [${f.score.callouts.map((c) => c.label).join(', ') || 'no callout on this frame'}]`;
         }
-        expect(dTotal, `${where}: the total rose by ${dTotal.toFixed(1)} at t=${f.t.toFixed(2)} on a frame stamped counting:false`).toBeLessThanOrEqual(0);
+        expect(earned, `${where}: this instant earned ${earned.toFixed(1)} at t=${f.t.toFixed(2)} on a frame stamped counting:false`).toBeLessThanOrEqual(1e-9);
+        // and a settlement is only ever reported where the engine actually finalised something
+        if ((f.score.settled ?? 0) !== 0) {
+          expect(
+            f.completed !== null || f.phase === 'idle' || f.phase === 'exit',
+            `${where}: settled ${f.score.settled} at t=${f.t.toFixed(2)} with no drift closing (phase ${f.phase})`,
+          ).toBe(true);
+        }
       }
       while (j < gps.length) p.pushGps(gps[j++]);
       const session = p.finish();
@@ -975,3 +989,95 @@ describe('session metrics table', () => {
 
 /** Degrees, for the reader of the failures above. */
 export const _deg = radToDeg;
+
+/**
+ * THE DRIVE DISPLAY AND THE VERDICT SCREEN PUBLISH ONE NUMBER.
+ *
+ * They did not. Driving `DriftPipeline` over the simulator and comparing the last
+ * `LiveFrame.score.total` against `finish().score.total` — the odometer a driver reads while
+ * they drive against the number the results screen prints for the same run — disagreed on
+ * 238 of 288 runs (2 tracks × 6 seeds × 6 looseness × 4 lap counts), by +32.1 % at harbor seed 3
+ * looseness 0 (28,401 against 21,505, grade B, `trusted: true`) and by −11.7 % at touge seed 6
+ * looseness 0.2. Nothing was lost or spun on those runs and `finish()`'s total was exactly the
+ * sum of `perDrift`, so the live number was simply not the sum of anything.
+ *
+ * ── WHY ONE ROOT CAUSE MOVED FIVE KINDS OF CALLOUT ────────────────────────────────────────
+ * The two paths integrated DIFFERENT SAMPLES. `scoreSession` scores a drift over the window the
+ * DETECTOR published for it (`DriftEvent.startT/endT`, back-dated to where the slide began and
+ * ended); `LiveScorer` scored whatever fell between the sample its live feed appeared on and the
+ * sample it went idle on, which starts `entryHoldS` late and runs `exitHoldS` (0.6 s) past the
+ * car straightening. The base points inside those ramps are worth almost nothing — 4 points in
+ * 5,250 on harbor seed 3 — but every DECISION that hangs off the boundaries moved with them:
+ * the chain gap (harbor seed 3: 3.022 s between two events, so the session starts a fresh chain,
+ * against 2.93 s between the frames, so the live one kept LINK ×3 and a ×4.75 multiplier),
+ * PERFECT EXIT (measured over the half second AFTER the car straightened), and which drift is a
+ * lap's last one. LINK, CLEAN LAP, HIGH SPEED, INITIATION and the drift's own base points are
+ * all that one difference, priced at two different multipliers.
+ *
+ * The fix is one sentence — a drift's score is `scoreDrift` over the event's window, the same
+ * call `replayChains` makes — so this test is written against the PROPERTY, not the five kinds.
+ */
+describe('the drive display and the verdict screen publish one number', () => {
+  it('the last frame IS what finish() publishes, over tracks × seeds × laps × looseness', () => {
+    const grid: Array<{ track: TrackId; seed: number; laps: number; looseness: number }> = [];
+    for (const track of ['harbor', 'touge'] as TrackId[]) {
+      for (const seed of [1, 3, 6]) {
+        for (const laps of [0, 2]) {
+          // the ambiguous band is where partial credit exists at all (docs/CRITIC.md rule 14),
+          // plus the two ends
+          for (const looseness of [0, 0.1, 0.15, 0.2, 0.3, 1.0]) grid.push({ track, seed, laps, looseness });
+        }
+      }
+    }
+    const rows: string[] = [];
+    let disagreed = 0;
+    for (const { track, seed, laps, looseness } of grid) {
+      const run = simulateRun(track, { seed, laps, looseness, aggression: 0.8, consistency: 0.85 });
+      const p = new DriftPipeline({});
+      const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+      let j = 0;
+      let live = 0;
+      for (let i = 0; i < run.motion.length; i++) {
+        while (j < gps.length && gps[j].t <= run.motion[i].t) p.pushGps(gps[j++]);
+        live = p.pushMotion(run.motion[i]).score.total;
+      }
+      while (j < gps.length) p.pushGps(gps[j++]);
+      const where = `${track}/seed ${seed}/${laps} laps/looseness ${looseness}`;
+      // A drift the detector only closes inside `finish()` is one the driver stopped ON: it was
+      // still open, or still inside the `mergeGapS` window in which the detector may re-open it
+      // to link it, so no frame could ever have carried its finished score. That is the ONE
+      // bound here, and it is named rather than allowed for: everywhere else, exactly equal.
+      const openAtTheEnd = p.drifts.length;
+      const session = p.finish();
+      const closedAfterTheLastFrame = session.drifts.slice(openAtTheEnd);
+      const shown = Math.round(live);
+      const gap = Math.abs(shown - session.score.total);
+      if (gap !== 0) disagreed++;
+      if (closedAfterTheLastFrame.length === 0) {
+        expect(shown, `${where}: the drive display said ${shown}, the verdict screen says ${session.score.total}`).toBe(session.score.total);
+      } else {
+        const unseen = closedAfterTheLastFrame.reduce((a, e) => a + Math.abs(session.score.perDrift[e.id]?.total ?? 0), 0);
+        expect(gap, `${where}: ${gap} apart, more than the ${closedAfterTheLastFrame.length} drift(s) finish() closed`).toBeLessThanOrEqual(Math.max(1, unseen));
+      }
+      // …and the second reading of the same fact (docs/CRITIC.md rule 11): the per-drift ledger
+      // the results screen lists is the one the live scorer kept, drift for drift, in order.
+      const listed = (Object.values(session.score.perDrift) as ScoredDrift[]).sort((a, b) => a.stats.startT - b.stats.startT);
+      const kept = p.scorer.completedDrifts;
+      expect(kept.length, `${where}: ${kept.length} drifts live, ${listed.length} in the session`).toBe(listed.length);
+      for (let k = 0; k < listed.length; k++) {
+        expect(kept[k].total, `${where}: drift ${k + 1} is ${kept[k].total.toFixed(1)} live and ${listed[k].total.toFixed(1)} in the session`).toBeCloseTo(listed[k].total, 6);
+        expect(kept[k].spun).toBe(listed[k].spun);
+        expect(kept[k].lost).toBe(listed[k].lost);
+        expect(kept[k].chainIndex).toBe(listed[k].chainIndex);
+        expect(kept[k].stats.multiplierEnd).toBeCloseTo(listed[k].stats.multiplierEnd, 6);
+      }
+      rows.push(
+        `  ${where.padEnd(42)} live ${String(shown).padStart(6)}  finish ${String(session.score.total).padStart(6)}  ` +
+          `${gap === 0 ? '       =' : `${(shown - session.score.total > 0 ? '+' : '') + (shown - session.score.total)}`.padStart(8)}  ` +
+          `${session.score.grade} trusted ${session.score.trusted}  ${listed.length} drifts` +
+          (closedAfterTheLastFrame.length ? `  (${closedAfterTheLastFrame.length} closed by finish())` : ''),
+      );
+    }
+    process.stdout.write(`\nONE NUMBER over ${grid.length} runs (${disagreed} not exact)\n${rows.join('\n')}\n`);
+  }, 300_000);
+});

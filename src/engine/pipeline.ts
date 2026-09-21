@@ -112,7 +112,15 @@ export interface LiveFrame {
      * sample (1 725 points at looseness 0 on the harbor fixture), and the end-of-drift callouts
      * `onDriftCompleted` banks after this method has already built its frame (PERFECT EXIT +45
      * at harbor/2/0.1, t = 5.18 s). Both now settle on a frame the scorer pays on, or not at
-     * all — see `LiveScorer.onLapCompleted` and the `pending.unpriced` drain in `LiveScorer.push`.
+     * all — see `LiveScorer.onLapCompleted` and the `held` drain in `LiveScorer.push`.
+     *
+     * A THIRD ONE IS NOT A LEAK AND IS REPORTED RATHER THAN SUPPRESSED: `score.settled`. A drift
+     * is scored over the window the DETECTOR published for it, which the scorer can only have
+     * once the drift is over — `exitHoldS` after the car straightened, on whatever frame that
+     * lands on. Correcting a past slide's score is not earning something now, so the guarantee is
+     * stated on what this instant earned: `delta - settled` is never positive on a frame stamped
+     * `counting: false`. Before that correction existed, the drive display and the verdict screen
+     * published different totals for the same run — up to 32 % apart on a clean, trusted one.
      *
      * A display that wants to say "NOT SCORING" must read THIS, never guess from `integrity`:
      * a HUD that inferred it from `gps: 'none'` announced "NO FIX — NOT SCORING" through
@@ -124,6 +132,19 @@ export interface LiveFrame {
      * crawling, between slides). What the engine will not stand behind is `integrity.believable`.
      */
     counting: boolean;
+    /**
+     * How much of `delta` is the engine finalising a PAST slide rather than this instant earning
+     * — `LiveTick.settled`, straight through. Non-zero only on a frame where a drift closed, or
+     * where the detector's own `DriftEvent` replaced the scorer's reading of one (a linked drift
+     * it re-opened, a twitch it dropped). It is the correction that makes the running total the
+     * same number `finish()` publishes, and it is reported so a screen can tell a correction from
+     * a payment — and so the counting guarantee can be checked instead of approximated.
+     *
+     * Optional ONLY so that a frame literal built by hand elsewhere in the tree does not have to
+     * know about it. Every frame this pipeline produces carries it, and a reader may treat a
+     * missing one as 0.
+     */
+    settled?: number;
     /** Callouts fired on this frame. Each carries the points it actually paid — 0 while not counting. */
     callouts: StyleCallout[];
   };
@@ -608,6 +629,10 @@ export class DriftPipeline implements DriftPipelineApi {
             angle: fin(live.angle),
             peakAngle: fin(live.peakAngle),
             transitions: live.transitions | 0,
+            // the detector's OWN boundaries for this drift, back-dated to where the slide began
+            // and (on the frame its exit hold expires) to where it ended: the window the
+            // `DriftEvent` will carry, and therefore the window the scorer scores it over
+            startT: fin(live.startT, t),
             durationS: fin(live.durationS),
             spin: live.spin,
             id: scorerId,
@@ -689,6 +714,7 @@ export class DriftPipeline implements DriftPipelineApi {
         // the scorer's own gate, straight through: the frame cannot claim to be counting while
         // the scorer refused to pay, nor the other way round
         counting: tick.counting,
+        settled: fin(tick.settled),
         callouts,
       },
       calibration: this.cal,
@@ -1218,6 +1244,7 @@ export function idleLiveFrame(t = 0): LiveFrame {
       bankedPoints: 0,
       lostPoints: 0,
       counting: false,
+      settled: 0,
       callouts: EMPTY_CALLOUTS,
     },
     calibration: { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 0, forwardResolved: false, t: 0 },

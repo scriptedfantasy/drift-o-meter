@@ -96,6 +96,43 @@
  * TRANSITIONS are counted by the detector's rule in both paths (`TRANSITION_RULE`), so
  * `DriftEvent.transitions` and `ScoredDrift.transitions` are the same number by construction;
  * `countTransitions()` applies that same rule to a bare β trace.
+ *
+ * ── ONE DRIFT, ONE WINDOW, ONE SCORE ──────────────────────────────────────────────────────
+ * A drift's score is `scoreDrift` over the window the DETECTOR published for it — the same call,
+ * over the same samples, with the same chain context, on both paths. `LiveScorer` runs it the
+ * moment a drift closes and again if the detector's own `DriftEvent` revises what the drift was;
+ * `replayChains` runs it over the stored events. So the total a driver watches climb and the
+ * total the verdict screen prints are not "close", they are the same number.
+ *
+ * They were not. The live scorer used to keep whatever its accumulator integrated between the
+ * sample the detector's live feed APPEARED on and the sample it went idle on — a window that
+ * starts `entryHoldS` late and runs `exitHoldS` (0.6 s) past the car straightening, because that
+ * is when a real-time state machine can be sure. The base points in those ramps are worth almost
+ * nothing (4 in 5,250 on harbor seed 3), but every decision that hangs off the boundaries moved
+ * with them: the chain gap, and therefore the multiplier and LINK; PERFECT EXIT, measured over
+ * the half second AFTER the car straightened; and which drift is a lap's last one. Measured over
+ * 2 tracks × 6 seeds × 6 looseness × 4 lap counts, 238 of 288 runs published a different number
+ * on the drive display from the one the verdict screen printed — +32.1 % at harbor seed 3 on a
+ * clean, trusted, looseness-0 run (28,401 against 21,505) and −11.7 % at touge seed 6.
+ *
+ * ── EVERY SITE THAT CAN MOVE A TOTAL, AND THE GATE IT ANSWERS ─────────────────────────────
+ * There are four, and each one either asks `countsForPoints` for the instant it pays at or says
+ * why it may move a total without paying:
+ *   1. `DriftAccumulator.step`   base points, per sample, gated per sample.
+ *   2. `DriftAccumulator.fire`   callout bonuses, at the instant of the callout, same gate.
+ *   3. `LiveScorer` lap ledger   CLEAN LAP: judged when the line goes past and re-judged as the
+ *                                drifts inside it settle. The first payment waits for a sample
+ *                                the scorer pays on; a reduction, a move onto the drift that now
+ *                                carries it, and a revision of a bonus already announced are
+ *                                corrections, not payments, and land at once. The CHIP waits
+ *                                until the lap's worth is final, so it never states an amount the
+ *                                run does not keep.
+ *   4. `LiveScorer.record`       the drift's own score, replaced by `scoreDrift` over the event's
+ *                                window. Recognising what a slide was worth is not earning it
+ *                                now, so it is REPORTED as `LiveTick.settled` rather than hidden:
+ *                                on a frame stamped `counting: false`, `delta - settled` is never
+ *                                positive. That is the guarantee, and it is checkable instead of
+ *                                approximate.
  */
 export { LiveScorer, lapBelief } from './live';
 export type { LiveTick, LiveDriftInfo } from './live';

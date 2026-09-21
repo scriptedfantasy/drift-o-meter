@@ -394,6 +394,7 @@ export function scoreSession(
 ): SessionBreakdown {
   const o = resolveOptions(opts);
   const tf = trackFactorFor(medianCornerRadiusM(track), medianCornerGapM(track), o);
+  const mask = ctx?.plausible ?? null;
   const { scored, chains } = replayChains(drifts, states, o, ctx, tf);
   const perDrift: Record<number, ScoredDrift> = {};
   for (const d of scored) perDrift[d.id] = d;
@@ -418,6 +419,17 @@ export function scoreSession(
         // total, `finish()` and a re-score from storage with no mask at all agree on the amount.
         const believed = lapBelief(inLap);
         if (!(believed > 0)) continue;
+        // AND THE ENGINE HAS TO HAVE AN INSTANT TO PAY IT ON. A lap bonus is decided when the
+        // line goes past rather than per sample, so `LiveScorer` holds it until a sample
+        // `countsForPoints` accepts — that is what keeps a HUD from drawing `CLEAN LAP +1,425`
+        // on a frame stamped `counting: false`. A run whose monitor stops believing it before
+        // the line therefore never pays it, and this path must reach the same verdict or the
+        // drive display and the verdict screen publish different totals for the same lap
+        // (measured: harbor seed 1 at looseness 0.2, 3 laps — the third line goes past at
+        // 180.47 s and the last believed sample was at 180.05). Without the mask — a session
+        // re-scored from storage — the question cannot be asked, and the bonus is paid: that is
+        // the same, already-bounded difference `scoreDrift` documents for the durable path.
+        if (mask && !believedAtOrAfter(states, mask, lap.endT)) continue;
         const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, last.stats.multiplierEnd) : 1) * believed;
         last.callouts.push({ t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts });
         last.bonus += pts;
@@ -575,4 +587,17 @@ export function scoreSession(
 
 function round1(v: number): number {
   return Math.round(v * 10) / 10;
+}
+
+/** Is there a sample at or after `t` the scorer would have paid on (`countsForPoints`)? */
+function believedAtOrAfter(states: SlipState[], mask: Uint8Array, t: number): boolean {
+  let lo = 0;
+  let hi = states.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (states[mid].t < t) lo = mid + 1;
+    else hi = mid;
+  }
+  for (let i = lo; i < states.length; i++) if (mask[i] !== 0 && states[i].valid) return true;
+  return false;
 }

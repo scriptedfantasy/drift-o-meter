@@ -81,7 +81,7 @@ function feed(scorer: LiveScorer, syn: Synth, opts: { complete?: boolean; laps?:
     if (id !== null) {
       const start = ids.indexOf(id);
       peak = Math.max(i === start ? 0 : peak, Math.abs(states[i].beta));
-      live = { phase: 'drifting', angle: Math.abs(states[i].beta), peakAngle: peak, transitions: 0, durationS: states[i].t - states[start].t, id };
+      live = { phase: 'drifting', angle: Math.abs(states[i].beta), peakAngle: peak, transitions: 0, startT: states[start].t, durationS: states[i].t - states[start].t, id };
       if (opts.spinAt !== undefined && states[i].t >= opts.spinAt) live.spin = true;
     }
     ticks.push(scorer.push(states[i], live));
@@ -253,13 +253,20 @@ describe('rules: multiplier & transitions', () => {
 });
 
 describe('rules: chain, bank, spin', () => {
-  it('banks 2 s after a clean exit: BANKED +N, total unchanged, chain points → 0', () => {
-    const syn = synth([...steady(3, 30), idle(4)]);
+  it('banks bankDelayS after a clean exit, once no later slide can still be back-dated into it', () => {
+    // WHY NOT ON THE STROKE OF 2 s. The rule is that a drift starting inside `bankDelayS` keeps
+    // the chain at risk — and the DETECTOR back-dates a drift's start by up to `chainLookbackS`
+    // behind the sample that confirms it, so for that long the scorer cannot yet know whether one
+    // has. Claiming BANKED earlier is claiming something the engine may take back: on harbor seed
+    // 6 at looseness 0.15 the HUD banked 2,241 points 0.33 s before a slide whose own start was
+    // 0.5 s earlier than the frame it appeared on, and the spin in that slide then took them.
+    const syn = synth([...steady(3, 30), idle(5)]);
     const { ticks } = feed(new LiveScorer(), syn);
-    const exitT = 3.6; // first idle sample
+    const o = DEFAULT_SCORE_OPTIONS;
+    const exitT = 3.6; // where the drift itself ended, not where the feed went idle
     const iBank = ticks.findIndex((t) => t.banked);
     expect(iBank).toBeGreaterThan(0);
-    expect(syn.states[iBank].t).toBeCloseTo(exitT + 2, 2);
+    expect(syn.states[iBank].t).toBeCloseTo(exitT + o.bankDelayS + o.chainLookbackS, 2);
     expect(ticks[iBank - 1].chainPoints).toBeGreaterThan(0);
     expect(ticks[iBank].bankedPoints).toBeCloseTo(ticks[iBank - 1].chainPoints, 6);
     expect(ticks[iBank].total).toBeCloseTo(ticks[iBank - 1].total, 6);
@@ -327,6 +334,9 @@ describe('rules: chain, bank, spin', () => {
     expect(last(ticks).total).toBe(0);
   });
   it('points already banked survive a later spin', () => {
+    // the 2.5 s gap is longer than `bankDelayS`, so the next slide's own start is what banks the
+    // previous chain — the same moment `replayChains` banks it, and the one that decides what
+    // this spin may still take
     const syn = synth([...steady(3, 30), idle(2.5), { s: 2, beta: 30 }, { s: 0.5, beta: (t) => 30 + (120 * t) / 0.5 }, idle(3)]);
     const { ticks } = feed(new LiveScorer(), syn);
     const bank = ticks.find((t) => t.banked) as LiveTick;
@@ -443,15 +453,20 @@ describe('live scorer API', () => {
     expect(a.total).toBeCloseTo(last(ticks).total, 6);
     expect(sc.onDriftCompleted(e)).toBe(a); // idempotent
     expect(scores).toHaveLength(0);
-    // an id the scorer never saw live is replayed from its recent-state ring
+    // an id the scorer never saw live is replayed from its recent-state ring: the same samples,
+    // so the same base points. Its TOTAL is higher because it lands on the books after the first
+    // drift and inside `chainGapS` of it, so it inherits that chain — which is what
+    // `replayChains` does with an event in the same place, and the reason the two agree at all.
     const ghost = { ...e, id: 99 };
     const g = sc.onDriftCompleted(ghost);
-    expect(g.total).toBeCloseTo(a.total, 6);
+    expect(g.base).toBeCloseTo(a.base, 6);
+    expect(g.chainIndex).toBe(2);
+    expect(g.total).toBeGreaterThan(a.total);
     // closing a drift through onDriftCompleted before the feed goes idle reports end callouts on the next tick
     const sc2 = new LiveScorer();
     const s2 = synth([{ s: 3.6, beta: 30 }, idle(1)]);
     let lastTick: LiveTick | null = null;
-    for (let i = 0; i < 360; i++) lastTick = sc2.push(s2.states[i], { phase: 'drifting', angle: 0.5, peakAngle: 0.5, transitions: 0, durationS: i / 100, id: 1 });
+    for (let i = 0; i < 360; i++) lastTick = sc2.push(s2.states[i], { phase: 'drifting', angle: 0.5, peakAngle: 0.5, transitions: 0, startT: s2.states[0].t, durationS: s2.states[i].t - s2.states[0].t, id: 1 });
     const d = sc2.onDriftCompleted(eventFromRange(1, s2.states, 0, 359));
     const pe = d.callouts.find((c) => c.kind === 'perfect-exit');
     expect(pe).toBeDefined();
@@ -533,7 +548,7 @@ describe('live vs offline agreement', () => {
       if (byStart.has(i)) cur = byStart.get(i) as DriftEvent;
       const s = states[i];
       const live: LiveDriftInfo | null = cur
-        ? { phase: 'drifting', angle: Math.abs(s.beta), peakAngle: cur.peakAngle, transitions: cur.transitions, durationS: s.t - cur.startT, id: cur.id }
+        ? { phase: 'drifting', angle: Math.abs(s.beta), peakAngle: cur.peakAngle, transitions: cur.transitions, startT: cur.startT, durationS: s.t - cur.startT, id: cur.id }
         : null;
       sc.push(s, live);
       if (cur && i === cur.sampleEnd) {
