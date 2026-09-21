@@ -29,6 +29,34 @@ real slides has to feel that polished, dramatic and clear, while being physicall
 7. Score 0–10 (10 = ship it in a AAA game). PASS only at ≥ 8.5 with no severity-1 findings.
    Severity 1 = wrong / broken / misleading; 2 = clearly below the bar; 3 = polish.
 
+## When you are re-judging a piece that was sent back
+
+Two failures have now happened twice each, and both are invisible to a critic who only checks
+that the reported fix exists. Check for them explicitly.
+
+8. **A fix that is not on the screen is not a fix.** Find the value the driver actually reads —
+   the pixel, the drawn string, the rendered number — and trace back from IT. The replay screen
+   was failed for showing a different score from the results screen; the fix computed the right
+   total into `Replay.info.totalPoints`, trust-gated it correctly, and rendered `pose.points`
+   instead. `grep` for the corrected field in the code that draws: if nothing renders it, the
+   round was spent on a field nobody sees, and the original finding still stands at severity 1.
+9. **Ask whether the bug moved rather than died.** State the defect as a CLASS, not as the line
+   it was found on, then hunt the class across the whole piece. The calibration screen was failed
+   for showing a verdict the engine had not reached; the headline was fixed and the identical
+   mistake was still in the step list one component over, where it was the first thing a driver
+   read. A screen repeating an engine's internal permissiveness as an assertion about the world,
+   an angle band standing in for a fact the engine already asserts, a threshold copied into a
+   second file — each of these has appeared in more than one place every time it has appeared at
+   all.
+10. **Distrust a number that agrees.** Two bugs can cancel. One fixture's replay total matched
+    its results total only because a truncation dropped the drift whose points were being
+    double-counted. When a value comes out right, confirm it comes out right for the right
+    reason, on more than one case.
+11. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
+    on screen is itself a finding: `replay.test.ts` asserted the label `SAVED IT` for every spin,
+    and the cumulative-score test ran only against a session whose total was by construction the
+    sum of its parts, so neither could ever fail. Name those tests in your findings.
+
 ## Output format (exact)
 ```
 VERDICT: PASS | FAIL
