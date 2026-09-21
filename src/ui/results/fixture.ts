@@ -4,15 +4,15 @@
  * The real screen renders a `Session` loaded from storage. Until the live pipeline writes
  * sessions, and for the screenshot harness afterwards, `/results/<anything>?fixture=<name>`
  * (or the id `fixture-<name>`) rebuilds one from the simulator: SAME simulator, SAME session
- * shape, and the numbers on screen come from the real scorer (`scoreSession`), never from
- * `sessionFromSimulation`'s placeholder score.
+ * shape, and the per-slide measurements come from the real engine, never from
+ * `sessionFromSimulation`'s placeholders.
  *
  * Everything here is pure and seeded, so a given URL always produces the same pixels.
  */
 import { DriftPipeline } from '../../engine/pipeline';
 import { scoreSession } from '../../engine/score';
 import { sessionFromSimulation } from '../../engine/replay/fixtures';
-import { clamp, degToRad, radToDeg, wrapAngle, type Session, type SlipState } from '../../engine/types';
+import { clamp, degToRad, radToDeg, wrapAngle, type DriftSummary, type Session, type SlipState } from '../../engine/types';
 import { simulateRun, type TrackId } from '../../sim';
 
 export interface FixtureSpec {
@@ -342,14 +342,23 @@ export function buildFixtureSession(spec: FixtureSpec): Session {
   const spun = new Set<number>();
   for (let i = 0; i < spec.spins; i++) injectSpin(session, spun);
   if (spec.looseness > 0 && spec.source === 'sim') degradeCalibration(session);
-  // A producer publishes an engine score. The ground-truth fixture writes a placeholder one, and
-  // the spin / grip-lap transforms edit the trace AFTER the pipeline scored it — in both cases the
-  // session must be re-scored here, or the screen would publish a headline for a different run.
+  // A producer publishes an engine analysis. The ground-truth fixture writes placeholders, and
+  // the spin / grip-lap transforms edit the trace AFTER the pipeline measured it — in both cases
+  // the session must be re-analysed here, or the screen would describe a different run.
+  //
+  // `driftStats` is rewritten with it, and that is not decoration: it is the home the review and
+  // the garage read, and a session left carrying the PRE-mutation measurements next to the
+  // post-mutation drifts would show the injected spin in the list with the untouched slide's
+  // angle beside it. The old `score.perDrift` copy is written too, because it is the fallback
+  // every run already on a phone is read through and the fixtures must exercise it.
   const mutated = spec.spins > 0 || spec.noDrifts;
   if (spec.source === 'sim' || mutated) {
     const b = scoreSession(session.drifts, session.states, session.track, undefined, {
       integrity: { mount: session.integrity.mount, physics: session.integrity.physics, gps: session.integrity.gps, message: session.integrity.message },
     });
+    const driftStats: Record<number, DriftSummary> = {};
+    for (const [id, scored] of Object.entries(b.perDrift)) if (scored?.stats) driftStats[Number(id)] = scored.stats;
+    session.driftStats = driftStats;
     session.score = {
       total: b.total,
       grade: b.grade,

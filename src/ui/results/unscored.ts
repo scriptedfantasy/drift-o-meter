@@ -1,17 +1,21 @@
 /**
  * A refusal, split into the part the driver can act on and the part that explains it.
  *
- * `scoreSession` composes `SessionIntegrity.message` as the fraction of sliding it could not
+ * The engine composes `SessionIntegrity.message` as the fraction of sliding it could not
  * believe, an em dash, and then the integrity monitor's own live line — and that second half is
  * the only sentence on the screen that names something physical to do about it ("Phone looks
  * hand-held — clip it into a rigid mount to score drifts", "Phone is moving in its mount —
- * tighten it"). See `src/engine/score/session.ts` (integrity.message) and
+ * tighten it"). See `src/engine/integrity/verdict.ts` (sessionIntegrity) and
  * `src/engine/integrity/monitor.ts` (composeMessage).
  *
  * The screen leads with the monitor's half and keeps the fraction for the disclosure: a driver
  * who clipped their phone badly wants the remedy first, in the monitor's own words, not a
  * statistic. Nothing is dropped — `reason` is still shown, one tap away, and the full integrity
  * notes quote both halves verbatim.
+ *
+ * THE WORDING BELOW IS THE ENGINE'S, NOT THIS FILE'S. `results-layout.test.ts` pins the exact
+ * strings the monitor can compose, so a rewrite here that "tidied" a message would be caught
+ * rather than shipped.
  */
 
 /** The em dash the scorer joins the two halves with. */
@@ -36,7 +40,7 @@ function capitalize(text: string): string {
 
 /**
  * @param message `SessionIntegrity.message` — empty on a run the engine stands behind.
- * @param fallback what to say when the engine left no message at all (the screen's own verdict).
+ * @param fallback what to say when the engine left no message at all.
  */
 export function refusalFrom(message: string | undefined | null, fallback = ''): Refusal {
   const text = (message ?? '').trim();
@@ -54,7 +58,7 @@ export function refusalFrom(message: string | undefined | null, fallback = ''): 
   return { remedy: capitalize(endSentence(remedy)), reason: reason ? capitalize(endSentence(reason)) : null };
 }
 
-/** The fourth cell of the stat strip on a refused run: what the monitor actually found. */
+/** The one chip beside a refusal: what the monitor actually found. */
 export interface FaultStat {
   label: string;
   value: string;
@@ -63,7 +67,7 @@ export interface FaultStat {
 }
 
 /**
- * What to put where a scored run puts BEST CHAIN.
+ * The fault the monitor names, in its own order of severity.
  *
  * It used to be `<Stat label="Mount" value="LOOSE" />`, unconditional — a fact about the
  * hardware, stated on every refused run, including the ones where the monitor's verdict is

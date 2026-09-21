@@ -367,12 +367,12 @@ npm run shoot -- --video --only drive
 /opt/pw-browsers/ffmpeg-1011/ffmpeg-linux -i artifacts/video/drive.webm -r 6 /tmp/f%03d.png
 ```
 
-## Results screen: deterministic fixtures (`/results/...`)
+## Run review: deterministic fixtures (`/results/...`)
 
-The results screen renders a stored `Session`. For screenshots (and for development before the
-app has recorded anything) it can rebuild one from the simulator instead, deterministically:
-same URL → same session → same pixels. The numbers on screen always come from the real scorer
-(`scoreSession`) and the real cross-lap analysis (`lapConsistency`), never from a mock.
+The review renders a stored `Session`. For screenshots (and for development before the app has
+recorded anything) it can rebuild one from the simulator instead, deterministically: same URL →
+same session → same pixels. The figures on screen are always the run's own measurements
+(`Session.driftStats`, one `DriftSummary` per slide), never a mock.
 
 ```
 /results/fixture-hero                      the `hero` scenario (id form)
@@ -381,77 +381,85 @@ same URL → same session → same pixels. The numbers on screen always come fro
 /results/<storedId>                        a real session from storage (no fixture)
 ```
 
-| `?fixture=` | what it is | what the scorer returned when this table was regenerated |
+| `?fixture=` | what it is | what the engine measured when this table was regenerated |
 | --- | --- | --- |
-| `hero`   | harbor through the REAL pipeline, aggression 1.3, consistency 1 — the best the driver model reaches | **S** 92.5 · 8 slides · 2 clean laps |
-| `good`   | harbor through the REAL pipeline, aggression 0.9, consistency 0.8 | **A** 86.1 · 8 slides |
-| `sloppy` | harbor, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | **D** 26.3 · 11 slides · 3 spins |
-| `spin`   | harbor, one slide forced past the spin threshold | **B** 74.7 · 1 spin, a chain lost |
-| `clean`  | harbor, driven on grip (slip angle under 5°) | **D** 0/100 · no drifts at all |
-| `rough`  | harbor through the REAL pipeline with an unsteady cradle and GPS dropouts | **B** 74.1 · scored, with warnings |
-| `handheld` | harbor through the REAL pipeline with the phone in someone's hand (`loose=1`) | **no score at all** — the engine refuses to publish one |
-| `touge`  | the point-to-point mountain road, one lap | **A** 88.4 · no laps → no lap table |
+| `hero`   | harbor through the REAL pipeline, aggression 1.3, consistency 1 — the best the driver model reaches | 8 slides · peak 64° · best 64° held 24.5 s · 1:22 of 2:02 sideways |
+| `good`   | harbor through the REAL pipeline, aggression 0.9, consistency 0.8 | 8 slides · peak 56° · best 56° held 26.1 s |
+| `sloppy` | harbor, aggression 0, consistency 0, the 3 biggest slides forced past the spin threshold | 11 slides · 3 spins · peak 118° |
+| `spin`   | harbor, one slide forced past the spin threshold | 8 slides · 1 spin · BEST DRIFT is the spin, and says so |
+| `clean`  | harbor, driven on grip (slip angle under 5°) | 0 slides — the empty EVERY SLIDE state |
+| `rough`  | harbor through the REAL pipeline with an unsteady cradle and GPS dropouts | 9 slides, believed but QUALIFIED: three integrity notes behind the disclosure |
+| `handheld` | harbor through the REAL pipeline with the phone in someone's hand (`loose=1`) | **refused** — the engine will not vouch for it |
+| `touge`  | the point-to-point mountain road, one lap | 5 slides · peak 52° |
 
 The showcase scenarios (`hero`, `good`, `rough`, `handheld`) run through the **real pipeline** on
-purpose. Ground truth replays the same lap plan every lap, so cross-lap spreads come out at
-exactly 0.0 m and the screen would be publishing a simulator artifact as the driver's
-repeatability; through the pipeline the estimator's own noise is in the numbers.
+purpose: ground truth replays the same lap plan every lap, so the estimator's own noise is absent
+from it and the screen would be publishing a simulator artifact as the driver's slide shapes.
 
-The grades move whenever the scorer is retuned — that is the point of shooting them. Regenerate
-this table with:
+The figures move whenever the detector or the estimator is retuned — that is the point of
+shooting them. Regenerate this table with:
 
 ```
 npx tsx -e "import{buildFixtureSession,FIXTURES}from'./src/ui/results/fixture';import{buildResultsModel}from'./src/ui/results/model';\
-for(const k of Object.keys(FIXTURES)){const m=buildResultsModel(buildFixtureSession(FIXTURES[k]));\
-console.log(k,m.trusted?m.grade:'no score',m.rating,m.drifts.length+' slides',m.stats.spins+' spins');}"
+for(const k of Object.keys(FIXTURES)){const m=buildResultsModel(buildFixtureSession(FIXTURES[k]));const b=m.best;\
+console.log(k,m.trusted?'trusted':'REFUSED',m.drifts.length+' slides',m.stats.spins+' spins','peak '+Math.round(m.stats.peakDeg)+'deg',\
+b?'best '+Math.round(b.peakDeg)+'deg/'+b.heldS.toFixed(1)+'s':'no best');}"
 ```
 
 Overrides (all optional, all clamped): `track=harbor|touge`, `seed=<int>`, `laps=1..6`,
 `agg=0..2` (above 1 is a hero lap the driver model cannot normally produce), `cons=0..1`,
 `spin=<n>` (force the n biggest slides past the spin threshold), `drifts=none` (grip lap),
 `loose=0..1` (0 rigid, 0.7 rattling cradle, 1 hand-held; `rough=1` is a 0.7 alias),
-`source=sim|pipeline`.
-
-**The refusal state.** When `Session.integrity.scoreTrusted` (mirrored on `SessionScore.trusted`)
-is false, the results screen must not present the run as an achievement, and does not: no grade
-letter (a red NOT SCORED plate takes its place), no grade rail, no reveal, component bars empty
-with "--" instead of numbers, no callout points, no lap-consistency table, the drift list without
-its points column, the total labelled "points logged · a floor, not a measurement", SHARE
-disabled, and the primary action reading WATCH THE RECORDING. `?fixture=handheld` photographs it
-(`results-untrusted.png`, `results-untrusted-foot.png`).
+`source=sim|pipeline`, `motion=reduce|full`.
 
 * `source=sim` (default) fills the session from simulator ground truth — about 200 ms.
 * `source=pipeline` pushes the simulated sensors through the **real** engine pipeline (mount
-  calibration → slip estimator → detector → scorer), which is what the phone runs. Costs about
-  a second, and the screen then shows estimator noise, real detector splits and real integrity.
+  calibration → slip estimator → detector), which is what the phone runs. Costs about a second,
+  and the screen then shows estimator noise, real detector splits and real integrity.
 
-Reveal and motion control (they exist so a screenshot can be reproduced, and because a driver
-may have asked the system for less motion):
+**BEST DRIFT is the biggest angle, longest held** — peak decides, `heldS` breaks the tie. Not the
+old `bestDriftId`, which ranked by points. A spin can therefore win it, because a spin really is
+the biggest angle of the run, and the panel says THIS ONE ENDED IN A SPIN rather than quietly
+promoting the runner-up and calling that the biggest: `?fixture=spin` photographs exactly that.
 
-| param | effect |
-| --- | --- |
-| `reveal=full` | default: letterbox → black beat → the grade slams in → the page settles |
-| `reveal=off` | no reveal at all; the settled page, animations already finished |
-| `reveal=hold` | FREEZES the reveal on the black-hold frame (t = 640 ms) |
-| `reveal=slam` | FREEZES it mid-slam (t = 1170 ms): shockwave half way out, embers flying |
-| `reveal=settle` | FREEZES it as the bars retract (t = 1980 ms) |
-| `motion=reduce` | forces reduce-motion: no letterbox, no shake, no embers; the letter and the numbers still arrive |
-| `motion=full` | forces full motion even when the OS asks for less (screenshots only) |
+**The refusal state.** When `Session.integrity.scoreTrusted` (mirrored on `SessionScore.trusted`)
+is false, the review must not present the run as an achievement, and does not. A red NOT SCORED
+block sits directly under the wordmark carrying the monitor's own remedy, the fault it actually
+found (`faultStat` — never a hardcoded "Mount · LOOSE"), and a disclosure holding every integrity
+note verbatim; every figure below it — the four stats, BEST DRIFT, every slide — is drawn in
+`colors.muted`, captioned AS RECORDED, and the sliding time is the recording's own rather than a
+suppressed zero. `?fixture=handheld` photographs it (`results-untrusted.png`,
+`results-untrusted-foot.png`, `results-why-open.png`).
 
-The two frozen reveal shots warn that a corner pixel is `#000000` rather than `#07090D`. That is
-the letterbox, and it is deliberate: the bars have to read as bars against the bg0 stage between
-them, which they cannot do if they are painted in bg0. Same device as the replay's letterbox.
+**What was deleted, and why the routes for it are gone.** There is no grade, no total, no rating,
+no component bars, no callout reel and no lap table, so `results-reveal`, `results-skip`,
+`results-reveal-hold`, `results-reveal-slam`, `results-reveal-settle`, `results-laps`,
+`results-wide-laps` and `results-wide-breakdown` were photographs of components that no longer
+exist. `results-best` went too, for a different reason: BEST DRIFT sits at y = 385..507 on a
+393 × 852 frame, which is on screen at rest, so a route that scrolled to find it was
+photographing `results` a second time. `results-foot` replaces it and is the bottom of the page.
 
-A frozen reveal never completes, so the page underneath is rendered in its settled state and the
-overlay sits on top for as long as you like — which is what makes `results-reveal-slam.png`
-reproducible. With `reveal=full` the whole thing is skippable: a tap anywhere jumps to the end.
+**No `minEmber` on any of these routes.** `isEmber` is the hue band 8–32°; the review's accent is
+the mark's green at 87°, which `isGreen` covers after the repaint and `isEmber` cannot. A floor
+against a colour that cannot appear fails for the wrong reason. `results` measures
+`{ colour: 'green', testId: 'best-drift', min: 2000 }` instead — the region measured 3,876 green
+pixels on this build, so the floor is a little over half of it. The page's BLUE is not measured
+anywhere, and should be: TOP SPEED and every row's entry speed are `#6C9BEA` at hue 218, and
+`isCyan` is 170–205 for a colour the repaint deleted. That is a gap in `pixels.mjs`.
 
-Video of the reveal: `npm run shoot -- --video --only results-reveal`, then pull frames with the
-bundled ffmpeg (its filter parser is unusable in this build, so use `-r`, not `-vf fps=`):
+**Where the blocks sit**, measured on this build at 393 × 852 (`hero`, eight slides): back row
+0..52, wordmark 68..188, stat grid 204..369, BEST DRIFT 385..507, EVERY SLIDE 523..961 with each
+row 44 dp tall, REPLAY / DRIVE AGAIN 985..1033. The page is 1,157 dp of content in an 852 dp
+frame, so its whole scroll range is 305 dp and one wheel of 500 lands on the bottom. Re-measure
+rather than guess: a route with an `eval` action that prints `getBoundingClientRect()` shows up
+in `console.log` per route.
 
-```
-/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux -i artifacts/video/results-reveal.webm -r 12 /tmp/f%03d.png
-```
+**Landscape** (`--landscape`, 852 × 393) is not that column stretched wide. The wordmark and the
+two actions dock in a fixed rail and everything else scrolls beside it. THE RAIL DOES NOT SCROLL,
+so what is in it has to fit the frame's height: back row 52 + wordmark 120 + stat grid 165 +
+actions 56 plus gaps is 457 dp in a 393 dp rail, and the first build of this laid all of it out
+anyway and drew DRIVE AGAIN on top of the best-drift card. `resultsLayout().railHoldsStats` is
+that arithmetic; under it the four stats lead the scrolling column instead. `results-wide.png`.
 
 ## Replay: the cinematic stage (`/replay/[id]?...`)
 

@@ -270,45 +270,53 @@ export const defaultRoutes = [
     ],
   },
 
-  // ---- results: the verdict screen ------------------------------------------------------
+  // ---- results: the run review ------------------------------------------------------------
   // `?fixture=<name>` (or the id `fixture-<name>`) rebuilds a deterministic session from the
-  // simulator and scores it with the real scorer, so every shot below reproduces byte for byte.
-  // `?reveal=` plays (full), skips (off) or FREEZES a frame of the grade reveal.
-  // the reveal playing end to end — shoot this one with --video and pull frames out with ffmpeg
-  { name: 'results-reveal', path: '/results/fixture-hero', waitMs: 3400 },
-  // the reveal is skippable: tap anywhere during it and the page is there, already settled
-  // frozen at the slam, then tapped: proves a tap ends the reveal and hands over an interactive,
-  // settled page (tapping a frozen frame keeps the shot deterministic — no 2-second window to hit)
-  {
-    name: 'results-skip',
-    path: '/results/fixture-hero?reveal=slam',
-    waitMs: 1600,
-    actions: [{ type: 'tap', testId: 'reveal-skip' }, { type: 'wait', ms: 1200 }],
-  },
-  { name: 'results-reveal-hold', path: '/results/fixture-hero?reveal=hold', waitMs: 1600 },
-  { name: 'results-reveal-slam', path: '/results/fixture-hero?reveal=slam', waitMs: 2200, expectCanvas: true, minEmber: 300 },
-  { name: 'results', path: '/results/fixture-hero?reveal=off', waitMs: 2000, minEmber: 1500 },
-  { name: 'results-sloppy', path: '/results/fixture-sloppy?reveal=off', waitMs: 2000 },
-  { name: 'results-spin', path: '/results/fixture-spin?reveal=off', waitMs: 2000 },
-  { name: 'results-clean', path: '/results/fixture-clean?reveal=off', waitMs: 2000 },
-  { name: 'results-best', path: '/results/fixture-hero?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 1150 }, { type: 'wait', ms: 900 }] },
-  { name: 'results-drifts', path: '/results/fixture-spin?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 2200 }, { type: 'wait', ms: 900 }] },
-  { name: 'results-laps', path: '/results/fixture-sloppy?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 4200 }, { type: 'wait', ms: 900 }] },
-  // the refusal state: a hand-held recording the engine will not publish a score for
-  { name: 'results-untrusted', path: '/results/fixture-handheld?reveal=off', waitMs: 3600 },
-  { name: 'results-untrusted-foot', path: '/results/fixture-handheld?reveal=off', waitMs: 3600, actions: [{ type: 'scroll', y: 2600 }, { type: 'wait', ms: 900 }] },
-  // the warned-but-scored run: its hero carries the PIPELINE's grade (B), which is what the
-  // garage row and the end of the replay show — a re-score from storage would have said A
+  // simulator and measures it with the real engine, so every shot below reproduces byte for byte.
+  //
+  // THE `?reveal=` ROUTES ARE GONE, not disabled. There is no grade to slam in over letterbox
+  // bars, so `results-reveal`, `results-skip`, `results-reveal-hold`, `results-reveal-slam` and
+  // `results-reveal-settle` were photographs of a component that no longer exists.
+  //
+  // NO `minEmber` EITHER, and that is not an omission. `isEmber` is the hue band 8-32 degrees
+  // and the review's accent is the mark's green at 87 — a floor against a colour that cannot
+  // appear on the screen is a check that fails for the wrong reason. `colour: 'green'` is the
+  // band that carries the repaint (`pixels.mjs`), so that is what these measure, in the part of
+  // the frame the claim is about rather than over the whole page. Every count below was measured
+  // on this build and is quoted with what it was measured from.
+  //
+  // THE BLUE IS NOT MEASURED ANYWHERE HERE, and it should be. TOP SPEED and every row's entry
+  // speed are `#6C9BEA` at hue 218; `isCyan` is 170-205, for a colour the repaint deleted, so
+  // there is no predicate that can name it. That is a gap in `pixels.mjs`, not in these routes.
+  { name: 'results', path: '/results/fixture-hero', waitMs: 2000, regions: [{ name: 'best-drift', colour: 'green', testId: 'best-drift', min: 2000 }] },
+  { name: 'results-sloppy', path: '/results/fixture-sloppy', waitMs: 2000 },
+  { name: 'results-spin', path: '/results/fixture-spin', waitMs: 2000 },
+  { name: 'results-clean', path: '/results/fixture-clean', waitMs: 2000 },
+  // The foot of the page, at the depth it actually sits at. Measured on this build at 393 x 852:
+  // wordmark 68..188, stat grid 204..369, best drift 385..507, the slide list 523..961 and the
+  // two actions 985..1033, so a review of eight slides is about 1,140 dp of page and one wheel
+  // past the 288 dp of scroll it has lands on the bottom.
+  //
+  // `results-best` IS GONE rather than retargeted: BEST DRIFT is 385..507, which is on screen at
+  // rest, so a route that scrolled to find it would have been photographing `results` twice.
+  { name: 'results-foot', path: '/results/fixture-hero', waitMs: 2000, actions: [{ type: 'scroll', y: 500 }, { type: 'wait', ms: 900 }] },
+  { name: 'results-drifts', path: '/results/fixture-spin', waitMs: 2000, actions: [{ type: 'scroll', y: 500 }, { type: 'wait', ms: 900 }] },
+  // the refusal state: a hand-held recording the engine will not vouch for. The remedy leads,
+  // every figure below it is grey, and the reasoning is one tap away.
+  { name: 'results-untrusted', path: '/results/fixture-handheld', waitMs: 3600 },
+  { name: 'results-untrusted-foot', path: '/results/fixture-handheld', waitMs: 3600, actions: [{ type: 'scroll', y: 600 }, { type: 'wait', ms: 900 }] },
+  // believed, but qualified: an unsteady mount and poor GPS. The monitor's notes are one line at
+  // the foot of the page rather than four paragraphs under a heading of their own.
   {
     name: 'results-integrity',
-    path: '/results/fixture-rough?reveal=off',
+    path: '/results/fixture-rough',
     waitMs: 2000,
-    actions: [{ type: 'screenshot', name: 'results-warned' }, { type: 'scroll', y: 5200 }, { type: 'wait', ms: 900 }],
+    actions: [{ type: 'screenshot', name: 'results-warned' }, { type: 'tap', testId: 'why-unscored', timeout: 30000 }, { type: 'wait', ms: 800 }, { type: 'scroll', y: 500 }, { type: 'wait', ms: 900 }],
   },
-  // the same screen fed by the REAL engine pipeline (mount → slip → detector → scorer), not ground truth
-  { name: 'results-pipeline', path: '/results/fixture-good?reveal=off&source=pipeline', waitMs: 3600 },
-  // reduce-motion: state changes keep, shake and embers go
-  { name: 'results-reduced', path: '/results/fixture-hero?reveal=hold&motion=reduce', waitMs: 2000 },
+  // the same screen fed by the REAL engine pipeline (mount -> slip -> detector -> analysis)
+  { name: 'results-pipeline', path: '/results/fixture-good?source=pipeline', waitMs: 3600 },
+  // reduce-motion: the rows arrive without the rise
+  { name: 'results-reduced', path: '/results/fixture-hero?motion=reduce', waitMs: 2000 },
   { name: 'results-missing', path: '/results/no-such-session', waitMs: 1200 },
   // ---- replay: the cinematic stage -------------------------------------------------------
   // The scene comes from `src/engine/replay` and is drawn in Skia by `src/ui/replay/scene.ts`.
@@ -397,14 +405,16 @@ export const defaultRoutes = [
   // THIS DRIFT, and land in the replay at that moment with the drift picked out.
   {
     name: 'replay-from-results',
-    path: '/results/fixture-good?reveal=off',
+    path: '/results/fixture-good',
     waitMs: 2600,
-    // no `expectCanvas`: the check runs on the page that is LOADED, and that is the results
-    // screen, which has no canvas once its reveal is off
+    // no `expectCanvas`: the check runs on the page that is LOADED, and that is the review,
+    // which draws no canvas at all — its sparklines are SVG on purpose.
+    //
+    // The tap target moved. REPLAY THIS DRIFT used to sit inside the best-drift card; the card
+    // is four figures now and carries no button, so the deep link is what it always was for the
+    // list — a slide row, which is the one the driver actually taps to see a moment again.
     actions: [
-      { type: 'scroll', y: 1150 },
-      { type: 'wait', ms: 700 },
-      { type: 'tap', testId: 'cta-watch-best', timeout: 60000 },
+      { type: 'tap', testId: 'drift-row-3', timeout: 60000 },
       { type: 'waitFor', testId: 'screen-replay', timeout: 60000 },
       { type: 'wait', ms: 2000 },
     ],
@@ -474,27 +484,19 @@ export const defaultRoutes = [
   },
 
   // ---- results in landscape ---------------------------------------------------------------
-  // Shoot these with `--landscape`. The verdict screen is not one column stretched wide there:
-  // the grade, the total, the scale and the three actions dock in a fixed rail on the left and
-  // the report scrolls in the column beside it (`src/ui/results/layout.ts`). That column is
-  // narrower than a portrait page, so the same section sits at a different scroll depth — hence
-  // these entries rather than reusing `results-best` / `results-drifts` / `results-laps` with
-  // the flag. In portrait they land a little further down the same page and are still valid
-  // frames, just not the ones they are named for.
-  { name: 'results-wide-breakdown', path: '/results/fixture-hero?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }] },
-  { name: 'results-wide-best', path: '/results/fixture-hero?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 1080 }, { type: 'wait', ms: 900 }] },
-  { name: 'results-wide-drifts', path: '/results/fixture-spin?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 2150 }, { type: 'wait', ms: 900 }] },
-  { name: 'results-wide-laps', path: '/results/fixture-sloppy?reveal=off', waitMs: 2000, actions: [{ type: 'scroll', y: 3000 }, { type: 'wait', ms: 900 }] },
-  // The handoff frame: the reveal's letter on its way to the hero letter's place, which is in
-  // the rail in landscape and at the top of the column in portrait.
-  { name: 'results-reveal-settle', path: '/results/fixture-hero?reveal=settle', waitMs: 2000 },
+  // Shoot these with `--landscape`. The review is not one column stretched wide there: the
+  // summary — the wordmark, the four stats, the best drift and the two actions — docks in a
+  // fixed rail on the left and the slide list scrolls in the column beside it
+  // (`src/ui/results/layout.ts`), so DRIVE AGAIN stays under the thumb however long the list is.
+  { name: 'results-wide', path: '/results/fixture-hero', waitMs: 2000 },
+  { name: 'results-wide-drifts', path: '/results/fixture-spin', waitMs: 2000, actions: [{ type: 'scroll', y: 320 }, { type: 'wait', ms: 900 }] },
   // The refusal with its reasoning opened. The screen leads with the one line the driver can act
   // on and the recording; every integrity note is still there, verbatim, one tap behind this
   // control — these two frames are the proof that nothing was softened, only reordered.
-  { name: 'results-why-open', path: '/results/fixture-handheld?reveal=off', waitMs: 3600, actions: [{ type: 'tap', testId: 'why-unscored', timeout: 30000 }, { type: 'wait', ms: 800 }] },
+  { name: 'results-why-open', path: '/results/fixture-handheld', waitMs: 3600, actions: [{ type: 'tap', testId: 'why-unscored', timeout: 30000 }, { type: 'wait', ms: 800 }] },
   {
     name: 'results-why-foot',
-    path: '/results/fixture-handheld?reveal=off',
+    path: '/results/fixture-handheld',
     waitMs: 3600,
     actions: [{ type: 'tap', testId: 'why-unscored', timeout: 30000 }, { type: 'wait', ms: 800 }, { type: 'scroll', y: 480 }, { type: 'wait', ms: 700 }],
   },

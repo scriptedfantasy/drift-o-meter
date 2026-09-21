@@ -1,59 +1,69 @@
 /**
- * Results — what the driver sees the moment they stop the car.
+ * The run review — what the driver sees the moment they stop the car.
  *
- * The screen is a verdict, not a report: the grade slams in over letterbox bars, the total rolls
- * up on an odometer, the component bars fill, and only then does it settle into a page you can
- * actually read. Every number comes from the engine's own scorer (`scoreSession`) and its
- * cross-lap analysis; the words under them are derived from the same numbers, and they are not
- * kind when the driving was not.
+ * It is a REVIEW, not a verdict: what the car did, in the order a driver retells it. How fast it
+ * went, how many slides, how long sideways, how long the run was; then the biggest slide of the
+ * night; then every slide, each with the shape of its own |β| trace. There is no grade, no
+ * points, no rating and no letter slamming in over letterbox bars — a number that rewards is a
+ * number someone will chase, and the thing worth chasing here is the angle.
+ *
+ * It SCROLLS, and it is not a fixed-height screen: a review's length is however many slides the
+ * driver did.
+ *
+ * The one judgement left on the page is the integrity monitor's, and it is a judgement of the
+ * DATA. A phone waved about in a parked car produces large angles and a plausible-looking run;
+ * when `SessionIntegrity.scoreTrusted` is false this screen says so first, greys every figure
+ * below it and offers the recording, because the recording is real even when the verdict is not.
  *
  * URL:
  *   /results/<sessionId>                     a stored session
  *   /results/fixture-hero                    a deterministic simulated session (see ?fixture)
  *   /results/anything?fixture=sloppy         same, by query
- *   ?reveal=full|off|hold|slam|settle        play the reveal, skip it, or freeze a frame
- *   ?motion=reduce|full                      override the system's reduce-motion setting
  *   ?source=sim|pipeline                     ground-truth fixture, or the real engine pipeline
+ *   ?motion=reduce|full                      override the system's reduce-motion setting
  * See tools/harness/README.md for the full list.
  */
-import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Session } from '@/engine/types';
-import { useSession } from '@/platform';
+import { useSession, useSettings } from '@/platform';
 import { useDriftFeel } from '@/ui/audio';
-import { alpha, AppText, Button, colors, formatDate, formatDuration, formatScore, gutter, space } from '@/ui';
+import {
+  AppText,
+  alpha,
+  colors,
+  formatDate,
+  formatDuration,
+  formatSpeed,
+  gutter,
+  radii,
+  space,
+  speedUnitLabel,
+  type SpeedUnits,
+} from '@/ui';
 import {
   BestDriftCard,
   buildFixtureSession,
   buildResultsModel,
-  CalloutReel,
-  ComponentBars,
   DriftList,
-  GradeReveal,
-  GradeScale,
-  gradeWord,
-  IntegrityPanel,
-  LapTable,
-  Odometer,
   RAIL_GAP,
+  Stat,
+  Tag,
+  WhyUnscored,
+  WORDMARK_ASPECT,
   faultStat,
   refusalFrom,
   resolveFixture,
   resultsLayout,
-  SectionHead,
-  Stat,
-  Tag,
-  WhyUnscored,
   type DriftRow,
   type ResultsModel,
-  type RevealMode,
 } from '@/ui/results';
 
-const REVEAL_VALUES: RevealMode[] = ['full', 'off', 'hold', 'slam', 'settle'];
+const WORDMARK = require('@/assets/brand/wordmark.webp');
 
 function flatten(params: Record<string, string | string[] | undefined>): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
@@ -64,32 +74,32 @@ function flatten(params: Record<string, string | string[] | undefined>): Record<
 export default function ResultsScreen() {
   // Makes sure the feel layer is built, and subscribes to its status. It does NOT build a port
   // of its own: the port is a module singleton that outlives every screen, so arriving here from
-  // `/drive` costs no decode and the grade cue is ready the instant the letter lands. (It used
-  // to rebuild all 18 clips on arrival and only just beat the reveal.)
+  // `/drive` costs no decode.
   useDriftFeel();
   const raw = useLocalSearchParams() as Record<string, string | string[] | undefined>;
   const params = useMemo(() => flatten(raw), [raw]);
   const id = params.id;
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const { settings } = useSettings();
 
   const spec = useMemo(() => resolveFixture(id, params), [id, params]);
   const specKey = spec ? JSON.stringify(spec) : null;
   const stored = useSession(spec ? undefined : id);
 
   // Fixtures are built off the render path: the simulator (and, with ?source=pipeline, the whole
-  // engine) takes a few hundred milliseconds, and the reveal should already be on screen.
-  const [fixtureSession, setFixtureSession] = useState<Session | null>(null);
+  // engine) takes a few hundred milliseconds, and a frozen first frame is worse than a stated
+  // wait. The built session is stored WITH the spec it was built from, and read back only when
+  // the two still match: clearing it in the effect instead meant a synchronous setState on every
+  // navigation, and, for the one frame before the effect ran, the previous fixture's numbers
+  // under the new fixture's name.
+  const [fixture, setFixture] = useState<{ key: string; session: Session } | null>(null);
   useEffect(() => {
-    if (!spec) {
-      setFixtureSession(null);
-      return;
-    }
+    if (!spec || !specKey) return;
     let alive = true;
-    setFixtureSession(null);
     const handle = setTimeout(() => {
       const built = buildFixtureSession(spec);
-      if (alive) setFixtureSession(built);
+      if (alive) setFixture({ key: specKey, session: built });
     }, 0);
     return () => {
       alive = false;
@@ -98,16 +108,12 @@ export default function ResultsScreen() {
     // specKey is the value identity of spec
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [specKey]);
+  const fixtureSession = spec && fixture?.key === specKey ? fixture.session : null;
 
   const session = spec ? fixtureSession : stored.session;
   const model = useMemo(() => (session ? buildResultsModel(session) : null), [session]);
 
-  const reveal: RevealMode = REVEAL_VALUES.includes(params.reveal as RevealMode) ? (params.reveal as RevealMode) : 'full';
-  const frozen = reveal === 'hold' || reveal === 'slam' || reveal === 'settle';
-
   const [systemReduce, setSystemReduce] = useState(false);
-  // The reveal must not start before we know whether the driver asked for less motion: the query
-  // is async, and starting first meant a reduce-motion user still got the letterbox and the shake.
   const forcedMotion = params.motion === 'reduce' || params.motion === 'full';
   const [motionResolved, setMotionResolved] = useState(forcedMotion);
   useEffect(() => {
@@ -119,7 +125,7 @@ export default function ResultsScreen() {
         done();
       })
       .catch(done);
-    // never hang the reveal on a query that does not answer
+    // never hang the page on a query that does not answer
     const fallback = setTimeout(done, 400);
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => alive && setSystemReduce(v));
     return () => {
@@ -129,13 +135,6 @@ export default function ResultsScreen() {
     };
   }, []);
   const reduceMotion = params.motion === 'reduce' ? true : params.motion === 'full' ? false : systemReduce;
-
-  const [revealed, setRevealed] = useState(reveal === 'off');
-  const onRevealDone = useCallback(() => setRevealed(true), []);
-  // a frozen reveal covers the page, but the page underneath is in its settled state; an
-  // untrusted run never gets a reveal, so its page starts straight away
-  const pageRun = revealed || frozen || (model !== null && !model.trusted);
-  // ...and a tap dismisses even a frozen one, which is how the harness proves the skip works
 
   const loading = (spec ? fixtureSession === null : stored.loading) || !motionResolved;
   const missing = !loading && !session;
@@ -158,8 +157,8 @@ export default function ResultsScreen() {
   if (loading) {
     return (
       <View style={styles.boot} testID="screen-results-loading">
-        <AppText variant="micro" color="ember">
-          Scoring the run
+        <AppText variant="micro" color="green">
+          Reading the run
         </AppText>
       </View>
     );
@@ -172,39 +171,19 @@ export default function ResultsScreen() {
   return (
     <View style={styles.root} testID="screen-results">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-        <ResultsPage
+        <ReviewPage
           model={model}
+          units={settings.units}
           width={width}
           height={height}
-          run={pageRun}
           reduceMotion={reduceMotion}
           onReplay={openReplay}
           onGarage={() => router.replace('/')}
           onDrive={() => router.replace('/drive')}
         />
       </SafeAreaView>
-      {/* No grade reveal for a run the engine will not vouch for: there is no grade to slam in.
-          And once it has played it is unmounted, so a finished overlay never keeps eating taps. */}
-      {reveal === 'off' || revealed || !model.trusted || !motionResolved ? null : (
-        <GradeReveal
-          grade={model.grade}
-          color={model.gradeColor}
-          rating={model.rating}
-          kicker={`${sessionTrack(model)} · ${formatDuration(model.session.durationS)} · ${model.drifts.length} ${model.drifts.length === 1 ? 'slide' : 'slides'}`}
-          drifts={model.drifts.length}
-          mode={reveal}
-          reduceMotion={reduceMotion}
-          onDone={onRevealDone}
-          testID="grade-reveal"
-        />
-      )}
     </View>
   );
-}
-
-/** A 0–100 rating the scorer could not compute must read "--", never "NaN". */
-function ratingText(rating: number): string {
-  return Number.isFinite(rating) ? rating.toFixed(1) : '--';
 }
 
 function sessionTrack(model: ResultsModel): string {
@@ -212,469 +191,231 @@ function sessionTrack(model: ResultsModel): string {
   return typeof t === 'string' ? t : model.session.name;
 }
 
-function ResultsPage({
+function ReviewPage({
   model,
+  units,
   width,
   height,
-  run,
   reduceMotion,
   onReplay,
   onGarage,
   onDrive,
 }: {
   model: ResultsModel;
+  units: SpeedUnits;
   width: number;
   height: number;
-  run: boolean;
   reduceMotion: boolean;
   onReplay(at?: DriftRow): void;
   onGarage(): void;
   onDrive(): void;
 }) {
-  const [shareNote, setShareNote] = useState<string | null>(null);
-  const hasDrifts = model.drifts.length > 0;
-  /** The engine refused to publish a score: no grade, no points presented as an achievement. */
+  /** The engine refuses to vouch for this run: nothing below may read as an achievement. */
   const untrusted = !model.trusted;
-  // Portrait is one column. Landscape is a fixed verdict rail plus a scrolling report — see
-  // `resultsLayout`, which the grade reveal reads too so it can hand its letter to the hero's.
-  const L = resultsLayout(width, height, untrusted);
-  const content = L.contentWidth;
+  // Portrait is one column. Landscape docks the summary in a rail and scrolls the slides beside
+  // it, so DRIVE AGAIN stays under the thumb however long the list is — see `resultsLayout`.
+  const L = resultsLayout(width, height);
+  const slides = model.drifts;
+
   /**
    * What the driver can physically do about a refusal, in the integrity monitor's own words, and
    * separately the fraction that was not believed. The remedy leads; the reason waits behind the
    * disclosure with the rest of the notes.
    */
-  const refusal = untrusted ? refusalFrom(model.judged.message, model.verdict) : null;
+  const refusal = untrusted ? refusalFrom(model.judged.message, 'Too much of this run could not be believed') : null;
   /**
-   * The fourth stat on a refused run. It is the MONITOR'S finding, not a constant: this cell
-   * read "Mount · LOOSE" on every refusal, including the ones the monitor recorded as
-   * `mount: 'rigid'` and refused for an unresolved forward axis.
+   * The chip beside a refusal. It is the MONITOR'S finding, not a constant: this used to read
+   * "Mount · LOOSE" on every refusal, including the ones the monitor recorded as `mount: 'rigid'`
+   * and refused for an unresolved forward axis.
    */
   const fault = untrusted ? faultStat(model.judged, model.session.calibration?.forwardResolved ?? false) : null;
-
-  const share = useCallback(async () => {
-    // an untrusted run has no score to publish — see the contract on SessionIntegrity.scoreTrusted
-    if (Platform.OS === 'web' || !model.trusted) return;
-    try {
-      const [fs, sharing] = await Promise.all([import('expo-file-system'), import('expo-sharing')]);
-      if (!(await sharing.isAvailableAsync())) {
-        setShareNote('This device has nothing to share to.');
-        return;
-      }
-      const file = new fs.File(fs.Paths.cache, `drift-o-meter-${model.session.id}.txt`);
-      try {
-        file.create({ overwrite: true });
-      } catch {
-        // already there: write overwrites it
-      }
-      file.write(shareText(model));
-      await sharing.shareAsync(file.uri, { mimeType: 'text/plain', UTI: 'public.plain-text', dialogTitle: 'Share this run' });
-      setShareNote(null);
-    } catch (err) {
-      setShareNote(`Sharing failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }, [model]);
-
-  // ---- the pieces of the page ---------------------------------------------------------
-  // Both layouts draw the same blocks; only where they go changes. Portrait stacks them in one
-  // column. Landscape docks the verdict — grade, total, scale and the three actions — in a rail
-  // on the left and scrolls the report beside it.
+  /** Qualifying notes on a run the monitor DID believe. Nothing to disclose when they are all ok. */
+  const qualified = !untrusted && model.integrity.some((n) => n.level !== 'ok');
 
   const topRow = (
     <View style={styles.topRow}>
-      <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => pressed && styles.pressed}>
+      <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
         <AppText variant="micro" color="muted">
           ← Garage
         </AppText>
       </Pressable>
       <AppText variant="micro" color="muted" numberOfLines={1}>
-        {formatDate(model.session.startedAt)} · {formatDuration(model.session.durationS)}
+        {sessionTrack(model)} · {formatDate(model.session.startedAt)}
       </AppText>
     </View>
   );
 
-  /**
-   * The light under the verdict.
-   *
-   * IT FADES AT BOTH ITS OWN EDGES, and that is why it runs vertically. It used to be a diagonal
-   * (0,0) → (1,1) ramp from alpha 0.2 to transparent, which cannot vanish on all four sides of a
-   * box: a linear gradient is constant along the lines across its axis, so its first stop paints
-   * the whole top edge and its bottom-left corner is still mid-ramp. Measured in landscape: a
-   * 40/255 step in ONE pixel row at y = 34 dp across the full rail width, where the wash's top
-   * edge met the date row, and a 14/255 step at y = 341 where the view ended — which on one
-   * route drew a horizontal line straight through the SHARE / DRIVE AGAIN row. It read as a card
-   * laid on the page rather than as light on it.
-   *
-   * Vertically, alpha is a function of y alone: 0 at the top edge, up to full just below the top
-   * row, and back to 0 inside the view. The left and right edges bleed past the frame
-   * (`washInset`), so those two have nothing to step against.
-   */
-  const washColor = untrusted ? colors.red : model.gradeColor;
-  const wash = (
-    <LinearGradient
-      // no grade, no grade colour: an unpublished run gets the warning wash, not a laurel
-      colors={[alpha(washColor, 0), alpha(washColor, untrusted ? 0.16 : 0.2), alpha(washColor, 0.05), alpha(washColor, 0)]}
-      locations={[0, 0.16, 0.62, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={[styles.heroWash, { left: -L.washInset, right: -L.washInset, height: L.washHeight }]}
-      pointerEvents="none"
+  // The mark, centred, at the width the drive display draws it: the two screens are one board.
+  const wordmark = (
+    <Image
+      source={WORDMARK}
+      style={{ width: L.wordmarkWidth, height: Math.round(L.wordmarkWidth / WORDMARK_ASPECT) }}
+      contentFit="contain"
+      accessibilityLabel="Drift-O-Mania"
+      testID="wordmark"
     />
   );
 
-  // On a tall landscape rail the grade takes its own line and the score sits under it: sharing
-  // the row with a five-digit odometer caps the letter at half the rail however big the frame
-  // gets, which at 1366 x 1024 left a 180 dp letter in a rail that was 45 % black.
-  const heroTop = (
-    <View style={[styles.heroTop, L.railStack && styles.heroTopStacked]}>
-      {untrusted ? (
-        <View style={styles.gradeBox}>
-          <AppText variant="micro" color="muted" style={styles.gradeLabel}>
-            Verdict
-          </AppText>
-          <View style={styles.voidPlate} testID="not-scored">
-            <AppText variant="display" color="red" accessibilityRole="header" style={styles.voidWord}>
-              NOT
-            </AppText>
-            <AppText variant="display" color="red" style={styles.voidWord}>
-              SCORED
-            </AppText>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.gradeBox}>
-          <AppText variant="micro" color="muted" style={styles.gradeLabel}>
-            Grade
-          </AppText>
-          <AppText
-            variant="hero"
-            color={model.gradeColor}
-            accessibilityRole="header"
-            style={[styles.grade, { fontSize: L.letterSize, lineHeight: L.letterSize * 0.98, textShadowColor: model.gradeColor }]}>
-            {model.grade}
-          </AppText>
-        </View>
-      )}
-      <View style={[styles.heroRight, L.railStack && styles.heroRightStacked]}>
-        <AppText variant="micro" color="muted">
-          {untrusted ? 'Points' : 'Session score'}
-        </AppText>
-        {untrusted ? (
-          // NO NUMBER. `SessionIntegrity.scoreTrusted` says a consumer must not present the total
-          // as an achievement, and a residual total shown with "a floor, not a measurement" does
-          // exactly that: it tells the driver they earned AT LEAST that much, which is the one
-          // claim the engine refuses to make. The garage stopped saying it; this screen was still
-          // saying it one screen over. The dash is the honest figure.
-          <AppText
-            variant="hero"
-            color="muted"
-            numeric
-            style={[styles.grade, { fontSize: L.scoreSize, lineHeight: L.scoreSize * 1.02 }]}
-            testID="score-odometer">
-            --
-          </AppText>
-        ) : (
-          // NO `background`. The odometer's fade masks are PAINTED in the colour they are given,
-          // so they are only honest over a flat surface — and the surface here is the hero wash,
-          // a grade-coloured diagonal gradient. `heroSurface()` sampled it at one point and
-          // painted that one colour into a box per digit column: measured at y = 176, mask
-          // rgb(24,22,16) against wash rgb(35,30,18), an 11/255 step. The component's own
-          // docstring warns about exactly this. Unmasked, the window's own clip does the job.
-          <Odometer value={model.total} run={run} reduceMotion={reduceMotion} fontSize={L.scoreSize} color={colors.ember} testID="score-odometer" />
-        )}
-        {untrusted ? (
-          <AppText variant="micro" color="red" style={styles.floorNote} align="right">
-            Nothing the engine counted
-          </AppText>
-        ) : (
-          <View style={styles.ratingRow}>
-            <AppText variant="subheading" color={model.gradeColor}>
-              {gradeWord(model.grade, model.drifts.length)}
-            </AppText>
-            <AppText variant="micro" color="muted" numeric>
-              {ratingText(model.rating)} / 100
-            </AppText>
-          </View>
-        )}
-        <AppText variant="micro" color="muted" numberOfLines={1}>
-          {sessionTrack(model)}
-        </AppText>
+  /**
+   * The four facts, in one block of four cells with only its outer corners rounded — one card
+   * divided, not four cards in a grid.
+   *
+   * TOP SPEED is the fastest the car went at any point of the run, not the fastest it went
+   * sideways: a cell labelled TOP SPEED that only counts the drifting moments is not one.
+   */
+  const statGrid = (
+    <View style={styles.grid} testID="stat-grid">
+      <View style={[styles.cell, styles.cellTL]}>
+        <Stat label="Top speed" value={formatSpeed(model.stats.topSpeedKmh / 3.6, units)} unit={speedUnitLabel(units)} color={untrusted ? colors.muted : colors.blue} size={32} />
+      </View>
+      <View style={[styles.cell, styles.cellTR]}>
+        <Stat label="Slides" value={String(slides.length)} color={untrusted ? colors.muted : colors.text} size={32} />
+      </View>
+      <View style={[styles.cell, styles.cellBL]}>
+        <Stat label="Time sideways" value={formatDuration(model.stats.driftTimeS)} color={untrusted ? colors.muted : colors.text} size={32} />
+      </View>
+      <View style={[styles.cell, styles.cellBR]}>
+        <Stat label="Run length" value={formatDuration(model.session.durationS)} color={untrusted ? colors.muted : colors.text} size={32} />
       </View>
     </View>
   );
 
-  /**
-   * The first thing the report says. On a scored run that is the judgement. On a refused one it
-   * is the REMEDY — one line, the monitor's own words, naming the thing the driver can physically
-   * do — and never the paragraph of reasoning that used to lead here. The reasoning is two lines
-   * below it, behind a disclosure, with nothing taken out of it.
-   */
-  const headline =
+  const refusalBlock =
     untrusted && refusal ? (
-      <View style={[styles.verdict, { borderLeftColor: colors.red }]}>
-        <AppText variant="bodyStrong" color="red" style={[styles.verdictText, L.landscape && styles.verdictWide]} testID="verdict">
+      <View style={styles.refusal} testID="not-scored">
+        <View style={styles.refusalHead}>
+          <Tag label="NOT SCORED" color={colors.red} filled />
+          {fault ? <Tag label={`${fault.label.toUpperCase()} · ${fault.value}`} color={fault.tone === 'severe' ? colors.red : colors.greenHot} /> : null}
+        </View>
+        <AppText variant="bodyStrong" color="red" style={styles.refusalText} testID="verdict">
           {refusal.remedy}
         </AppText>
         <AppText variant="small" color="muted">
-          The recording is still here to watch — only the judgement is void.
+          The recording is still here to watch, and the figures below are what it contains — only the judgement is void.
         </AppText>
+        <WhyUnscored notes={model.integrity} reason={refusal.reason} run reduceMotion={reduceMotion} testID="why-panel" />
+      </View>
+    ) : null;
+
+  const bestDrift = model.best ? <BestDriftCard drift={model.best} units={units} run reduceMotion={reduceMotion} unscored={untrusted} testID="best-drift" /> : null;
+
+  const everySlide =
+    slides.length > 0 ? (
+      <View style={styles.section} testID="every-slide">
+        <SectionRow title="Every slide" right={`${slides.length} OF ${slides.length}`} />
+        <DriftList rows={slides} sparkWidth={L.sparkWidth} units={units} run reduceMotion={reduceMotion} unscored={untrusted} onSeek={onReplay} testID="drift-list" />
       </View>
     ) : (
-      <View style={[styles.verdict, { borderLeftColor: model.gradeColor }]}>
-        <AppText variant="bodyStrong" color="text" style={[styles.verdictText, L.landscape && styles.verdictWide]} testID="verdict">
-          {model.verdict}
-        </AppText>
+      <View style={styles.section} testID="every-slide">
+        <SectionRow title="Every slide" right="NONE" />
+        <View style={styles.empty}>
+          <AppText variant="small" color="muted">
+            The detector needs |β| past 8° for at least 0.6 s before it calls something a slide. This run never got there, so there is nothing to list or replay.
+          </AppText>
+        </View>
       </View>
     );
 
-  const statStrip = (
-    <View style={styles.statStrip}>
-      <Stat label={untrusted ? 'Slides recorded' : 'Slides'} value={String(model.drifts.length)} color={untrusted ? colors.muted : colors.text} size={26} />
-      <Stat label="Peak angle" value={`${Math.round(model.stats.peakDeg)}°`} color={untrusted || model.stats.peakDeg === 0 ? colors.muted : colors.ember} size={26} />
-      <Stat
-        label="Sideways"
-        value={formatDuration(untrusted ? model.stats.recordedDriftTimeS : model.stats.driftTimeS)}
-        color={untrusted ? colors.muted : colors.text}
-        size={26}
-      />
-      {untrusted && fault ? (
-        <Stat label={fault.label} value={fault.value} color={fault.tone === 'severe' ? colors.red : colors.ember} size={20} />
-      ) : (
-        <Stat label="Best chain" value={formatScore(model.stats.longestChainPoints)} color={model.stats.longestChainPoints > 0 ? colors.magenta : colors.muted} size={26} />
-      )}
-    </View>
-  );
-
-  const asRecorded = untrusted ? (
-    <AppText variant="micro" color="muted">
-      As recorded, not as judged — no spin count, no points, no grade
-    </AppText>
-  ) : null;
-
-  // Every integrity note, verbatim, one tap away — and on a refused run this is the ONLY place
-  // they live, so the page says them once instead of three times over.
-  const why =
-    untrusted && refusal ? <WhyUnscored notes={model.integrity} reason={refusal.reason} run={run} reduceMotion={reduceMotion} testID="why-panel" /> : null;
-
-  const tags = (
-    <View style={styles.tags}>
-      {untrusted ? <Tag label="SCORE WITHHELD" color={colors.red} filled /> : null}
-      {!untrusted && model.stats.spins > 0 ? <Tag label={`${model.stats.spins} SPIN${model.stats.spins === 1 ? '' : 'S'}`} color={colors.red} filled /> : null}
-      {!untrusted && model.stats.cleanLaps > 0 ? <Tag label={`${model.stats.cleanLaps} CLEAN LAP${model.stats.cleanLaps === 1 ? '' : 'S'}`} color={colors.green} /> : null}
-      {model.lapCount > 0 ? <Tag label={`${model.lapCount} LAPS`} color={colors.muted} /> : <Tag label="POINT TO POINT" color={colors.muted} />}
-      {model.simulated ? <Tag label={model.session.meta?.engine === 'pipeline' ? 'SIM · FULL PIPELINE' : 'SIM · FIXTURE'} color={colors.muted} /> : null}
-    </View>
-  );
-
-  const sections = (
-    <>
-      {/* ---- components ------------------------------------------------------------ */}
-      <SectionHead title="Score breakdown" right={untrusted ? 'not published' : `${ratingText(model.rating)} / 100`} accent={untrusted ? colors.red : colors.ember} />
-      <ComponentBars rows={model.components} run={run} reduceMotion={reduceMotion} unmeasured={untrusted} testID="component-bars" />
-
-      {/* ---- best drift ------------------------------------------------------------ */}
-      {model.best ? (
-        <>
-          <SectionHead title={untrusted ? 'Biggest slide' : 'Best drift'} right={`#${model.best.index} of ${model.drifts.length}`} accent={untrusted ? colors.muted : colors.ember} />
-          <BestDriftCard drift={model.best} width={content} run={run} reduceMotion={reduceMotion} unscored={untrusted} onWatch={() => onReplay(model.best ?? undefined)} testID="best-drift" />
-        </>
-      ) : null}
-
-      {/* ---- callouts -------------------------------------------------------------- */}
-      {hasDrifts && !untrusted ? (
-        <>
-          <SectionHead title="Callouts earned" right={`+${formatScore(model.calloutPoints)}`} />
-          <CalloutReel callouts={model.callouts} points={model.calloutPoints} lostPoints={model.lostPoints} run={run} reduceMotion={reduceMotion} testID="callout-reel" />
-        </>
-      ) : null}
-
-      {/* ---- every slide ----------------------------------------------------------- */}
-      {hasDrifts ? (
-        <>
-          {/* short enough to keep its hairline rule and its count on one line at 353 dp */}
-          <SectionHead title={untrusted ? 'What was recorded' : 'Every slide'} right={`${model.drifts.length} · tap to replay`} accent={untrusted ? colors.muted : colors.ember} />
-          <DriftList rows={model.drifts} sparkWidth={L.sparkWidth} run={run} reduceMotion={reduceMotion} unscored={untrusted} onSeek={onReplay} testID="drift-list" />
-        </>
-      ) : (
-        <>
-          <SectionHead title="Every slide" right="none" accent={colors.muted} />
-          <View style={styles.emptyPanel}>
-            <AppText variant="subheading" color="muted">
-              Nothing to list
-            </AppText>
-            <AppText variant="small" color="muted">
-              The detector needs |β| past 8° for at least 0.6 s before it calls something a drift. This run never got there, so there is no drift to score, replay or brag about.
-            </AppText>
-          </View>
-        </>
-      )}
-
-      {/* ---- lap consistency ------------------------------------------------------- */}
-      {/* repeatability is a judgement of driving: an unpublished run does not get one */}
-      {model.laps && !untrusted ? (
-        <>
-          <SectionHead title="Lap consistency" right={`${model.laps.lapsCompared} laps`} />
-          <LapTable laps={model.laps} corners={model.corners} width={content} run={run} reduceMotion={reduceMotion} testID="lap-table" />
-        </>
-      ) : null}
-
-      {/* ---- integrity ------------------------------------------------------------- */}
-      {/* on a refused run these same notes are the disclosure up in the hero, not a second copy */}
-      {untrusted ? null : (
-        <>
-          <SectionHead
-            title="Data integrity"
-            right={model.integrity.some((n) => n.level === 'bad') ? 'read this' : undefined}
-            accent={model.integrity.some((n) => n.level !== 'ok') ? colors.gold : colors.green}
-          />
-          <IntegrityPanel notes={model.integrity} run={run} reduceMotion={reduceMotion} testID="integrity" />
-        </>
-      )}
-    </>
-  );
-
-  // The recording plays whatever the monitor thought of it, so on a refused run it is offered at
-  // the top of the page in portrait — the rail already holds it in landscape.
-  const recordingCta =
-    untrusted && !L.landscape ? (
-      <Button label="Watch the recording" onPress={() => onReplay()} testID="cta-recording" style={styles.wide} />
-    ) : null;
-
-  /** Lead with the replay everywhere except the foot of a refused portrait page, which already
-   *  offered it at the top: down there the next thing is to drive it again, mounted properly. */
-  const leadReplay = !untrusted || L.landscape;
-  const replayButton = (
-    <Button
-      label={untrusted ? 'Watch the recording' : 'Watch replay'}
-      size={leadReplay && !L.landscape ? 'lg' : 'md'}
-      variant={leadReplay ? 'primary' : 'secondary'}
-      onPress={() => onReplay()}
-      testID="cta-replay"
-      style={styles.wide}
-    />
-  );
-  const driveButton = (
-    <Button
-      label="Drive again"
-      size={!leadReplay && !L.landscape ? 'lg' : 'md'}
-      variant={leadReplay ? 'ghost' : 'primary'}
-      onPress={onDrive}
-      testID="cta-drive-again"
-      style={leadReplay ? [styles.half, L.landscape && styles.tightHalf] : styles.wide}
-    />
-  );
-  const shareButton = (
-    <Button
-      label="Share"
-      variant="secondary"
-      onPress={share}
-      disabled={Platform.OS === 'web' || untrusted}
-      testID="cta-share"
-      style={[styles.half, L.landscape && styles.tightHalf]}
-    />
-  );
+  const qualifier = qualified ? <WhyUnscored notes={model.integrity} refused={false} run reduceMotion={reduceMotion} testID="integrity-disclosure" /> : null;
 
   const actions = (
-    <View style={[styles.actions, L.landscape && styles.actionsRail]}>
-      {leadReplay ? (
-        <>
-          {replayButton}
-          <View style={styles.actionRow}>
-            {shareButton}
-            {driveButton}
-          </View>
-        </>
-      ) : (
-        <>
-          {driveButton}
-          <View style={styles.actionRow}>
-            {replayButton}
-            {shareButton}
-          </View>
-        </>
-      )}
-      {shareNote ? (
-        <AppText variant="micro" color="red">
-          {shareNote}
-        </AppText>
-      ) : null}
-      {untrusted ? (
-        <AppText variant="micro" color="red">
-          There is nothing to share: the engine would not publish a score for this run.
-        </AppText>
-      ) : Platform.OS === 'web' ? (
-        <AppText variant="micro" color="muted">
-          Sharing needs the iOS share sheet; the browser build cannot open it.
-        </AppText>
-      ) : null}
+    <View style={styles.actions}>
+      <ActionButton label="Replay" onPress={() => onReplay()} testID="cta-replay" />
+      <ActionButton label="Drive again" filled onPress={onDrive} testID="cta-drive-again" />
     </View>
   );
 
   const footer = (
     <AppText variant="micro" color="muted" style={styles.footer}>
       {model.simulated
-        ? `Simulated session · ${String(model.session.meta?.fixtureQuery ?? model.session.meta?.trackId ?? '')} · ${untrusted ? 'judged by the same engine as a real run, and refused for the same reasons' : 'scored by the same engine as a real run'}`
+        ? `Simulated session · ${String(model.session.meta?.fixtureQuery ?? model.session.meta?.trackId ?? '')} · measured by the same engine as a real run`
         : `Session ${model.session.id} · ${model.session.states.length.toLocaleString('en-US')} estimator samples · ${model.gps.fixes} GPS fixes`}
     </AppText>
   );
 
-  // ---- landscape: the verdict is docked, the report scrolls beside it ------------------
+  // ---- landscape: the mark and the two actions dock, everything else scrolls --------------
+  // THE RAIL DOES NOT SCROLL, so what is in it has to fit the frame's height — 393 dp on a
+  // landscape phone, against 457 dp of mark, stats, best drift and actions. `railHoldsStats`
+  // is that arithmetic (see `layout.ts`); when it is false the four stats lead the column
+  // instead, which is where they are read from anyway once the thumb is on the list.
   if (L.landscape) {
     return (
       <View style={styles.frame} testID="results-wide">
         <View style={[styles.rail, { width: L.railWidth }]}>
           {topRow}
-          {/* The wash belongs to the rail, not to the block inside it: anchored under the top row
-              it lights the whole verdict panel, and its top edge never lands mid-rail.
-              The verdict sits straight under the top row — there used to be a `flex: 0.55` lead
-              above it, which optically centred the block on a landscape phone and, on a 1366 x
-              1024 frame, put 340 px of black above the word GRADE. One band below the verdict is
-              deliberate (it docks the actions under the thumb); two was not. */}
-          <View style={styles.railBody}>
-            {wash}
-            <View style={styles.hero}>
-              {heroTop}
-              {untrusted ? null : <GradeScale rating={model.rating} grade={model.grade} color={model.gradeColor} run={run} reduceMotion={reduceMotion} testID="grade-scale" />}
-            </View>
-            <View style={styles.railFill} />
-          </View>
+          <View style={styles.center}>{wordmark}</View>
+          {L.railHoldsStats ? statGrid : null}
+          <View style={styles.railFill} />
           {actions}
         </View>
         <View style={styles.railRule} />
-        <ScrollView style={styles.flex} contentContainerStyle={styles.column} showsVerticalScrollIndicator={false} testID="results-scroll">
-          <View style={styles.hero}>
-            {headline}
-            {statStrip}
-            {asRecorded}
-            {why}
-            {tags}
-          </View>
-          {sections}
+        <ScrollView style={styles.flex} contentContainerStyle={styles.railColumn} showsVerticalScrollIndicator={false} testID="results-scroll">
+          {L.railHoldsStats ? null : statGrid}
+          {refusalBlock}
+          {bestDrift}
+          {everySlide}
+          {qualifier}
           {footer}
         </ScrollView>
       </View>
     );
   }
 
-  // ---- portrait: one column ------------------------------------------------------------
+  // ---- portrait: one column ---------------------------------------------------------------
   return (
     <ScrollView style={styles.flex} contentContainerStyle={[styles.scroll, { maxWidth: L.columnWidth }]} showsVerticalScrollIndicator={false} testID="results-scroll">
       {topRow}
-      <View style={styles.hero}>
-        {wash}
-        {heroTop}
-        {untrusted ? null : <GradeScale rating={model.rating} grade={model.grade} color={model.gradeColor} run={run} reduceMotion={reduceMotion} testID="grade-scale" />}
-        {headline}
-        {recordingCta}
-        {statStrip}
-        {asRecorded}
-        {why}
-        {tags}
-      </View>
-      {sections}
+      <View style={styles.center}>{wordmark}</View>
+      {statGrid}
+      {refusalBlock}
+      {bestDrift}
+      {everySlide}
+      {qualifier}
       {actions}
       {footer}
     </ScrollView>
+  );
+}
+
+/**
+ * A section head: the name on the left, the count on the right, nothing between them.
+ *
+ * Deliberately not `SectionHead` from `src/ui/parts.tsx`, which draws a hairline rule across the
+ * gap and sets its title at 24 dp. Here the panel below the head already has an edge, and a rule
+ * on top of it is a second one.
+ */
+function SectionRow({ title, right }: { title: string; right: string }) {
+  return (
+    <View style={styles.sectionHead}>
+      <AppText variant="subheading" color="text" style={styles.sectionTitle}>
+        {title}
+      </AppText>
+      <AppText variant="micro" color="muted" numeric>
+        {right}
+      </AppText>
+    </View>
+  );
+}
+
+/**
+ * The two things to do next.
+ *
+ * Local to this screen rather than `src/ui/Button.tsx`, which skews its slab -8° and puts a glow
+ * behind the primary. The approved review is square-edged and quiet: the page's loudest thing is
+ * the biggest angle of the night, and it is not a button.
+ */
+function ActionButton({ label, filled = false, onPress, testID }: { label: string; filled?: boolean; onPress(): void; testID?: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={testID}
+      style={({ pressed }) => [styles.action, filled ? styles.actionFilled : styles.actionOutline, pressed && styles.pressed]}>
+      <AppText variant="subheading" color={filled ? colors.bg0 : colors.text} uppercase style={styles.actionLabel} numberOfLines={1}>
+        {label}
+      </AppText>
+    </Pressable>
   );
 }
 
@@ -687,7 +428,7 @@ function MissingSession({ id, error, onGarage, onDrive }: { id?: string; error: 
     <View style={styles.root} testID="screen-results-missing">
       <SafeAreaView style={[styles.safe, wide && styles.missingFrame]} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.missing, wide && styles.missingWide]}>
-          <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => pressed && styles.pressed}>
+          <Pressable onPress={onGarage} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back to the garage" style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
             <AppText variant="micro" color="muted">
               ← Garage
             </AppText>
@@ -701,8 +442,8 @@ function MissingSession({ id, error, onGarage, onDrive }: { id?: string; error: 
               : `Nothing is stored under "${id ?? 'this id'}". Runs are saved on the phone that recorded them, so a link from another device will not find one here.`}
           </AppText>
           <View style={styles.missingActions}>
-            <Button label="Drive a run" onPress={onDrive} testID="cta-drive" />
-            <Button label="Back to garage" variant="secondary" onPress={onGarage} testID="cta-garage" />
+            <ActionButton label="Drive a run" filled onPress={onDrive} testID="cta-drive" />
+            <ActionButton label="Back to garage" onPress={onGarage} testID="cta-garage" />
           </View>
         </View>
         {/* Wide: the message keeps a reading measure on the left and the frame's other half
@@ -722,83 +463,65 @@ function MissingSession({ id, error, onGarage, onDrive }: { id?: string; error: 
   );
 }
 
-/** Plain-text summary for the share sheet. */
-function shareText(model: ResultsModel): string {
-  const lines = [
-    `DRIFT-O-METER — ${model.grade} (${model.rating.toFixed(1)}/100)`,
-    `${formatScore(model.total)} points · ${model.drifts.length} slides · peak ${Math.round(model.stats.peakDeg)}° · ${formatDuration(model.stats.driftTimeS)} sideways`,
-    '',
-    model.verdict,
-    '',
-    ...model.components.map((c) => `${c.label.toUpperCase().padEnd(12)} ${String(Math.round(c.score)).padStart(3)}  ${c.explain}`),
-  ];
-  if (model.best) {
-    lines.push('', `Best drift: ${Math.round(model.best.peakDeg)}° for ${model.best.durationS.toFixed(1)} s, ${formatScore(model.best.points)} points.`);
-  }
-  for (const n of model.integrity) if (n.level !== 'ok') lines.push('', `${n.title}: ${n.body}`);
-  return lines.join('\n');
-}
+const GRID_RADIUS = 12;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   safe: { flex: 1 },
   flex: { flex: 1 },
   boot: { flex: 1, backgroundColor: colors.bg0, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[16], alignSelf: 'center', width: '100%' },
-  // landscape: the frame is a row — verdict rail, hairline, report column
+  scroll: { paddingHorizontal: gutter, paddingBottom: space[16], alignSelf: 'center', width: '100%', gap: space[4] },
+  center: { alignItems: 'center' },
+  // landscape: the frame is a row — summary rail, hairline, slide column
   frame: { flex: 1, flexDirection: 'row', paddingHorizontal: gutter },
-  rail: { paddingBottom: space[4] },
-  railBody: { flex: 1 },
+  rail: { paddingBottom: space[4], gap: space[4] },
   /** Pushes the rail's actions to the bottom edge, where a thumb finds them without looking. */
   railFill: { flex: 1, minHeight: space[4] },
   railRule: { width: 1, backgroundColor: colors.line, marginHorizontal: RAIL_GAP / 2, marginVertical: space[4] },
-  column: { paddingTop: space[2], paddingBottom: space[12] },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space[2], paddingBottom: space[3] },
-  pressed: { opacity: 0.6 },
-  hero: { gap: space[4] },
-  // stops short of the very top of the viewport on purpose: the harness checks that the
-  // page's corner pixels are still bg0
-  heroWash: { position: 'absolute', top: 0 },
-  gradeLabel: { marginBottom: -space[2] },
-  heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
-  /** A tall rail stacks it: the letter on its own line, the score reading under it. */
-  heroTopStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: space[2] },
-  gradeBox: { justifyContent: 'flex-start' },
-  grade: {
-    letterSpacing: -6,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 36,
-    includeFontPadding: false,
+  railColumn: { paddingTop: space[2], paddingBottom: space[12], gap: space[4] },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space[2] },
+  // a text link is still a target: 44 dp of height around eleven point type
+  back: { minHeight: 44, justifyContent: 'center' },
+  pressed: { opacity: 0.7 },
+
+  // The four cells are one block: only the outer corners are rounded, so the 10 dp gaps read as
+  // divisions of a single card rather than as four cards that happen to line up.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  cell: {
+    flexGrow: 1,
+    flexBasis: '45%',
+    minWidth: 0,
+    backgroundColor: colors.bg1,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
   },
-  heroRight: { flex: 1, alignItems: 'flex-end', gap: 2, paddingTop: space[2] },
-  // stacked, the score is its own block under the letter: it reads left-aligned on the rail's
-  // grid with the label and the letter, not pushed to an edge it no longer shares
-  heroRightStacked: { flex: 0, alignItems: 'flex-start', paddingTop: 0 },
-  ratingRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
-  verdict: { borderLeftWidth: 3, paddingLeft: space[4], paddingVertical: space[1], gap: space[2] },
-  voidPlate: { borderWidth: 2, borderColor: colors.red, paddingHorizontal: space[3], paddingVertical: space[2], alignSelf: 'flex-start', marginTop: space[2] },
-  voidWord: { fontSize: 40, lineHeight: 38, letterSpacing: -1 },
-  floorNote: { marginTop: 2 },
-  verdictText: { fontSize: 18, lineHeight: 25 },
-  // the report column is wider than a portrait page: the sentence gets the measure it earns
-  verdictWide: { fontSize: 21, lineHeight: 28 },
-  statStrip: { flexDirection: 'row', justifyContent: 'space-between', gap: space[2], flexWrap: 'wrap' },
-  tags: { flexDirection: 'row', gap: space[2], flexWrap: 'wrap' },
-  emptyPanel: { gap: space[2], borderLeftWidth: 3, borderLeftColor: colors.line, paddingLeft: space[4] },
-  actions: { marginTop: space[10], gap: space[3] },
-  // in the rail the actions are already docked at the bottom; the portrait page's air is not needed
-  actionsRail: { marginTop: 0, gap: space[2] },
-  actionRow: { flexDirection: 'row', gap: space[3] },
-  wide: { alignSelf: 'stretch' },
-  half: { flex: 1 },
-  // two buttons side by side in a 280 dp rail: the label gets the padding's width back rather
-  // than eliding into "DRIVE AG…"
-  tightHalf: { paddingHorizontal: space[2] },
-  footer: { marginTop: space[6] },
+  cellTL: { borderTopLeftRadius: GRID_RADIUS },
+  cellTR: { borderTopRightRadius: GRID_RADIUS },
+  cellBL: { borderBottomLeftRadius: GRID_RADIUS },
+  cellBR: { borderBottomRightRadius: GRID_RADIUS },
+
+  refusal: { backgroundColor: alpha(colors.red, 0.07), borderWidth: 1, borderColor: alpha(colors.red, 0.45), borderRadius: radii.sm, padding: space[4], gap: space[3] },
+  refusalHead: { flexDirection: 'row', gap: space[2], flexWrap: 'wrap' },
+  refusalText: { fontSize: 18, lineHeight: 25 },
+
+  section: { gap: space[2] },
+  sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space[2] },
+  sectionTitle: { fontSize: 20, lineHeight: 22 },
+  empty: { backgroundColor: colors.bg1, borderRadius: radii.md, padding: space[4] },
+
+  actions: { flexDirection: 'row', gap: 10, marginTop: space[2] },
+  action: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingHorizontal: space[3] },
+  actionOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.line },
+  actionFilled: { backgroundColor: colors.green },
+  actionLabel: { fontSize: 18, lineHeight: 22, letterSpacing: 1 },
+
+  footer: { marginTop: space[4] },
   missingFrame: { flexDirection: 'row', alignItems: 'center' },
   missing: { flex: 1, paddingHorizontal: gutter, paddingTop: space[6], gap: space[3] },
   missingWide: { justifyContent: 'center', paddingTop: 0, paddingBottom: space[6] },
-  missingAside: { flex: 1, paddingRight: gutter, gap: space[2], borderLeftWidth: 1, borderLeftColor: colors.line, paddingLeft: RAIL_GAP },
+  missingAside: { flex: 1, paddingRight: gutter, gap: space[2], paddingLeft: RAIL_GAP },
   missingTitle: { marginTop: space[4] },
   missingBody: { maxWidth: 420 },
   missingActions: { flexDirection: 'row', gap: space[3], marginTop: space[4] },

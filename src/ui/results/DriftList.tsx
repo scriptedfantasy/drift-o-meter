@@ -1,50 +1,46 @@
 /**
- * Every slide of the session, in order, each with its own |β| sparkline on a shared angle
- * scale so the rows compare honestly. Tapping a row seeks the replay to that moment.
+ * EVERY SLIDE: one row per slide, in the order they happened.
+ *
+ * Five columns, and the order is the order a driver reads them in — which slide, what it looked
+ * like, how far it went, how long they held it, how fast they went in. Tapping a row seeks the
+ * replay to that moment.
+ *
+ * The sparklines share ONE y axis so the rows compare honestly, and that axis is the dial's own
+ * full scale (`MAX_ANGLE_DEG`). It used to follow the 90th-percentile peak of whatever was in
+ * this particular run, which made every run's tallest slide look the same height: a night of 25°
+ * slides drew exactly like a night of 55° ones. A fixed scale means a small run looks small,
+ * which is the truth about it, and a slide past the top clips while its own number still prints
+ * the real peak beside it.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { AppText } from '../Text';
-import { formatScore } from '../format';
-import { alpha, colors, radii, space } from '../theme';
+import { formatSpeed, type SpeedUnits } from '../format';
+import { angleColor, colors, MAX_ANGLE_DEG, radii, space } from '../theme';
 import { useEnter } from './entrance';
 import type { DriftRow } from './model';
 import { Sparkline } from './Sparkline';
-import { Tag } from './parts';
 
 export interface DriftListProps {
   rows: DriftRow[];
   /** Sparkline width in dp. */
   sparkWidth: number;
+  /** `AppSettings.units`. The model carries km/h; the conversion happens here. */
+  units: SpeedUnits;
   run: boolean;
   reduceMotion?: boolean;
-  /** The run was not trusted: show what was recorded, never the points it would have paid. */
+  /** The integrity monitor refused the run: every figure is grey, and none of it is achievement. */
   unscored?: boolean;
   onSeek(row: DriftRow): void;
   testID?: string;
 }
 
-export function DriftList({ rows, sparkWidth, run, reduceMotion = false, unscored = false, onSeek, testID }: DriftListProps) {
-  // One y-scale for every row so they compare. It follows the 90th-percentile peak, not the
-  // maximum: one 118° spin would otherwise flatten every honest 40° slide into a hairline. A row
-  // above the scale clips, and its number column still prints the true peak.
-  const sorted = rows.map((r) => r.peakDeg).sort((a, b) => a - b);
-  const p90 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.9))] : 0;
-  const maxDeg = Math.max(45, Math.min(75, Math.ceil((p90 * 1.06) / 15) * 15));
-
+export function DriftList({ rows, sparkWidth, units, run, reduceMotion = false, unscored = false, onSeek, testID }: DriftListProps) {
   return (
     <View style={styles.list} testID={testID}>
-      <View style={styles.legend}>
-        <AppText variant="micro" color="muted" style={styles.noCaps}>
-          |β| per slide · axis 0–{maxDeg}°{rows.some((r) => r.peakDeg > maxDeg) ? ' (clipped)' : ''}
-        </AppText>
-        <AppText variant="micro" color="muted">
-          peak · time{unscored ? '' : ' · points'}
-        </AppText>
-      </View>
       {rows.map((row, i) => (
-        <Row key={row.id} row={row} index={i} maxDeg={maxDeg} sparkWidth={sparkWidth} run={run} reduceMotion={reduceMotion} unscored={unscored} onSeek={onSeek} />
+        <Row key={row.id} row={row} index={i} sparkWidth={sparkWidth} units={units} run={run} reduceMotion={reduceMotion} unscored={unscored} onSeek={onSeek} />
       ))}
     </View>
   );
@@ -53,8 +49,8 @@ export function DriftList({ rows, sparkWidth, run, reduceMotion = false, unscore
 function Row({
   row,
   index,
-  maxDeg,
   sparkWidth,
+  units,
   run,
   reduceMotion,
   unscored,
@@ -62,66 +58,55 @@ function Row({
 }: {
   row: DriftRow;
   index: number;
-  maxDeg: number;
   sparkWidth: number;
+  units: SpeedUnits;
   run: boolean;
   reduceMotion: boolean;
   unscored: boolean;
   onSeek(row: DriftRow): void;
 }) {
+  // The rows enter in a short stagger, and the stagger stops after the eighth: a list of twenty
+  // would otherwise still be arriving a second after the page settled.
   const enter = useEnter(60 + Math.min(index, 8) * 50, run, reduceMotion);
-  const accent = row.spun ? colors.red : row.lost ? colors.muted : colors.ember;
+  const peakColor = unscored ? colors.muted : row.spun ? colors.red : angleColor(row.peakDeg);
 
   return (
     <Animated.View style={enter}>
       <Pressable
         onPress={() => onSeek(row)}
         accessibilityRole="button"
-        accessibilityLabel={`Drift ${row.index}, peak ${Math.round(row.peakDeg)} degrees${unscored ? '' : `, ${row.points} points`}. Open in the replay.`}
+        accessibilityLabel={`Slide ${row.index}, peak ${Math.round(row.peakDeg)} degrees, held ${row.heldS.toFixed(1)} seconds, entry ${formatSpeed(row.entryKmh / 3.6, units)}${
+          row.spun && !unscored ? ', ended in a spin' : ''
+        }. Open in the replay.`}
         testID={`drift-row-${row.index}`}
-        style={({ pressed }) => [styles.row, { borderLeftColor: alpha(unscored ? colors.muted : accent, row.lost && !unscored ? 0.4 : 0.9) }, pressed && styles.pressed]}>
-        <View style={styles.idCol}>
-          <AppText variant="subheading" color={row.lost ? 'muted' : 'text'} numeric style={styles.id}>
-            {row.index}
-          </AppText>
-          <AppText variant="micro" color="muted">
-            {row.direction === 1 ? 'R' : 'L'}
-          </AppText>
-        </View>
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+        <AppText variant="micro" color="muted" numeric style={styles.idCol}>
+          {row.index}
+        </AppText>
 
-        <View style={styles.sparkCol}>
-          <Sparkline
-            trace={row.trace}
-            width={sparkWidth}
-            height={42}
-            maxDeg={row.spun ? Math.max(maxDeg, row.peakDeg * 1.06) : maxDeg}
-            color={row.lost && !unscored ? colors.muted : colors.ember}
-            spun={row.spun && !unscored}
-            showGuides={false}
-          />
-          {/* On an unpublished run a spin is a judgement drawn from angles the monitor refused to
-              believe, so only the shape of the recording is shown. */}
-          <View style={styles.tags}>
-            {unscored ? null : row.spun ? <Tag label="SPIN" color={colors.red} filled /> : null}
-            {unscored ? null : row.lost ? <Tag label="CHAIN LOST" color={colors.muted} /> : null}
-            {row.transitions > 0 && !unscored ? <Tag label={`TRANSITION ×${row.transitions}`} color={colors.magenta} /> : null}
-            {!row.cleanExit && !row.spun && !unscored ? <Tag label="SCRAPPY EXIT" color={colors.ember} /> : null}
-          </View>
-        </View>
+        {/* No fill and no peak dot at 22 dp: five of these down a column read as solid blocks
+            once they are filled, and the shapes stop being distinguishable from one another. */}
+        <Sparkline
+          trace={row.trace}
+          width={sparkWidth}
+          height={22}
+          maxDeg={MAX_ANGLE_DEG}
+          color={colors.muted}
+          spun={row.spun && !unscored}
+          showPeak={false}
+          showGuides={false}
+          showFill={false}
+        />
 
-        <View style={styles.numbers}>
-          <AppText variant="telemetry" color={row.spun && !unscored ? colors.red : colors.text} numeric style={styles.peak}>
-            {Math.round(row.peakDeg)}°
-          </AppText>
-          <AppText variant="micro" color="muted" numeric>
-            {row.durationS.toFixed(1)} s · {Math.round(row.entryKmh)} km/h
-          </AppText>
-          {unscored ? null : (
-            <AppText variant="bodyStrong" color={row.lost ? colors.muted : colors.ember} numeric style={row.lost ? styles.struck : undefined}>
-              {formatScore(row.points)}
-            </AppText>
-          )}
-        </View>
+        <AppText variant="telemetry" color={peakColor} numeric style={styles.peak}>
+          {Math.round(row.peakDeg)}°
+        </AppText>
+        <AppText variant="small" color={unscored ? 'muted' : 'text'} numeric style={styles.held}>
+          {row.heldS.toFixed(1)}s
+        </AppText>
+        <AppText variant="small" color={unscored ? colors.muted : colors.blue} numeric style={styles.entry}>
+          {formatSpeed(row.entryKmh / 3.6, units)}
+        </AppText>
       </Pressable>
     </Animated.View>
   );
@@ -129,28 +114,21 @@ function Row({
 
 const styles = StyleSheet.create({
   list: { gap: space[2] },
-  legend: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: space[1] },
+  // 44 dp of height, not the mockup's 40: a row is the only way into the replay at a moment, and
+  // a target under 44 is one a thumb in a cold pit lane misses.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[3],
+    minHeight: 44,
     backgroundColor: colors.bg1,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderLeftWidth: 3,
     borderRadius: radii.md,
     paddingVertical: space[2],
-    paddingRight: space[3],
-    paddingLeft: space[3],
+    paddingHorizontal: space[3],
   },
   pressed: { opacity: 0.7 },
-  idCol: { width: 22, alignItems: 'center' },
-  id: { fontSize: 22, lineHeight: 24 },
-  sparkCol: { flex: 1, gap: space[1] },
-  tags: { flexDirection: 'row', gap: space[1], flexWrap: 'wrap' },
-  numbers: { alignItems: 'flex-end', minWidth: 96, gap: 1 },
-  peak: { fontSize: 26, lineHeight: 26 },
-  struck: { textDecorationLine: 'line-through' },
-  // uppercase β is Β, which reads as a Latin B: this label must not be transformed
-  noCaps: { textTransform: 'none' },
+  idCol: { width: 20 },
+  peak: { flex: 1, fontSize: 24, lineHeight: 26 },
+  held: { width: 48, textAlign: 'right' },
+  entry: { width: 54, textAlign: 'right' },
 });

@@ -1,41 +1,61 @@
 /**
- * Results model: everything the results screen draws, derived once from a `Session`.
+ * Run review model: everything the review screen draws, derived once from a `Session`.
  *
- * The numbers come from the engine's own scorer (`scoreSession` → `SessionBreakdown`) and its
- * cross-lap analysis (`lapConsistency`); this module only arranges them, names the corners and
- * counts what the screen has to show. Nothing here invents a score.
+ * The figures are the run's OWN measurements, read out of `Session.driftStats` — the engine
+ * writes one `DriftSummary` per slide at the end of a run and this module arranges them. It no
+ * longer re-analyses anything: it used to call `scoreSession` on arrival, which cost a few
+ * hundred milliseconds on a big session and reached per-slide measurements through
+ * `score.perDrift[id].stats`, inside a structure whose reason for existing was points.
+ *
+ * WHAT IS DELIBERATELY NOT HERE any more: points, multipliers, the 0-100 rating, the five
+ * component sub-scores, the callout tally and the grade's colour. The review states what the car
+ * did — speed, angle, how long, how many — and the only judgement left on the page is the
+ * integrity monitor's, which is a judgement of the DATA and not of the driving.
+ *
+ * `total`, `grade` and `stats.longestChainPoints` are still carried because `src/ui/garage/
+ * demo.ts` writes them back into `Session.score` when it seeds the demo garage. They are the
+ * engine's published figures passed straight through; nothing in this kit renders them.
  */
-import { calibrationBand } from '../../engine/integrity';
-import { driftSamples, scoreSession, type ScoredDrift, type SessionBreakdown, type SessionContext } from '../../engine/score';
-import { lapConsistency, type LapConsistency } from '../../engine/track';
-import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
-import type { DriftEvent, Grade, Session, SessionIntegrity, SessionScore, StyleCalloutKind, TrackCorner } from '../../engine/types';
+import { calibrationBand, sessionIntegrity, type MonitorVerdict } from '../../engine/integrity';
+import { DEFAULT_SCORE_OPTIONS, driftSamples } from '../../engine/score';
+import type { DriftEvent, DriftSummary, Grade, Session, SessionIntegrity, SessionScore, TrackCorner } from '../../engine/types';
 import { radToDeg } from '../../engine/types';
-import { colors, gradeColors } from '../theme';
 import { cornerAt, cornerLabel } from './corners';
-import { KIND_NAMES } from './palette';
-import { componentRows, verdictFor } from './verdict';
 
 export interface DriftRow {
   id: number;
   /** 1-based position in the session. */
   index: number;
   event: DriftEvent;
-  scored: ScoredDrift;
+  /** The run's own measurements of this slide, or null for a session that kept none. */
+  stats: DriftSummary | null;
   startT: number;
   endT: number;
   durationS: number;
-  /** Instantaneous peak |β| in degrees. */
+  /** Instantaneous peak |β| in degrees. This is what the review prints as PEAK. */
   peakDeg: number;
-  /** Peak |β| HELD for 1.5 s — what the angle component counts. */
+  /** Peak |β| HELD for 1.5 s. Always the smaller, honest figure; see `DriftStats.heldPeakDeg`. */
   heldPeakDeg: number;
+  /**
+   * Seconds the slide was actually SIDEWAYS — `DriftSummary.sustainedS`, which counts only the
+   * samples past the angle that qualifies as sliding, not the ramp in and the gather at the end.
+   *
+   * This is what the review prints as HELD, and it is deliberately not `durationS`: on the
+   * shipped fixtures the two differ by 0.8 to 1.4 s on a five-second slide, which is a fifth of
+   * it. `heldPeakDeg` exists for exactly the same reason one column over — a figure captioned
+   * "held" that prints the unqualified one is overstating the driver.
+   */
+  heldS: number;
+  /** Entry speed in km/h. The review converts at render; see `formatSpeed`. */
   entryKmh: number;
   meanKmh: number;
   transitions: number;
-  points: number;
-  multiplier: number;
+  /**
+   * Whether the slide ended in a spin, AS PUBLISHED. `src/engine/types.ts` states the contract:
+   * the scorer's spin rule is broader than `DriftEvent.spin`, and re-deriving it made the replay
+   * and this screen disagree about the same slide. Read, never computed.
+   */
   spun: boolean;
-  lost: boolean;
   cleanExit: boolean;
   /** +1 right-hand drift, −1 left. */
   direction: 1 | -1;
@@ -46,26 +66,6 @@ export interface DriftRow {
   /** Corner this slide happened on, when the track has one. */
   corner: TrackCorner | null;
   cornerLabel: string | null;
-  /**
-   * The callouts this slide was PAID for, as the run published them — not as a re-score would
-   * award them. A callout on a sample the monitor did not believe pays zero and is still in the
-   * list, so the count is what fired and the points are what banked.
-   */
-  callouts: Array<{ kind: StyleCalloutKind; label: string; points: number }>;
-}
-
-export interface ComponentRow {
-  key: 'angle' | 'consistency' | 'quality' | 'speed' | 'style';
-  label: string;
-  /** 0..100 as the scorer computed it. */
-  score: number;
-  /** Weight in the combined score. */
-  weight: number;
-  color: string;
-  /** One specific sentence about this session — the judgement, not the rubric. */
-  explain: string;
-  /** How the scorer arrives at it. Kept behind a disclosure, and absent on an unpublished run. */
-  scale?: string;
 }
 
 export type NoteLevel = 'ok' | 'warn' | 'bad';
@@ -74,13 +74,6 @@ export interface IntegrityNote {
   level: NoteLevel;
   title: string;
   body: string;
-}
-
-export interface CalloutTally {
-  kind: StyleCalloutKind;
-  label: string;
-  count: number;
-  points: number;
 }
 
 export interface GpsQuality {
@@ -93,30 +86,14 @@ export interface GpsQuality {
   poorFraction: number;
 }
 
-/** Everything except the prose; `verdict.ts` turns this into sentences. */
-export interface ResultsBase {
+export interface ResultsModel {
   session: Session;
   /**
-   * The re-score. It runs from the stored drifts and states WITHOUT the pipeline's per-sample
-   * plausibility mask, so it is the right source for everything explanatory — per-drift stats,
-   * corner citations, cross-lap ingredients, chains — and the WRONG source for a headline.
-   */
-  breakdown: SessionBreakdown;
-  /**
-   * The score that may be published: the pipeline's own, because it scored the run with more
-   * information than anything downstream will ever have. Total, grade, the five components,
-   * `trusted`, the best drift and the longest chain all come from here, so the garage row, this
-   * screen and the replay cannot disagree about what the driver got.
+   * What the run itself published, because the pipeline saw it with a per-sample plausibility
+   * mask that a stored session does not carry. `trusted` is read from here rather than
+   * re-derived, so the garage row, this screen and the replay cannot disagree about one run.
    */
   score: SessionScore;
-  /** Whether the headline came from the session or (for a session with no stored score) the re-score. */
-  headlineSource: 'session' | 'rescore';
-  /**
-   * Largest gap between a published component and the same component re-derived here. Non-zero
-   * means the mask mattered; it is diagnostic, never displayed, and never resolved in favour of
-   * the re-score.
-   */
-  componentDrift: number;
   /**
    * What the integrity monitor made of the run — the authoritative copy, taken from the session
    * when the pipeline recorded one and from the re-score otherwise.
@@ -124,59 +101,77 @@ export interface ResultsBase {
   judged: SessionIntegrity;
   /**
    * False when the engine refuses to publish this run's total and grade (see the contract on
-   * `SessionIntegrity.scoreTrusted`). The screen must then show NO grade letter and must not
-   * present the total as an achievement — it offers the recording instead.
+   * `SessionIntegrity.scoreTrusted`). A phone waved about in a parked car produces large angles
+   * and a plausible-looking run; when this is false the review says so at the top and presents
+   * every figure below it as a recording, not as something achieved.
    */
   trusted: boolean;
+  /** The engine's published grade. Passed through for `src/ui/garage/demo.ts`; never rendered. */
   grade: Grade;
-  gradeColor: string;
-  /** 0..100 rating behind the grade. */
-  rating: number;
+  /** The engine's published total. Passed through for `src/ui/garage/demo.ts`; never rendered. */
   total: number;
   drifts: DriftRow[];
-  best: DriftRow | null;
-  callouts: CalloutTally[];
   /**
-   * Bonus points from callouts, summed over the drifts that banked — and it is a SLICE of
-   * `total`, not a second opinion about it, so it comes from the same published `perDrift` the
-   * total does. "N of the total came from callouts" is false the moment the two have different
-   * sources.
+   * The slide the review leads with: biggest peak angle, longest held breaking the tie. NOT the
+   * scorer's `bestDriftId`, which ranked by points — a driver asked what their best drift was
+   * means the biggest one they held, and a points ranking answered a different question with a
+   * multiplier in it.
    */
-  calloutPoints: number;
-  lostPoints: number;
-  laps: LapConsistency | null;
-  lapCount: number;
-  corners: TrackCorner[];
+  best: DriftRow | null;
   integrity: IntegrityNote[];
   gps: GpsQuality;
   stats: {
     /** Peak |β| anywhere in the run, drifting or not, degrees. */
     sessionPeakDeg: number;
     /**
-     * Seconds of sliding in the RECORDING, summed from the drift events. `driftTimeS` is the
-     * seconds the scorer counted, which is zero on a run whose sliding it would not believe —
-     * reporting "5 slides, 0:00 sideways" from the two together was a contradiction.
+     * Fastest the car went at any point of the run, km/h — read off the estimator's own fused
+     * speed, not off the drifts. The cell is labelled TOP SPEED, and a top speed that only
+     * counts the moments the car was sideways is not one.
      */
-    recordedDriftTimeS: number;
-    peakDeg: number;
-    heldPeakDeg: number;
+    topSpeedKmh: number;
+    /**
+     * Seconds of sliding in the RECORDING, summed from the slides themselves. This is what TIME
+     * SIDEWAYS prints, on a trusted run and a refused one alike: a refused run's recording still
+     * contains the sliding it contains, and the thing the engine withholds is the verdict on it,
+     * not the stopwatch.
+     */
     driftTimeS: number;
     driftFraction: number;
+    /** The biggest instantaneous |β| inside a slide, degrees. */
+    peakDeg: number;
+    /** The biggest |β| actually HELD inside a slide — always the smaller, honest figure. */
+    heldPeakDeg: number;
     transitions: number;
     spins: number;
+    /** Fastest entry or mean speed across the slides, km/h. */
     topDriftKmh: number;
+    /** Published, and passed through for `src/ui/garage/demo.ts` alone. Never rendered here. */
     longestChainPoints: number;
-    cleanLaps: number;
   };
   /** True when the session came from the simulator rather than a drive. */
   simulated: boolean;
 }
 
-export interface ResultsModel extends ResultsBase {
-  /** One sentence of plain-language judgement, earned from the data. */
-  verdict: string;
-  components: ComponentRow[];
-}
+/**
+ * What `model.score` reads as for a session that never stored one.
+ *
+ * Only reachable through a hand-built or truncated session; every run the pipeline writes
+ * carries a score. `trusted: true` because an absent score is not evidence of dishonesty —
+ * the refusal path is driven by `judged.scoreTrusted`, which is assembled from the monitor.
+ */
+const EMPTY_SCORE: SessionScore = {
+  total: 0,
+  grade: 'D',
+  angle: 0,
+  consistency: 0,
+  quality: 0,
+  speed: 0,
+  style: 0,
+  bestDriftId: null,
+  longestChainPoints: 0,
+  perDrift: {},
+  trusted: true,
+};
 
 const TRACE_POINTS = 56;
 
@@ -233,7 +228,7 @@ export function gpsQuality(session: Session): GpsQuality {
 }
 
 /**
- * Plain-language honesty about the data behind the score. Everything here is read out of the
+ * Plain-language honesty about the data behind the numbers. Everything here is read out of the
  * session: calibration quality, GPS accuracy and gaps, how long the estimator held a lock, and
  * whether anything in the trace is physically impossible.
  */
@@ -243,24 +238,22 @@ function endSentence(text: string): string {
   return /[.!?]$/.test(t) ? t : `${t}.`;
 }
 
-export function integrityNotes(session: Session, gps: GpsQuality, judged?: SessionBreakdown['integrity']): IntegrityNote[] {
+export function integrityNotes(session: Session, gps: GpsQuality, judged?: SessionIntegrity): IntegrityNote[] {
   const notes: IntegrityNote[] = [];
 
-  // The scorer's own verdict comes first: it is the one that decided whether the total counts.
+  // The monitor's own verdict comes first: it is the one that decided whether these figures
+  // describe a car at all.
   if (judged && !judged.scoreTrusted) {
     notes.push({
       level: 'bad',
-      title: 'The engine will not vouch for this score',
-      // No "the number above is a floor": that phrasing asserts the driver earned at least that
-      // much, which is precisely the claim `scoreTrusted: false` withholds. The screen shows no
-      // number at all now, so the note says what actually happened and stops there.
-      body: `${endSentence(judged.message || 'Too much of the run could not be believed')} ${Math.round(judged.implausibleDriftFraction * 100)}% of your drifting time earned nothing (${judged.suppressedS.toFixed(1)} s), and what is left is too little of the run to stand as a score.`,
+      title: 'The engine will not vouch for these numbers',
+      body: `${endSentence(judged.message || 'Too much of the run could not be believed')} ${Math.round(judged.implausibleDriftFraction * 100)}% of the sliding time (${judged.suppressedS.toFixed(1)} s) could not be squared with the physics of a car, and that is too much of the run for the rest to stand on.`,
     });
   } else if (judged && judged.implausibleDriftFraction > 0.02) {
     notes.push({
       level: 'warn',
       title: 'Some of the run was not believed',
-      body: `${judged.suppressedS.toFixed(1)} s of drifting (${Math.round(judged.implausibleDriftFraction * 100)}%) scored nothing because the monitor could not square it with the physics.${judged.message ? ` ${endSentence(judged.message)}` : ''}`,
+      body: `${judged.suppressedS.toFixed(1)} s of drifting (${Math.round(judged.implausibleDriftFraction * 100)}%) could not be squared with the physics, so the angles across those moments are softer than they read.${judged.message ? ` ${endSentence(judged.message)}` : ''}`,
     });
   }
   const meta = session.meta ?? {};
@@ -287,7 +280,7 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
   // screen used to compare against 0.4 and 0.75 of its own, the garage against a different 0.4
   // and the calibration screen against its own 0.75 — so a run at 0.33 was "ready to measure"
   // there and "never calibrated" here, on the same number. The lower edge is now the monitor's
-  // own veto, which means this screen can no longer disown a run the engine went on to score.
+  // own veto, which means this screen can no longer disown a run the engine went on to publish.
   const calBand = calibrationBand(cal?.quality ?? NaN, cal?.forwardResolved ?? false);
   if (!cal || calBand === 'unresolved' || calBand === 'unusable') {
     notes.push({
@@ -308,7 +301,7 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
   }
 
   if (gps.fixes === 0) {
-    notes.push({ level: 'bad', title: 'No GPS', body: 'Not one usable fix. Without a direction of travel there is no slip angle, so this score is guesswork.' });
+    notes.push({ level: 'bad', title: 'No GPS', body: 'Not one usable fix. Without a direction of travel there is no slip angle, so every angle on this page is guesswork.' });
   } else if (gps.poorFraction > 0.12 || gps.medianHAcc > 12) {
     notes.push({
       level: 'bad',
@@ -350,7 +343,7 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
       notes.push({
         level: 'warn',
         title: 'Filter lost its lock',
-        body: `${Math.round(lostFrac * 100)}% of the moving time had no usable course lock. Those stretches were scored on the gyro's word alone.`,
+        body: `${Math.round(lostFrac * 100)}% of the moving time had no usable course lock. Through those stretches the angle is the gyro's word alone.`,
       });
     }
     if (impossible > states.length * 0.002) {
@@ -365,30 +358,36 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
   if (notes.length === 0) {
     notes.push({
       level: 'ok',
-      title: 'Nothing qualifies this score',
+      title: 'Nothing qualifies these numbers',
       body: `Mount calibrated to ${q}% with the forward axis resolved, ${gps.fixes} GPS fixes at ${gps.medianHAcc.toFixed(1)} m median accuracy, no dropouts over 3 s. The numbers above are the driving.`,
     });
   }
   return notes;
 }
 
+/**
+ * The run's own measurements of one slide, from whichever place this session keeps them.
+ *
+ * `Session.driftStats` is the home. Before it existed they were only reachable inside the
+ * scorer's per-drift record, as `score.perDrift[id].stats`. The fallback is not tidiness: every
+ * run already on a phone was stored that way, and dropping it would empty the review of every
+ * held angle, entry speed and spin verdict for a season of somebody's driving. Copied from
+ * `src/platform/sessionStore.ts:statsOf`, which is the same read for the garage's index.
+ */
+function statsOf(session: Session, id: number): DriftSummary | null {
+  const own = session.driftStats?.[id];
+  if (own && typeof own === 'object') return own;
+  // The old home is not on `DriftScore` any more, so the cast is the read rather than a wish:
+  // what is being asked is whether THIS session, stored under the old shape, still has one.
+  const legacy = (session.score?.perDrift as Record<number, { stats?: DriftSummary }> | undefined)?.[id]?.stats;
+  return legacy && typeof legacy === 'object' ? legacy : null;
+}
+
 /** Build the rows for every drift, in the order they happened. */
-function driftRows(session: Session, breakdown: SessionBreakdown, published: SessionScore): DriftRow[] {
+function driftRows(session: Session): DriftRow[] {
   const sorted = [...session.drifts].sort((a, b) => a.startT - b.startT || a.id - b.id);
   return sorted.map((event, i) => {
-    const scored = breakdown.perDrift[event.id];
-    const stats = scored?.stats;
-    // EVERY PAYMENT AS PUBLISHED, every SHAPE from the re-score. The split is not a preference,
-    // it is what the two objects can answer. The pipeline scored the run with a per-sample
-    // plausibility mask that a stored session does not carry, so only it knows what a slide was
-    // PAID — the total, the multiplier, which callouts fired and for how much, whether a spin
-    // took the chain. The re-score alone carries `stats`, which is the drift's shape: peak,
-    // held peak, speeds, transitions, how long it held a plateau. Reading a payment off the
-    // re-score prints money the engine deliberately did not pay: `rough` drift #6's published
-    // callouts are `initiation:25, transition:0, transition:0, extreme-angle:375, long-drift:330,
-    // transition:0, manji:0` — the monitor did not believe those samples — while the re-score
-    // pays all seven, 2,605 against 730, and the screen used to tally the re-score's.
-    const pub = published.perDrift?.[event.id];
+    const stats = statsOf(session, event.id);
     const { trace, peakAt } = traceOf(event, session);
     const mid = session.states[Math.min(session.states.length - 1, Math.max(0, Math.round((event.sampleStart + event.sampleEnd) / 2)))];
     const corner = mid ? cornerAt(session.track, mid.x, mid.y) : null;
@@ -396,7 +395,7 @@ function driftRows(session: Session, breakdown: SessionBreakdown, published: Ses
       id: event.id,
       index: i + 1,
       event,
-      scored,
+      stats,
       startT: event.startT,
       endT: event.endT,
       durationS: event.durationS,
@@ -404,145 +403,144 @@ function driftRows(session: Session, breakdown: SessionBreakdown, published: Ses
       // truncated (or 0). The trace kept going: for a spin, report what the car actually did.
       peakDeg: stats && stats.peakDeg > 0 && !stats.spun ? stats.peakDeg : Math.max(stats?.peakDeg ?? 0, radToDeg(event.peakAngle)),
       heldPeakDeg: stats && stats.heldPeakDeg > 0 ? stats.heldPeakDeg : radToDeg(event.peakAngle),
+      heldS: stats && stats.sustainedS > 0 ? stats.sustainedS : event.durationS,
       entryKmh: stats ? stats.entrySpeedKmh : event.entrySpeed * 3.6,
       meanKmh: stats ? stats.meanSpeedKmh : event.meanSpeed * 3.6,
       transitions: stats ? stats.transitions : event.transitions,
-      points: Math.round(pub?.total ?? scored?.total ?? 0),
-      multiplier: pub?.multiplier ?? scored?.multiplier ?? 1,
-      // `spun` and `lost` are published fields for the reason `DriftScore.lost` states in
-      // `types.ts`: the scorer's spin rule is broader than the detector's flag, so nobody else
-      // re-derives it. `stats.spun` IS that re-derivation, one object over.
-      spun: pub?.spun ?? stats?.spun ?? false,
-      lost: pub?.lost ?? scored?.lost ?? false,
+      // `spun` is the run's PUBLISHED verdict, for the reason `types.ts` states in capitals: the
+      // broad spin rule is wider than the detector's own `DriftEvent.spin`, and when this screen
+      // re-derived it the replay and the review disagreed about the same slide. Read, never
+      // computed — `DriftEvent.spin` is the fallback only when the run kept no measurements.
+      spun: stats?.spun ?? event.spin === true,
       cleanExit: stats ? stats.cleanExit : true,
       direction: event.initialDirection,
       trace,
       peakAt,
       corner,
       cornerLabel: corner ? cornerLabel(corner) : null,
-      callouts: (pub?.callouts ?? scored?.callouts ?? []).map((c) => ({ kind: c.kind, label: c.label, points: c.points })),
     };
   });
 }
 
-function tallyCallouts(rows: DriftRow[]): { callouts: CalloutTally[]; points: number } {
-  const byKind = new Map<StyleCalloutKind, CalloutTally>();
-  let points = 0;
-  for (const r of rows) {
-    if (r.lost) continue;
-    for (const c of r.callouts) {
-      const prev = byKind.get(c.kind);
-      points += c.points;
-      if (prev) {
-        prev.count++;
-        prev.points += c.points;
-      } else {
-        byKind.set(c.kind, { kind: c.kind, label: KIND_NAMES[c.kind], count: 1, points: c.points });
-      }
-    }
-  }
-  const callouts = [...byKind.values()].sort((a, b) => b.points - a.points || b.count - a.count);
-  return { callouts, points };
+/**
+ * The slide the review leads with: biggest peak angle, longest held breaking the tie.
+ *
+ * This is the rule a driver means by "my best drift", and it is deliberately NOT the scorer's
+ * `bestDriftId`, which ranked by points — angle times duration times speed times a chain
+ * multiplier — so the slide it named could be a smaller one taken faster in a longer chain.
+ * A spin can win this, because a spin really is the biggest angle of the run; the panel says
+ * SPUN when it does rather than quietly picking the runner-up and calling it the biggest.
+ *
+ * The tie-break is `heldS`, the same seconds the panel prints under HELD, so a driver comparing
+ * two equal angles is comparing the figure they can see.
+ *
+ * Exported for the test that pins the tie-break, which would otherwise have to restate the rule
+ * to check it — and a test that restates the rule cannot catch the rule changing.
+ */
+type AngleRanked = Pick<DriftRow, 'peakDeg' | 'heldS'>;
+
+export function bestByAngle(rows: readonly AngleRanked[]): AngleRanked | null {
+  return rows.reduce<AngleRanked | null>((best, r) => {
+    if (!best) return r;
+    if (r.peakDeg !== best.peakDeg) return r.peakDeg > best.peakDeg ? r : best;
+    return r.heldS > best.heldS ? r : best;
+  }, null);
 }
 
 /**
- * What the integrity monitor concluded during the run, if the pipeline left its verdict in the
- * session. The per-sample plausibility mask is not part of a stored `Session`, so a replay can
- * only repeat the monitor's end-of-run judgement — it cannot re-derive which samples it doubted.
+ * What the integrity monitor concluded during the run, for a session stored before
+ * `Session.integrity` existed: those runs left the monitor's verdict loose in `meta`.
  */
-function sessionContext(session: Session): SessionContext | undefined {
-  const i = session.integrity;
-  if (i) return { integrity: { mount: i.mount, physics: i.physics, gps: i.gps, message: i.message } };
-  // sessions written before `Session.integrity` existed left the monitor's verdict in `meta`
+function monitorFromMeta(session: Session): MonitorVerdict | null {
   const m = session.meta ?? {};
   const mount = m.mount === 'loose' || m.mount === 'suspect' || m.mount === 'rigid' ? m.mount : null;
   const physics = m.physics === 'implausible' || m.physics === 'ok' ? m.physics : null;
   const gps = m.gps === 'poor' || m.gps === 'none' || m.gps === 'good' ? m.gps : null;
   const message = typeof m.integrity === 'string' ? m.integrity : '';
-  if (!mount && !physics && !gps && !message) return undefined;
-  return { integrity: { mount: mount ?? 'rigid', physics: physics ?? 'ok', gps: gps ?? 'good', message } };
+  if (!mount && !physics && !gps && !message) return null;
+  return { mount: mount ?? 'rigid', physics: physics ?? 'ok', gps: gps ?? 'good', message };
 }
 
 /**
- * Derive the whole screen from a session. Runs the real scorer, so it costs a few hundred
- * milliseconds on a big session — call it once, memoised.
+ * The run's trust verdict, for a session that did not store one.
+ *
+ * `Session.integrity` is where this lives and every run the pipeline writes carries it. A run
+ * stored before the field existed does not, and its verdict has to be rebuilt from the same
+ * inputs the engine uses — the unbelieved seconds inside each slide against the believed ones —
+ * through `sessionIntegrity`, so an old run is judged by exactly the rule a new one is rather
+ * than by a second copy of it that will drift.
+ *
+ * The threshold still lives in the scorer's option bag. When that bag goes it needs a home of
+ * its own; this is the only line in the review that still reaches into it.
+ */
+function integrityFor(session: Session, rows: DriftRow[]): SessionIntegrity {
+  if (session.integrity) return session.integrity;
+  const implausiblePerDrift = rows.map((r) => r.stats?.implausibleS ?? 0);
+  const observedS = rows.reduce((a, r) => a + r.durationS, 0);
+  const suppressedS = implausiblePerDrift.reduce((a, v) => a + v, 0);
+  return sessionIntegrity({
+    implausiblePerDrift,
+    believedDriftS: Math.max(0, observedS - suppressedS),
+    monitor: monitorFromMeta(session),
+    maxImplausibleFraction: DEFAULT_SCORE_OPTIONS.integrityMaxImplausibleFraction,
+  });
+}
+
+/**
+ * Derive the whole review from a session.
+ *
+ * Reading rather than re-deriving: the only loop over the raw states is the one that finds the
+ * run's peak angle and top speed, plus one resample per slide for its sparkline. Everything else
+ * is already in the session. Still worth memoising on a long run — the traces are 56 buckets
+ * each, resampled from every estimator sample inside the slide.
  */
 export function buildResultsModel(session: Session): ResultsModel {
-  const breakdown = scoreSession(session.drifts, session.states, session.track, undefined, sessionContext(session));
-  // The pipeline scored the run with a per-sample plausibility mask that a stored session does
-  // not carry. Re-scoring reproduces it only to about a percent — enough to cross a grade
-  // boundary — so the published numbers are the pipeline's and the re-score is supporting detail.
-  const published: SessionScore = session.score ?? breakdown;
-  const headlineSource: 'session' | 'rescore' = session.score ? 'session' : 'rescore';
-  const componentDrift = Math.max(
-    Math.abs(published.angle - breakdown.angle),
-    Math.abs(published.consistency - breakdown.consistency),
-    Math.abs(published.quality - breakdown.quality),
-    Math.abs(published.speed - breakdown.speed),
-    Math.abs(published.style - breakdown.style),
-  );
-  // the same weighted sum the scorer used, over the PUBLISHED components, so the rating on screen
-  // cannot contradict the grade beside it
-  const W = DEFAULT_SCORE_OPTIONS.weights;
-  const rating =
-    Math.round(
-      (W.angle * published.angle + W.consistency * published.consistency + W.quality * published.quality + W.speed * published.speed + W.style * published.style) * 10,
-    ) / 10;
-  const rows = driftRows(session, breakdown, published);
-  const best = published.bestDriftId !== null ? (rows.find((r) => r.id === published.bestDriftId) ?? null) : (breakdown.bestDriftId !== null ? (rows.find((r) => r.id === breakdown.bestDriftId) ?? null) : null);
-  const { callouts, points: calloutPoints } = tallyCallouts(rows);
-  const lostPoints = rows.filter((r) => r.lost).reduce((a, r) => a + r.points, 0);
-  const laps = session.track && session.track.laps.length >= 2 ? lapConsistency(session.track, session.drifts, session.states) : null;
+  const published: SessionScore | undefined = session.score;
+  const rows = driftRows(session);
+  const best = (bestByAngle(rows) as DriftRow | null) ?? null;
   const gps = gpsQuality(session);
-  const driftTimeS = breakdown.driftTimeS;
   let sessionPeak = 0;
+  let topSpeedKmh = 0;
   for (const s of session.states) {
     const v = Math.abs(radToDeg(s.beta));
     if (v > sessionPeak) sessionPeak = v;
+    // `EstimatorState.speed` is the fused ground speed in m/s and goes NaN before the filter has
+    // a lock, so it is guarded rather than maxed blind.
+    if (Number.isFinite(s.speed) && s.speed * 3.6 > topSpeedKmh) topSpeedKmh = s.speed * 3.6;
   }
 
-  // The run's own verdict is the verdict. A re-score has less information than the run did, so it
-  // may not add trust — and, by the same argument, it may not remove it either.
-  const judged: SessionIntegrity = session.integrity ?? breakdown.integrity;
-  const trusted = session.score ? published.trusted && judged.scoreTrusted : breakdown.integrity.scoreTrusted;
+  // The run's own verdict is the verdict. Nothing downstream has more information than the run
+  // did, so nothing downstream may add trust — and, by the same argument, none may remove it.
+  const judged = integrityFor(session, rows);
+  const trusted = (published ? published.trusted : true) && judged.scoreTrusted;
+  // Recorded sliding, summed from the slides themselves. NOT the scorer's own drifting seconds,
+  // which were zero on a run it would not believe — printing "5 slides, 0:00 sideways" from the
+  // two together was a page contradicting itself about the recording it was describing.
+  const driftTimeS = rows.reduce((a, r) => a + r.durationS, 0);
 
-  const base: ResultsBase = {
+  return {
     session,
-    breakdown,
-    score: published,
-    headlineSource,
-    componentDrift,
+    score: published ?? EMPTY_SCORE,
     judged,
     trusted,
-    grade: published.grade,
-    gradeColor: gradeColors[published.grade] ?? colors.muted,
-    rating,
-    total: published.total,
+    grade: published?.grade ?? 'D',
+    total: published?.total ?? 0,
     drifts: rows,
     best,
-    callouts,
-    calloutPoints,
-    lostPoints,
-    laps: laps && laps.available ? laps : null,
-    lapCount: session.track?.laps.length ?? 0,
-    corners: session.track?.corners ?? [],
     integrity: integrityNotes(session, gps, judged),
     gps,
     stats: {
       sessionPeakDeg: sessionPeak,
-      recordedDriftTimeS: rows.reduce((a, r) => a + r.durationS, 0),
-      peakDeg: rows.reduce((m, r) => Math.max(m, r.peakDeg), 0),
-      heldPeakDeg: rows.reduce((m, r) => Math.max(m, r.heldPeakDeg), 0),
+      topSpeedKmh,
       driftTimeS,
       driftFraction: session.durationS > 0 ? driftTimeS / session.durationS : 0,
-      transitions: breakdown.transitions,
-      spins: breakdown.spins,
+      peakDeg: rows.reduce((m, r) => Math.max(m, r.peakDeg), 0),
+      heldPeakDeg: rows.reduce((m, r) => Math.max(m, r.heldPeakDeg), 0),
+      transitions: rows.reduce((a, r) => a + r.transitions, 0),
+      spins: rows.filter((r) => r.spun).length,
       topDriftKmh: rows.reduce((m, r) => Math.max(m, r.entryKmh, r.meanKmh), 0),
-      longestChainPoints: published.longestChainPoints,
-      cleanLaps: breakdown.cleanLaps,
+      longestChainPoints: published?.longestChainPoints ?? 0,
     },
     simulated: session.meta?.source === 'simulation' || typeof session.meta?.fixture === 'string',
   };
-
-  return { ...base, verdict: verdictFor(base), components: componentRows(base) };
 }

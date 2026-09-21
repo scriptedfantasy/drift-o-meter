@@ -1,31 +1,24 @@
 /**
- * Results screen kit.
+ * Run review kit.
  *
- * Deliberately does NOT export anything under `./skia`: Skia components must be reached through
- * their `*View` wrappers so that, on web, CanvasKit is loaded before the module is evaluated
- * (see `src/ui/skia/GlowRingView.web.tsx`). `GradeReveal` already does that internally.
+ * Everything the review screen draws. It no longer exports a `./skia` directory at all: the one
+ * Skia component in here was the grade reveal's particle burst, and the grade is gone. The
+ * sparklines are SVG on purpose — see the note at the top of `Sparkline.tsx`.
  */
 export { buildResultsModel } from './model';
-export type { ComponentRow, DriftRow, GpsQuality, IntegrityNote, NoteLevel, ResultsBase, ResultsModel, CalloutTally } from './model';
+export type { DriftRow, GpsQuality, IntegrityNote, NoteLevel, ResultsModel } from './model';
 export { buildFixtureSession, fixtureQuery, resolveFixture, FIXTURES, DEFAULT_FIXTURE } from './fixture';
 export type { FixtureSpec } from './fixture';
 export { cornerLabel, cornerShape, cornerTag, cornerAt } from './corners';
-export { verdictFor, componentRows, worstCorner, bestCorner, weightedHeldPeak, weightedJitter } from './verdict';
-export { calloutColor, GRADE_SCALE, GRADE_WORDS, gradeWord, KIND_NAMES, mixColor, scoreColor } from './palette';
-export { GradeReveal, REVEAL_MODES } from './GradeReveal';
-export type { RevealMode } from './GradeReveal';
-export { GradeScale } from './GradeScale';
-export { Odometer } from './Odometer';
+export { sentencesFromPill } from './verdict';
+export { mixColor } from './palette';
 export { Sparkline } from './Sparkline';
-export { ComponentBars } from './ComponentBars';
 export { BestDriftCard } from './BestDriftCard';
 export { DriftList } from './DriftList';
-export { LapTable } from './LapTable';
 export { IntegrityPanel } from './IntegrityPanel';
 export { WhyUnscored } from './WhyUnscored';
-export { CalloutReel } from './CalloutReel';
 export { SectionHead, Stat, Tag } from './parts';
-export { useEnter, useFill } from './entrance';
-export { resultsLayout, LANDSCAPE_MIN_WIDTH, RAIL_GAP, scoreFieldWidth, WASH_BOTTOM_CLEAR } from './layout';
+export { useEnter } from './entrance';
+export { resultsLayout, LANDSCAPE_MIN_WIDTH, RAIL_GAP, WORDMARK_ASPECT, WORDMARK_WIDTH } from './layout';
 export type { ResultsLayout } from './layout';
 export { faultStat, refusalFrom, type FaultStat, type Refusal } from './unscored';

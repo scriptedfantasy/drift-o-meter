@@ -1,8 +1,11 @@
 /**
  * |β| sparkline: the shape of one slide, drawn from the estimator's own samples.
  *
- * SVG rather than Skia on purpose — the drift list draws a dozen of these, and a dozen Skia
- * canvases on one scroll view is a bad trade. The reveal's particle work is where Skia earns it.
+ * SVG RATHER THAN SKIA ON PURPOSE, and the decision stands. The slide list draws one of these
+ * per slide — a dozen on an ordinary run — and a dozen Skia canvases on one ScrollView is a bad
+ * trade for a 56 x 22 polyline. It is also why this is not `src/ui/garage/SlideTrace.tsx`: that
+ * one is Skia, and its data is a single scalar per slide, so it draws an ICON of a slide rather
+ * than the shape of the one you did.
  */
 import { memo } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
@@ -22,8 +25,16 @@ export interface SparklineProps {
   spun?: boolean;
   /** Dot the peak. */
   showPeak?: boolean;
-  /** Dashed guide at 45° (EXTREME ANGLE). */
+  /** Dashed guide at 45°, where the red zone begins on the dial's own ramp. */
   showGuides?: boolean;
+  /**
+   * Draw the gradient under the trace and the baseline beneath it.
+   *
+   * Off in the slide list, where the line is one of five things in a 40 dp row and the number
+   * beside it is what the eye is comparing: a filled area at that size reads as a solid block
+   * and the shapes stop being distinguishable from each other.
+   */
+  showFill?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -41,11 +52,12 @@ export const Sparkline = memo(function Sparkline({
   trace,
   width,
   height,
-  color = colors.ember,
+  color = colors.green,
   maxDeg,
   spun = false,
   showPeak = true,
   showGuides = true,
+  showFill = true,
   style,
   testID,
 }: SparklineProps) {
@@ -79,8 +91,8 @@ export const Sparkline = memo(function Sparkline({
           <Line x1={0} y1={y(EXTREME_DEG)} x2={width} y2={y(EXTREME_DEG)} stroke={alpha(colors.muted, 0.55)} strokeWidth={1} strokeDasharray="3 4" />
         ) : null}
         {spun ? <Line x1={0} y1={y(SPIN_DEG)} x2={width} y2={y(SPIN_DEG)} stroke={alpha(colors.red, 0.75)} strokeWidth={1} strokeDasharray="2 3" /> : null}
-        <Line x1={0} y1={height - pad} x2={width} y2={height - pad} stroke={colors.line} strokeWidth={1} />
-        <Path d={area} fill={`url(#${gradientId})`} />
+        {showFill ? <Line x1={0} y1={height - pad} x2={width} y2={height - pad} stroke={colors.line} strokeWidth={1} /> : null}
+        {showFill ? <Path d={area} fill={`url(#${gradientId})`} /> : null}
         <Path d={d} fill="none" stroke={stroke} strokeWidth={height > 40 ? 2.4 : 1.8} strokeLinejoin="round" strokeLinecap="round" />
         {showPeak ? (
           <>
