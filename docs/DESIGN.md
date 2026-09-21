@@ -81,6 +81,27 @@ speed and |β| traces and drift markers; play/pause, ×0.5/×1/×2, camera mode
 (overview / chase / cinematic), ghost toggle. Camera and scene come from
 `src/engine/replay` — the renderer draws the scene data, it does not invent it.
 
+EMBER MEANS THE ENGINE SAYS THE CAR IS SLIDING, and nothing else on this screen may spend it.
+Two refusals, both of them the engine's own assertions, and one rule that applies them
+(`heatOf` in `src/ui/replay/palette.ts`): a recording the engine will not vouch for
+(`SessionScore.trusted`) draws no ramp colour anywhere, and below the 8° `hold` edge
+`severityOf` says the car is not sliding, so the hairline between drifts, the slip label, the
+slip arc, the L/R chevron and the playhead are the neutral grey the hero numeral has always
+been at that angle. It is one exported rule rather than a line at each draw site because it was
+sixteen lines at sixteen draw sites and missed four, twice. `replay-ui.test.ts` runs the rule
+AND reads the text of both renderers to check that every ramp colour reaches it.
+
+THE SCRUBBER'S BAND IS THE SPIN EDGE, on every run, with no exception (`ribbonScale`). The strip
+is a gradient in normalised space — ember to 55 % of its height, gold at 80 %, red at the top —
+so the scale is the whole of what those colours mean, and a run scaled to its own peak paints
+them at whatever its peak happens to be. Fixed at 65°, a given |β| is the same height in every
+run and a slide past the spin edge saturates at the top, where the shader already says a spin is.
+
+A SLIDE WORTH NOTHING SAYS WHY. A spin that took the chain already names its number
+("CHAIN LOST −8981"); a slide the integrity monitor refused has no number to name, and its exit
+beat says the seconds instead — "2.9 S DID NOT COUNT", `DriftEvent.suppressedS` in the engine's
+own words. Silence beside a full ember ribbon is the screen disagreeing with itself.
+
 ### Calibrate (`/calibrate`)
 "Mount the phone, then drive": a live phone-orientation glyph (from gravity), a quality
 meter, plain-language steps ("Drive straight and accelerate once"), forward-axis
