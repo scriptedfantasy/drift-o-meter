@@ -16,6 +16,8 @@ function at(id: string, iso: string): SessionIndexEntry {
     track: null,
     trusted: true,
     heldPeakDeg: 0,
+    peakHeldS: 0,
+    peakEntryKmh: 0,
     longestChainPoints: 0,
     spins: 0,
     slides: [],

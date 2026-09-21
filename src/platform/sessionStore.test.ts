@@ -31,7 +31,7 @@ function fakeDrift(id: number, startT: number, endT: number, peakDeg: number, sp
 }
 
 /** A `ScoredDrift`-shaped entry, which is what the pipeline really writes into `perDrift`. */
-function fakeScored(id: number, heldPeakDeg: number, spun: boolean) {
+function fakeScored(id: number, heldPeakDeg: number, spun: boolean, timeAtAngleS = 0, entrySpeedKmh = 0) {
   return {
     base: 100,
     multiplier: 1,
@@ -42,7 +42,7 @@ function fakeScored(id: number, heldPeakDeg: number, spun: boolean) {
     speed: 50,
     style: 50,
     callouts: [],
-    stats: { id, heldPeakDeg, spun },
+    stats: { id, heldPeakDeg, spun, timeAtAngleS, entrySpeedKmh },
   };
 }
 
@@ -73,6 +73,51 @@ function sessionWithSpin(): Session {
   s.score.perDrift = { 1: fakeScored(1, 48, false), 2: fakeScored(2, 91, true) } as unknown as Session['score']['perDrift'];
   return s;
 }
+
+describe('the slide a leaderboard row names', () => {
+  /**
+   * Three figures — the angle, how long it was held, the speed it was entered at — printed
+   * side by side on one row, so they have to be three facts about ONE slide. A row that took
+   * the biggest angle from one and the entry speed from another would read as a single
+   * sentence and be a composite of two nights.
+   */
+  function run(...drifts: Array<[held: number, hold: number, entry: number, spun?: boolean]>): Session {
+    const s = fakeSession('peak', 1000, 0, 'B');
+    s.drifts = drifts.map(([, , , spun], i) => fakeDrift(i + 1, i * 10, i * 10 + 8, 60, spun ?? false));
+    s.score.perDrift = Object.fromEntries(
+      drifts.map(([held, hold, entry, spun], i) => [i + 1, fakeScored(i + 1, held, spun ?? false, hold, entry)]),
+    ) as unknown as Session['score']['perDrift'];
+    return s;
+  }
+
+  it('takes all three off the same slide', () => {
+    const e = summarizeSession(run([32, 1.2, 55], [61, 4.4, 78], [47, 9.9, 99]));
+    expect(e.heldPeakDeg).toBe(61);
+    expect(e.peakHeldS).toBe(4.4);
+    expect(e.peakEntryKmh).toBe(78);
+  });
+
+  it('breaks a tie on the longer hold, the same rule the run review uses', () => {
+    // Two identical peaks is usually the same corner twice, and the one the driver stayed in
+    // is the better of the two.
+    const e = summarizeSession(run([55, 2.0, 70], [55, 6.5, 62]));
+    expect(e.peakHeldS).toBe(6.5);
+    expect(e.peakEntryKmh).toBe(62);
+  });
+
+  it('never names a slide that spun, however big its angle', () => {
+    // Otherwise the board ranks whoever lost the car most spectacularly.
+    const e = summarizeSession(run([44, 3.0, 66], [88, 9.0, 91, true]));
+    expect(e.heldPeakDeg).toBe(44);
+    expect(e.peakHeldS).toBe(3);
+    expect(e.peakEntryKmh).toBe(66);
+  });
+
+  it('reports three zeros for a run that held nothing, rather than one figure and two gaps', () => {
+    const e = summarizeSession(run([0, 0, 0]));
+    expect([e.heldPeakDeg, e.peakHeldS, e.peakEntryKmh]).toEqual([0, 0, 0]);
+  });
+});
 
 describe('where the per-slide measurements are read from', () => {
   /**
@@ -223,7 +268,7 @@ describe('session store (memory backend)', () => {
     const s = summarizeSession(fakeSession('z', 7, 42, 'B'));
     expect(s).toEqual({
       id: 'z', name: 'Run z', driverId: null, startedAt: 7, durationS: 120, total: 42, grade: 'B', drifts: 0, track: 'Harbor',
-      trusted: true, heldPeakDeg: 0, longestChainPoints: 0, spins: 0, slides: [], mount: 'rigid',
+      trusted: true, heldPeakDeg: 0, peakHeldS: 0, peakEntryKmh: 0, longestChainPoints: 0, spins: 0, slides: [], mount: 'rigid',
       calibrationQuality: 0, calibrationForwardResolved: false, integrityMessage: '',
     });
   });

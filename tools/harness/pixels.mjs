@@ -43,7 +43,14 @@
  */
 import { PNG } from 'pngjs';
 
-export const BG0 = { r: 0x07, g: 0x09, b: 0x0d };
+/**
+ * `colors.bg0` — the car's paint in shadow. It was `#07090D`, the old asphalt black, and
+ * stayed that way through the repaint: every route then reported `corners:false`, because the
+ * corners of every screenshot are the new `#070D18` and no longer matched. Only a warning,
+ * since `cornersNearBg` passes at tolerance 24 either way, but the corner check had quietly
+ * stopped testing the thing it names.
+ */
+export const BG0 = { r: 0x07, g: 0x0d, b: 0x18 };
 
 function hexToRgb(hex) {
   return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) };
@@ -98,7 +105,27 @@ export const isRed = (r, g, b) => {
 /** `#FF2D95` — transitions and callouts. ~330°. */
 export const isMagenta = band(310, 345);
 /** `#29E3FF` — telemetry and speed. ~187°. */
+/**
+ * @deprecated Names a hue the app no longer paints. Use `blue`.
+ *
+ * 170-205 was `#29E3FF`. The palette's blue is `#6C9BEA` at hue 218, outside the band, so any
+ * check naming `cyan` on a repainted screen passes by measuring nothing — the most dangerous
+ * kind of green tick. Kept only until the last route naming it is gone.
+ */
 export const isCyan = band(170, 205, 0.4, 0.35);
+
+/**
+ * The car at rest: speed, structure, the cold facts nobody is judged on.
+ *
+ * `#6C9BEA` measures hue 218.2 at S 0.53, V 0.92. The band runs 205-232 and the saturation
+ * floor drops to 0.30, both because of what this colour sits ON: against `bg0` (#070D18, hue
+ * 219, S 0.71) a half-covered antialiased edge stays on almost exactly the same hue and simply
+ * loses saturation, so a floor set for a colour on black would count the numeral and discard
+ * its own edges. The upper edge stops at 232 rather than running to the background's 219 + n
+ * because past there the two are the same hue and only brightness tells them apart, which is
+ * what `minV` is for.
+ */
+export const isBlue = band(205, 232, 0.3, 0.42);
 /**
  * `#8AF606` and `#C4FF2E` — THE LIVE INSTRUMENT. 87° and 77° at full strength.
  *
@@ -138,6 +165,7 @@ export const COLOURS = {
   red: isRed,
   magenta: isMagenta,
   cyan: isCyan,
+  blue: isBlue,
   green: isGreen,
   text: isText,
   muted: isMuted,
@@ -162,7 +190,7 @@ export function colourPredicate(name) {
  * height, full width). Each entry comes back with its count and whether it satisfied the `max`
  * and/or `min` it carries; `shoot.mjs` turns a violation into a route failure.
  */
-export function analyzePng(buffer, { bg = '#07090D', sampleStep = 2, regions = [] } = {}) {
+export function analyzePng(buffer, { bg = '#070D18', sampleStep = 2, regions = [] } = {}) {
   const png = PNG.sync.read(buffer);
   const { width, height, data } = png;
   const bgRgb = hexToRgb(bg);
@@ -202,6 +230,7 @@ export function analyzePng(buffer, { bg = '#07090D', sampleStep = 2, regions = [
   let gold = 0;
   let red = 0;
   let cyan = 0;
+  let blue = 0;
   let text = 0;
   let nonBg = 0;
   let total = 0;
@@ -217,6 +246,7 @@ export function analyzePng(buffer, { bg = '#07090D', sampleStep = 2, regions = [
       if (isGold(p.r, p.g, p.b)) gold++;
       if (isRed(p.r, p.g, p.b)) red++;
       if (isCyan(p.r, p.g, p.b)) cyan++;
+      if (isBlue(p.r, p.g, p.b)) blue++;
       if (isText(p.r, p.g, p.b)) text++;
     }
   }
@@ -232,6 +262,7 @@ export function analyzePng(buffer, { bg = '#07090D', sampleStep = 2, regions = [
     goldPixels: gold * scale,
     redPixels: red * scale,
     cyanPixels: cyan * scale,
+    bluePixels: blue * scale,
     textPixels: text * scale,
     nonBgFraction: Number((nonBg / total).toFixed(4)),
     regions: regionCounts,

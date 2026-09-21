@@ -43,6 +43,8 @@ function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
     track: 'Harbor Circuit',
     trusted: true,
     heldPeakDeg: 40,
+    peakHeldS: 0,
+    peakEntryKmh: 0,
     longestChainPoints: 4_000,
     spins: 0,
     slides: [],

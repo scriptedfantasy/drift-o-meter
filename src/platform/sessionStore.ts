@@ -77,6 +77,21 @@ export interface SessionIndexEntry {
    * the scorer counted.
    */
   heldPeakDeg: number;
+  /**
+   * How long the peak slide was held at a committed angle, in seconds, and the speed it was
+   * entered at in km/h. Both describe THE SAME SLIDE as `heldPeakDeg`, so a row can say
+   * "53 degrees, held 4.2 s, entered at 71" and have all three be one thing that happened.
+   *
+   * Here because the garage's leaderboard wanted them and the garage reads no session bodies.
+   * It drew the whole slide's length instead — the only duration the index could yield — under
+   * a caption saying "held", which claimed twenty-seven seconds at fifty-three degrees for a
+   * slide that was at fifty-three for four of them. `peakHeldS` is `DriftSummary.timeAtAngleS`,
+   * which is the figure that sentence is actually about.
+   *
+   * 0 when the run held nothing, which is also what a refused run reports.
+   */
+  peakHeldS: number;
+  peakEntryKmh: number;
   /** Points in the run's longest banked chain. */
   longestChainPoints: number;
   /**
@@ -185,6 +200,12 @@ interface StoredDriftStats {
   spun?: unknown;
 }
 
+/** `StoredDriftStats` plus what a leaderboard row says about the slide it names. */
+interface PeakStats extends StoredDriftStats {
+  timeAtAngleS?: unknown;
+  entrySpeedKmh?: unknown;
+}
+
 /**
  * The per-slide measurements for one drift, from whichever place this session keeps them.
  *
@@ -221,15 +242,38 @@ function num(v: unknown, fallback = 0): number {
  * question — and a drift whose statistics were never stored contributes nothing rather than
  * falling back to its instantaneous peak. `--` is honest; the wrong number is not.
  */
-function heldPeakAngleDeg(s: Session): number {
-  if (!Array.isArray(s.drifts)) return 0;
-  let peak = 0;
+/**
+ * The best slide of a run: the biggest angle HELD, how long it was held there, and the speed
+ * it was entered at.
+ *
+ * One pass, one winner, three figures off it — so a row printing all three cannot describe
+ * three different slides. Spun slides are skipped entirely: a spin is not a drift somebody
+ * pulled off, and crediting its angle would make the board a ranking of who lost the car
+ * most spectacularly.
+ *
+ * Ties break on the longer hold, which is the same rule the run review's BEST DRIFT uses.
+ * Two identical peaks is not a coincidence worth ignoring — it is usually the same corner
+ * twice, and the one the driver stayed in is the better of the two.
+ */
+function peakSlide(s: Session): { heldPeakDeg: number; peakHeldS: number; peakEntryKmh: number } {
+  const none = { heldPeakDeg: 0, peakHeldS: 0, peakEntryKmh: 0 };
+  if (!Array.isArray(s.drifts)) return none;
+  let best: PeakStats | null = null;
   for (const d of s.drifts) {
     if (spunDrift(s, d)) continue;
-    const held = num(statsOf(s, d.id)?.heldPeakDeg, -1);
-    if (held > peak) peak = held;
+    const st = statsOf(s, d.id) as PeakStats | null;
+    const held = num(st?.heldPeakDeg, -1);
+    if (held <= 0) continue;
+    const hold = num(st?.timeAtAngleS, 0);
+    const bestHeld = num(best?.heldPeakDeg, -1);
+    if (held > bestHeld || (held === bestHeld && hold > num(best?.timeAtAngleS, 0))) best = st;
   }
-  return Math.round(peak * 10) / 10;
+  if (!best) return none;
+  return {
+    heldPeakDeg: Math.round(num(best.heldPeakDeg) * 10) / 10,
+    peakHeldS: Math.round(num(best.timeAtAngleS) * 10) / 10,
+    peakEntryKmh: Math.round(num(best.entrySpeedKmh)),
+  };
 }
 
 function spinCount(s: Session): number {
@@ -281,7 +325,7 @@ export function summarizeSession(s: Session): SessionIndexEntry {
     track,
     // Default to untrusted rather than trusted: a row that cannot tell must not award a grade.
     trusted: s.score?.trusted === true && integrity?.scoreTrusted !== false,
-    heldPeakDeg: heldPeakAngleDeg(s),
+    ...peakSlide(s),
     longestChainPoints: num(s.score?.longestChainPoints, 0),
     spins: spinCount(s),
     slides: slideMarks(s),

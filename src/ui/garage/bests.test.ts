@@ -40,6 +40,8 @@ function entry(over: Partial<SessionIndexEntry> & { id: string }): SessionIndexE
   return {
     name: `Run ${over.id}`,
     driverId: null,
+    peakHeldS: 0,
+    peakEntryKmh: 0,
     startedAt: 1_000,
     durationS: 100,
     total: 10_000,
