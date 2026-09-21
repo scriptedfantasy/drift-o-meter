@@ -12,6 +12,14 @@ export type MountVerdict = 'rigid' | 'suspect' | 'loose';
  * One slide, positioned in the run: start and end as a fraction of the recording (0..1), the
  * angle the driver HELD through it in degrees, and whether it ended in a spin.
  *
+ * `heldDeg` is `DriftStats.heldPeakDeg` for EVERY slide, spun ones included, and never
+ * `DriftEvent.peakAngle` — the same contract `SessionIndexEntry.heldPeakDeg` states below, for
+ * the same reason. A spun slide used to carry its instantaneous peak here, which is 118° on the
+ * shipped fixtures, and the card drew it on an axis captioned "held angle" with a 60° ceiling.
+ * Whether a spin is worth drawing at all is the screen's decision (`src/ui/garage/trace.ts`
+ * draws it as a footprint with no height); it is not a licence to store a different quantity
+ * under the same name. 0 when the drift's statistics were never stored.
+ *
  * A tuple, not an object, because this is the only array-shaped thing in the index and it has
  * to stay small: four numbers serialise to about 18 bytes, so a ten-slide run costs ~180 bytes
  * against the ~800 an entry already takes. It is what the last-run card's trace is drawn from,
@@ -39,6 +47,10 @@ export interface SessionIndexEntry {
    * the garage had to load and parse every session body to print a grade letter: 5.75 MB of
    * JSON per run where it needed 87 KB, about 31 ms of parsing each, so twenty stored runs
    * meant 115 MB parsed on the UI thread every time the screen opened.
+   *
+   * Those figures, and the claim that drawing the garage reads no bodies at all, are re-runnable
+   * rather than remembered: `npx tsx tools/analysis/storage-census.ts` counts the reads a full
+   * garage render makes over a stored season and prints what the index costs to parse.
    */
   trusted: boolean;
   /**
@@ -220,10 +232,10 @@ function slideMarks(s: Session): SlideMark[] {
   for (const d of drifts) {
     const a = frac(num(d.startT, 0));
     const b = Math.max(a, frac(num(d.endT, 0)));
-    const spun = spunDrift(s, d);
-    // A spun slide's HELD angle is not a held angle; draw it by its size, which is what it is.
-    const deg = spun ? Math.abs(num(d.peakAngle, 0)) * (180 / Math.PI) : num(statsOf(s, d.id)?.heldPeakDeg, 0);
-    out.push([a, b, Math.round(deg * 10) / 10, spun ? 1 : 0]);
+    // The engine's own held peak, whether or not it spun. A spin is flagged, not re-measured:
+    // substituting `d.peakAngle` here put 118° into a field whose contract forbids exactly that.
+    const deg = num(statsOf(s, d.id)?.heldPeakDeg, 0);
+    out.push([a, b, Math.round(deg * 10) / 10, spunDrift(s, d) ? 1 : 0]);
   }
   return out;
 }

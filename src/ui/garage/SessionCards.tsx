@@ -16,15 +16,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
-import type { SessionIndexEntry } from '../../platform';
+import type { MountVerdict, SessionIndexEntry } from '../../platform';
 import { formatDate, formatDuration, formatScore } from '../format';
 import { AppText, Micro, Small } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
+import { monitorSentence } from './advice';
 import { GradeBadge } from './GradeBadge';
 import { gradeStateColor, gradeStateOf } from './grade';
 import { angleText, pointsText, rowFootnote, slidesText } from './labels';
 import SlideTraceView from './SlideTraceView';
-import { TRACE_CEILING_DEG } from './trace';
+import { traceLegend } from './trace';
+
+/**
+ * The mount verdict's own colour. Red is the danger token, and RIGID is not a danger: a run
+ * thrown out for GPS or physics printed MOUNT · RIGID in `#FF3B3B`, colouring the one fact about
+ * it that was fine. The slot follows the verdict, not the run.
+ */
+function mountColor(mount: MountVerdict): string {
+  return mount === 'loose' ? colors.red : mount === 'suspect' ? colors.gold : colors.text;
+}
 
 export interface RunProps {
   /** Everything a row shows now lives in the index — no session body is read to draw one. */
@@ -104,7 +114,7 @@ export function LastRunCard({ entry, standing, onOpen, onDelete, showReason = tr
 
       {untrusted && showReason && entry.integrityMessage ? (
         <Small color="red" style={styles.voidNote} numberOfLines={3}>
-          {entry.integrityMessage}
+          {monitorSentence(entry.integrityMessage)}
         </Small>
       ) : null}
 
@@ -118,7 +128,7 @@ export function LastRunCard({ entry, standing, onOpen, onDelete, showReason = tr
         <CardStat
           label={untrusted ? 'Mount' : 'Best chain'}
           value={untrusted ? entry.mount.toUpperCase() : formatScore(entry.longestChainPoints)}
-          color={untrusted ? colors.red : colors.magenta}
+          color={untrusted ? mountColor(entry.mount) : colors.magenta}
         />
       </View>
 
@@ -130,19 +140,26 @@ export function LastRunCard({ entry, standing, onOpen, onDelete, showReason = tr
 }
 
 /**
- * The run's own shape, drawn in Skia from the slides the index carries. On a run the monitor
- * did not believe it is drawn hollow and red and captioned as what it is: a recording.
+ * The run's own shape, drawn in Skia from the slides the index carries.
+ *
+ * The caption comes from `trace.ts` together with the geometry, because the two have to agree:
+ * an axis headed "held angle" may only ever have held angles on it, so a spin and a run the
+ * monitor did not believe become footprints under the axis and the caption says which picture
+ * this is. It used to head every mark "HELD ANGLE THROUGH THE RUN · 60° TOP" while drawing the
+ * spins at their instantaneous peak, clamped — three identical full-height walls over a card
+ * that said HELD ANGLE 18°.
  */
 function SlideTraceStrip({ entry, untrusted }: { entry: SessionIndexEntry; untrusted: boolean }) {
   const [width, setWidth] = useState(0);
   const onLayout = useCallback((e: LayoutChangeEvent) => setWidth(Math.round(e.nativeEvent.layout.width)), []);
   const has = entry.slides.length > 0;
+  const legend = traceLegend(entry.slides, { believed: !untrusted });
   return (
     <View style={styles.trace} onLayout={onLayout}>
       <View style={styles.traceLegend}>
-        <Micro numberOfLines={1}>{untrusted ? 'Recorded sliding' : has ? 'Held angle through the run' : 'Nothing slid'}</Micro>
-        <Micro numberOfLines={1} color={untrusted ? 'red' : 'muted'}>
-          {untrusted ? 'None of it believed' : has ? `${TRACE_CEILING_DEG}° top` : 'Grip all the way'}
+        <Micro numberOfLines={1}>{legend.left}</Micro>
+        <Micro numberOfLines={1} color={legend.alarm ? 'red' : 'muted'}>
+          {legend.right}
         </Micro>
       </View>
       {has && width > 0 ? (

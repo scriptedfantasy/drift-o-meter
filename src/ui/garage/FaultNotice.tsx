@@ -6,12 +6,16 @@
  * over it, and the next save wrote a fresh one-entry index and orphaned every stored body
  * permanently. So the fault is named, the recordings are counted, and the repair is offered as
  * a choice rather than taken on the driver's behalf.
+ *
+ * `/settings` shows the same notice under DATA, because it counts the same runs: its Data
+ * section said "0 stored runs" over six recordings and greyed out the wipe, which is the same
+ * mistake with the repair switched off.
  */
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Micro, Small } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
-import type { GarageFault } from './useGarage';
+import type { GarageFault } from './fault';
 
 export interface FaultNoticeProps {
   fault: GarageFault;

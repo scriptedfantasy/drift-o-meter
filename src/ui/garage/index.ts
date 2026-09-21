@@ -1,5 +1,5 @@
 /** Garage screen kit: the session list, the personal bests and the demo bay. */
-export { mountAdvice } from './advice';
+export { monitorSentence, mountAdvice } from './advice';
 export type { MountAdvice, MountConcern } from './advice';
 export { MountNotice } from './MountNotice';
 export { personalBests, bestGradeOf, lastRunStanding, trackKeyOf, UNTRACKED } from './bests';
@@ -11,12 +11,16 @@ export type { LastRunDetail } from './lastRun';
 export { DEMO_SETS, DEMO_NAMES, clearDemoSessions, demoSetPresent, resolveDemoRequest, seedDemoRun, seedDemoSessions } from './demo';
 export type { DemoRun, SeedProgress } from './demo';
 export { useGarage } from './useGarage';
-export type { Garage, GarageFault } from './useGarage';
+export type { Garage } from './useGarage';
+export { faultFor, storedRuns } from './fault';
+export type { GarageFault, StoredRuns } from './fault';
+export { FaultNotice } from './FaultNotice';
 export { gradeStateOf, gradeStateColor } from './grade';
 export type { GradeState } from './grade';
 export { GradeBadge } from './GradeBadge';
 export type { GradeBadgeProps } from './GradeBadge';
-export { TRACE_CEILING_DEG } from './trace';
+export { measuredCount, traceBars, traceLegend, TRACE_CEILING_DEG } from './trace';
+export type { TraceBar, TraceLegend, TraceOptions } from './trace';
 export { LastRunCard, RunRow } from './SessionCards';
 export { BestsBoard } from './BestsBoard';
 export { EmptyGarage } from './EmptyGarage';

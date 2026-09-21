@@ -2,7 +2,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { Session } from '../engine/types';
-import { listSessions, loadSession, type SessionIndexEntry } from './storage';
+import { diagnoseSessions, listSessions, loadSession, type SessionIndexEntry } from './storage';
+import type { StorageDiagnosis } from './sessionStore';
 
 export interface UseSessionIndex {
   entries: SessionIndexEntry[];
@@ -35,6 +36,35 @@ export function useSessionIndex(): UseSessionIndex {
   );
 
   return { entries, loading, error, refresh };
+}
+
+/**
+ * What state storage is in, for the screens that have to explain themselves rather than draw an
+ * empty list over a full disk.
+ *
+ * Costs no parsing: the index read is cached by whatever already listed it, and counting the
+ * recordings reads key NAMES, never bodies (`npx tsx tools/analysis/storage-census.ts`).
+ *
+ * `ready` holds it back until the thing that might CHANGE storage has finished — the garage's
+ * `?demo=` seeding writes a whole set before the diagnosis means anything. `revision` retakes
+ * it: any value the caller changes when storage might have moved under it — a delete, a wipe, a
+ * rebuild, or the listing itself starting to fail. It returns null while it has no answer, and
+ * on failure, because "we could not ask" is not "nothing is wrong".
+ */
+export function useStorageDiagnosis(ready: boolean, revision: string | number): StorageDiagnosis | null {
+  const [diagnosis, setDiagnosis] = useState<StorageDiagnosis | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    diagnoseSessions().then(
+      (d) => alive && setDiagnosis(d),
+      () => alive && setDiagnosis(null),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [ready, revision]);
+  return diagnosis;
 }
 
 export interface UseSession {

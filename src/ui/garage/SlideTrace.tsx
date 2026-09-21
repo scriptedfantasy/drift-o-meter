@@ -7,10 +7,11 @@
  * specifies "gauges drawn with Skia (arcs, ticks, glows), never stock components" — the
  * last-run card was 353×294 px spent on a static letter, a number and three lines of text.
  *
- * It draws nothing it was not given. Each ridge is one `SlideMark` from the session index:
- * start and end as a fraction of the recording, the held angle in degrees, and whether it ended
- * in a spin. A spun slide is drawn in red and hollow — it is a slide that happened, and it is
- * not an angle anybody held, which is the same distinction the scorer makes.
+ * It draws nothing it was not given, and it decides nothing either: `trace.ts` turns the run's
+ * `SlideMark`s into geometry, this file turns geometry into pixels. The rule it is drawing is
+ * written there — a mark has a height only when the app will state the angle it stands for, and
+ * a spin (or any slide in a run the monitor did not believe) becomes a FOOTPRINT in the gutter
+ * under the axis: where the car was sideways, for how long, and no angle claimed.
  *
  * Imports Skia directly, so on web it must only ever be reached through `SlideTraceView`
  * (see `src/ui/skia/GlowRingView.web.tsx` for why: `@shopify/react-native-skia` binds
@@ -21,7 +22,7 @@ import { useMemo } from 'react';
 
 import type { SlideMark } from '../../platform';
 import { colors, rgba } from '../theme';
-import { TRACE_CEILING_DEG } from './trace';
+import { traceBars, TRACE_CEILING_DEG } from './trace';
 
 export interface SlideTraceProps {
   slides: readonly SlideMark[];
@@ -33,10 +34,10 @@ export interface SlideTraceProps {
   color?: string;
   /**
    * False when the integrity monitor did not believe this run's sliding. Then NOTHING is drawn
-   * filled: the slides happened, and the app may not present any of them as angles.
+   * on the axis: the slides happened, and the app may not present any of them as angles.
    */
   believed?: boolean;
-  /** Degrees at the top of the plot. The ridge is clamped, never rescaled past it. */
+  /** Degrees at the top of the plot. A ridge is clamped, never rescaled past it. */
   ceilingDeg?: number;
   testID?: string;
 }
@@ -56,22 +57,28 @@ function ridge(b: ReturnType<typeof Skia.PathBuilder.Make>, x0: number, x1: numb
 export default function SlideTrace({ slides, width, height = 58, color = colors.ember, believed = true, ceilingDeg = TRACE_CEILING_DEG, testID }: SlideTraceProps) {
   const base = height - 8;
   const headroom = base - 6;
+  // The gutter: everything the app will not put a number on lives BELOW the axis, where it
+  // cannot be read as a height on it.
+  const foot = base + 5;
 
-  const { kept, spun, grid } = useMemo(() => {
+  const { kept, marks, grid } = useMemo(() => {
     const keptB = Skia.PathBuilder.Make();
-    const spunB = Skia.PathBuilder.Make();
+    const markB = Skia.PathBuilder.Make();
     const gridB = Skia.PathBuilder.Make();
     // A single hairline at half the ceiling, so a ridge has something to be tall against.
     gridB.moveTo(0, base - headroom * 0.5).lineTo(width, base - headroom * 0.5);
     gridB.moveTo(0, base).lineTo(width, base);
-    for (const [startFrac, endFrac, deg, isSpun] of slides) {
-      const x0 = Math.max(0, Math.min(1, startFrac)) * width;
-      const x1 = Math.max(x0, Math.min(1, Math.max(startFrac, endFrac)) * width);
-      const h = Math.max(0.06, Math.min(1, deg / ceilingDeg)) * headroom;
-      ridge(isSpun === 1 || !believed ? spunB : keptB, x0, x1, base, base - h);
+    for (const bar of traceBars(slides, { believed, ceilingDeg })) {
+      const x0 = bar.x0 * width;
+      const x1 = bar.x1 * width;
+      if (bar.kind === 'held') {
+        ridge(keptB, x0, x1, base, base - bar.height * headroom);
+      } else {
+        markB.moveTo(x0, foot).lineTo(Math.max(x0 + 3, x1), foot);
+      }
     }
-    return { kept: keptB.detach(), spun: spunB.detach(), grid: gridB.detach() };
-  }, [slides, width, base, headroom, ceilingDeg, believed]);
+    return { kept: keptB.detach(), marks: markB.detach(), grid: gridB.detach() };
+  }, [slides, width, base, headroom, foot, ceilingDeg, believed]);
 
   return (
     <Canvas style={{ width, height }} testID={testID}>
@@ -86,8 +93,8 @@ export default function SlideTrace({ slides, width, height = 58, color = colors.
         <LinearGradient start={vec(0, 0)} end={vec(0, base)} colors={[rgba(color, 0.55), rgba(color, 0.06)]} />
       </Path>
       <Path path={kept} color={color} style="stroke" strokeWidth={2} strokeJoin="round" strokeCap="round" />
-      {/* a spin is drawn, never filled: it happened, and nobody held it */}
-      <Path path={spun} color={rgba(colors.red, 0.85)} style="stroke" strokeWidth={2} strokeJoin="round" strokeCap="round" />
+      {/* the footprints, in the gutter: a slide that happened, with no angle claimed for it */}
+      <Path path={marks} color={rgba(colors.red, 0.9)} style="stroke" strokeWidth={4} strokeCap="round" />
     </Canvas>
   );
 }

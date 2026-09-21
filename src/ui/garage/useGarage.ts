@@ -7,28 +7,24 @@
  * of the run's slides all come from `SessionIndexEntry`, so the whole screen is drawn the
  * moment the index is read. The newest run's body used to be parsed on mount — 5.48 MB and
  * 25.5 ms on a real recording, for 70 bytes of text. A body is opened only when a row is
- * TAPPED, and only for a demo run (see `lastRun.ts`).
+ * TAPPED, and only for a demo run (see `lastRun.ts`). That claim is re-runnable rather than
+ * remembered: `npx tsx tools/analysis/storage-census.ts` counts the body reads a full render
+ * makes over a stored season, and prints what the index costs to hold and to parse.
  *
  * It also reports what is WRONG with storage rather than drawing an empty garage over it: an
  * index that will not parse is not "your first run", and a browser that keeps nothing should
- * say so before a driver trusts it with a season.
+ * say so before a driver trusts it with a season. That wording lives in `fault.ts`, because
+ * `/settings` counts the same runs and has to say the same thing about them.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { deleteSession, diagnoseSessions, rebuildSessionIndex, useSessionIndex, type SessionIndexEntry, type StorageDiagnosis } from '../../platform';
+import { deleteSession, rebuildSessionIndex, useSessionIndex, useStorageDiagnosis, type SessionIndexEntry } from '../../platform';
 import { lastRunStanding, personalBests, type LastRunStanding, type TrackBests } from './bests';
 import { clearDemoSessions, demoSetPresent, resolveDemoRequest, seedDemoSessions, type SeedProgress } from './demo';
+import { faultFor, type GarageFault } from './fault';
 import { forgetDetails } from './lastRun';
 
-/** Something the screen has to explain, with the repair when there is one. */
-export interface GarageFault {
-  kind: 'unreadable-index' | 'ephemeral' | 'error';
-  level: 'bad' | 'warn';
-  title: string;
-  body: string;
-  /** Label for the repair, or null when there is nothing to offer. */
-  action: string | null;
-}
+export type { GarageFault } from './fault';
 
 export interface Garage {
   entries: SessionIndexEntry[];
@@ -50,47 +46,12 @@ export interface Garage {
   refresh(): Promise<void>;
 }
 
-function faultFor(d: StorageDiagnosis | null, error: string | null): GarageFault | null {
-  if (d && d.index === 'unreadable') {
-    const n = d.recordings;
-    const kept =
-      n === null
-        ? 'Your recordings are still on this device.'
-        : n === 0
-          ? 'There are no recordings on this device to rebuild it from.'
-          : n === 1
-            ? '1 recording is still on this device.'
-            : `${n} recordings are still on this device.`;
-    return {
-      kind: 'unreadable-index',
-      level: 'bad',
-      title: 'Your run list could not be read',
-      body: `${kept} Rebuilding reads each one and writes a new list. Nothing is deleted, and nothing new is saved until you choose.`,
-      action: n !== null && n > 0 ? 'Rebuild the list' : null,
-    };
-  }
-  if (error) {
-    return { kind: 'error', level: 'bad', title: 'The run list could not be read', body: error, action: null };
-  }
-  if (d && d.ephemeral) {
-    return {
-      kind: 'ephemeral',
-      level: 'warn',
-      title: 'This browser is not keeping anything',
-      body: 'Site data is blocked here, so runs last until the tab closes and no further. Nothing is lost that was not already unsaveable.',
-      action: null,
-    };
-  }
-  return null;
-}
-
 export function useGarage(demoParam: string | undefined): Garage {
   const index = useSessionIndex();
   const { refresh } = index;
   const [seeding, setSeeding] = useState<SeedProgress | null>(null);
   const [seedSettled, setSeedSettled] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [diagnosis, setDiagnosis] = useState<StorageDiagnosis | null>(null);
   const [rebuilding, setRebuilding] = useState(false);
   // Bumped whenever storage changes under us, so the diagnosis is taken again.
   const [revision, setRevision] = useState(0);
@@ -131,20 +92,10 @@ export function useGarage(demoParam: string | undefined): Garage {
   }, [demoParam, refresh]);
 
   // ---- what state storage is in ------------------------------------------------------------
-  // Costs no parsing: the index read is already cached by the listing above, and counting the
-  // recordings reads key NAMES, never bodies.
+  // Taken again whenever storage may have moved: a delete, a wipe, a rebuild, a demo seed — and
+  // whenever the listing itself starts or stops failing, which is the state this is here for.
   const settled = !index.loading && seedSettled;
-  useEffect(() => {
-    if (!settled) return;
-    let alive = true;
-    diagnoseSessions().then(
-      (d) => alive && setDiagnosis(d),
-      () => alive && setDiagnosis(null),
-    );
-    return () => {
-      alive = false;
-    };
-  }, [settled, index.error, revision]);
+  const diagnosis = useStorageDiagnosis(settled, `${revision}:${index.error ?? ''}`);
 
   const entries = index.entries;
   const bests = useMemo(() => personalBests(entries), [entries]);

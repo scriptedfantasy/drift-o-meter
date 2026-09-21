@@ -41,11 +41,19 @@ export function angleText(entry: Pick<SessionIndexEntry, 'heldPeakDeg'>, untrust
 /**
  * The slide count. On a run with spins it is the engine's `angleDrifts` out of the total, with
  * the spins named underneath — the alternative is "SLIDES 11" on a run the driver spun three
- * times. A run that was not believed asserts no slides either: the monitor did not believe the
- * sliding, and the count is a claim about the sliding.
+ * times.
+ *
+ * A run that was not believed publishes no count: a judged slide count is a claim about the
+ * sliding, and the monitor did not believe the sliding. It does say how many slides the
+ * RECORDING holds, because the card draws them — `SLIDES --` used to sit directly under a plot
+ * with seven countable marks on it, which is the screen refusing a number and then drawing it.
+ * The trace and this note now say the same thing: recorded, not judged.
  */
 export function slidesText(entry: Pick<SessionIndexEntry, 'drifts' | 'spins'>, untrusted: boolean): Slot {
-  if (untrusted) return { value: '--', note: null };
+  if (untrusted) {
+    const recorded = Math.max(0, Math.round(entry.drifts));
+    return { value: '--', note: recorded > 0 ? `${recorded} recorded` : null };
+  }
   const total = Math.max(0, Math.round(entry.drifts));
   const spins = Math.min(total, Math.max(0, Math.round(entry.spins)));
   if (spins <= 0) return { value: String(total), note: null };
