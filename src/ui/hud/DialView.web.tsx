@@ -1,23 +1,23 @@
 /**
  * Web: `@shopify/react-native-skia` binds `global.CanvasKit` when its module is evaluated, so the
- * gauge may only be imported once `LoadSkiaWeb` has resolved. `WithSkiaWeb` awaits the shared
+ * dial may only be imported once `LoadSkiaWeb` has resolved. `WithSkiaWeb` awaits the shared
  * promise (see `src/ui/skia/useSkiaReady.web.ts`) and then dynamically imports the component.
  */
 import { WithSkiaWeb } from '@shopify/react-native-skia/lib/module/web';
 import { View } from 'react-native';
 
 import { skiaWebOptions } from '../skia/skiaWeb';
-import type { AngleGaugeProps } from './AngleGauge';
+import type { DialProps } from './Dial';
 
-export type { AngleGaugeProps };
+export type { DialProps };
 
-export default function AngleGaugeView(props: AngleGaugeProps) {
+export default function DialView(props: DialProps) {
   return (
     <WithSkiaWeb
-      getComponent={() => import('./AngleGauge')}
+      getComponent={() => import('./Dial')}
       opts={skiaWebOptions}
       componentProps={props}
-      fallback={<View style={{ width: props.width, height: props.height }} />}
+      fallback={<View style={{ width: props.size, height: props.size }} />}
     />
   );
 }

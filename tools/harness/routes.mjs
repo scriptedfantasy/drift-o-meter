@@ -45,41 +45,44 @@ function longPress(testId, ms = 700) {
 
 
 /**
- * "The gauge box is cold / hot", as a region check.
+ * "The dial's box is cold / hot", as a region check.
  *
  * `testId` rather than a hand-written rectangle: the harness measures the element and hands
  * `pixels.mjs` its box, so the same check means the same thing portrait, landscape and at any
- * device scale, and it cannot quietly start measuring a different band when a row changes
- * height. `padFrac` takes in a little of the bloom that spills past the canvas.
+ * device scale, and it cannot quietly start measuring a different band when a layout changes.
+ * `padFrac` takes in a little of the bloom that spills past the canvas.
  *
  * THE CEILING IS THE POINT. A minimum proves something drew; only a maximum, measured in the
- * region the claim is about, proves something did NOT. The floor on a muted route measured
- * 30 591 "ember" pixels that were the red banner and the red STOP, and a different moment of the
- * same kind of run drew 63 983 genuine ember pixels inside the gauge on a run worth zero points —
- * which would have passed any floor in this file.
+ * region the claim is about, proves something did NOT. The floor this replaced measured 30 591
+ * "ember" pixels that were the red LOOSE MOUNT banner and the red STOP, and a different moment
+ * of the same kind of run drew 63 983 genuine ember pixels inside the instrument on a run worth
+ * zero points — which would have passed any floor in this file.
+ *
+ * ONE BOX COVERS THE WHOLE INSTRUMENT, and that is new. For a round there were two: an angle
+ * gauge and a g-meter below it, each with its own box, and `drive-loose` carried a ceiling on
+ * the gauge alone — under which a g-meter blazing on a hand-held phone would have shipped
+ * green. Merging them into one dial fixed the check as well as the screen, because the rim and
+ * the radar obey the same rule and now fail it in the same rectangle.
  *
  * 120 is above the harness's own noise floor and far below anything drawn: Chromium renders DOM
  * text with subpixel antialiasing, which leaves a few hundred warm fringe pixels along glyph
- * edges anywhere on the screen. The gauge is SKIA, drawn with greyscale antialiasing, so its box
- * measures 0 ember when the dial is muted and tens of thousands when it is not.
+ * edges anywhere on the screen. The dial is SKIA, drawn with greyscale antialiasing, so its box
+ * measures 0 ember when the instrument is muted and tens of thousands when it is not.
+ *
+ * EVERY FIGURE IN THIS FILE IS AN ESTIMATE ON A GRID, not an exact count. `pixels.mjs` walks in
+ * steps of `sampleStep` (2) and multiplies by 4, and a region's walk starts at the region's own
+ * top-left rather than at the frame's, so the two sample different pixels: `drive-bank` at
+ * landscape reports 35 768 inside the dial against 35 496 for the whole frame, which is a subset
+ * measuring MORE than its superset by 0.8 %. Nothing is wrong — both are ±1 % grid estimates
+ * quantised to multiples of 4, and both are reproducible to the pixel because the frame and the
+ * grid are deterministic. It only means the last two digits of any number here carry no
+ * information, so thresholds are set with margins in the thousands and never in the tens.
  */
-function gaugeIsCold(max) {
-  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, max };
+function dialIsCold(max) {
+  return { name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, max };
 }
-function gaugeIsHot(min) {
-  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, min };
-}
-/**
- * The same two checks on the g-meter's own box. Both instruments obey the same rule — an
- * instrument does not draw hot for a reading the engine has already thrown away — and a ceiling
- * on one of them certifies nothing about the other, which is how the g-meter could have shipped
- * blazing on a hand-held phone under a green `drive-loose`.
- */
-function gIsCold(max) {
-  return { name: 'g', colour: 'ember', testId: 'hud-g-box', padFrac: 0.01, max };
-}
-function gIsHot(min) {
-  return { name: 'g', colour: 'ember', testId: 'hud-g-box', padFrac: 0.01, min };
+function dialIsHot(min) {
+  return { name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, min };
 }
 
 export const defaultRoutes = [
@@ -159,81 +162,78 @@ export const defaultRoutes = [
 
   // ---- drive: the live display at the moments that matter --------------------------------
   //
-  // THE SCREEN IS THREE THINGS: the angle gauge, the g-meter and STOP. The status strip,
-  // integrity banner, drift strip, callout stack, score odometer, multiplier chip, chain bar,
-  // telemetry row and mini-map were all taken off it — a driver at 60 km/h has no time to read
-  // any of them — so every check below names an ELEMENT, and the frame-wide `minEmber` that used
-  // to stand in for one is gone. It measured a screen whose ember came mostly from the score
-  // block; with that block gone it measures the gauge plus the edge bloom plus the g-meter, all
-  // mixed, and a frame-wide floor can be cleared by any one of them while the other two are
-  // dead. `regions` anchors each count to `hud-gauge-box` or `hud-g-box` instead.
+  // THE SCREEN IS TWO THINGS: the dial and STOP. The status strip, integrity banner, drift
+  // strip, callout stack, score odometer, multiplier chip, chain bar, telemetry row and mini-map
+  // were all taken off it — a driver at 60 km/h has no time to read any of them — and then the
+  // angle gauge and the g-meter that replaced them were merged into one round instrument, rim
+  // and radar, because two places to look is still two.
   //
-  // TWO INSTRUMENTS, ONE HONESTY RULE. Neither draws hot for a reading the engine has already
-  // thrown away: every opacity in `AngleGauge.tsx` (`glowOpacity`, `bowlOpacity`, `dimmed`) and
-  // in `GMeter.tsx` (`glow`, `bowlOpacity`, `dimmed`) scales with `signals.trust`. Measured at
-  // the identical instant of the identical run:
-  //                              hud-gauge-box   hud-g-box
-  //   trusted (peak, below)          44 352 px     7 420 px
-  //   suspect (the warn route)       17 716 px     5 356 px
-  //   refused (the loose route)           0 px         0 px
+  // SO EVERY CHECK BELOW NAMES `hud-dial-box`, and the frame-wide `minEmber` that used to stand
+  // in for one is gone. It measured a screen whose ember came mostly from the score block; with
+  // that block gone it measures the dial plus the edge bloom, which is the dial counted twice
+  // and a glow that can carry a floor on its own.
   //
-  // The gauge carries a BAND because its three readings are well separated — its glow is most of
-  // its ember, so doubt halves it. The g-meter carries a FLOOR ONLY, on purpose: its glow is a
-  // small share of a small element, so trusted and doubted sit 7 420 against 5 356 portrait and
-  // 6 180 against 4 380 landscape, and a ceiling that cleared the doubted portrait figure would
-  // have to fit under the trusted landscape one — a 15 % window across two orientations of one
-  // route entry, which is a threshold that fails on a font hinting change rather than on a bug.
-  // What it still certifies outright is the end of the scale: at `trust` 0 the g-meter draws
-  // zero ember inside its own box, on frames whose acceleration is large.
+  // ONE INSTRUMENT, ONE HONESTY RULE, ONE CHECK. Nothing on the dial draws hot for a reading the
+  // engine has thrown away: every opacity in `Dial.tsx` (`glowOpacity`, `bowlOpacity`, `dimmed`,
+  // `gGlow`) scales with `signals.trust`. Measured inside `hud-dial-box` at the identical instant
+  // of the identical run:
+  //                              portrait   landscape
+  //   trusted (peak, below)        60 288      32 604
+  //   suspect (the warn route)     22 472       9 800
+  //   refused (the loose route)         0           0
+  // The landscape dial is smaller — it is capped by the height a landscape phone has least of —
+  // so a pixel count is not comparable across orientations and every floor below is set under
+  // the LANDSCAPE figure, which is the smaller of the two for every route.
   //
   // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
-  // this is the first frame of a live run — gauge at rest, nothing claimed.
+  // this is the first frame of a live run — needle at rest, radar at zero, nothing claimed.
   // No floor: at t=0.3 the run has no fix yet, so the engine will not stand behind the reading
-  // and both instruments are drawn muted. A FLOOR CANNOT CERTIFY THAT; the two ceilings can.
-  { name: 'drive-open', path: '/drive?sim=harbor&rate=1&at=0.3&hold=1', waitMs: 2400, expectCanvas: true, regions: [gaugeIsCold(120), gIsCold(120)] },
+  // and the dial is drawn muted. A FLOOR CANNOT CERTIFY THAT; the ceiling inside its box can.
+  { name: 'drive-open', path: '/drive?sim=harbor&rate=1&at=0.3&hold=1', waitMs: 2400, expectCanvas: true, regions: [dialIsCold(120)] },
   // The first seconds of EVERY run: the calibrator has not resolved which way the car points and
-  // there is no fix yet. Both instruments muted, nothing counted.
-  { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, regions: [gaugeIsCold(120), gIsCold(120)] },
+  // there is no fix yet. The dial is muted end to end, nothing counted.
+  { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, regions: [dialIsCold(120)] },
   // LIVE (the route to record video of): warped to 38 s and left running, so the shot lands on
   // the MANJI flick at 42.4 s and EXTREME ANGLE at 42.8 s, and the video covers the whole flick.
   // This is the one drive route that is NOT held, so its count moves shot to shot: 148 548,
   // 151 260 and 169 268 on three consecutive runs. The floor is set well under the lowest of
   // them rather than near any of them, because the number it is measuring is a moving frame.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [gaugeIsHot(60000), gIsHot(2000)] },
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [dialIsHot(60000)] },
   // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48 deg right, needle hard
   // over, the R chevron lit. The engine is still banking points and still timing the hold behind
   // it — what changed is that the screen no longer prints them.
-  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(20000), gIsHot(2000)] },
+  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(15000)] },
   // HELD 190 ms after TRANSITION x2, mid-swing through zero: 40 deg left, chevron flipped.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(60000), gIsHot(2000)] },
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(60000)] },
   // HELD 0.46 s after a 10,259-point chain banked.
   //
   // IT USED TO PHOTOGRAPH the bank banner rising over 900 ms, and there is no banner now. What it
-  // still photographs is the gauge 0.46 s after the chain closed — the slide is over, the angle
+  // still photographs is the dial 0.46 s after the chain closed — the slide is over, the angle
   // is falling and the instrument is coming down with it, which is the only account of a bank a
   // driver gets on this screen. The engine's account is unchanged and lands on the results page.
-  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(40000), gIsHot(2000)] },
+  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(20000)] },
   // A REAL hand-held phone (`looseness=1` goes through the simulator, not through the view): the
-  // mount reads loose, the scorer pays nothing, and BOTH instruments are drawn in muted grey with
-  // no glow at all — 0 ember pixels inside either box, on a frame whose angle is large and whose
-  // acceleration is larger still, because a hand-held phone is the thing being accelerated.
+  // mount reads loose, the scorer pays nothing, and the whole dial — arc, needle, numeral and g
+  // vector — is drawn in muted grey with no glow at all: 0 ember pixels inside its box, on a
+  // frame whose angle is large and whose acceleration is larger still, because a hand-held phone
+  // is the thing being accelerated.
   //
   // `minEmber: 100` used to stand here. It measured 30 591 — 17 169 of them the red LOOSE MOUNT
   // banner and 9 745 the red STOP, because the pixel classifier counts `#FF3B3B` as ember — so
   // the check was satisfied by the two elements that were SUPPOSED to be loud and could never
-  // have failed on the gauge. The banner is gone; the ceiling that replaced the floor is not,
-  // because it is now the whole of what this route proves.
-  { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120), gIsCold(120)] },
+  // have failed on the instrument. The banner is gone; the ceiling that replaced the floor is
+  // not, because it is now the whole of what this route proves.
+  { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsCold(120)] },
   // The same run 0.2 s after the slide became a spin. Nothing was ever paid for this run, so
-  // there is nothing to take away and no event to announce: both instruments stay grey through
-  // the spin exactly as they were grey before it.
-  { name: 'drive-lost', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120), gIsCold(120)] },
+  // there is nothing to take away and no event to announce: the dial stays grey through the spin
+  // exactly as it was grey before it.
+  { name: 'drive-lost', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsCold(120)] },
   // A REAL GPS dropout (`dropouts=1`), 1.2 s into the second gap. The engine KEEPS SCORING
   // through a dropout — slip angle comes off the gyro and acceleration off the accelerometer,
-  // neither of which is the fix — so both instruments stay lit, and these floors say so. GPS LOST used to be spelled out in the status
+  // neither of which is the fix — so the dial stays lit, and this floor says so. GPS LOST used to be spelled out in the status
   // strip; it is not spelled out anywhere on this screen now, and the reason it needn't be is
   // that the reading it would qualify has not changed.
-  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(40000), gIsHot(2000)] },
+  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(20000)] },
   // STOP on a run that never left walking pace: it is the walk to the car, not a session, so the
   // HUD says so instead of filing it or dropping the driver into the garage with no word.
   {
@@ -508,35 +508,32 @@ export const defaultRoutes = [
   // ---- drive display, appended ------------------------------------------------------------
   // MID-CHAIN, 1.2 s after the second link opened. The chain bar and the xN chip that used to
   // report it are gone from the screen; the chain itself is not, and neither is what it pays.
-  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(25000), gIsHot(2000)] },
+  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(12000)] },
   // THE DOUBTED MOUNT, and the only route that photographs the middle of the trust scale.
   // `integrity=suspect` at the exact instant of `drive-peak`: same run, same warp, same hold, so
   // the two frames differ in nothing but how far the engine believes the reading. Held side by
-  // side they look alike at a glance — the arc, the needle, the numeral and the chevron are all
-  // drawn — and they are not alike. Inside `hud-gauge-box`, doubted against trusted:
-  //   portrait    17 716  vs  44 352   (x 2.50)
-  //   landscape   31 392  vs  77 300   (x 2.46)
-  // because `trust` multiplies every opacity in the instrument. The whole thing is dimmer, which
-  // is the screen saying "this, but less sure" in the one channel it has left.
+  // side they look alike at a glance — the arc, the needle, the numeral, the chevron and the g
+  // vector are all drawn — and they are not alike: 22 472 ember pixels inside the dial against
+  // `drive-peak`'s 60 288 portrait, 9 800 against 32 604 landscape, because `trust` multiplies
+  // every opacity in the instrument.
   //
   // Hence a BAND and not a floor. The floor says it still drew; the ceiling says it drew dimmer
   // than the trusted twin, and without the ceiling this route would pass on a bug that threw the
-  // doubt away and lit the gauge at full.
+  // doubt away and lit the dial at full.
   //
-  // THE CEILING IS SET BY THE LANDSCAPE FRAME AND IS THEREFORE LOOSE IN PORTRAIT. One route entry
-  // is shot at both orientations and a pixel count is not orientation-free: the landscape gauge
-  // box is 1.78x the area of the portrait one and every count in it scales by very nearly that
-  // (31 392 / 17 716 = 1.77). So 38 000 has to clear landscape's 31 392 while staying under
-  // portrait's trusted 44 352, and there is only that window to sit in. It catches a full-trust
-  // regression at both orientations, which is what it is for; it would not catch a regression
-  // that merely doubled the doubted portrait glow. Both figures are stable — consecutive runs of
-  // each route returned them unchanged, because `hold=1` freezes the frame.
+  // THE CEILING IS ORIENTATION-COUPLED and the window is the whole of what is available: one
+  // route entry is shot at both orientations, the landscape dial is smaller, so 27 000 has to
+  // clear portrait's doubted 22 472 while staying under landscape's trusted 32 604. It catches a
+  // full-trust regression at both orientations, which is what it is for. What catches the other
+  // direction — a dial that stopped dimming a little rather than a lot — is `drive-peak`'s own
+  // floor of 15 000, which landscape's doubted 9 800 would fail. Both figures are stable:
+  // consecutive runs of each route returned them unchanged, because `hold=1` freezes the frame.
   {
     name: 'drive-warn',
     path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect',
     waitMs: 2800,
     expectCanvas: true,
-    regions: [{ name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, min: 6000, max: 38000 }, gIsHot(2000)],
+    regions: [{ name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, min: 4000, max: 27000 }],
   },
 
   // ---- the feel layer's settings, appended ------------------------------------------------
@@ -835,7 +832,7 @@ export const defaultRoutes = [
     ],
   },
   // THE CELEBRATION FRAME OF A RUN WORTH NOTHING, which is the frame `drive-loose` cannot show.
-  // `looseness=1` reads as a LOOSE mount, so the gauge greys out and the shot proves only the
+  // `looseness=1` reads as a LOOSE mount, so the dial greys out and the shot proves only the
   // easy case. At 0.3 the mount reads SUSPECT: physics possible, state valid, `believable` true
   // on 95.5 % of the run — and `counting` false on 100.0 % of it, `finish()` total 0, grade C,
   // `trusted: false`. Held at the peak of the second lap's long drift, 56.2 deg — the largest
@@ -843,16 +840,15 @@ export const defaultRoutes = [
   //
   // This is the frame where the instruments are most tempted to celebrate, and the temptation is
   // now the whole of what can go wrong here: the chips, the multiplier and the odometer that used
-  // to take a full-colour branch on this frame are off the screen, so the gauge and the g-meter
-  // are the only things left that could light up for a slide worth zero. The three ceilings are
-  // the assertion that they do not — no ember inside either instrument's box, and no gold
-  // anywhere on the frame.
+  // to take a full-colour branch on this frame are off the screen, so the dial is the only thing
+  // left that could light up for a slide worth zero. The two ceilings are the assertion that it
+  // does not — no ember inside the dial's box, and no gold anywhere on the frame.
   {
     name: 'drive-loose-peak',
     path: '/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1',
     waitMs: 2800,
     expectCanvas: true,
-    regions: [gaugeIsCold(120), gIsCold(120), { name: 'screen-gold', colour: 'gold', max: 200 }],
+    regions: [dialIsCold(120), { name: 'screen-gold', colour: 'gold', max: 200 }],
   },
 
   // THE BANKED ROW, which is where the round's headline fix is read. `bank.ts` moved BANKED to

@@ -59,35 +59,60 @@ flow wins.
 
 ## Screens
 ### Drive display (`/drive`)
-Two elements. The angle gauge, centred and as wide as the frame allows: a tachometer arc with a
-needle for signed β (a left slide sweeps left), ticks every 10°, the current drift's peak as a
-ghost tick, the giant |β|° numeral and an L/R chevron inside the bowl. And STOP, docked at the
-bottom where a hand finds it without looking. Nothing else. Landscape is the same two things,
-with STOP in the right half clear of the arc.
+ONE DIAL AND ONE CONTROL. The dial is round and fills the frame: its **rim is the slip angle** —
+zero at 12 o'clock, the needle sweeping left for a left-hand slide and right for a right-hand one
+over ±150° of travel, ticks every 10°, a ghost tick holding the drift's peak, the arc filling out
+of the top and shifting ember→gold past 40°; its **middle is the g radar** — concentric rings,
+crosshairs, and the acceleration vector drawn out of the centre, right for a right-hand push, up
+for throttle, down for brake. The |β|° numeral sits in the quiet lower half of the face with a
+chevron for the direction. STOP is docked at the bottom where a hand finds it without looking.
+Nothing else.
 
 IT USED TO BE NINE THINGS: a status row (clock, lap, integrity pill, GPS pill), an integrity
 banner, a peak/held/flicks strip, a callout stack, a speed and lateral-g row, a score line
-(odometer, multiplier chip, chain bar) and a live mini-map, all around the gauge. Every one of
-them was real and most of them were good, and the rule at the top of this file — *read at a
+(odometer, multiplier chip, chain bar) and a live mini-map, all around a shallow angle arc. Every
+one of them was real and most of them were good, and the rule at the top of this file — *read at a
 glance at 60 km/h* — was still failed by the count alone. A driver does not read nine things at
 60 km/h; a driver reads one, for a fraction of a second, between corners. So the display is now
 the one thing worth that fraction, and the other eight live in the results and the replay, where
 there is time to read them.
 
-NOTHING WAS TURNED OFF BEHIND IT. The engine still takes ~100 samples a second, the scorer still
-scores, the integrity monitor still judges, the session is still saved, and the verdict screen
-still publishes the same grade. What changed is what the driver spends attention on mid-run.
-The components are still in `src/ui/hud/` and still tested; they are a shelf to put things back
-from, one at a time, when a measurement says a thing earns its place on the glass.
+AND THEN TWO BECAME ONE. The first cut left an angle gauge with a g-meter beneath it, which is
+still two places to look. A car's own cluster solves this the way the dial does — a scale around
+the edge, a g radar concentric inside it — and it works because the eye lands in the middle of one
+circle and reads outward instead of choosing. Merging them also bought the sweep: the arc was a
+shallow ±78° bowl because eight other elements needed the space under it, and a full ring has no
+such tenant, so the same ±70° of slip now spends nearly twice the travel and a spin drives the
+needle to the bottom of the dial, which is the one place a needle has obviously run out of road.
 
-THE GAUGE STILL TELLS THE TRUTH ABOUT ITSELF, and this is the one non-furniture thing it does.
-`glowOpacity`, `bowlOpacity` and `dimmed` in `AngleGauge.tsx` all scale with `signals.trust`, so
-the instrument fades continuously as the engine's doubt grows: measured inside its own box,
-44,352 ember pixels trusted, 17,716 doubted, 0 refused — at one identical instant of one
-identical run. A refused reading is drawn in grey with no glow at all, so the screen never
-celebrates an angle the scorer has already thrown away. The words that used to qualify it
-(LOOSE MOUNT, GPS LOST, NOT SCORING) are gone; the brightness that meant the same thing is not,
-and the results screen still says it in words once there is time to read them.
+NOTHING IS TURNED OFF BEHIND IT. The engine still takes ~100 samples a second, the scorer still
+scores, the integrity monitor still judges, the session is still saved, and the verdict screen
+still publishes the same grade. What changed is what the driver spends attention on mid-run. The
+removed components are still in `src/ui/hud/` and still tested; they are a shelf to put things
+back from, one at a time, when a measurement says a thing earns its place on the glass.
+
+NOTHING ON THE DIAL IS SAID TWICE. No letter beside the direction chevron (an arrow pointing right
+and an "R" are one fact drawn twice), no number beside the g vector (its length IS the magnitude),
+no peak ring on the radar — that one was built and then measured out: across 88 drifts the
+per-drift peak |g| has a *minimum* of 0.645 g and 39.8 % of drifts reach full scale, so the ring
+never leaves the outer third of the face and reads as a second rim.
+
+THE DIAL TELLS THE TRUTH ABOUT ITSELF, and this is the one non-furniture thing it does. Every
+opacity in `Dial.tsx` scales with `signals.trust`, so rim and radar fade together as the engine's
+doubt grows: measured inside its own box, 60,288 ember pixels trusted, 22,472 doubted, 0 refused
+— at one identical instant of one identical run. (Those are grid estimates to about ±1 %, not
+exact counts; the harness samples every second pixel. See `tools/harness/routes.mjs`.) A refused reading is drawn in grey with no glow
+at all, so the screen never celebrates an angle the scorer has already thrown away. The words that
+used to qualify it (LOOSE MOUNT, GPS LOST, NOT SCORING) are gone; the brightness that meant the
+same thing is not, and the results screen still says it in words once there is time to read them.
+
+THE RADAR'S FULL SCALE IS 1.0 g, MEASURED. Over 16 runs (168,165 valid frames, 113,172 of them at
+|β| ≥ 8°) the magnitude the pipeline reports while sideways has median 0.471 g, p90 0.669, p99
+0.841. At 0.8 g the vector spends its life against the outer ring where a circle's travel is most
+compressed; at 1.0 the median reaches 47 % of the radius and it still pins on 0.33 % of drifting
+samples. The engine-axes-to-face conversion lives in `gVector.ts` and is swept over all 360° in
+`hud.test.ts`, because a sign convention written out at each use site eventually disagrees with
+itself — and the rim and the radar must agree about which way right is or neither can be read.
 
 ### Results (`/results/[id]`)
 Grade hero (letter, points, name/track/date), component bars (angle, consistency,

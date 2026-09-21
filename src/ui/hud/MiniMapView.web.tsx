@@ -1,4 +1,4 @@
-/** Web: load the map only after CanvasKit is ready (see `AngleGaugeView.web.tsx`). */
+/** Web: load the map only after CanvasKit is ready (see `DialView.web.tsx`). */
 import { WithSkiaWeb } from '@shopify/react-native-skia/lib/module/web';
 import { View } from 'react-native';
 

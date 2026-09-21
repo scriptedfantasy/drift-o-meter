@@ -24,7 +24,7 @@ import type { HudSignals } from './signals';
  * does not visibly move. At 0.8 g the median travels 42 %, p90 reaches 80 %, and only 0.6 % of
  * drifting samples pin it, so the top of the scale still means something.
  *
- * NOT THE SAME NUMBER AS `GMeter.FULL_SCALE_G` (1.0), and deliberately not named the same thing.
+ * NOT THE SAME NUMBER AS `Dial.FULL_SCALE_G` (1.0), and deliberately not named the same thing.
  * That one is the full scale of |(a_x, a_y)| — the whole vector, which is larger than either
  * axis alone: the same sweep puts the magnitude's median at 0.471 g against this 0.34. Two
  * measurements of two quantities, not two answers to one question.
