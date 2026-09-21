@@ -60,6 +60,51 @@ export function severityWeight(s: DriftSeverity): number {
   return s === 'spin' ? 1 : s === 'extreme' ? 0.75 : s === 'big' ? 0.5 : s === 'hold' ? 0.28 : 0;
 }
 
+/** What a ramp colour becomes when the gate below refuses it: the screen's neutral. */
+export const NO_HEAT = colors.muted;
+
+/**
+ * THE GATE. Every colour either renderer spends off the escalation ramp goes through here.
+ *
+ * `heatColor` answers "what colour is this |β|". This answers the question before it: may this
+ * frame spend a slide colour at all? Two refusals, both of them the engine's own assertions:
+ *
+ *  • `trusted` is `SessionScore.trusted`. A recording the engine refuses to vouch for plays, and
+ *    shows what it measured, but its slip angles are not a measurement anyone should dress up —
+ *    the points and the grade are already withheld, and the ember goes with them.
+ *  • Below the 8° `hold` edge the engine says the car is NOT SLIDING (`severityOf` returns
+ *    'none'), and ember is the colour of a slide. `heatColor` is flat ember from 0° to 40°, so
+ *    without this the same 4.2° drew a grey hero numeral (which keys off `severity`) beside a
+ *    full-ember L/R chevron, a full-ember slip label, a full-ember slip arc and a full-ember
+ *    playhead — one frame saying both "not sliding" and "sliding" about the same angle, under a
+ *    footer reading 0 DRIFTS.
+ *
+ * It lives out here, exported and swept by `replay-ui.test.ts`, because it was a module-private
+ * pair of one-liners in `scene.ts` that nothing executed: the round it was written, it was
+ * applied at sixteen draw sites and missed four, and both the suite and the screenshot harness
+ * stayed green while a run stamped NOT SCORED drew an orange streak under the words.
+ *
+ * A colour that belongs to a drift THE DETECTOR HAS ALREADY DECLARED is floored at the hold edge
+ * before it gets here (`driftHeat` in scene.ts): a slide's running peak is a degree or two for
+ * its first tenth of a second, and greying the head of every ribbon would take the ember off
+ * drift entry, which is the one beat DESIGN.md spends it on.
+ */
+export function heatOf(beta: number, trusted: boolean): string {
+  if (!trusted) return NO_HEAT;
+  return severityOf(beta) === 'none' ? NO_HEAT : heatColor(beta);
+}
+
+/**
+ * The same gate for a ramp colour something else already worked out — the trail's core chunks
+ * (coloured in `geometry.ts`, once, off the same ramp), the mini-map, the halo.
+ *
+ * Only the trust half: a hex has no angle left in it to test, and every caller's hex belongs to
+ * a drift the detector declared, which is the case the hold edge does not apply to.
+ */
+export function tintOf(hex: string, trusted: boolean): string {
+  return trusted ? hex : NO_HEAT;
+}
+
 /**
  * Does this label put a SCORE on the run?
  *
@@ -100,20 +145,27 @@ export function headlinePoints(opts: { trusted: boolean; reveal: number; totalPo
 }
 
 /**
- * Widest |β| the scrubber ribbon is scaled to.
+ * Widest |β| the scrubber ribbon is scaled to: the spin edge, on every run, with no exception.
  *
- * ABSOLUTE, with no exception: never less than the spin edge, so a given |β| is the same height
- * in every run and two runs are comparable at a glance.
+ * The band is a gradient in NORMALISED space — ember to 55 % of its height, gold at 80 %, red at
+ * the top — so the scale is the whole of what those colours mean. Fixing it at 65° puts the
+ * spin edge exactly where the shader already says a spin is, and a given |β| the same number of
+ * pixels up the strip in every run, which is the only way two runs are comparable at a glance.
+ * A slide past 65° saturates at the top, which is the honest picture of one: the strip is a
+ * severity scale, not a log of the peak.
  *
- * There used to be an exception for a run with no drift in it — scale to its own maximum, "so
- * the shape of the few degrees is visible" — and it made the band lie. The ribbon is a gradient
- * in NORMALISED band space: red at the top means a spin. A clean lap peaking at 4.18° filled
- * 80 % of the band, which put a clean lap's telemetry strip in full gold and red under a footer
- * reading 0 DRIFTS, a hair below where `good`'s genuine 55.54° sits at 85 %. A clean lap draws a
- * flat line now, which is the honest picture of one.
+ * IT WAS `Math.max(spin, maxAngle * 1.05)`, AND THAT IS NOT A SCALE. The exception for a clean
+ * lap was removed a round ago — 4.18° filling 80 % of the band drew a lap with nothing in it in
+ * gold and red — but the `max` it was removed in favour of kept the same defect for every run
+ * ABOVE the spin edge, where the doc comment had already started claiming otherwise. Measured on
+ * the eight fixtures: clean/good/touge 65.0°, hero 67.0°, rough 73.5°, handheld 87.9°, sloppy
+ * and spin 123.9°. So a 40° slide sat at 61.5 % of the band on `good` and 32.3 % on `sloppy`,
+ * and on `sloppy` the 65° spin edge itself sat at 52.5 % — below the gradient's first ember
+ * stop. One frame painted a 70° slide gold-to-red in the world and ember on the strip under it,
+ * which is the colour that means a controlled drift.
  */
-export function ribbonScale(replay: Replay): number {
-  return Math.max(SEVERITY_EDGES.spin, replay.telemetry.maxAngle * 1.05);
+export function ribbonScale(_replay: Replay): number {
+  return SEVERITY_EDGES.spin;
 }
 
 /** Callout colour by beat, as the reference renderer assigns it. */
