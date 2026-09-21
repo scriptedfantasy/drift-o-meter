@@ -122,6 +122,14 @@ export default function CalibrateScreen() {
               <Small color={colors.text} style={styles.faultBody}>
                 {fault.body}
               </Small>
+            </View>
+            {/* The consequence, the rule and the buttons are ONE group at the foot.
+                They used to be three: the body and its consequence sat in a centred block and
+                the buttons were pinned to the bottom, so a fault with nothing else to say left
+                a third of the frame empty between them — worst on `unsupported`, which has no
+                Try again. Composed, the flexible space is breathing room around a centred
+                statement with a footer under it, which is what the rest of the app does. */}
+            <View style={styles.faultFoot}>
               <View style={styles.rule} />
               {/* The old note said "none of this stops you driving — the run records either
                   way". It does not: /drive opens the same sensors and stops on the same error.
@@ -131,11 +139,19 @@ export default function CalibrateScreen() {
                   ? 'Driving will stop here too — it opens these same sensors. The simulated source runs a full recording through the real judge in the meantime.'
                   : 'Driving will stop here too: DRIVE opens these same sensors and ends on this same message. Nothing is recorded until it is fixed.'}
               </Small>
-            </View>
-            <View style={styles.faultActions}>
-              {fault.retryable ? <Button label="Try again" size="lg" onPress={retry} testID="cta-retry" /> : null}
-              <Button label={fault.actionLabel} variant="secondary" onPress={openAction} testID="cta-settings" />
-              <Button label="Back to the garage" variant="ghost" onPress={() => router.replace('/')} testID="cta-garage" />
+              <View style={styles.faultActions}>
+                {/* One action gets the slab. On a retryable fault that is Try again; on
+                    `unsupported`, where retrying cannot work, it is the one thing that can. */}
+                {fault.retryable ? <Button label="Try again" size="lg" onPress={retry} testID="cta-retry" /> : null}
+                <Button
+                  label={fault.actionLabel}
+                  size={fault.retryable ? 'md' : 'lg'}
+                  variant={fault.retryable ? 'secondary' : 'primary'}
+                  onPress={openAction}
+                  testID="cta-settings"
+                />
+                <Button label="Back to the garage" variant="ghost" onPress={() => router.replace('/')} testID="cta-garage" />
+              </View>
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -259,15 +275,20 @@ export default function CalibrateScreen() {
               {/* The rail carries the instrument and the way out; the column carries what is
                   wrong and what to do. Both have to end above 393 px of height, which is what
                   pushed step 02 and all three lights off the bottom before. */}
+              {/* The lights ride with the INSTRUMENT, not at the foot of the column. They are
+                  a readout, and in the column they were the last thing on the page: on the
+                  arrival-banner frames — the way DESIGN and the README say drivers normally
+                  reach this screen — all three fell below 393 px of landscape and the driver
+                  could not see the one row that carries the verdict at a glance. */}
               <View style={styles.left}>
                 {instrument}
+                <Lights lights={lights} compact />
                 {actions}
               </View>
               <View style={styles.right}>
                 {verdict}
                 <Cautions cautions={cautions} />
                 <Steps steps={steps} compact />
-                <Lights lights={lights} compact />
               </View>
             </View>
           ) : (
@@ -336,10 +357,11 @@ const styles = StyleSheet.create({
   leaveNote: { maxWidth: 460 },
 
   faultPage: { flexGrow: 1, paddingHorizontal: gutter, paddingBottom: space[4], width: '100%', maxWidth: 820, alignSelf: 'center' },
-  faultCentre: { flexGrow: 1, flexShrink: 0, justifyContent: 'center', gap: space[2], paddingVertical: space[4] },
+  faultCentre: { flexGrow: 1, flexShrink: 0, justifyContent: 'center', gap: space[2], paddingVertical: space[3] },
   bloom: { position: 'absolute', left: -gutter - 24, right: -gutter - 24, top: '6%', height: 270 },
-  faultTitle: { fontSize: 40, lineHeight: 42 },
+  faultTitle: { fontSize: 44, lineHeight: 45 },
   faultBody: { maxWidth: 520 },
-  rule: { height: 1, backgroundColor: colors.line, marginVertical: space[3], maxWidth: 520 },
-  faultActions: { gap: space[3], paddingBottom: space[4] },
+  rule: { height: 1, backgroundColor: colors.line, marginBottom: space[3], maxWidth: 520 },
+  faultFoot: { flexShrink: 0, gap: space[2], paddingBottom: space[3] },
+  faultActions: { gap: space[3], paddingTop: space[2] },
 });

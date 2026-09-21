@@ -19,6 +19,8 @@
 import { IntegrityMonitor, type MountState } from '../../src/engine/integrity';
 import { MountCalibrator } from '../../src/engine/mount';
 import { simulateRun, type MountPreset, type TrackId } from '../../src/sim';
+import { cautionsOf, headlineOf, leaveOf, lightsOf, mountVerdict, phaseOf } from '../../src/ui/calibrate/model';
+import { replayReadings } from '../../src/ui/calibrate/testkit';
 
 export interface Tick {
   /** Seconds since the first motion sample — what the screen calls `elapsedS`. */
@@ -204,6 +206,171 @@ function trajectory(): void {
   peakTimes.sort((a, b) => a - b);
   console.log(`\nfinal BELOW peak in ${pct(below, deltas.length)}   median delta ${median(deltas).toFixed(3)}   worst ${worst.d.toFixed(3)} (${worst.label}: ${worst.p.toFixed(3)} → ${worst.f.toFixed(3)})`);
   console.log(`peak reached between ${peakTimes[0].toFixed(1)} s and ${peakTimes[peakTimes.length - 1].toFixed(1)} s (median ${median(peakTimes).toFixed(1)} s)`);
+  console.log('NOTE: final-vs-peak is not the question the READY footer asks. See `ready` below,');
+  console.log('      which measures from the frame the footer is first READ.');
+}
+
+/**
+ * THE FOOTER'S CLAIM, MEASURED WHERE IT IS READ.
+ *
+ * `trajectory` above compares FINAL to PEAK, and the screen turned that into "it peaks seconds
+ * after you drive off, and never climbs later" — a sentence read at FIRST READY. Those are
+ * different questions: first READY lands before the peak does, so the number climbs under the
+ * word "never". This section reads the actual rendered string on every READY frame and checks
+ * it against the run up to that instant.
+ */
+function ready(): void {
+  console.log('\n=== READY FOOTER — what the sentence claims, on the frame it is read ===');
+  console.log('track  mount           seed   1st READY   q there   peak after   climb   band flips');
+  let climbs = 0;
+  let c05 = 0;
+  let c10 = 0;
+  let flips = 0;
+  let runs = 0;
+  let wrong = 0;
+  let readyFrames = 0;
+  const firsts: number[] = [];
+  let worst = { d: 0, label: '', a: 0, ta: 0, b: 0, tb: 0 };
+  for (const track of TRACKS) {
+    for (const mount of MOUNTS) {
+      for (const seed of SEEDS) {
+        const frames = replayReadings({ track, mount, seed }, 50);
+        const i = frames.findIndex((f) => phaseOf(f.reading) === 'ready');
+        if (i < 0) {
+          console.log(`${track.padEnd(7)}${mount.padEnd(16)}${String(seed).padEnd(5)}   never READY`);
+          continue;
+        }
+        runs++;
+        firsts.push(frames[i].t);
+        const qThere = frames[i].reading.quality;
+        let best = frames[i];
+        const bands = new Set<string>();
+        let seen = 0;
+        for (let k = 0; k < frames.length; k++) {
+          const r = frames[k].reading;
+          if (r.quality > seen) seen = r.quality;
+          if (phaseOf(r) !== 'ready') continue;
+          readyFrames++;
+          bands.add(headlineOf(r).color);
+          // the footer's number must be the best the calibration has reached BY THIS FRAME
+          const claimed = leaveOf(r).note.match(/^Best so far (\d+)%/);
+          if (!claimed || Number(claimed[1]) !== Math.round(seen * 100)) wrong++;
+          if (k >= i && r.quality > best.reading.quality) best = frames[k];
+        }
+        const d = best.reading.quality - qThere;
+        if (d > 1e-9) climbs++;
+        if (d >= 0.05) c05++;
+        if (d >= 0.1) c10++;
+        if (bands.size > 1) flips++;
+        if (d > worst.d) worst = { d, label: `${track}/${mount}/seed ${seed}`, a: qThere, ta: frames[i].t, b: best.reading.quality, tb: best.t };
+        console.log(
+          `${track.padEnd(7)}${mount.padEnd(16)}${String(seed).padEnd(5)}${frames[i].t.toFixed(1).padStart(8)}s${fmt(qThere)}${fmt(best.reading.quality)}      ${
+            d > 0 ? '+' : ' '
+          }${d.toFixed(3)}   ${bands.size > 1 ? 'YES' : 'no '}`,
+        );
+      }
+    }
+  }
+  firsts.sort((a, b) => a - b);
+  console.log(`\nfirst READY ${firsts[0].toFixed(1)}–${firsts[firsts.length - 1].toFixed(1)} s (median ${median(firsts).toFixed(1)} s)`);
+  console.log(`quality CLIMBS after the sentence is read in ${pct(climbs, runs)}; >= 0.05 in ${climbs ? c05 : 0}; >= 0.10 in ${c10}; worst +${worst.d.toFixed(3)} (${worst.label}: ${worst.a.toFixed(3)} @ ${worst.ta.toFixed(1)} s → ${worst.b.toFixed(3)} @ ${worst.tb.toFixed(1)} s)`);
+  console.log(`headline colour changes while READY in ${pct(flips, runs)}`);
+  console.log(`READY frames whose footer misstated the running peak: ${wrong} of ${readyFrames}`);
+}
+
+/**
+ * EVERY ROW THIS SCREEN HEADS WITH THE MOUNT, and what it actually printed underneath.
+ *
+ * The severity-1: `IntegrityMonitor.message` is the ROOT CAUSE, so a mount-titled banner
+ * quoting it printed a forward-axis sentence 100 % of the time and a GPS sentence under MOUNT
+ * SHAKING 2.7 % of the time. This counts the rendered strings.
+ */
+function rows(): void {
+  console.log('\n=== MOUNT-TITLED ROWS — is the body about the mount? ===');
+  const MOUNT_SENTENCES = new Set([
+    'Phone looks hand-held — clip it into a rigid mount to score drifts',
+    'Phone is moving in its mount — tighten it',
+    'Phone may be shifting in its mount — check it is tight',
+  ]);
+  const bodies = new Map<string, number>();
+  let total = 0;
+  let aboutMount = 0;
+  for (const track of TRACKS) {
+    for (const mount of MOUNTS) {
+      for (const seed of [1, 2, 3, 4]) {
+        for (const looseness of [0, 0.15, 0.2, 0.25]) {
+          for (const f of replayReadings({ track, mount, seed, looseness, dropouts: seed % 2 === 0 }, 50)) {
+            const r = f.reading;
+            const h = headlineOf(r);
+            const seen: string[] = [];
+            if (h.kicker === 'Mount' && h.title !== 'Still listening') seen.push(h.because);
+            for (const c of cautionsOf(r)) if (/mount/i.test(c.title)) seen.push(c.body);
+            for (const body of seen) {
+              total++;
+              if (MOUNT_SENTENCES.has(body)) aboutMount++;
+              bodies.set(body, (bodies.get(body) ?? 0) + 1);
+            }
+          }
+        }
+      }
+    }
+  }
+  console.log(`rows headed with the mount: ${total}; body is one of the monitor's mount sentences in ${pct(aboutMount, total)}`);
+  for (const [k, v] of [...bodies].sort((a, b) => b[1] - a[1])) console.log(`${String(v).padStart(8)}  ${MOUNT_SENTENCES.has(k) ? ' ' : '✗'} ${k}`);
+}
+
+/**
+ * THE WARM-UP, AND THE LIGHT THAT CONTRADICTED THE HEADLINE.
+ *
+ * Two screen-owned thresholds used to live here: a 4 s mount warm-up sized to outlast a startup
+ * transient (and measured shorter than it), and `SETTLED_UP = 0.6` on the VERTICAL light. Both
+ * are now the engine's own (`mountConfident`, `upSettled`), so this measures the consequences:
+ * does a bolted-down phone ever get called unsteady, and can the light disagree with the phase?
+ */
+function warmup(): void {
+  console.log('\n=== WARM-UP — a rigid mount, and when a real one is caught ===');
+  console.log('looseness  runs   first mount verdict          READY frames w/ VERTICAL "Settling"');
+  for (const looseness of [0, 0.1, 0.15, 0.2, 0.25, 0.5]) {
+    const mounts = looseness === 0 ? MOUNTS : (['portrait-vent'] as MountPreset[]);
+    const firstSus: number[] = [];
+    const firstLoose: number[] = [];
+    let runs = 0;
+    let unsteadyFrames = 0;
+    let readyFrames = 0;
+    let settling = 0;
+    let stepTick: number[] = [];
+    for (const track of TRACKS) {
+      for (const mount of mounts) {
+        for (const seed of [1, 2, 3, 4]) {
+          const frames = replayReadings({ track, mount, seed, looseness }, 50);
+          runs++;
+          const s = frames.find((f) => mountVerdict(f.reading) === 'suspect');
+          const l = frames.find((f) => mountVerdict(f.reading) === 'loose');
+          if (s) firstSus.push(s.t);
+          if (l) firstLoose.push(l.t);
+          const tick = frames.find((f) => lightsOf(f.reading)[2].state === 'on');
+          if (tick) stepTick.push(tick.t);
+          for (const f of frames) {
+            const r = f.reading;
+            if (lightsOf(r)[2].detail === 'Unsteady' || lightsOf(r)[2].detail === 'Moving') unsteadyFrames++;
+            if (phaseOf(r) !== 'ready') continue;
+            readyFrames++;
+            if (lightsOf(r)[0].detail === 'Settling') settling++;
+          }
+        }
+      }
+    }
+    firstSus.sort((a, b) => a - b);
+    firstLoose.sort((a, b) => a - b);
+    stepTick.sort((a, b) => a - b);
+    const when = firstLoose.length
+      ? `loose  ${pct(firstLoose.length, runs)} from ${firstLoose[0].toFixed(2)}–${firstLoose[firstLoose.length - 1].toFixed(2)} s`
+      : firstSus.length
+        ? `suspect ${pct(firstSus.length, runs)} from ${firstSus[0].toFixed(2)}–${firstSus[firstSus.length - 1].toFixed(2)} s`
+        : `none — RIGID light at ${stepTick[0].toFixed(2)}–${stepTick[stepTick.length - 1].toFixed(2)} s`;
+    console.log(`${String(looseness).padEnd(11)}${String(runs).padEnd(7)}${when.padEnd(46)}${settling} of ${readyFrames}`);
+    if (looseness === 0) console.log(`           frames calling a bolted-down phone unsteady or moving: ${unsteadyFrames}`);
+  }
 }
 
 /** A loose mount: can the driver leave and have the run calibrate itself anyway? */
@@ -259,7 +426,7 @@ function suspect(): void {
   }
 }
 
-const SECTIONS: Record<string, () => void> = { ceiling, vibration, trajectory, loose, suspect };
+const SECTIONS: Record<string, () => void> = { ceiling, vibration, trajectory, ready, rows, warmup, loose, suspect };
 
 const wanted = process.argv.slice(2).filter((a) => a in SECTIONS);
 for (const name of wanted.length ? wanted : Object.keys(SECTIONS)) SECTIONS[name]();

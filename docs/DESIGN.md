@@ -86,10 +86,24 @@ speed and |β| traces and drift markers; play/pause, ×0.5/×1/×2, camera mode
 meter, plain-language steps ("Drive straight and accelerate once"), forward-axis
 resolved state, mount-looseness warning from the integrity monitor.
 
-DONE is the ENGINE'S OWN BAR, not a number written here. It is
+THE BAR IS THE ENGINE'S OWN, not a number written here. It is
 `IntegrityMonitor.calibrationOk`: quality at or above `minCalibrationQuality` with the
 forward axis resolved. The rule is that the engine names the bar and the screen reports it,
-so that a screen can never gate on a threshold the engine cannot clear.
+so that a screen can never gate on a threshold the engine cannot clear. That rule now holds
+for every edge this screen draws: `IntegrityState.mountConfident` says when a mount verdict
+is a verdict, `MountDiagnostics.upSettled` says when the vertical has settled, and
+`MountDiagnostics.peakQuality` is the running best the footer quotes. The screen holds none of
+them, because each one it did hold ended up contradicting its own headline.
+
+AND THE SCREEN GATES NOTHING, so it has no DONE. 288 measured runs — 48 rigid plus 240 across
+aggression, vibration, track, mount and seed — resolved the forward axis 288 times with no
+gesture, at 5.1–6.1 s of DRIVING. A parked driver can therefore never reach the calibrated
+state at all, so a screen that reserved its ember slab for it, and labelled that slab "Done —
+drive", put the loudest button out of reach and then claimed a step nobody had taken. Driving
+is the action in every phase a parked driver can be in, so driving gets the slab and the label
+is DRIVE. The two states where the screen has something better to offer than leaving keep the
+quiet button: a loose mount (leaving costs the whole run — 0 of 24 runs at looseness ≥ 0.5 ever
+reached the bar) and a shaking one (leaving costs part of every angle).
 
 A CORRECTION, LEFT IN PLACE AS A WARNING. This doc previously said DONE at quality ≥ 0.8.
 It was then changed on the strength of a measurement that the ceiling is 0.74 — which a

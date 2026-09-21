@@ -39,6 +39,33 @@ function longPress(testId, ms = 700) {
   })()`;
 }
 
+
+/**
+ * "The gauge box is cold / hot", as a region check.
+ *
+ * `testId` rather than a hand-written rectangle: the harness measures the element and hands
+ * `pixels.mjs` its box, so the same check means the same thing portrait, landscape and at any
+ * device scale, and it cannot quietly start measuring a different band when a row changes
+ * height. `padFrac` takes in a little of the bloom that spills past the canvas.
+ *
+ * THE CEILING IS THE POINT. A minimum proves something drew; only a maximum, measured in the
+ * region the claim is about, proves something did NOT. The floor on a muted route measured
+ * 30 591 "ember" pixels that were the red banner and the red STOP, and a different moment of the
+ * same kind of run drew 63 983 genuine ember pixels inside the gauge on a run worth zero points —
+ * which would have passed any floor in this file.
+ *
+ * 120 is above the harness's own noise floor and far below anything drawn: Chromium renders DOM
+ * text with subpixel antialiasing, which leaves a few hundred warm fringe pixels along glyph
+ * edges anywhere on the screen. The gauge is SKIA, drawn with greyscale antialiasing, so its box
+ * measures 0 ember when the dial is muted and tens of thousands when it is not.
+ */
+function gaugeIsCold(max) {
+  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge', padFrac: 0.01, max };
+}
+function gaugeIsHot(min) {
+  return { name: 'gauge', colour: 'ember', testId: 'hud-gauge', padFrac: 0.01, min };
+}
+
 export const defaultRoutes = [
   // ---- garage: the home screen ----------------------------------------------------------
   // `?demo=<set>` writes REAL sessions into storage before the list is drawn: each one is built
@@ -76,8 +103,11 @@ export const defaultRoutes = [
   // ---- calibrate: phone in hand to "this app can measure my car" -------------------------
   // `?at=<s>` feeds the calibrator that many seconds of the recording at once and `?hold=1`
   // stops there, so each state below is the same frame every run. The times come from the real
-  // calibrator on `sim=harbor&seed=1`: the vertical settles at ~1.5 s, the forward axis resolves
-  // at 5.31 s, and confidence plateaus at 0.74 (see tools/harness/README.md).
+  // calibrator on `sim=harbor&seed=1`: the vertical settles at 1.62 s, the mount cues fill their
+  // window at 2.02 s, the forward axis resolves at 5.31 s, and confidence PEAKS at 0.740 at
+  // 6.34 s and eases to 0.698 by the end — it does not plateau, and 0.74 is this seed's peak
+  // rather than a ceiling. The disproven ceiling is why `docs/DESIGN.md` carries a correction
+  // block; tools/harness/README.md has the 48-run spread (0.618–0.864, median 0.750).
   // ZERO samples — `hold=1` with no `at`, so the recording is armed and never fed. The screen
   // has nothing to report and must say exactly that: this frame used to read CALIBRATED /
   // "Ready to measure" over dashes and a red "No reading" light, because `IntegrityMonitor`
@@ -107,29 +137,39 @@ export const defaultRoutes = [
   // ---- drive: the live HUD at the moments that matter -----------------------------------
   // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
   // this is the first frame of a live run — gauge at rest, clock at zero, nothing claimed.
-  { name: 'drive-open', path: '/drive?sim=harbor&rate=1&at=0.3&hold=1', waitMs: 2400, expectCanvas: true, minEmber: 100 },
+  // No `minEmber`: at t=0.3 the run has no fix yet, so the engine will not stand behind the
+  // reading and the gauge is drawn muted. A FLOOR CANNOT CERTIFY THAT. The ceiling inside the
+  // gauge box can, and it is the same check `drive-loose` carries.
+  { name: 'drive-open', path: '/drive?sim=harbor&rate=1&at=0.3&hold=1', waitMs: 2400, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // The first seconds of EVERY run: the calibrator has not resolved which way the car points and
   // there is no fix yet. Calm cyan FINDING FORWARD, gauge muted, score not counting.
-  { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, minEmber: 200 },
+  { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // LIVE (the route to record video of): warped to 38 s and left running, so the shot lands on
   // the MANJI flick at 42.4 s and EXTREME ANGLE at 42.8 s, and the video covers the whole flick.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, minEmber: 2000 },
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
   // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48° right, ×4.5, 22,675
   // points with 7,927 at risk, 47 km/h, three callouts stacked, peak 50°, 23.9 s held.
-  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 2000 },
+  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
   // HELD 190 ms after TRANSITION ×2, mid-swing through zero: 40° left, chevron flipped, ×2.75.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 800 },
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
   // HELD just after a 10,528-point chain banked and the next drift opened with LINK ×3.
-  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 1200 },
+  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
   // A REAL hand-held phone (`looseness=1` goes through the simulator, not through the view):
   // the mount reads loose, so the gauge is drawn muted with no bloom and the score block says
   // NOT SCORING — the HUD must not celebrate an angle the scorer has already thrown away.
-  { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 100 },
+  // `minEmber: 100` used to stand here, under that comment. It measured 30 591 — 17 169 of them
+  // the red LOOSE MOUNT banner and 9 745 the red STOP, because the pixel classifier counted
+  // `#FF3B3B` as ember — so the check was satisfied by the two elements that are SUPPOSED to be
+  // loud, and could never have failed on the gauge. A floor cannot certify "muted". This is the
+  // ceiling that can, measured inside the gauge's own box.
+  { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // The same run 0.2 s after the slide became a spin: CHAIN LOST, the chain bar emptied.
-  { name: 'drive-lost', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 100 },
+  { name: 'drive-lost', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // A REAL GPS dropout (`dropouts=1`), 1.2 s into the second gap: GPS LOST is severe here
   // because a fix HAS been held before — "no fix yet" at the start of a run is not an alarm.
-  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 100 },
+  // The engine KEEPS SCORING through a dropout, so this frame is meant to be hot: the floor is
+  // real here, not a token.
+  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
   // STOP on a run that never left walking pace: it is the walk to the car, not a session, so the
   // HUD says so instead of filing it or dropping the driver into the garage with no word.
   {
@@ -384,12 +424,12 @@ export const defaultRoutes = [
   // BETWEEN slides with the chain still open: 48.5 s, 10 528 points at risk, two slides done.
   // The middle band is the one that used to go dark here (0.71 % lit on an idle frame), and the
   // coaching line that used to be 11 px is the thing to read in this shot.
-  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 200 },
+  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
   // The warn tier, via the presentation-only `?integrity=` override: MOUNT SHAKING over a clean
   // recording. `drive-warn.png` existed with no route behind it, so it had gone stale; it is now
   // shot again, and it is where the chain bar and the integrity note appear TOGETHER (a note
   // used to replace the bar, taking AT RISK off the screen exactly when it mattered).
-  { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect', waitMs: 2800, expectCanvas: true, minEmber: 1000 },
+  { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect', waitMs: 2800, expectCanvas: true, minEmber: 40000 },
   // ---- the feel layer's settings, appended ------------------------------------------------
   // The Feedback section, which is below the fold on `settings`: the two switches and the way
   // through to the lab. A switch is a stronger claim than a label, so this screen has to be able
@@ -523,4 +563,163 @@ export const defaultRoutes = [
   // other string that carried the invented number: "19° · 127 PTS". `replay-zero-chip` above
   // shows the deep-linked THIS DRIFT chip, which has always been measurements only.
   { name: 'replay-zero-highlight', path: '/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1', waitMs: 3600, expectCanvas: true, minEmber: 300 },
+  // ---- /settings: the run list seen from the other screen that counts it, appended ---------
+  // `settings` above shoots an EMPTY garage's settings, where "0 stored runs" happens to be
+  // true. This is the same section over a night's driving, which is the frame that says the
+  // count is a count rather than a constant.
+  {
+    name: 'settings-stored',
+    path: '/?demo=night',
+    waitMs: 8000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'goto', path: '/settings' },
+      { type: 'wait', ms: 1200 },
+      { type: 'scroll', y: 1500 },
+      { type: 'wait', ms: 700 },
+    ],
+  },
+  // THE FINDING. Six real recordings on the device and a TRUNCATED index: the Data section read
+  // "0 stored runs" — `useSessionIndex` returns `entries: []` AND an error when `listSessions`
+  // throws — and greyed out DELETE ALL RUNS, which is the one repair `clearSessions` was written
+  // for (it deletes every body the device can name, index or no index). The garage one tap away
+  // said "6 recordings are still on this device" on the same storage. Seed six runs, truncate
+  // the index, then open `/settings` with no `?demo=` so nothing re-seeds over the evidence.
+  {
+    name: 'settings-index-broken',
+    path: '/?demo=night',
+    waitMs: 8000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/settings' },
+      { type: 'wait', ms: 1800 },
+      { type: 'scroll', y: 1500 },
+      { type: 'wait', ms: 700 },
+    ],
+  },
+  // …and the repair, offered here as well as in the garage, because this is the screen a driver
+  // goes to when they want to do something about their data.
+  {
+    name: 'settings-index-rebuilt',
+    path: '/?demo=night',
+    waitMs: 8000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/settings' },
+      { type: 'wait', ms: 1800 },
+      { type: 'scroll', y: 1500 },
+      { type: 'wait', ms: 500 },
+      { type: 'tap', testId: 'cta-rebuild-index', timeout: 30000 },
+      { type: 'wait', ms: 2500 },
+    ],
+  },
+  // The wipe, ASKED over a broken index: the button is live and the question counts what is
+  // really about to go — the recordings, since the list that named them cannot be read.
+  {
+    name: 'settings-wipe-broken',
+    path: '/?demo=night',
+    waitMs: 8000,
+    actions: [
+      { type: 'waitFor', testId: 'last-run', timeout: 30000 },
+      { type: 'eval', js: 'localStorage.setItem("dom.sessions.index.v1", localStorage.getItem("dom.sessions.index.v1").slice(0, 40))' },
+      { type: 'goto', path: '/settings' },
+      { type: 'wait', ms: 1800 },
+      { type: 'scroll', y: 1500 },
+      { type: 'wait', ms: 500 },
+      { type: 'tap', testId: 'setting-wipe', timeout: 30000 },
+      { type: 'wait', ms: 900 },
+    ],
+  },
+
+  // ---- /sound: the one rule the lab advertises, pressed ------------------------------------
+  // THE SPIN is the lab's only demonstration of the mixer's first rule, and no route had ever
+  // pressed it — which is why "so you hear one" could sit on the screen for a round over a
+  // button that played both clips. This presses `seq-lost` and then shows the decision log,
+  // where the rule has to be readable: `lost · family · vs spin` under `spin · played`.
+  //
+  // A NOTE ON THE `sound` ROUTE ABOVE, which says the first frame is the LOCKED state. It is not,
+  // here: headless Chromium starts an AudioContext without a gesture, so `/sound` shoots AUDIBLE
+  // and this harness cannot certify the locked path at all. The locked path is real on a phone
+  // and on a desktop browser with a normal autoplay policy; nothing in `artifacts/shots` is
+  // evidence about it either way, and a reader should not take that route's comment as such.
+  {
+    name: 'sound-lost',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'seq-lost' },
+      { type: 'tap', testId: 'seq-lost', timeout: 30000 },
+      { type: 'wait', ms: 1200 },
+      { type: 'eval', js: "document.querySelector('[data-testid=\"sound-decisions\"]').scrollIntoView({ block: 'center' })" },
+      { type: 'wait', ms: 700 },
+    ],
+  },,
+  // ---- drive display: the two frames nothing was shooting, appended ------------------------
+  // THE SAVE-FAIL OVERLAY ON A RUN THE ENGINE REFUSED. `drive-savefail` only ever shoots a clean
+  // recording, so nothing caught the overlay building its verdict out of `score.grade` and
+  // `score.total` with no `score.trusted` check: the hand-held run below finishes with total 0,
+  // grade B and `trusted: false`, and the card used to draw a 64 px cyan B, an ember 0 and
+  // "4 DRIFTS · PEAK 76°". `src/engine/types.ts` forbids exactly that. What it must show is the
+  // refusal and the recording — no letter, no total, no peak.
+  {
+    name: 'drive-savefail-untrusted',
+    path: '/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1',
+    waitMs: 2800,
+    expectCanvas: true,
+    actions: [
+      { type: 'eval', js: "Storage.prototype.setItem = function () { const e = new Error('disk is full'); e.name = 'QuotaExceededError'; throw e; };" },
+      { type: 'tap', testId: 'cta-stop', timeout: 30000 },
+      { type: 'wait', ms: 1400 },
+    ],
+  },
+  // THE CELEBRATION FRAME OF A RUN WORTH NOTHING, which is the frame `drive-loose` cannot show.
+  // `looseness=1` reads as a LOOSE mount, so the HUD greys out and the shot proves only the easy
+  // case. At 0.3 the mount reads SUSPECT: physics possible, state valid, `believable` true on
+  // 95.5 % of the run — and `counting` false on 100.0 % of it, `finish()` total 0, grade C,
+  // `trusted: false`. Held at the peak of the second lap's long drift (56.2°, ×5.00, three flicks,
+  // TRANSITION ×3 / MANJI / EXTREME ANGLE all on the stack). Every colour decision on this screen
+  // used to take the full-colour branch here. The ceiling inside the gauge is what says otherwise.
+  {
+    name: 'drive-loose-peak',
+    path: '/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1',
+    waitMs: 2800,
+    expectCanvas: true,
+    regions: [gaugeIsCold(120), { name: 'screen-gold', colour: 'gold', max: 200 }],
+  },
+
+  // THE BANKED ROW, which is where the round's headline fix is read. `bank.ts` moved BANKED to
+  // tier B on a measurement and its `why` went on saying "Tier A and the loudest thing in a run"
+  // — four lines under the row's own "RMS -20.6 DB · TIER B" on this very card. The file said one
+  // thing and the half that renders said another, and no frame in `artifacts/shots` showed it.
+  // This is that frame: the measurements and the sentence under them, in one shot.
+  {
+    name: 'sound-banked',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'clip-banked' },
+      { type: 'eval', js: "document.querySelector('[data-testid=\"clip-banked\"]').scrollIntoView({ block: 'start' })" },
+      { type: 'wait', ms: 700 },
+    ],
+  },
+  // ---- calibrate: the states the 7.0 critique named, appended ----------------------------
+  // NO PIXEL THRESHOLD ON ANY OF THESE, deliberately. Every calibrate frame is a frozen phase
+  // colour, so a `minEmber` here would be a check on whichever colour the phase happens to
+  // paint — i.e. a green tick certifying the defect if the phase is wrong. What these routes
+  // are for is being LOOKED AT.
+  //
+  // A mount banner over a sentence about something else, which was 100 % of them.
+  // `IntegrityMonitor.message` answers the ROOT CAUSE, and the only way to reach this banner
+  // is for `calibrationOk` to be false — which IS the cause that outranks the mount — so the
+  // gold MOUNT LOOKS UNSTEADY printed "Can't tell which way the car points" on every frame of
+  // every run. `mountMessage` is the monitor's sentence about the mount, and this is the frame
+  // where the two differ: the headline is FINDING FORWARD and the banner is about the cradle.
+  { name: 'calibrate-cradle-banner', path: '/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1', waitMs: 2400, expectCanvas: true },
+  // A GPS dropout, on the screen that has no GPS light. It used to surface only as the body of
+  // a mount banner ("MOUNT SHAKING / GPS signal lost 5 s ago"); now it is its own row. The same
+  // frame is the answer to the READY footer: confidence reads 61 % here having peaked at 76 %,
+  // so "as sharp as it gets" was false and "Best so far 76%" is what the calibrator publishes.
+  { name: 'calibrate-gps', path: '/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1', waitMs: 2400, expectCanvas: true },
 ];

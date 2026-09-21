@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
-import { feelCue, feelFrame, feelReset, trustIn } from '../audio';
+import { BED_ATTACK_TAU, BED_FLOOR_DEG, BED_RELEASE_TAU, BED_SPAN_DEG, feelCue, feelFrame, feelReset, trustIn } from '../audio';
 import { toneFor, type EventTone } from '../callouts';
 
 // Re-exported so the callout components keep one import site for the run's own types.
@@ -342,8 +342,15 @@ export function useDriveRun(signals: HudSignals): DriveRun {
 
       // Glow intensity: blooms fast, fades slowly (design: entry 220 ms, exit 420 ms), and never
       // blooms at all for a slide the engine is not scoring.
-      const target = active ? Math.min(1, Math.max(0, (abs - 6) / 44)) * h.trust : 0;
-      const tau = target > h.intensity ? 0.09 : 0.24;
+      //
+      // THE FOUR NUMBERS COME FROM `src/ui/audio/mixer.ts`, which is the module that says in its
+      // own comment that there is no second copy of them. `trustIn` was unified and the envelope
+      // beside it was not, so 6 / 44 / 0.09 / 0.24 were typed out here while the `/sound` lab
+      // rendered them as prose ("90 ms up, 240 ms down … shuts completely below 6°") and called
+      // them "the drive display's own glow envelope". Tuning this glow used to falsify a sentence
+      // on another screen; now it moves both.
+      const target = active ? Math.min(1, Math.max(0, (abs - BED_FLOOR_DEG) / BED_SPAN_DEG)) * h.trust : 0;
+      const tau = target > h.intensity ? BED_ATTACK_TAU : BED_RELEASE_TAU;
       h.intensity += (target - h.intensity) * (1 - Math.exp(-dt / tau));
       signals.intensity.value = h.intensity;
 

@@ -158,17 +158,28 @@ On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below 
 | t | what has happened |
 | --- | --- |
 | 0.5 s | gravity seen, up-axis quality 0.50, nothing resolved |
-| 1.5 s | the vertical has settled (up-axis 0.90) |
-| 4 s | the mount cues have filled two windows, so the mount verdict starts to mean something |
+| 1.62 s | the vertical has settled — `MountCalibrator`'s own `upSettled`, i.e. `upSettleS` of gravity data |
+| 2.02 s | the mount cues have a full averaging window behind them, so `mountConfident` turns true and the mount verdict starts to mean something |
 | 5.31 s | the forward axis resolves — `forwardBlockS` is 4 s, then one hard pull is enough |
-| 6.3 s | confidence PEAKS, at 0.740 on this seed, and drifts down from there |
-| 12 s+ | 0.71, easing towards 0.698 by the end of the run |
+| 6.34 s | confidence PEAKS, at 0.740 on this seed, and drifts down from there |
+| 12 s+ | 0.736, easing towards 0.698 by the end of the run |
 
 That peak-then-settle is not a property of seed 1: over the 48-run grid the final confidence is
 below the peak in **48 of 48** (median −0.017, worst −0.114 on harbor / flat-console / seed 5,
 0.618 → 0.504), with the peak between 5.1 s and 8.0 s. Run
-`npx tsx tools/analysis/calibration-sweep.ts trajectory`. This is why the screen's READY footer
-says the number is as sharp as it gets rather than promising it keeps sharpening.
+`npx tsx tools/analysis/calibration-sweep.ts trajectory`.
+
+**That measurement is not the question the READY footer asks, and one round was lost to the
+difference.** Comparing FINAL to PEAK became the sentence "as sharp as it gets — it peaks
+seconds after you drive off, and never climbs later", which is READ at first READY. First READY
+lands at 4.6–5.3 s and the peak at 5.1–8.0 s, so the number climbs under the word "never" in
+**33 of 48** runs (≥ 0.05 in 13, ≥ 0.10 in 8, worst +0.209 on harbor / portrait-vent / seed 6:
+0.589 at 4.6 s → 0.798 at 5.5 s), and the headline's own colour flips ember → green in 22 of 48.
+`npx tsx tools/analysis/calibration-sweep.ts ready` measures the rendered footer on every READY
+frame instead. The footer now quotes `MountCalibrator`'s published running peak — "Best so far
+N %" — which is a fact on every frame rather than a forecast, and the same command checks it:
+**0 of 198,325 READY frames misstated it.** Any sentence about how this number behaves over time
+has to be measured where the driver READS it, not at the end of the run.
 
 | route | moment |
 | --- | --- |
@@ -180,7 +191,9 @@ says the number is as sharp as it gets rather than promising it keeps sharpening
 | `calibrate-flat` | the phone lying flat on the console, detected from gravity |
 | `calibrate-rejected` | arrived because a run was thrown out — the normal way into this screen |
 | `calibrate-shaking` | `mount === 'suspect'`: everything resolved, 34 % confidence, and the screen says MOUNT SHAKING rather than "Ready to measure" |
-| `calibrate-early` | 2 s into a hand-held recording — inside the 4 s mount warm-up, so no step is ticked and no mount verdict is claimed |
+| `calibrate-early` | 2 s into a hand-held recording. The mount cues reach `loose` first (0.67–1.25 s at looseness 1), so this frame is the monitor having decided; the vertical has not settled and no step is ticked |
+| `calibrate-cradle-banner` | the gold MOUNT LOOKS UNSTEADY banner under a FINDING FORWARD headline — the two sentences that used to be the same one |
+| `calibrate-gps` | a GPS dropout getting its own row on a screen with no GPS light, on a READY frame reading 61 % that peaked at 76 % |
 | `calibrate-fault-permission` | motion access denied |
 | `calibrate-fault-location` | location access denied — a different switch from the one above, so a different fault |
 | `calibrate-fault-unsupported` | no gyroscope on this device |
@@ -191,6 +204,31 @@ says the number is as sharp as it gets rather than promising it keeps sharpening
 (docs/DESIGN.md, "the whole app is four steps"), so the garage never invites anyone here. It
 links here only when the LAST run left evidence — `mountAdvice` in `src/ui/garage/advice.ts` —
 and passes `?why=`, which is what `garage-flagged` and `calibrate-rejected` photograph together.
+
+**The screen keeps no thresholds of its own any more.** It used to hold two on engine
+quantities: `MOUNT_WARMUP_S = 2 × windowS` (4 wall-clock seconds before the mount verdict was
+allowed to mean anything) and `SETTLED_UP = 0.6` on the VERTICAL light. Both were wrong in the
+way `src/engine/integrity/band.ts` warns about. The warm-up was sized to outlast a startup
+transient and was measured SHORTER than it — 30 of 48 rigid runs still read `suspect` past it,
+to 4.81 s — and the transient itself was a defect in `MountCalibrator` (the first sample of
+every run was rotated with a body-up axis that had not been built yet, putting ~12 m/s² of
+acceleration that never happened into a 0.3 Hz high-pass and thence into a 2 s RMS that held it
+for ~4.6 s). `SETTLED_UP` compared against `upQuality`, which is age × accelerometer fit, so a
+rattling cradle spoiled the fit and the phase read READY while the VERTICAL light read
+"Settling" on 72–100 % of READY frames at looseness 0.1–0.15. Now the engine names both edges
+(`IntegrityState.mountConfident`, `MountDiagnostics.upSettled`) and
+`npx tsx tools/analysis/calibration-sweep.ts warmup` measures the result: **0 frames** call a
+bolted-down phone unsteady across 24 rigid runs, and **0** READY frames anywhere show
+"Settling".
+
+**A mount banner says what the monitor said about the MOUNT.** `IntegrityState.message` is the
+ROOT CAUSE — a strict priority list in which an unresolved calibration and a lost GPS fix both
+outrank a shifting cradle — which is right for the HUD's one integrity line and wrong under a
+heading this screen chose. Quoting it printed a forward-axis sentence under MOUNT LOOKS
+UNSTEADY on 105,439 of 105,439 measured caution frames and a GPS sentence under MOUNT SHAKING
+on 2,760 of 102,944. `IntegrityState.mountMessage` and `gpsMessage` answer per topic; `message`
+still ranks. `npx tsx tools/analysis/calibration-sweep.ts rows` counts the rendered strings:
+**174,848 of 174,848** mount-titled rows now carry a mount sentence.
 
 **Why the screen's bar is not `docs/DESIGN.md`'s 0.8.** The calibrator's confidence is
 `upQuality × (0.4 + 0.6·min(lineQuality, signQuality))`, and `upQuality` is capped by the
