@@ -69,7 +69,17 @@ that the reported fix exists. Check for them explicitly.
     the frame as "deliberately almost ember-free". When a route carries a pixel threshold, ask
     what the number would be at a DIFFERENT moment of the same run, and whether the threshold is
     still measuring what its comment claims.
-13. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
+13. **Check that a measurement answers the sentence's question, at the moment the sentence is
+    read.** The calibration screen promised "As sharp as it gets — it peaks seconds after you
+    drive off, and never climbs later", backed by a 48-run sweep that was correct: final quality
+    was below the peak in 48 of 48. But the sweep compared FINAL to PEAK, and the sentence is read
+    at FIRST READY, which arrives before the peak — so the number climbs after the screen says
+    "never" in 24 of 48 runs, by up to 0.209, and the screen's own band flips from "good enough"
+    to "sharp" in 9 of them. Nobody measured wrong; the measurement answered a different question
+    than the copy asks. So: find the frame where a claim is actually shown, and re-measure from
+    there. A sound number attached to the wrong instant is still a screen telling a driver
+    something untrue.
+14. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
     on screen is itself a finding: `replay.test.ts` asserted the label `SAVED IT` for every spin,
     and the cumulative-score test ran only against a session whose total was by construction the
     sum of its parts, so neither could ever fail. Name those tests in your findings.
