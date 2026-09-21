@@ -31,7 +31,7 @@ function fakeDrift(id: number, startT: number, endT: number, peakDeg: number, sp
 }
 
 /** A `ScoredDrift`-shaped entry, which is what the pipeline really writes into `perDrift`. */
-function fakeScored(id: number, heldPeakDeg: number, spun: boolean, timeAtAngleS = 0, entrySpeedKmh = 0) {
+function fakeScored(id: number, heldPeakDeg: number, spun: boolean, sustainedS = 0, entrySpeedKmh = 0) {
   return {
     base: 100,
     multiplier: 1,
@@ -42,7 +42,7 @@ function fakeScored(id: number, heldPeakDeg: number, spun: boolean, timeAtAngleS
     speed: 50,
     style: 50,
     callouts: [],
-    stats: { id, heldPeakDeg, spun, timeAtAngleS, entrySpeedKmh },
+    stats: { id, heldPeakDeg, spun, sustainedS, entrySpeedKmh },
   };
 }
 
@@ -89,6 +89,18 @@ describe('the slide a leaderboard row names', () => {
     ) as unknown as Session['score']['perDrift'];
     return s;
   }
+
+  it('reports the same seconds the run review prints under HELD', () => {
+    // `DriftSummary.sustainedS`, not the slide's whole length and not the higher "committed"
+    // angle's time. Two screens describing one slide with two definitions of the word "held"
+    // is how a driver comes to distrust both.
+    const s = fakeSession('held', 1000, 0, 'B');
+    s.drifts = [fakeDrift(1, 0, 27.3, 56, false)];
+    s.score.perDrift = { 1: fakeScored(1, 53, false, 26.1, 71) } as unknown as Session['score']['perDrift'];
+    const e = summarizeSession(s);
+    expect(e.peakHeldS).toBe(26.1);
+    expect(e.peakHeldS).toBeLessThan(s.drifts[0].durationS);
+  });
 
   it('takes all three off the same slide', () => {
     const e = summarizeSession(run([32, 1.2, 55], [61, 4.4, 78], [47, 9.9, 99]));

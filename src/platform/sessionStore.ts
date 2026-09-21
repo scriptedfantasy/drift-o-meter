@@ -83,10 +83,16 @@ export interface SessionIndexEntry {
    * "53 degrees, held 4.2 s, entered at 71" and have all three be one thing that happened.
    *
    * Here because the garage's leaderboard wanted them and the garage reads no session bodies.
-   * It drew the whole slide's length instead — the only duration the index could yield — under
-   * a caption saying "held", which claimed twenty-seven seconds at fifty-three degrees for a
-   * slide that was at fifty-three for four of them. `peakHeldS` is `DriftSummary.timeAtAngleS`,
-   * which is the figure that sentence is actually about.
+   * It drew the whole slide's LENGTH instead — the only duration the index could yield — which
+   * counts the ramp in and the gather at the end as time spent sideways.
+   *
+   * `peakHeldS` is `DriftSummary.sustainedS`: seconds past the angle at which a car is sliding
+   * rather than cornering. That is the same field the run review prints under HELD, and the
+   * same is the point — two screens describing one slide with two different definitions of the
+   * word is how a driver comes to distrust both. The other candidate was `timeAtAngleS`, past
+   * a higher "committed" angle; measured on the shipped fixtures the three run 27.3 / 26.1 /
+   * 25.3 seconds for one 53-degree slide, so the choice is not about the number. It is that
+   * this one's threshold is a fact about cars and the other's is a scoring knob.
    *
    * 0 when the run held nothing, which is also what a refused run reports.
    */
@@ -202,7 +208,7 @@ interface StoredDriftStats {
 
 /** `StoredDriftStats` plus what a leaderboard row says about the slide it names. */
 interface PeakStats extends StoredDriftStats {
-  timeAtAngleS?: unknown;
+  sustainedS?: unknown;
   entrySpeedKmh?: unknown;
 }
 
@@ -264,14 +270,14 @@ function peakSlide(s: Session): { heldPeakDeg: number; peakHeldS: number; peakEn
     const st = statsOf(s, d.id) as PeakStats | null;
     const held = num(st?.heldPeakDeg, -1);
     if (held <= 0) continue;
-    const hold = num(st?.timeAtAngleS, 0);
+    const hold = num(st?.sustainedS, 0);
     const bestHeld = num(best?.heldPeakDeg, -1);
-    if (held > bestHeld || (held === bestHeld && hold > num(best?.timeAtAngleS, 0))) best = st;
+    if (held > bestHeld || (held === bestHeld && hold > num(best?.sustainedS, 0))) best = st;
   }
   if (!best) return none;
   return {
     heldPeakDeg: Math.round(num(best.heldPeakDeg) * 10) / 10,
-    peakHeldS: Math.round(num(best.timeAtAngleS) * 10) / 10,
+    peakHeldS: Math.round(num(best.sustainedS) * 10) / 10,
     peakEntryKmh: Math.round(num(best.entrySpeedKmh)),
   };
 }
