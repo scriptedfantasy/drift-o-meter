@@ -13,13 +13,12 @@
  * Everything continuous (angle, needle, glow, odometer, g-ball, edge bloom, mini-map head) is a
  * shared value read by the UI thread; the Skia canvases and animated styles never re-render.
  */
-import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
+import { feelCue, feelFrame, feelReset } from '../audio';
 import { toneFor, type EventTone } from '../callouts';
 
 // Re-exported so the callout components keep one import site for the run's own types.
@@ -29,12 +28,10 @@ import { G, radToDeg, type DriftPhase, type GpsSample, type Grade, type MotionSa
 import {
   currentSearch,
   describeSensorError,
-  loadSettings,
   newSessionId,
   saveSession,
   selectSensorSource,
   SensorSourceError,
-  subscribeSettings,
   type SensorSource,
   type SourceSelection,
 } from '../../platform';
@@ -258,7 +255,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     trust: 0,
   });
 
-  const haptics = useRef({ enabled: false });
   const prefersReducedMotion = useReducedMotion();
   const reduceMotion = useRef(false);
   reduceMotion.current = prefersReducedMotion;
@@ -267,15 +263,15 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     setEvents((prev) => [...next.slice().reverse(), ...prev].filter((e) => t - e.t <= CALLOUT_HOLD_S).slice(0, MAX_CALLOUTS));
   }, []);
 
-  const fireHaptic = useCallback((kind: 'entry' | 'transition' | 'exit') => {
-    if (!haptics.current.enabled || Platform.OS === 'web') return;
-    const style = kind === 'entry' ? Haptics.ImpactFeedbackStyle.Heavy : kind === 'transition' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light;
-    Haptics.impactAsync(style).catch(() => {});
-  }, []);
-
   /** The 100 Hz path: engine push, shared-value writes, edge detection. No setState unless an event fired. */
   const applyFrame = useCallback(
     (f: LiveFrame) => {
+      // The feel layer goes FIRST, before anything is drawn: sound and haptics are the part of a
+      // slide the driver notices without looking, so they must not queue behind the frame's
+      // shared-value writes. It owns both settings, its own priority ladder and its own gate
+      // (`integrity.believable`), and it falls silent by itself while a warp replays minutes of
+      // recording in one burst.
+      feelFrame(f);
       const h = hot.current;
       if (!Number.isFinite(h.t0)) h.t0 = f.t;
       const dt = Number.isFinite(h.tLast) ? Math.min(0.1, Math.max(0, f.t - h.tLast)) : 0.01;
@@ -352,8 +348,9 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       // ── edges ──────────────────────────────────────────────────────────────────────
       // A warp (`?at=`) replays minutes of data in one synchronous burst. The STATE changes
       // (callouts land on the stack, the multiplier grows), but the impulses do not: firing a
-      // flash and a haptic for every transition in the skipped minutes would leave the screen
-      // mid-flash the instant it appears, and buzz the phone for drifts nobody drove.
+      // flash for every transition in the skipped minutes would leave the screen mid-flash the
+      // instant it appears. (The feel layer works this out for itself, from the rate the frames
+      // arrive at, so nothing here has to tell it.)
       const quiet = h.warping;
       const phase = f.phase;
       const wasActive = ACTIVE_PHASES.has(h.prevPhase);
@@ -362,9 +359,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         if (!reduceMotion.current && !quiet) {
           signals.punch.value = withSequence(withTiming(1, { duration: 70 }), withSpring(0, { damping: 11, stiffness: 150, mass: 0.6 }));
         }
-        if (!quiet) fireHaptic('entry');
-      } else if (!active && wasActive) {
-        if (!quiet) fireHaptic('exit');
       }
       if (phase === 'transition' && h.prevPhase !== 'transition') {
         // Transition: 120 ms magenta flash, 100 ms 2 px shake. Reduce-motion keeps the state
@@ -378,7 +372,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
             withTiming(0, { duration: 26 }),
           );
         }
-        if (!quiet) fireHaptic('transition');
       }
       h.prevPhase = phase;
 
@@ -401,7 +394,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         pushTrail(trail, f.state.x, f.state.y, active);
       }
     },
-    [fireHaptic, params.integrity, pushEvents, signals, trail],
+    [params.integrity, pushEvents, signals, trail],
   );
 
   const onMotion = useCallback(
@@ -489,6 +482,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         pipelineRef.current = createHudPipeline({ id: sessionIdRef.current, name });
         resetSignals(signals);
         resetTrail(trail);
+        feelReset();
         hot.current = {
           t0: NaN,
           tLast: NaN,
@@ -547,6 +541,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
   }, [finishAndSave, onGps, onMotion, params.at, params.hold, signals, trail]);
 
   const stop = useCallback(() => {
+    feelCue('stop');
     void finishAndSave();
   }, [finishAndSave]);
 
@@ -577,21 +572,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
   const leave = useCallback(() => {
     router.replace('/');
   }, [router]);
-
-  // Haptics follow the setting; read once and on change, never inside the hot path.
-  useEffect(() => {
-    let alive = true;
-    void loadSettings().then((s) => {
-      if (alive) haptics.current.enabled = s.haptics;
-    });
-    const unsubscribe = subscribeSettings((s) => {
-      haptics.current.enabled = s.haptics;
-    });
-    return () => {
-      alive = false;
-      unsubscribe();
-    };
-  }, []);
 
   // Opening the screen starts the run. No GO button, no countdown: the driver already decided
   // when they tapped DRIVE. (`?at=` still seeks and `?hold=1` still freezes, for the harness.)

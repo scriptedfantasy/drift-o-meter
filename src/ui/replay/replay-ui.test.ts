@@ -17,7 +17,7 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { buildReplay, SEVERITY_EDGES, type Replay } from '../../engine/replay';
 import { degToRad, radToDeg, type Session } from '../../engine/types';
 import { FIXTURES, buildFixtureSession } from '../results/fixture';
-import { kerbContours, offsetRuns, segmentsCross, selfIntersections, smoothPolyline, type Pt } from './kerbs';
+import { crosses, kerbContours, offsetRuns, segmentsCross, selfIntersections, smoothPolyline, type Pt } from './kerbs';
 import { replayLayout } from './layout';
 import { heatColor, fmtTime } from './palette';
 import { buildReplayView, gapWindows } from './view';
@@ -70,6 +70,33 @@ describe('kerbs: an offset that cannot fold', () => {
     expect(segmentsCross([0, 0], [1, 0], [1, 0], [2, 1])).toBe(false);
     expect(segmentsCross([0, 0], [2, 0], [1, -1], [1, 1])).toBe(true);
     expect(segmentsCross([0, 0], [2, 0], [0, 1], [2, 1])).toBe(false);
+  });
+
+  it.each(TRACKED)('%s: no kerb crosses another kerb', (name) => {
+    const { replay } = built.get(name)!;
+    const roadPts: Pt[] = replay.track!.path.map((p) => [p.x, p.y] as Pt);
+    const parts = kerbContours(roadPts, replay.track!.closed, replay.track!.corners);
+    for (let i = 0; i < parts.length; i++) {
+      for (let j = i + 1; j < parts.length; j++) {
+        // two kerbs crossing render as a translucent red X lying over the asphalt
+        expect(crosses(parts[i], parts[j])).toBe(false);
+      }
+    }
+  });
+
+  it.each(TRACKED)('%s: the road edge lines do not fold either', (name) => {
+    const { replay } = built.get(name)!;
+    const track = replay.track!;
+    const src: Pt[] = track.path.map((p) => [p.x, p.y] as Pt);
+    const loop = track.closed ? [...src, src[0]] : src;
+    for (const d of [4.35, -4.35]) {
+      for (const run of offsetRuns(loop, d)) {
+        expect(selfIntersections(run)).toBe(0);
+        for (let i = 1; i < run.length; i++) {
+          expect(Math.hypot(run[i][0] - run[i - 1][0], run[i][1] - run[i - 1][1])).toBeLessThan(8);
+        }
+      }
+    }
   });
 
   it.each(TRACKED)('%s: no kerb crosses itself or the road it belongs to', (name) => {

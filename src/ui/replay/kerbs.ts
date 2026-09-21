@@ -42,6 +42,8 @@ export interface KerbOptions {
    * the kerb comfortably inside the arc it belongs to.
    */
   maxCurvatureFrac: number;
+  /** Two apexes closer together than this are the same bend found twice, not a chicane. */
+  sameBendM: number;
 }
 
 export const KERB_OPTIONS: KerbOptions = {
@@ -50,6 +52,7 @@ export const KERB_OPTIONS: KerbOptions = {
   maxSpanM: 40,
   stepM: 2,
   maxCurvatureFrac: 0.55,
+  sameBendM: 5,
 };
 
 const len = (dx: number, dy: number): number => Math.hypot(dx, dy);
@@ -192,6 +195,7 @@ export function kerbContours(roadPts: Pt[], closed: boolean, corners: KerbCorner
   const n = roadPts.length;
   if (n < 3 || corners.length === 0) return [];
   const parts: Pt[][] = [];
+  const apexes: Pt[] = [];
   for (const c of corners) {
     if (!Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
     let ai = 0;
@@ -203,6 +207,11 @@ export function kerbContours(roadPts: Pt[], closed: boolean, corners: KerbCorner
         ai = i;
       }
     }
+    // One bend, one kerb. A corner detector run over an estimated path finds the same bend two
+    // or three times (22 "corners" on a circuit with ten of them, for a hand-held recording),
+    // and their kerbs then lie across each other.
+    if (apexes.some((a) => Math.hypot(a[0] - roadPts[ai][0], a[1] - roadPts[ai][1]) < opts.sameBendM)) continue;
+    apexes.push(roadPts[ai]);
     // the span is metres of road, not a count of points: the centre line is resampled at ~1 m
     // for a track model and at whatever the speed was for a trail, and a kerb is a length.
     const spanM = Math.min(opts.maxSpanM, Math.max(opts.minSpanM, (Number.isFinite(c.radiusM) ? c.radiusM : opts.minSpanM) * 0.9));
@@ -210,9 +219,24 @@ export function kerbContours(roadPts: Pt[], closed: boolean, corners: KerbCorner
     const fwd = walk(roadPts, closed, ai, spanM, opts.stepM, 1);
     const seg = [...back, ai, ...fwd].map((i) => [roadPts[i][0], roadPts[i][1]] as Pt);
     if (seg.length < 3) continue;
-    for (const run of offsetRuns(seg, c.direction * opts.offsetM, opts.maxCurvatureFrac)) parts.push(run);
+    for (const run of offsetRuns(seg, c.direction * opts.offsetM, opts.maxCurvatureFrac)) {
+      // …and no kerb is ever drawn across another one. Two of them crossing renders as a
+      // translucent red X over the asphalt, which is what a viewer reads as a broken polygon.
+      if (parts.some((other) => crosses(run, other))) continue;
+      parts.push(run);
+    }
   }
   return parts;
+}
+
+/** True when any segment of `a` crosses any segment of `b`. */
+export function crosses(a: Pt[], b: Pt[]): boolean {
+  for (let i = 0; i + 1 < a.length; i++) {
+    for (let j = 0; j + 1 < b.length; j++) {
+      if (segmentsCross(a[i], a[i + 1], b[j], b[j + 1])) return true;
+    }
+  }
+  return false;
 }
 
 /** True when two open segments cross (endpoints touching does not count). */

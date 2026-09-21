@@ -16,7 +16,7 @@ import { Skia, type SkPath } from '@shopify/react-native-skia';
 
 import { SEVERITY_EDGES, type Replay, type ReplaySegment } from '../../engine/replay';
 import { clamp } from '../../engine/types';
-import { kerbContours } from './kerbs';
+import { kerbContours, offsetRuns } from './kerbs';
 import { HOT, heatColor, mix } from './palette';
 
 export interface WorldBounds {
@@ -141,20 +141,6 @@ function contours(runs: Pt[][]): SkPath {
   return b.detach();
 }
 
-function offsetPolyline(pts: Pt[], d: number, closed: boolean): Pt[] {
-  const n = pts.length;
-  const out: Pt[] = [];
-  for (let i = 0; i < n; i++) {
-    const a = pts[closed ? (i - 1 + n) % n : Math.max(0, i - 1)];
-    const b = pts[closed ? (i + 1) % n : Math.min(n - 1, i + 1)];
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    const len = Math.hypot(dx, dy) || 1;
-    out.push([pts[i][0] - (dy / len) * d, pts[i][1] + (dx / len) * d]);
-  }
-  return out;
-}
-
 function carShapes(): CarShapes {
   const body = Skia.PathBuilder.Make()
     .moveTo(-2.2, -0.9)
@@ -234,7 +220,11 @@ export function buildSceneGeometry(replay: Replay): SceneGeometry {
     for (let i = 0; i < tr.n; i += 4) roadPts.push([tr.x[i], tr.y[i]]);
   }
   const road = roadPts.length > 1 ? keep(polyline(roadPts, roadClosed)) : null;
-  const edges = road ? [ROAD_W / 2 - 0.4, -(ROAD_W / 2 - 0.4)].map((d) => keep(polyline(offsetPolyline(roadPts, d, roadClosed), roadClosed))) : [];
+  // The edge lines are offsets too, and they fold for exactly the same reason a kerb does —
+  // visible on the hand-held fixture as a pale spike shooting off the verge. Same rule, same
+  // module: clamped to the local curvature and broken rather than folded.
+  const edgeSrc = roadClosed && roadPts.length > 2 ? [...roadPts, roadPts[0]] : roadPts;
+  const edges = road ? [ROAD_W / 2 - 0.4, -(ROAD_W / 2 - 0.4)].map((d) => keep(contours(offsetRuns(edgeSrc, d)))) : [];
 
   // ---- kerbs at the corners -----------------------------------------------------------
   // `kerbContours` owns the geometry (and the folds it has to refuse to draw); this file just

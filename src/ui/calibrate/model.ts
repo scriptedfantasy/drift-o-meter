@@ -23,7 +23,7 @@
  * not repeat it as one. Every function below reads `mountVerdict`, which says 'unknown' until
  * the cues mean something, and 'unknown' is a pass NOWHERE.
  */
-import { DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
+import { calibrationBand, calibrationHeadroom, CALIBRATION_SHARP, DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
 import { DEFAULT_MOUNT_OPTIONS } from '../../engine/mount';
 import type { Vec3 } from '../../engine/types';
 import { G } from '../../engine/types';
@@ -38,7 +38,7 @@ export const TRUST_QUALITY = DEFAULT_INTEGRITY_OPTIONS.minCalibrationQuality;
  * The point above which the results screen stops qualifying a score for its mount
  * (`integrityNotes`: below 0.75 it says "a few degrees of every angle belong to the mount").
  */
-export const SHARP_QUALITY = 0.75;
+export const SHARP_QUALITY = CALIBRATION_SHARP;
 
 /** Up-axis quality at which the vertical has stopped moving around. */
 export const SETTLED_UP = 0.6;
@@ -385,13 +385,15 @@ export function headlineOf(r: CalibrationReading): Headline {
       return {
         kicker: 'Calibrated',
         title: 'Ready to measure',
+        // The VERDICT is the engine's band; only the wording varies by degree, off the engine's
+        // own scale rather than off a threshold this screen keeps.
         because:
-          r.quality >= SHARP_QUALITY
+          calibrationBand(r.quality, r.forwardResolved) === 'sharp'
             ? 'the judge will take every angle this mount reports at face value'
-            : r.quality >= (TRUST_QUALITY + SHARP_QUALITY) / 2
+            : calibrationHeadroom(r.quality, r.forwardResolved) >= 0.5
               ? 'clear of the bar — the results will still note the mount against every angle'
               : 'barely past the bar: it will score, and every angle will carry a mount caveat',
-        color: r.quality >= SHARP_QUALITY ? 'green' : 'ember',
+        color: calibrationBand(r.quality, r.forwardResolved) === 'sharp' ? 'green' : 'ember',
       };
     case 'seeking':
       return { kicker: 'Almost', title: 'Finding forward', because: 'one hard pull in a straight line is what settles it', color: 'ember' };
@@ -621,6 +623,6 @@ export function qualityBand(r: CalibrationReading): QualityBand {
   // from `value >= TRUST_QUALITY` let the band say "below the bar" on a frame the headline was
   // calling READY. A screen may display the engine's number; it may not re-decide with it.
   if (!r.calibrationOk) return { value, display, label: 'Below the bar the judge believes', color: 'red' };
-  if (value >= SHARP_QUALITY) return { value, display, label: 'Sharp · nothing will be qualified for the mount', color: 'green' };
+  if (calibrationBand(r.quality, r.forwardResolved) === 'sharp') return { value, display, label: 'Sharp · nothing will be qualified for the mount', color: 'green' };
   return { value, display, label: 'Good enough to score', color: 'ember' };
 }

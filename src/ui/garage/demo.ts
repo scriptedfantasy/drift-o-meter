@@ -59,6 +59,17 @@ export const DEMO_SETS: Record<string, DemoRun[]> = {
     { fixture: 'spin', seed: 4 },
     { fixture: 'sloppy', seed: 1 },
   ],
+  /**
+   * A night that ended in spins. The NEWEST run is the scruffy one — eleven slides, three of
+   * them spun — because the slide count on the last-run card is the only place the app can say
+   * "8 of 11 · 3 spun", and `night` happens to end on a clean run. Seed 12 dates it 21:56, after
+   * everything else in the set.
+   */
+  spun: [
+    { fixture: 'sloppy', seed: 12 },
+    { fixture: 'spin', seed: 4 },
+    { fixture: 'good', seed: 7 },
+  ],
   /** One track, four scored runs: the personal-best board with something to say. */
   harbor: [
     { fixture: 'good', seed: 7 },

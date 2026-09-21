@@ -429,4 +429,12 @@ export const defaultRoutes = [
   // frames. Quarter speed from just before it starts, `play=1`, and the run stops itself at the
   // end: shoot with --video (and --scale 1, like the other motion routes) to resolve the slam.
   { name: 'replay-grade', path: '/replay/demo?cam=overview&t=118.2&rate=0.25&play=1&ui=0', waitMs: 11000, expectCanvas: true, minEmber: 800 },
+  // ---- garage: the two states the slide count exists for, appended -------------------------
+  // A night that ENDED on the scruffy run: eleven slides, three of them spun. "SLIDES 11" with
+  // no mention of the spins was a finding, and `night` ends on a clean run, so the fix had
+  // nowhere to appear. This is the frame it appears in ("8 of 11 · 3 spun").
+  { name: 'garage-spun', path: '/?demo=spun', waitMs: 7000 },
+  // The hand-held card's own numbers, one viewport down: angle, slides and points all `--` on a
+  // run the monitor did not believe, over a trace drawn hollow and captioned as a recording.
+  { name: 'garage-flagged-stats', path: '/?demo=flagged', waitMs: 8000, actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }] },
 ];

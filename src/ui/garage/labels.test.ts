@@ -90,11 +90,11 @@ describe('the slide count', () => {
   it('says how many of them the angle was measured over', () => {
     const slot = slidesText(entry({ drifts: 11, spins: 3 }), false);
     expect(slot.value).toBe('8 of 11');
-    expect(slot.note).toBe('3 spun, not counted');
+    expect(slot.note).toBe('3 spun');
   });
 
   it('counts one spin in the singular', () => {
-    expect(slidesText(entry({ drifts: 8, spins: 1 }), false).note).toBe('1 spun, not counted');
+    expect(slidesText(entry({ drifts: 8, spins: 1 }), false).note).toBe('1 spun');
   });
 
   it('asserts no slides at all on a run the monitor did not believe', () => {

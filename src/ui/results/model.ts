@@ -5,6 +5,7 @@
  * cross-lap analysis (`lapConsistency`); this module only arranges them, names the corners and
  * counts what the screen has to show. Nothing here invents a score.
  */
+import { calibrationBand } from '../../engine/integrity';
 import { driftSamples, scoreSession, type ScoredDrift, type SessionBreakdown, type SessionContext } from '../../engine/score';
 import { lapConsistency, type LapConsistency } from '../../engine/track';
 import { DEFAULT_SCORE_OPTIONS } from '../../engine/score';
@@ -268,13 +269,19 @@ export function integrityNotes(session: Session, gps: GpsQuality, judged?: Sessi
     });
   }
 
-  if (!cal || cal.quality < 0.4 || (cal && !cal.forwardResolved)) {
+  // The ENGINE decides what its own quality number means (`src/engine/integrity/band.ts`). This
+  // screen used to compare against 0.4 and 0.75 of its own, the garage against a different 0.4
+  // and the calibration screen against its own 0.75 — so a run at 0.33 was "ready to measure"
+  // there and "never calibrated" here, on the same number. The lower edge is now the monitor's
+  // own veto, which means this screen can no longer disown a run the engine went on to score.
+  const calBand = calibrationBand(cal?.quality ?? NaN, cal?.forwardResolved ?? false);
+  if (!cal || calBand === 'unresolved' || calBand === 'unusable') {
     notes.push({
       level: 'bad',
       title: 'Mount never calibrated',
       body: `Calibration confidence ${q}%${cal && !cal.forwardResolved ? ' and the forward axis was never resolved' : ''}. Without a resolved forward axis the app cannot tell a slide from a lane change, so treat the angles as indicative only.`,
     });
-  } else if (cal.quality < 0.75) {
+  } else if (calBand === 'trusted') {
     notes.push({
       level: 'warn',
       title: 'Calibration only half confident',

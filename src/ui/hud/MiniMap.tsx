@@ -35,7 +35,14 @@ export default function MiniMap({ width, height, trail, count, signals, testID }
   // Both paths are rebuilt from scratch, so the cost is bounded twice: by how OFTEN (once per
   // 8 new points, about 1 Hz, not with every 10 Hz snapshot) and by how MANY (the trail is
   // strided down to 600 segments). A twenty-minute run costs the same as a one-minute run.
-  const generation = Math.floor(Math.min(count, trail.n) / REBUILD_EVERY);
+  // `count` alone, never `trail.n`, decides when to rebuild. The trail is a MUTABLE object that
+  // keeps its identity for the whole run, and this app builds with `experiments.reactCompiler`,
+  // which may treat a property read of such an object during render as a constant and hoist it —
+  // freezing `generation` at 0 and leaving the map blank for the whole run. `count` is a state
+  // value (the run publishes `trail.n` into its 10 Hz snapshot), so it changes as the compiler
+  // expects.
+  // The mutable length is still read inside the memo bodies below, where it only ever CLAMPS.
+  const generation = Math.floor(count / REBUILD_EVERY);
   const fit = useMemo(() => fitTrail(trail, width, height, 14, 80), [trail, width, height, generation]);
 
   const paths = useMemo(() => {

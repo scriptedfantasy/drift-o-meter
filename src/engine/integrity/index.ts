@@ -1,3 +1,4 @@
+export { calibrationBand, bandIsScorable, calibrationHeadroom, CALIBRATION_SHARP, CALIBRATION_BAR, type CalibrationBand } from './band';
 export {
   IntegrityMonitor,
   DEFAULT_INTEGRITY_OPTIONS,

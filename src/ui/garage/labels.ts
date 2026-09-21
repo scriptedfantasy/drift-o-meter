@@ -49,7 +49,9 @@ export function slidesText(entry: Pick<SessionIndexEntry, 'drifts' | 'spins'>, u
   const total = Math.max(0, Math.round(entry.drifts));
   const spins = Math.min(total, Math.max(0, Math.round(entry.spins)));
   if (spins <= 0) return { value: String(total), note: null };
-  return { value: `${total - spins} of ${total}`, note: spins === 1 ? '1 spun, not counted' : `${spins} spun, not counted` };
+  // Short on purpose: the slot is ~100 dp wide on a phone, and a note that ellipsises is worse
+  // than no note. The value already says how many of the slides counted.
+  return { value: `${total - spins} of ${total}`, note: `${spins} spun` };
 }
 
 /**

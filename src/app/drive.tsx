@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/platform';
 import { AppText, Body, Button, colors, fontFamilies, formatDuration, gradeColors, gutter, Micro, Panel, radii, space } from '@/ui';
+import { useDriftFeel } from '@/ui/audio';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
 import { CalloutStack, ScoreBanner } from '@/ui/hud/CalloutStack';
 import { DriftStrip, EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
@@ -29,6 +30,10 @@ import { useDriveRun, type RunError } from '@/ui/hud/useDriveRun';
 export default function DriveScreen() {
   const signals = useHudSignals();
   const run = useDriveRun(signals);
+  // Sound and haptics for the run: loads the bank and configures the audio session at mount,
+  // releases both with the screen. The cues themselves are dispatched from `useDriveRun`'s
+  // sample callback, one call per frame.
+  useDriftFeel();
   const { settings } = useSettings();
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
@@ -44,7 +49,11 @@ export default function DriveScreen() {
   const gaugeW = landscape ? Math.min(stageW * 0.52, height * 1.3) : width;
   const gauge = { w: gaugeW, h: Math.min(gaugeW * 0.56, height * (landscape ? 0.62 : 0.32)) };
 
-  const map = landscape ? { w: 168, h: 116 } : { w: 146, h: 150 };
+  // Portrait: the mini-map gives the callout column the width it needs. MEASURED in the browser,
+  // the widest chip the scorer can fire — "EXTREME ANGLE +675" — is 211.6 CSS px, and beside a
+  // 146 px map the column was 195, so the chip overflowed by 17 px at REST and by 380 mid-slam,
+  // across the only other live graphic on the screen. At 124 the column is 217.
+  const map = landscape ? { w: 168, h: 116 } : { w: 124, h: 148 };
 
   return (
     <View style={styles.root} testID="screen-drive">

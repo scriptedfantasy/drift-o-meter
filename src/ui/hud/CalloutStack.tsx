@@ -71,7 +71,9 @@ function Callout({ event, depth, fromRight, size, muted }: { event: HudEvent; de
   return (
     <Animated.View style={[styles.callout, fromRight && styles.calloutRight, { backgroundColor: alpha(tone, 0.12) }, style]}>
       <View style={[styles.bar, { backgroundColor: tone }]} />
-      <AppText numberOfLines={1} style={[styles.label, { fontSize: size, lineHeight: size * 1.02, color: tone, textShadowColor: alpha(tone, 0.85) }]}>
+      {/* the label yields first if a chip ever does run out of room; the points never do, so a
+          "+N" can never be cut in half by the clip that keeps the slam inside its column */}
+      <AppText numberOfLines={1} style={[styles.label, styles.labelFlex, { fontSize: size, lineHeight: size * 1.02, color: tone, textShadowColor: alpha(tone, 0.85) }]}>
         {event.label}
       </AppText>
       {event.points > 0 ? (
@@ -150,17 +152,21 @@ const styles = StyleSheet.create({
   callout: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space[2],
+    // trimmed from 8 / 8 / 12: six pixels of chrome, so the widest label the scorer can fire
+    // fits its column at rest instead of being clipped by the guard that keeps the slam off
+    // the mini-map
+    gap: 6,
     paddingVertical: space[1],
-    paddingRight: space[3],
-    paddingLeft: space[2],
+    paddingRight: 10,
+    paddingLeft: 6,
     borderRadius: radii.sm,
     transformOrigin: 'left center',
   },
   calloutRight: { transformOrigin: 'right center' },
   bar: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
   label: { fontFamily: fontFamilies.display.extraboldItalic, letterSpacing: 0.4, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 14 },
-  points: { fontFamily: fontFamilies.display.boldItalic },
+  labelFlex: { flexShrink: 1 },
+  points: { fontFamily: fontFamilies.display.boldItalic, flexShrink: 0 },
   banner: { alignSelf: 'flex-start' },
   bannerRight: { alignSelf: 'flex-end' },
   bannerText: { fontFamily: fontFamilies.display.extraboldItalic, letterSpacing: 0.5, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18 },

@@ -1494,7 +1494,7 @@ export function drawReplayFrame(canvas: SkCanvas, input: SceneInput): void {
   drawGapNotice(canvas, f);
   // Once the grade starts landing, the frame belongs to it: no world labels and no callout
   // shouting FINISH over the letter (FINISH used to be on this frame three times).
-  const revealOwnsFrame = f.reveal > 0.25;
+  const revealOwnsFrame = f.reveal > 0;
   if (!revealOwnsFrame) {
     drawWorldLabels(canvas, f);
     drawCallout(canvas, f);
