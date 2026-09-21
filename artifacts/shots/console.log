@@ -149,13 +149,13 @@
 ===== settings-index-rebuilt  http://127.0.0.1:42833/?demo=night
 
 ===== settings-wipe-broken  http://127.0.0.1:42833/?demo=night
-===== results-reveal  http://127.0.0.1:42001/results/fixture-hero
+===== results-reveal  http://127.0.0.1:44219/results/fixture-hero
 
-===== results-reveal-hold  http://127.0.0.1:42001/results/fixture-hero?reveal=hold
+===== results-reveal-hold  http://127.0.0.1:44219/results/fixture-hero?reveal=hold
 
-===== results-reveal-slam  http://127.0.0.1:42001/results/fixture-hero?reveal=slam
+===== results-reveal-slam  http://127.0.0.1:44219/results/fixture-hero?reveal=slam
 
-===== results-reveal-settle  http://127.0.0.1:42001/results/fixture-hero?reveal=settle
+===== results-reveal-settle  http://127.0.0.1:44219/results/fixture-hero?reveal=settle
 
 ===== sound-lost  http://127.0.0.1:42001/sound
 ===== home-landscape  http://127.0.0.1:43111/
@@ -195,35 +195,35 @@
 ===== settings-index-rebuilt-landscape  http://127.0.0.1:43111/?demo=night
 
 ===== settings-wipe-broken-landscape  http://127.0.0.1:43111/?demo=night
-===== drive-open  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=0.3&hold=1
+===== drive-open  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=0.3&hold=1
 
-===== drive-start  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=2.2&hold=1
+===== drive-start  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=2.2&hold=1
 
-===== drive  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=39.2
+===== drive  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=39.2
 
-===== drive-peak  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=100.85&hold=1
+===== drive-peak  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=100.85&hold=1
 
-===== drive-transition  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=85.55&hold=1
+===== drive-transition  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=85.55&hold=1
 
-===== drive-bank  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=50.75&hold=1
+===== drive-bank  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=50.75&hold=1
 
-===== drive-loose  http://127.0.0.1:33353/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1
+===== drive-loose  http://127.0.0.1:44219/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1
 
-===== drive-lost  http://127.0.0.1:33353/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1
+===== drive-lost  http://127.0.0.1:44219/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1
 
-===== drive-gps  http://127.0.0.1:33353/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1
+===== drive-gps  http://127.0.0.1:44219/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1
 
-===== drive-discarded  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=0.3&hold=1
+===== drive-discarded  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=0.3&hold=1
 
-===== drive-savefail  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=100.85&hold=1
+===== drive-savefail  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=100.85&hold=1
 
-===== drive-chain  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=48.5&hold=1
+===== drive-chain  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=48.5&hold=1
 
-===== drive-warn  http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect
+===== drive-warn  http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect
 
-===== drive-savefail-untrusted  http://127.0.0.1:33353/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1
+===== drive-savefail-untrusted  http://127.0.0.1:44219/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1
 
-===== drive-loose-peak  http://127.0.0.1:33353/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1
+===== drive-loose-peak  http://127.0.0.1:44219/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1
 ===== sound-banked  http://127.0.0.1:40667/sound
 
 
@@ -346,4 +346,45 @@
 ===== calibrate-cradle-banner-landscape  http://127.0.0.1:45663/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1
 
 ===== calibrate-gps-landscape  http://127.0.0.1:45663/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1
+
+
+===== results-skip  http://127.0.0.1:44219/results/fixture-hero?reveal=slam
+
+===== results  http://127.0.0.1:44219/results/fixture-hero?reveal=off
+
+===== results-sloppy  http://127.0.0.1:44219/results/fixture-sloppy?reveal=off
+
+===== results-spin  http://127.0.0.1:44219/results/fixture-spin?reveal=off
+
+===== results-clean  http://127.0.0.1:44219/results/fixture-clean?reveal=off
+
+===== results-best  http://127.0.0.1:44219/results/fixture-hero?reveal=off
+
+===== results-drifts  http://127.0.0.1:44219/results/fixture-spin?reveal=off
+
+===== results-laps  http://127.0.0.1:44219/results/fixture-sloppy?reveal=off
+
+===== results-untrusted  http://127.0.0.1:44219/results/fixture-handheld?reveal=off
+
+===== results-untrusted-foot  http://127.0.0.1:44219/results/fixture-handheld?reveal=off
+
+===== results-integrity  http://127.0.0.1:44219/results/fixture-rough?reveal=off
+
+===== results-pipeline  http://127.0.0.1:44219/results/fixture-good?reveal=off&source=pipeline
+
+===== results-reduced  http://127.0.0.1:44219/results/fixture-hero?reveal=hold&motion=reduce
+
+===== results-missing  http://127.0.0.1:44219/results/no-such-session
+
+===== results-wide-breakdown  http://127.0.0.1:44219/results/fixture-hero?reveal=off
+
+===== results-wide-best  http://127.0.0.1:44219/results/fixture-hero?reveal=off
+
+===== results-wide-drifts  http://127.0.0.1:44219/results/fixture-spin?reveal=off
+
+===== results-wide-laps  http://127.0.0.1:44219/results/fixture-sloppy?reveal=off
+
+===== results-why-open  http://127.0.0.1:44219/results/fixture-handheld?reveal=off
+
+===== results-why-foot  http://127.0.0.1:44219/results/fixture-handheld?reveal=off
 

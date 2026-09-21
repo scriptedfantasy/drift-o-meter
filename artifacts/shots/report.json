@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T04:45:55.620Z",
+  "startedAt": "2026-09-21T04:49:52.760Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -5225,13 +5225,13 @@
     {
       "name": "results-reveal",
       "path": "/results/fixture-hero",
-      "url": "http://127.0.0.1:42001/results/fixture-hero",
+      "url": "http://127.0.0.1:44219/results/fixture-hero",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results-reveal.png",
       "video": null,
-      "ms": 5288,
+      "ms": 5182,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5278,20 +5278,20 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 95048,
-        "goldPixels": 67488,
+        "emberPixels": 95792,
+        "goldPixels": 67648,
         "redPixels": 0,
         "cyanPixels": 0,
-        "textPixels": 58860,
-        "nonBgFraction": 0.3833,
+        "textPixels": 59004,
+        "nonBgFraction": 0.4314,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:00:43.163Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "results-reveal-hold",
       "path": "/results/fixture-hero?reveal=hold",
-      "url": "http://127.0.0.1:42001/results/fixture-hero?reveal=hold",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=hold",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -5299,7 +5299,7 @@
       ],
       "screenshot": "artifacts/shots/results-reveal-hold.png",
       "video": null,
-      "ms": 2869,
+      "ms": 3140,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5354,12 +5354,12 @@
         "nonBgFraction": 0.3631,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:00:43.163Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "results-reveal-slam",
       "path": "/results/fixture-hero?reveal=slam",
-      "url": "http://127.0.0.1:42001/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=slam",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -5367,7 +5367,7 @@
       ],
       "screenshot": "artifacts/shots/results-reveal-slam.png",
       "video": null,
-      "ms": 4266,
+      "ms": 4085,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5414,20 +5414,20 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 2624,
-        "goldPixels": 219948,
+        "emberPixels": 2036,
+        "goldPixels": 219596,
         "redPixels": 0,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.5256,
+        "nonBgFraction": 0.5207,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:00:43.163Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "results-reveal-settle",
       "path": "/results/fixture-hero?reveal=settle",
-      "url": "http://127.0.0.1:42001/results/fixture-hero?reveal=settle",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=settle",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -5435,7 +5435,7 @@
       ],
       "screenshot": "artifacts/shots/results-reveal-settle.png",
       "video": null,
-      "ms": 3316,
+      "ms": 4260,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5483,14 +5483,14 @@
         "cornersOnBg": false,
         "cornersNearBg": true,
         "emberPixels": 0,
-        "goldPixels": 103900,
+        "goldPixels": 75788,
         "redPixels": 0,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.3113,
+        "nonBgFraction": 0.2531,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:00:43.163Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "sound-lost",
@@ -6881,13 +6881,13 @@
     {
       "name": "drive-open",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open.png",
       "video": null,
-      "ms": 6497,
+      "ms": 3740,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6962,18 +6962,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-start",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 5134,
+      "ms": 4133,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7048,18 +7048,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 10329,
+      "ms": 6489,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7069,8 +7069,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 91,
-        "bodyTextNodes": 29,
+        "displayTextNodes": 95,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7105,12 +7105,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 209588,
-        "goldPixels": 20964,
-        "redPixels": 15656,
-        "cyanPixels": 22916,
-        "textPixels": 5820,
-        "nonBgFraction": 0.5079,
+        "emberPixels": 205000,
+        "goldPixels": 20440,
+        "redPixels": 15960,
+        "cyanPixels": 19356,
+        "textPixels": 6124,
+        "nonBgFraction": 0.5434,
         "regions": [
           {
             "name": "gauge",
@@ -7127,25 +7127,25 @@
               "x1": 1179,
               "y1": 818
             },
-            "pixels": 146828,
+            "pixels": 145968,
             "min": 20000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 7750,
+      "ms": 5200,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7220,18 +7220,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-transition",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 6156,
+      "ms": 5043,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7306,18 +7306,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-bank",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank.png",
       "video": null,
-      "ms": 6052,
+      "ms": 5082,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7371,18 +7371,18 @@
         "nonBgFraction": 0.3052,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-loose",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose.png",
       "video": null,
-      "ms": 5849,
+      "ms": 4679,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7457,18 +7457,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-lost",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost.png",
       "video": null,
-      "ms": 5535,
+      "ms": 4565,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7543,18 +7543,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-gps",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps.png",
       "video": null,
-      "ms": 5535,
+      "ms": 4703,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7564,7 +7564,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
+        "displayTextNodes": 95,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -7608,18 +7608,18 @@
         "nonBgFraction": 0.4803,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-discarded",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded.png",
       "video": null,
-      "ms": 5950,
+      "ms": 5294,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7673,18 +7673,18 @@
         "nonBgFraction": 0.3607,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-savefail",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail.png",
       "video": null,
-      "ms": 7872,
+      "ms": 6629,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7738,18 +7738,18 @@
         "nonBgFraction": 0.7423,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-chain",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain.png",
       "video": null,
-      "ms": 5679,
+      "ms": 4782,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7803,18 +7803,18 @@
         "nonBgFraction": 0.223,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 6881,
+      "ms": 4903,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7824,8 +7824,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 98,
-        "bodyTextNodes": 30,
+        "displayTextNodes": 99,
+        "bodyTextNodes": 31,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7868,18 +7868,18 @@
         "nonBgFraction": 0.5626,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-savefail-untrusted",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted.png",
       "video": null,
-      "ms": 7489,
+      "ms": 6402,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7889,8 +7889,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
-        "bodyTextNodes": 31,
+        "displayTextNodes": 92,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7933,18 +7933,18 @@
         "nonBgFraction": 0.4759,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "drive-loose-peak",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:33353/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:44219/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak.png",
       "video": null,
-      "ms": 6120,
+      "ms": 4882,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7954,7 +7954,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 96,
+        "displayTextNodes": 94,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -8039,7 +8039,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:45:54.527Z"
+      "shotAt": "2026-09-21T04:53:04.549Z"
     },
     {
       "name": "sound-banked",
@@ -12060,26 +12060,1370 @@
         "regions": []
       },
       "shotAt": "2026-09-21T04:46:33.404Z"
+    },
+    {
+      "name": "results-skip",
+      "path": "/results/fixture-hero?reveal=slam",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=slam",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-skip.png",
+      "video": null,
+      "ms": 4662,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 96600,
+        "goldPixels": 67648,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 59004,
+        "nonBgFraction": 0.4314,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results.png",
+      "video": null,
+      "ms": 3491,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 140,
+        "bodyTextNodes": 189,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 96600,
+        "goldPixels": 67648,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 59004,
+        "nonBgFraction": 0.4314,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-sloppy",
+      "path": "/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-sloppy?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-sloppy.png",
+      "video": null,
+      "ms": 3274,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 129,
+        "bodyTextNodes": 196,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 39884,
+        "goldPixels": 0,
+        "redPixels": 2728,
+        "cyanPixels": 0,
+        "textPixels": 77068,
+        "nonBgFraction": 0.3615,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-spin",
+      "path": "/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-spin?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-spin.png",
+      "video": null,
+      "ms": 3366,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 141,
+        "bodyTextNodes": 201,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 80892,
+        "goldPixels": 0,
+        "redPixels": 2104,
+        "cyanPixels": 75424,
+        "textPixels": 65532,
+        "nonBgFraction": 0.4281,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-clean",
+      "path": "/results/fixture-clean?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-clean?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-clean.png",
+      "video": null,
+      "ms": 3122,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 51,
+        "bodyTextNodes": 66,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 6928,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 64080,
+        "nonBgFraction": 0.353,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-best",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-best.png",
+      "video": null,
+      "ms": 4473,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 140,
+        "bodyTextNodes": 189,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 115972,
+        "goldPixels": 8700,
+        "redPixels": 0,
+        "cyanPixels": 9080,
+        "textPixels": 32856,
+        "nonBgFraction": 0.5683,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-drifts",
+      "path": "/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-spin?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-drifts.png",
+      "video": null,
+      "ms": 4522,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 141,
+        "bodyTextNodes": 201,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 63704,
+        "goldPixels": 0,
+        "redPixels": 16580,
+        "cyanPixels": 0,
+        "textPixels": 34356,
+        "nonBgFraction": 0.7463,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-laps",
+      "path": "/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-sloppy?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-laps.png",
+      "video": null,
+      "ms": 4365,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 129,
+        "bodyTextNodes": 196,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 206684,
+        "goldPixels": 0,
+        "redPixels": 1932,
+        "cyanPixels": 0,
+        "textPixels": 27788,
+        "nonBgFraction": 0.4933,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-untrusted",
+      "path": "/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-handheld?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-untrusted.png",
+      "video": null,
+      "ms": 6005,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 49,
+        "bodyTextNodes": 68,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 163660,
+        "goldPixels": 0,
+        "redPixels": 97372,
+        "cyanPixels": 0,
+        "textPixels": 14472,
+        "nonBgFraction": 0.467,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-untrusted-foot",
+      "path": "/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-handheld?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-untrusted-foot.png",
+      "video": null,
+      "ms": 7150,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 49,
+        "bodyTextNodes": 68,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 236152,
+        "goldPixels": 0,
+        "redPixels": 11824,
+        "cyanPixels": 0,
+        "textPixels": 36388,
+        "nonBgFraction": 0.5317,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-integrity",
+      "path": "/results/fixture-rough?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-rough?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-integrity.png",
+      "video": null,
+      "ms": 6048,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 143,
+        "bodyTextNodes": 199,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 253644,
+        "goldPixels": 1024,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 10344,
+        "nonBgFraction": 0.5481,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-pipeline",
+      "path": "/results/fixture-good?reveal=off&source=pipeline",
+      "url": "http://127.0.0.1:44219/results/fixture-good?reveal=off&source=pipeline",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-pipeline.png",
+      "video": null,
+      "ms": 5649,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 139,
+        "bodyTextNodes": 183,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 162620,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 58896,
+        "nonBgFraction": 0.4311,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-reduced",
+      "path": "/results/fixture-hero?reveal=hold&motion=reduce",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=hold&motion=reduce",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-reduced.png",
+      "video": null,
+      "ms": 4421,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 142,
+        "bodyTextNodes": 193,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 268,
+        "goldPixels": 117132,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 5556,
+        "nonBgFraction": 0.043,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-missing",
+      "path": "/results/no-such-session",
+      "url": "http://127.0.0.1:44219/results/no-such-session",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-missing.png",
+      "video": null,
+      "ms": 2577,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 19,
+        "bodyTextNodes": 19,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 63844,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 52116,
+        "nonBgFraction": 0.0971,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-wide-breakdown",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#14130F #14130F #07090D #07090D)"
+      ],
+      "screenshot": "artifacts/shots/results-wide-breakdown.png",
+      "video": null,
+      "ms": 5596,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 140,
+        "bodyTextNodes": 189,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 20,
+            "g": 19,
+            "b": 15
+          },
+          "topRight": {
+            "r": 20,
+            "g": 19,
+            "b": 15
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 136232,
+        "goldPixels": 1000,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "textPixels": 42836,
+        "nonBgFraction": 0.1724,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-wide-best",
+      "path": "/results/fixture-hero?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-hero?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-wide-best.png",
+      "video": null,
+      "ms": 5534,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 140,
+        "bodyTextNodes": 189,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 120884,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 9080,
+        "textPixels": 32928,
+        "nonBgFraction": 0.5233,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-wide-drifts",
+      "path": "/results/fixture-spin?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-spin?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-wide-drifts.png",
+      "video": null,
+      "ms": 5283,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 141,
+        "bodyTextNodes": 201,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 63704,
+        "goldPixels": 0,
+        "redPixels": 16580,
+        "cyanPixels": 0,
+        "textPixels": 30676,
+        "nonBgFraction": 0.7456,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-wide-laps",
+      "path": "/results/fixture-sloppy?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-sloppy?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-wide-laps.png",
+      "video": null,
+      "ms": 5100,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 129,
+        "bodyTextNodes": 196,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 32544,
+        "goldPixels": 0,
+        "redPixels": 20584,
+        "cyanPixels": 0,
+        "textPixels": 44300,
+        "nonBgFraction": 0.7135,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-why-open",
+      "path": "/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-handheld?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-why-open.png",
+      "video": null,
+      "ms": 7100,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 49,
+        "bodyTextNodes": 68,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 164488,
+        "goldPixels": 0,
+        "redPixels": 119624,
+        "cyanPixels": 0,
+        "textPixels": 0,
+        "nonBgFraction": 0.7661,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
+    },
+    {
+      "name": "results-why-foot",
+      "path": "/results/fixture-handheld?reveal=off",
+      "url": "http://127.0.0.1:44219/results/fixture-handheld?reveal=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/results-why-foot.png",
+      "video": null,
+      "ms": 6765,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 49,
+        "bodyTextNodes": 68,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 11712,
+        "goldPixels": 0,
+        "redPixels": 63228,
+        "cyanPixels": 0,
+        "textPixels": 14176,
+        "nonBgFraction": 0.5323,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:53:04.549Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:47:32.232Z",
+  "finishedAt": "2026-09-21T04:53:04.549Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "drive-open-landscape",
-    "drive-start-landscape",
-    "drive-landscape",
-    "drive-peak-landscape",
-    "drive-transition-landscape",
-    "drive-bank-landscape",
-    "drive-loose-landscape",
-    "drive-lost-landscape",
-    "drive-gps-landscape",
-    "drive-discarded-landscape",
-    "drive-savefail-landscape",
-    "drive-chain-landscape",
-    "drive-warn-landscape",
-    "drive-savefail-untrusted-landscape",
-    "drive-loose-peak-landscape"
+    "drive-open",
+    "drive-start",
+    "drive",
+    "drive-peak",
+    "drive-transition",
+    "drive-bank",
+    "drive-loose",
+    "drive-lost",
+    "drive-gps",
+    "drive-discarded",
+    "drive-savefail",
+    "results-reveal",
+    "results-skip",
+    "results-reveal-hold",
+    "results-reveal-slam",
+    "results",
+    "results-sloppy",
+    "results-spin",
+    "results-clean",
+    "results-best",
+    "results-drifts",
+    "results-laps",
+    "results-untrusted",
+    "results-untrusted-foot",
+    "results-integrity",
+    "results-pipeline",
+    "results-reduced",
+    "results-missing",
+    "results-wide-breakdown",
+    "results-wide-best",
+    "results-wide-drifts",
+    "results-wide-laps",
+    "results-reveal-settle",
+    "results-why-open",
+    "results-why-foot",
+    "drive-chain",
+    "drive-warn",
+    "drive-savefail-untrusted",
+    "drive-loose-peak"
   ]
 }
