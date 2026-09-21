@@ -1,10 +1,15 @@
 /**
- * The mini-map's trail: a flat, append-only store of where the car has been.
+ * The run's trail: a flat, append-only store of where the car has been.
  *
  * Points arrive at ~8 Hz (one per 0.12 s of recording time) and are written into growing typed
  * arrays — no object per point, no array reallocation per push, and the bounds are maintained
- * incrementally so the map can fit itself without scanning. `drift[i]` marks the points laid
- * down while the car was sideways; the map draws those in ember over the cold trail.
+ * incrementally so a map can fit itself without scanning. `drift[i]` marks the points laid down
+ * while the car was sideways, so a drawing of the line can tell the slides from the transit.
+ *
+ * NOTHING DRAWS IT ON THE DRIVE SCREEN. The live mini-map it was written for came off the
+ * display — a driver at 60 km/h does not read a map of where they have just been — and the
+ * store stayed, because `useDriveRun` fills it for the price of two array writes every eighth
+ * of a second and the replay screen is the place a line of a run belongs.
  */
 export interface Trail {
   x: Float32Array;

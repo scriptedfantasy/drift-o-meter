@@ -3,15 +3,22 @@
  *
  * ── Frame budget ──────────────────────────────────────────────────────────────────────────
  * `onMotion` runs ~100 times a second. It pushes the sample into the engine and then does only
- * arithmetic and shared-value writes (≈20 per sample) — no `setState`, no allocation beyond the
- * frame the pipeline already returns. React re-renders come from three places only:
+ * arithmetic and shared-value writes (≈15 per sample) — no `setState`, no allocation beyond the
+ * frame the pipeline already returns. React re-renders come from two places only:
  *   • a 10 Hz snapshot ticker, for values that are words rather than motion (phase, integrity,
  *     lap, rounded speed, drift count);
- *   • discrete events (callouts, BANKED / CHAIN LOST banners) — a few per minute, pushed the
- *     instant they fire so nothing feels late;
  *   • the run's own status changes.
- * Everything continuous (angle, needle, glow, odometer, g-ball, edge bloom, mini-map head) is a
- * shared value read by the UI thread; the Skia canvases and animated styles never re-render.
+ * Everything continuous (angle, needle, glow, g vector, edge bloom) is a shared value read by
+ * the UI thread; the Skia canvas and the animated styles never re-render.
+ *
+ * ── What this hook does NOT publish any more ──────────────────────────────────────────────
+ * It used to push callouts, BANKED / CHAIN LOST banners, a running total, a multiplier and a
+ * chain ratio, for a screen that drew all five. The drive display is one dial and one control
+ * now, so those went with the components that read them — and the point is that NOTHING
+ * UPSTREAM CHANGED: the scorer still banks, still chains and still multiplies, `finish()` still
+ * writes every one of those figures into the `Session`, and the results screen still publishes
+ * them. What was removed is a second copy of the score, kept on the render path at 10 Hz, that
+ * no longer had a reader.
  */
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
@@ -19,12 +26,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { BED_ATTACK_TAU, BED_FLOOR_DEG, BED_RELEASE_TAU, BED_SPAN_DEG, feelCue, feelFrame, feelReset, trustIn } from '../audio';
-import { toneFor, type EventTone } from '../callouts';
-
-// Re-exported so the callout components keep one import site for the run's own types.
-export type { EventTone };
 import type { LiveFrame } from '../../engine/pipeline';
-import { G, radToDeg, type DriftPhase, type GpsSample, type Grade, type MotionSample, type Session } from '../../engine/types';
+import { G, radToDeg, type DriftPhase, type GpsSample, type MotionSample, type Session } from '../../engine/types';
 import {
   currentSearch,
   describeSensorError,
@@ -35,11 +38,11 @@ import {
   type SensorSource,
   type SourceSelection,
 } from '../../platform';
+import { peekActiveDriverId } from '../../platform/drivers';
 import { parseHudParams, type HudParams } from './hudParams';
 import { createHudPipeline, idleFrame, type DriftPipelineApi } from './hudPipeline';
 import { SimPlayer } from './simPlayer';
 import { resetSignals, type HudSignals } from './signals';
-import { nextDisplayTotal } from './odometerValue';
 import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
 
 /**
@@ -50,32 +53,11 @@ import { createTrail, pushTrail, resetTrail, type Trail } from './trail';
 export type RunStatus = 'starting' | 'running' | 'held' | 'ended' | 'saving' | 'discarded' | 'error';
 
 
-/** One entry of the callout stack. */
-export interface HudEvent {
-  key: number;
-  label: string;
-  points: number;
-  tone: EventTone;
-  /** Recording time it fired at — the stack expires by frame time, so a frozen frame keeps it. */
-  t: number;
-}
-
-export interface HudBanner {
-  key: number;
-  kind: 'banked' | 'lost';
-  points: number;
-  t: number;
-}
-
 /** Everything the HUD renders as words rather than motion. Refreshed at ~10 Hz. */
 export interface HudSnapshot {
   phase: DriftPhase;
   integrity: LiveFrame['integrity'];
   speedKmh: number;
-  totalPoints: number;
-  multiplier: number;
-  chainPoints: number;
-  chainActive: boolean;
   transitions: number;
   /**
    * Peak |β| of the drift in progress. Held as a running max HERE rather than read from the
@@ -113,7 +95,7 @@ export interface HudSnapshot {
    * perfectly believable. `integrity.believable` is the one the grey-out reads.
    */
   counting: boolean;
-  /** Trail points committed so far (bumps the mini-map's memo). */
+  /** Trail points committed so far, so a consumer memoising on the trail can see it grow. */
   trailCount: number;
 }
 
@@ -131,23 +113,29 @@ export interface RunError {
 /**
  * The run's own result, shown when a completed run cannot be written to storage.
  *
- * `trusted` IS THE FIRST FIELD because it decides what the other five may be used for.
+ * `trusted` IS THE FIRST FIELD because it decides what the other four may be used for.
  * `src/engine/types.ts` says it in capitals on `SessionIntegrity.scoreTrusted`: "A consumer MUST
  * NOT present the total or the grade as an achievement when this is false: no grade letter, no
- * leaderboard entry, no share card." This screen used to build the verdict from `s.score.grade`
- * and `s.score.total` with no such check, so a hand-held run the engine had scored 0 / grade B /
- * `trusted: false` drew a 64 px cyan B, an ember 0 and "4 DRIFTS · PEAK 76° · 1:58" — a trophy
- * for a recording the engine had refused to vouch for. Nothing caught it because the capture
- * route only ever shot a clean run through this overlay (`drive-savefail`); there is now an
- * untrusted one beside it.
+ * leaderboard entry, no share card."
+ *
+ * THERE IS NO GRADE AND NO POINTS FIELD ANY MORE, which settles that rule by construction rather
+ * than by remembering it. This screen used to carry both and build the verdict straight from
+ * `s.score.grade` / `s.score.total`, so a hand-held run the engine had scored 0 / grade B /
+ * `trusted: false` drew a 64 pt letter and a points block — a trophy for a recording the engine
+ * had refused to vouch for. The fix at the time was a second overlay guarded by `trusted`; the
+ * fix now is that the drive display has no score to show on either branch, and the one place a
+ * total is published is the results screen, which reads it off the saved `Session`.
+ *
+ * `trusted` stays, because the two remaining lines are still not the same sentence: a run the
+ * engine stands behind reports what it recorded, and a refused one has to say NOT SCORED first.
+ * `peakDeg` is kept off the refused branch for the same reason it always was — a loose mount is
+ * exactly what inflates it.
  */
 export interface RunVerdict {
-  /** `SessionScore.trusted`. False forbids the grade, the total and the peak angle. */
+  /** `SessionScore.trusted`. False forbids the peak angle, and any word that reads as a reward. */
   trusted: boolean;
   /** The monitor's own words for why it refused. Empty when trusted. */
   message: string;
-  grade: Grade;
-  points: number;
   drifts: number;
   peakDeg: number;
   durationS: number;
@@ -160,8 +148,6 @@ export interface DriveRun {
   sourceLabel: string | null;
   sourceKind: 'device' | 'simulated' | null;
   snapshot: HudSnapshot;
-  events: HudEvent[];
-  banner: HudBanner | null;
   trail: Trail;
   params: HudParams;
   /** Retry after a failed start or a failed save. */
@@ -177,10 +163,6 @@ const IDLE_SNAPSHOT: HudSnapshot = {
   phase: 'idle',
   integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS', believable: false },
   speedKmh: 0,
-  totalPoints: 0,
-  multiplier: 1,
-  chainPoints: 0,
-  chainActive: false,
   transitions: 0,
   peakDeg: 0,
   driftDurationS: 0,
@@ -198,14 +180,8 @@ const IDLE_SNAPSHOT: HudSnapshot = {
   trailCount: 0,
 };
 
-/** How long a callout stays on the stack, in RECORDING seconds (so a frozen frame keeps it). */
-export const CALLOUT_HOLD_S = 3.2;
-export const BANNER_HOLD_S = 2.4;
-const MAX_CALLOUTS = 3;
-/** Minimum recording-time spacing between mini-map trail points. */
+/** Minimum recording-time spacing between trail points. */
 const TRAIL_INTERVAL_S = 0.12;
-/** Chain-bar scale: points at which the bar is ~63 % full. */
-const CHAIN_SCALE = 2500;
 /** Below this top speed, with no drift found, the "run" was the walk to the car: 10 km/h. */
 const WALKING_PACE_MPS = 2.8;
 
@@ -239,8 +215,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [sourceKind, setSourceKind] = useState<'device' | 'simulated' | null>(null);
   const [snapshot, setSnapshot] = useState<HudSnapshot>(IDLE_SNAPSHOT);
-  const [events, setEvents] = useState<HudEvent[]>([]);
-  const [banner, setBanner] = useState<HudBanner | null>(null);
 
   const pipelineRef = useRef<DriftPipelineApi | null>(null);
   const playerRef = useRef<SimPlayer | null>(null);
@@ -261,8 +235,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     prevPhase: 'idle' as DriftPhase,
     intensity: 0,
     lastTrailT: -Infinity,
-    eventKey: 1,
-    displayTotal: 0,
     warping: false,
     maxSpeed: 0,
     peakDeg: 0,
@@ -276,11 +248,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
   const reduceMotion = useRef(false);
   reduceMotion.current = prefersReducedMotion;
 
-  const pushEvents = useCallback((next: HudEvent[], t: number) => {
-    setEvents((prev) => [...next.slice().reverse(), ...prev].filter((e) => t - e.t <= CALLOUT_HOLD_S).slice(0, MAX_CALLOUTS));
-  }, []);
-
-  /** The 100 Hz path: engine push, shared-value writes, edge detection. No setState unless an event fired. */
+  /** The 100 Hz path: engine push, shared-value writes, edge detection. No setState at all. */
   const applyFrame = useCallback(
     (f: LiveFrame) => {
       // The feel layer goes FIRST, before anything is drawn: sound and haptics are the part of a
@@ -335,15 +303,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.ayG.value = f.state.ay / G;
       signals.axG.value = f.state.ax / G;
       signals.active.value = active ? 1 : 0;
-      signals.total.value = f.score.total;
-      // The odometer's own value. The rule — chase, and park only once the engine has stopped
-      // paying — lives in `odometerValue.ts` so `hud.test.ts` can sweep it over a real run; it
-      // is the fix for a score that stepped instead of rolling on 90.2 % of harbor frames.
-      h.displayTotal = nextDisplayTotal(h.displayTotal, f.score.total, f.score.delta, dt);
-      signals.totalDisplay.value = h.displayTotal;
-      signals.chainPoints.value = f.score.chainPoints;
-      signals.multiplier.value = f.score.multiplier;
-      signals.chainRatio.value = 1 - Math.exp(-f.score.chainPoints / CHAIN_SCALE);
       signals.elapsedS.value = f.t - h.t0;
       signals.carX.value = f.state.x;
       signals.carY.value = f.state.y;
@@ -381,8 +340,8 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         }
       }
       if (phase === 'transition' && h.prevPhase !== 'transition') {
-        // Transition: 120 ms magenta flash, 100 ms 2 px shake. Reduce-motion keeps the state
-        // change (the callout, the multiplier, the chevron) and drops both of these.
+        // Transition: a 120 ms flash at the screen edges and a 100 ms 2 px shake. Reduce-motion
+        // keeps the state change (the chevron flipping sides) and drops both of these.
         if (!reduceMotion.current && !quiet) {
           signals.flash.value = withSequence(withTiming(1, { duration: 40 }), withTiming(0, { duration: 140 }));
           signals.shake.value = withSequence(
@@ -395,26 +354,13 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       }
       h.prevPhase = phase;
 
-      // ── discrete events: rare, so they go straight to React ────────────────────────
-      if (f.score.callouts.length > 0) {
-        const next = f.score.callouts.map((c) => ({ key: h.eventKey++, label: c.label, points: c.points, tone: toneFor(c.kind), t: f.t }));
-        pushEvents(next, f.t);
-      }
-      // The ENGINE's own figures (`LiveTick.bankedPoints` / `lostPoints`), not the previous
-      // frame's chain total re-read a frame late: the two agree only because a bank can fire
-      // only on an idle frame, which is a property of today's chain rules, not a guarantee.
-      // A banner for nothing is not shown at all — a run the scorer never paid for has no
-      // points to bank and none to lose, and "CHAIN LOST −965" over a score of 0 is a lie.
-      if (f.score.banked && f.score.bankedPoints >= 1) setBanner({ key: h.eventKey++, kind: 'banked', points: Math.round(f.score.bankedPoints), t: f.t });
-      else if (f.score.lost && f.score.lostPoints >= 1) setBanner({ key: h.eventKey++, kind: 'lost', points: Math.round(f.score.lostPoints), t: f.t });
-
-      // ── mini-map trail ─────────────────────────────────────────────────────────────
+      // ── the trail ──────────────────────────────────────────────────────────────────
       if (f.state.valid && f.t - h.lastTrailT >= TRAIL_INTERVAL_S) {
         h.lastTrailT = f.t;
         pushTrail(trail, f.state.x, f.state.y, active);
       }
     },
-    [params.integrity, pushEvents, signals, trail],
+    [params.integrity, signals, trail],
   );
 
   const onMotion = useCallback(
@@ -479,8 +425,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
           ? {
               trusted: s.score.trusted,
               message: s.integrity.message,
-              grade: s.score.grade,
-              points: s.score.total,
               drifts: s.drifts.length,
               peakDeg: s.drifts.reduce((m, d) => Math.max(m, radToDeg(d.peakAngle)), 0),
               durationS: s.durationS,
@@ -503,7 +447,18 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         setSourceKind(selection.kind);
         sessionIdRef.current = newSessionId();
         const name = selection.sim ? `${title(selection.sim.params.track)} run` : 'Night run';
-        pipelineRef.current = createHudPipeline({ id: sessionIdRef.current, name });
+        // WHO THIS RUN BELONGS TO, stamped at the instant recording starts.
+        //
+        // `peekActiveDriverId` is the synchronous read on purpose: the roster lives in storage,
+        // and awaiting it here would put a disk round-trip between the driver pressing DRIVE and
+        // the first sample going into the pipeline — on the one screen where the first sample is
+        // the product. It returns the roster the app has already loaded.
+        //
+        // NULL IS A REAL ANSWER and is passed through as one. Nobody has said who is driving, so
+        // the run is saved unassigned; it is not a failure, not a reason to block the start, and
+        // not something to substitute a guess for. `DriftPipeline` writes it onto the `Session`
+        // at `finish()`, so a run assigned later is a question for the garage, not for here.
+        pipelineRef.current = createHudPipeline({ id: sessionIdRef.current, name, driverId: peekActiveDriverId() });
         resetSignals(signals);
         resetTrail(trail);
         feelReset();
@@ -513,8 +468,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
           prevPhase: 'idle',
           intensity: 0,
           lastTrailT: -Infinity,
-          eventKey: hot.current.eventKey,
-          displayTotal: 0,
           warping: false,
           maxSpeed: 0,
           peakDeg: 0,
@@ -539,10 +492,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
             } finally {
               hot.current.warping = false;
             }
-            // The odometer's filter has no more samples to converge on after a warp that ends in
-            // a freeze, so land it on the figure the engine actually reports.
-            hot.current.displayTotal = Math.round(frameRef.current.score.total);
-            signals.totalDisplay.value = hot.current.displayTotal;
           }
           if (params.hold) {
             setStatus('held');
@@ -614,10 +563,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         phase: f.phase,
         integrity: params.integrity ?? f.integrity,
         speedKmh: f.state.speed * 3.6,
-        totalPoints: f.score.total,
-        multiplier: f.score.multiplier,
-        chainPoints: f.score.chainPoints,
-        chainActive: f.score.chainActive,
         transitions: f.live?.transitions ?? 0,
         peakDeg: h.peakDeg,
         driftDurationS: f.live?.durationS ?? 0,
@@ -634,8 +579,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         counting: f.score.counting,
         trailCount: trail.n,
       });
-      setEvents((prev) => (prev.length === 0 ? prev : prev.filter((e) => f.t - e.t <= CALLOUT_HOLD_S)));
-      setBanner((prev) => (prev && f.t - prev.t > BANNER_HOLD_S ? null : prev));
     };
     publish();
     if (status === 'held') return; // frozen: one publish is the whole story
@@ -658,8 +601,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     sourceLabel,
     sourceKind,
     snapshot,
-    events,
-    banner,
     trail,
     params,
     stop,

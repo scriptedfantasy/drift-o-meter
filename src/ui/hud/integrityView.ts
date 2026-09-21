@@ -10,7 +10,7 @@
  * `hud.test.ts` runs the whole table.
  *
  * Until the calibrator has resolved which way the car points, no mount verdict means anything —
- * the monitor is describing its own startup, so the HUD says that, calmly, in cyan.
+ * the monitor is describing its own startup, so the HUD says that, calmly, in blue.
  */
 import { colors } from '../theme';
 import type { HudSnapshot } from './useDriveRun';
@@ -22,38 +22,44 @@ export interface IntegrityView {
   heading: string;
   message: string;
   /**
-   * What the score block should admit, or null when the numbers can be taken at face value.
-   * Deliberately specific: with no fix the scorer really is not counting, while with a loose
-   * mount it IS counting points off a reading nobody should stand behind. Saying "not scoring"
+   * What a screen reporting this state should admit, or null when the reading can be taken at
+   * face value. Deliberately specific: with no fix the scorer really is not counting, while with
+   * a loose mount it IS counting off a reading nobody should stand behind. Saying "not scoring"
    * in both cases would be wrong in one of them.
+   *
+   * NAMED FOR THE GATE, NOT FOR THE SCORE. The sentence it carries still ends "— NOT SCORING",
+   * because that is the driver's word for it; the field is named after `LiveFrame.score.counting`
+   * because that is the only thing it is ever allowed to be derived from.
    */
-  scoreNote: string | null;
+  countingNote: string | null;
   /**
-   * The colour that note is set in. RED is a fault that has stopped the scoring; WHITE is a
+   * The colour that note is set in. RED is a fault that has stopped the counting; WHITE is a
    * degraded-but-still-counting state, which is information rather than an alarm; MUTED is an
-   * aside. GOLD APPEARS NOWHERE — it is the colour of an extreme angle and of the multiplier
-   * chip, and the same hue cannot mean "you are a hero" and "your phone is loose". It did: the
-   * GPS-dropout frame carried a gold "NO FIX — DEAD-RECKONED FROM THE GYRO" under a gold "×2.0"
-   * and a gold "PEAK 37°", three meanings of one colour inside one third of the screen.
+   * aside.
+   *
+   * GREEN APPEARS NOWHERE, and neither did the gold it replaced. Green means the car is being
+   * measured right now; a warning in it would be the second meaning that broke the old palette,
+   * where one hue carried a gold "NO FIX — DEAD-RECKONED FROM THE GYRO" under a gold "×2.0" and
+   * a gold "PEAK 37°" — three meanings of one colour inside one third of the screen.
    */
   noteTone: string;
   /**
-   * True when the note is the sentence "… — NOT SCORING", i.e. when the screen is telling the
-   * driver that the big number beside it is not growing.
+   * True when the note is the sentence "… — NOT SCORING", i.e. when this state is telling the
+   * driver that the engine has stopped counting altogether.
    *
-   * PUBLISHED rather than sniffed out of `scoreNote`, and it is what the odometer's colour
-   * reads. The odometer used to lose its ember only at `trust === 0`, which is a different
-   * condition: on a weak fix or a shaking mount `trust` is 0.65, so the score sat there in full
-   * ember with NOT SCORING written underneath it. One says the reading is degraded; the other
-   * says this number has stopped. The number takes its colour from the second.
+   * PUBLISHED rather than sniffed out of `countingNote`, so a reader never has to match on the
+   * string. It is NOT the same question as `trust`: on a weak fix or a shaking mount `trust` is
+   * 0.65 and the engine is still counting, which is a degraded reading rather than a stopped
+   * one. A screen that greyed its total on `trust` alone printed a full-strength score with NOT
+   * SCORING written underneath it.
    */
-  scoreStopped: boolean;
+  countingStopped: boolean;
 }
 
 /** How long the calibrator is allowed to be "still working it out" before that is a fault. */
 export const CALIBRATION_GRACE_S = 8;
 
-/** A score-block note, and whether it is the one that says the number has stopped growing. */
+/** A note, and whether it is the one that says the engine has stopped counting altogether. */
 interface Note {
   text: string;
   halted: boolean;
@@ -63,7 +69,7 @@ export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
   const { mount, gps, physics, message } = snapshot.integrity;
   const settling = !snapshot.forwardResolved && snapshot.elapsedS < CALIBRATION_GRACE_S;
   // "Not scoring" is the SCORER's word (`LiveFrame.score.counting` — the gate it actually ran
-  // under), never this component's guess. Through a GPS dropout the engine dead-reckons β and
+  // under), never this function's guess. Through a GPS dropout the engine dead-reckons β and
   // keeps paying; a note inferred from `gps: 'none'` claimed the opposite, and the results
   // screen then banked those points.
   const counting = snapshot.counting;
@@ -75,8 +81,8 @@ export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
       tier,
       heading,
       message,
-      scoreNote: n === null ? null : n.text,
-      scoreStopped: n !== null && n.halted,
+      countingNote: n === null ? null : n.text,
+      countingStopped: n !== null && n.halted,
       noteTone: n === null ? colors.muted : tier === 'severe' && !counting ? colors.red : tier === 'severe' ? colors.text : colors.muted,
     };
   };

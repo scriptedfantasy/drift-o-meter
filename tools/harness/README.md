@@ -88,6 +88,11 @@ a `min`, or both; a violation fails the route and the message quotes the count a
   The old `isEmber` was a box, and it counted the red `#FF3B3B` warning banner and every
   antialiased gold pip as ember — so `drive-loose`'s "30,591 ember pixels" were mostly the two
   elements that are supposed to be loud. Re-derive any threshold you inherit from before that.
+  **And after the repaint, re-derive the COLOUR too.** `green` now means the palette's
+  `#8AF606`/`#C4FF2E` (62–105°); it used to mean a `#3DFF9A` that no longer exists, 50° away.
+  `ember`, `gold` and `magenta` name hues nothing in the app draws any more, and `cyan`'s band
+  stops at 205° while the palette's blue is at 218° — a check naming one of those on a repainted
+  screen measures a colour that is not there and passes vacuously.
 * `testId` — the element the region is about. Preferred over `rect`, because the harness measures
   the element and the check therefore means the same thing portrait, landscape and at any
   `--scale`. `padFrac` grows the box by that fraction of the viewport, to take in a glow that
@@ -320,13 +325,13 @@ t = 0. `src/ui/hud/hudParams.ts` adds four query parameters on top of the `sim` 
 `at` counts seconds of MOTION data (the same clock the HUD's own timer shows), so `at=100.85`
 lands on the frame whose HUD clock reads 1:41. Playback speed still comes from `rate`.
 
-Two details make a frozen frame reproducible, and both are worth knowing before changing them:
-
-* the callout stack expires by RECORDING time, not wall time, so freezing the run freezes the
-  stack — `drive-peak` keeps the three callouts that fired in the 3.2 s before `at`;
-* the score odometer is filtered in the 100 Hz sample callback, not by an animation, and snaps
-  to the exact total once it is within a few points — so a frozen frame always shows whole
-  digits rather than a column caught mid-roll. After a warp it is landed outright.
+A frozen frame is reproducible to the pixel, and the reason is that nothing on this screen is
+driven by an animation clock any more: the dial reads Reanimated shared values written by the
+sample callback, so with no further samples it simply holds. Consecutive shots of every `hold=1`
+route below returned identical region counts. (The callout stack and the score odometer used to
+need their own paragraph here — the stack expired on RECORDING time so that freezing the run
+froze it, and the odometer was filtered at sample rate so that a frozen frame never caught a
+digit mid-roll. Both elements are off this screen and both rules went with them.)
 
 A live route (no `hold`) is NOT frame-exact: the screenshot lands wherever playback has reached,
 about 4.5 s after `at` with `waitMs: 3200`. `drive` is deliberately live — it is the route to
@@ -338,16 +343,16 @@ Default drive routes, and what each one is evidence of:
 | route | moment |
 | --- | --- |
 | `drive-open` | the instant the screen opens: a live run at 0:00, gauge at rest, nothing claimed |
-| `drive-start` | the first seconds of EVERY run — forward axis not resolved yet, so a calm cyan FINDING FORWARD, muted gauge, no score. This state used to open every run with a red alarm |
+| `drive-start` | the first seconds of EVERY run — no fix and the forward axis not resolved, so the whole dial is muted grey and claims nothing. This state used to open every run with a red alarm |
 | `drive` | LIVE through the MANJI flick at 42.4 s (video: `npm run shoot -- --video --only drive`) |
-| `drive-peak` | held at 48° right, ×4.5, 22,675 points, 7,927 at risk, three callouts stacked |
+| `drive-peak` | held at 48° right: needle hard over, arc lit to 48° of its ramp, numeral in that angle's own colour. The engine is still banking behind it — the screen no longer prints it |
 | `drive-transition` | held 190 ms after TRANSITION ×2, mid-swing through zero, chevron flipped to L |
-| `drive-bank` | held just after a 10,528-point chain banked: BANKED ticker, chain bar drained, LINK ×3 |
-| `drive-loose` | a REAL hand-held run (`looseness=1`): muted gauge, no bloom, grey score, "these points may not stand" |
-| `drive-lost` | the same run 0.2 s after the slide spun: CHAIN LOST |
+| `drive-bank` | held 0.46 s after a chain banked: the slide is over, the angle is falling and the dial is coming down with it — the only account of a bank this screen gives |
+| `drive-loose` | a REAL hand-held run (`looseness=1`): arc, needle, numeral and g vector all muted grey, no bloom, no pool — 0 green pixels inside the dial's box |
+| `drive-lost` | the same run 0.2 s after the slide spun: the dial stays grey through the spin exactly as it was grey before it |
 | `drive-gps` | a REAL GPS dropout (`dropouts=1`) 1.2 s into the gap: GPS LOST is severe because a fix had been held |
 | `drive-discarded` | STOP pressed on a run that never left walking pace: NOTHING TO SCORE instead of filing it or dropping the driver into the garage without a word |
-| `drive-savefail` | STOP pressed on a real run whose WRITE then fails: the finished verdict (grade, points, drifts, peak, duration) is handed back beside the storage layer's own sentence, with the retry labelled from the error |
+| `drive-savefail` | STOP pressed on a real run whose WRITE then fails: what was RECORDED (peak angle, slides, duration) is handed back beside the storage layer's own sentence, with the retry labelled from the error. No grade and no points — there is no score on this screen, on any branch |
 
 `looseness` and `dropouts` go through the SIMULATOR (`src/platform/simParams.ts`), so those three
 routes exercise the estimator, the detector and the integrity monitor on genuinely bad data. The

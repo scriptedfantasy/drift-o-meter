@@ -4,9 +4,13 @@
  * Frames arrive at ~100 Hz. React is NOT allowed to re-render at that rate, so every value that
  * moves continuously lives here as a Reanimated shared value, written straight from the sample
  * callback and read by the UI thread (Reanimated styles) and by Skia. React only re-renders for
- * the things that genuinely change slowly — see `useDriveRun`'s snapshot (≈10 Hz) — and for
- * discrete events (callouts, banners, integrity verdicts), which arrive a handful of times a
- * minute.
+ * the things that genuinely change slowly — see `useDriveRun`'s snapshot (≈10 Hz).
+ *
+ * EVERY SIGNAL HERE HAS A READER. The score, the smoothed odometer total, the chain points, the
+ * multiplier and the chain ratio used to be written 100 times a second for components that were
+ * taken off this screen, which cost nothing visible and hid something that does matter: a signal
+ * nobody reads is a signal nobody notices going wrong. They are gone. The engine still computes
+ * all five and `finish()` still writes them into the saved run.
  */
 import { useMemo } from 'react';
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
@@ -25,33 +29,19 @@ export interface HudSignals {
   ayG: SharedValue<number>;
   /** Longitudinal acceleration in g (+ = accelerating forward). */
   axG: SharedValue<number>;
-  /** 0..1 drift intensity: drives the glow, the edge bloom and the arc colour. */
+  /** 0..1 drift intensity: drives the dial's glow and the edge bloom. */
   intensity: SharedValue<number>;
   /** 0..1, 1 while the detector reports a drift (entry/drifting/transition). */
   active: SharedValue<number>;
-  /** Running score (banked + at risk). */
-  total: SharedValue<number>;
-  /**
-   * The same score, smoothed at sample rate for the odometer (τ ≈ 0.12 s, snapping when it
-   * arrives). Filtered in the sample callback rather than by an animation, so it tracks a score
-   * climbing at 1 500 points a second instead of trailing it, unwinds a CHAIN LOST instead of
-   * cutting, and lands on the exact figure the moment the run is frozen.
-   */
-  totalDisplay: SharedValue<number>;
-  /** Un-banked points. */
-  chainPoints: SharedValue<number>;
-  multiplier: SharedValue<number>;
-  /** 0..1 fill of the chain bar. */
-  chainRatio: SharedValue<number>;
   /** Seconds of recording time since the run started. */
   elapsedS: SharedValue<number>;
   /** 0..1 impulse fired at a transition: 100 ms screen shake. */
   shake: SharedValue<number>;
-  /** 0..1 impulse fired at a transition: 120 ms magenta flash. */
+  /** 0..1 impulse fired at a transition: a 120 ms wash across the screen edges. */
   flash: SharedValue<number>;
   /** 1 on the frame a drift is confirmed — punches the numeral to 1.08×. */
   punch: SharedValue<number>;
-  /** Car position in local ENU metres and heading in radians (mini-map head). */
+  /** Car position in local ENU metres and heading in radians. */
   carX: SharedValue<number>;
   carY: SharedValue<number>;
   carHeading: SharedValue<number>;
@@ -76,11 +66,6 @@ export function useHudSignals(): HudSignals {
   const axG = useSharedValue(0);
   const intensity = useSharedValue(0);
   const active = useSharedValue(0);
-  const total = useSharedValue(0);
-  const totalDisplay = useSharedValue(0);
-  const chainPoints = useSharedValue(0);
-  const multiplier = useSharedValue(1);
-  const chainRatio = useSharedValue(0);
   const elapsedS = useSharedValue(0);
   const shake = useSharedValue(0);
   const flash = useSharedValue(0);
@@ -102,11 +87,6 @@ export function useHudSignals(): HudSignals {
       axG,
       intensity,
       active,
-      total,
-      totalDisplay,
-      chainPoints,
-      multiplier,
-      chainRatio,
       elapsedS,
       shake,
       flash,
@@ -127,11 +107,6 @@ export function useHudSignals(): HudSignals {
       axG,
       intensity,
       active,
-      total,
-      totalDisplay,
-      chainPoints,
-      multiplier,
-      chainRatio,
       elapsedS,
       shake,
       flash,
@@ -156,11 +131,6 @@ export function resetSignals(s: HudSignals): void {
   s.axG.value = 0;
   s.intensity.value = 0;
   s.active.value = 0;
-  s.total.value = 0;
-  s.totalDisplay.value = 0;
-  s.chainPoints.value = 0;
-  s.multiplier.value = 1;
-  s.chainRatio.value = 0;
   s.elapsedS.value = 0;
   s.shake.value = 0;
   s.flash.value = 0;

@@ -1,6 +1,12 @@
 /**
- * The frame around the HUD: ambient ember bloom at the screen edges, the status strip
+ * The frame around the HUD: the ambient green bloom at the screen edges, the status strip
  * (clock, lap, source, GPS / mount pills) and the integrity banner.
+ *
+ * ONLY `EdgeBloom` IS ON THE DRIVE SCREEN. The strips and the banner are shelved, not deleted:
+ * the display is one dial and one control now (see `src/app/drive.tsx`), and a driver at
+ * 60 km/h has no time to read a pill. They are kept because they are correct, tested through
+ * `readIntegrity`, and the states they describe have not gone anywhere — the engine still
+ * publishes every one of them, and a screen that is not driven at speed may want them back.
  *
  * Integrity is deliberately two-speed. While the run is clean the verdicts are two small
  * outline pills that nobody has to read; the moment the mount goes loose, the physics stop
@@ -9,6 +15,11 @@
  *
  * The bloom is clipped to a rounded rectangle, which both matches the phone's own corners and
  * keeps the extreme corner pixels at bg0 (the harness checks them).
+ *
+ * THE BLOOM IS GREEN, and it is the only ambient colour on the screen, so it carries the whole
+ * of what green means: a run is happening and the engine is measuring it. It scales with
+ * `intensity`, which is already multiplied by `trust` in `useDriveRun`, so a reading the engine
+ * will not stand behind lights nothing — the frame goes dark with the dial.
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
@@ -17,7 +28,7 @@ import Animated, { useAnimatedStyle, useDerivedValue, useReducedMotion, withRepe
 
 import { AppText, Micro } from '../Text';
 import { formatDuration } from '../format';
-import { alpha, colors, fontFamilies, radii, space } from '../theme';
+import { alpha, angleColor, colors, fontFamilies, radii, space } from '../theme';
 import { readIntegrity } from './integrityView';
 import type { HudSignals } from './signals';
 import type { HudSnapshot } from './useDriveRun';
@@ -27,7 +38,8 @@ import type { HudSnapshot } from './useDriveRun';
 export { readIntegrity, CALIBRATION_GRACE_S } from './integrityView';
 export type { IntegrityTier, IntegrityView } from './integrityView';
 
-const TRANSPARENT = 'rgba(255,90,31,0)';
+/** A fully transparent stop for the edge gradients. Hue is irrelevant at alpha 0. */
+const TRANSPARENT = 'rgba(0, 0, 0, 0)';
 
 export const EdgeBloom = memo(function EdgeBloom({ signals }: { signals: HudSignals }) {
   const bloom = useAnimatedStyle(() => ({ opacity: 0.06 + 0.94 * signals.intensity.value }));
@@ -35,10 +47,10 @@ export const EdgeBloom = memo(function EdgeBloom({ signals }: { signals: HudSign
   return (
     <View style={styles.bloomClip} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, bloom]}>
-        <LinearGradient colors={[alpha(colors.ember, 0.22), TRANSPARENT]} style={[styles.bloomEdge, styles.bloomTop]} />
-        <LinearGradient colors={[TRANSPARENT, alpha(colors.ember, 0.26)]} style={[styles.bloomEdge, styles.bloomBottom]} />
-        <LinearGradient colors={[alpha(colors.ember, 0.2), TRANSPARENT]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomLeft]} />
-        <LinearGradient colors={[TRANSPARENT, alpha(colors.ember, 0.2)]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomRight]} />
+        <LinearGradient colors={[alpha(colors.green, 0.22), TRANSPARENT]} style={[styles.bloomEdge, styles.bloomTop]} />
+        <LinearGradient colors={[TRANSPARENT, alpha(colors.green, 0.26)]} style={[styles.bloomEdge, styles.bloomBottom]} />
+        <LinearGradient colors={[alpha(colors.green, 0.2), TRANSPARENT]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomLeft]} />
+        <LinearGradient colors={[TRANSPARENT, alpha(colors.green, 0.2)]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.bloomEdge, styles.bloomRight]} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, styles.flash, flash]} />
     </View>
@@ -82,7 +94,7 @@ export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, li
         {live ? (
           <Pill
             label={gps === 'good' ? 'GPS' : gps === 'poor' ? 'GPS WEAK' : snapshot.gpsEverGood ? 'GPS LOST' : 'NO GPS YET'}
-            color={gps === 'good' ? colors.cyan : gps === 'none' && snapshot.gpsEverGood ? colors.red : colors.text}
+            color={gps === 'good' ? colors.blue : gps === 'none' && snapshot.gpsEverGood ? colors.red : colors.text}
             filled={gps === 'none' && snapshot.gpsEverGood}
           />
         ) : null}
@@ -119,14 +131,13 @@ function Pill({ label, color, filled = false }: { label: string; color: string; 
  */
 export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
   const live = snapshot.phase !== 'idle' && snapshot.phase !== 'exit';
-  const chained = snapshot.chainActive && snapshot.chainPoints > 0;
   // An untrusted reading gets untrusted numbers: same values, no colour claiming they are good.
   const trusted = snapshot.trust > 0;
   if (!live) {
     // BETWEEN SLIDES THE RUN IS THE SUBJECT, so its two numbers are set at the size of a value
-    // rather than of a footnote: on a portrait idle frame this band and the mini-map beside it
-    // are the only things on the screen between the gauge and the speed row, and at 20 px they
-    // left it reading as empty.
+    // rather than of a footnote: on the portrait idle frame this was measured on, this band and
+    // the map beside it were the only things between the gauge and the speed row, and at 20 px
+    // they left it reading as empty.
     return (
       <View style={styles.stripStack} testID={testID}>
         <View style={styles.stripRow}>
@@ -134,22 +145,22 @@ export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snaps
           <StripCell
             label="Best"
             value={snapshot.runPeakDeg >= 1 ? `${Math.round(snapshot.runPeakDeg)}°` : '—'}
-            tone={snapshot.runPeakDeg >= 1 ? colors.gold : colors.muted}
+            tone={snapshot.runPeakDeg >= 1 ? angleColor(snapshot.runPeakDeg) : colors.muted}
             big
             last
           />
         </View>
-        <AppText color={chained ? colors.ember : colors.muted} style={styles.hint} numberOfLines={1} adjustsFontSizeToFit>
-          {chained ? 'CHAIN OPEN — GET BACK SIDEWAYS' : 'WAITING FOR A SLIDE'}
+        <AppText color={colors.muted} style={styles.hint} numberOfLines={1} adjustsFontSizeToFit>
+          WAITING FOR A SLIDE
         </AppText>
       </View>
     );
   }
   return (
     <View style={styles.stripRow} testID={testID}>
-      <StripCell label="Peak" value={`${Math.round(snapshot.peakDeg)}°`} tone={trusted ? colors.gold : colors.muted} />
+      <StripCell label="Peak" value={`${Math.round(snapshot.peakDeg)}°`} tone={trusted ? angleColor(snapshot.peakDeg) : colors.muted} />
       <StripCell label="Held" value={`${snapshot.driftDurationS.toFixed(1)}s`} tone={trusted ? colors.text : colors.muted} />
-      <StripCell label="Flicks" value={`×${snapshot.transitions}`} tone={trusted && snapshot.transitions > 0 ? colors.magenta : colors.muted} last />
+      <StripCell label="Flicks" value={`×${snapshot.transitions}`} tone={trusted && snapshot.transitions > 0 ? colors.text : colors.muted} last />
     </View>
   );
 });
@@ -168,9 +179,18 @@ function StripCell({ label, value, tone, last, big }: { label: string; value: st
 /**
  * The loud half of integrity. Three treatments, deliberately different in FORM and not only in
  * hue: severe is a filled red slab that pulses, warn is an outlined slab with a plain white
- * headline, calibrating is the same outline in cyan. Gold appears nowhere here — it is the
- * colour of an extreme angle and of the multiplier, and the same hue cannot mean "you are a
- * hero" and "your phone is loose".
+ * headline, calibrating is the same outline in blue.
+ *
+ * NO GREEN ANYWHERE HERE, at any tier. Green means the car is being measured right now and
+ * nothing else; a caution painted in it would be the second meaning that made the old gold
+ * unreadable, when one hue said "you are a hero" and "your phone is loose" in the same third of
+ * the screen. A fault is red, a degraded-but-counting state is white, and a startup is blue.
+ *
+ * AND NO STRIPE DOWN THE SIDE. Severity is the text colour and the slab's own fill. The 4 pt bar
+ * that used to stand at the left edge of this banner is the same earmark the cards elsewhere in
+ * the app carried, and it is banned for the same reason: it encodes severity in a place the eye
+ * reads before the words, so a reader who has not learnt the colour code learns nothing from it,
+ * and one who has is told twice.
  */
 export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
   const view = readIntegrity(snapshot);
@@ -180,7 +200,7 @@ export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID 
   const pulse = useDerivedValue(() => (severe && !reduced ? withRepeat(withTiming(1, { duration: 900 }), -1, true) : 1), [severe, reduced]);
   const style = useAnimatedStyle(() => ({ opacity: severe ? 0.74 + 0.26 * pulse.value : 1 }));
   if (view.tier === 'ok') return null;
-  const tone = severe ? colors.red : view.tier === 'calibrating' ? colors.cyan : colors.text;
+  const tone = severe ? colors.red : view.tier === 'calibrating' ? colors.blue : colors.text;
   return (
     <Animated.View
       style={[
@@ -191,7 +211,6 @@ export const IntegrityBanner = memo(function IntegrityBanner({ snapshot, testID 
         style,
       ]}
       testID={testID}>
-      <View style={[styles.bannerBar, { backgroundColor: severe ? colors.red : alpha(tone, 0.7) }]} />
       <View style={styles.bannerText}>
         <AppText style={[styles.bannerHeading, { color: tone }]}>{view.heading}</AppText>
         <AppText variant="small" color={colors.muted} numberOfLines={2}>
@@ -209,7 +228,9 @@ const styles = StyleSheet.create({
   bloomBottom: { bottom: 0, left: 0, right: 0, height: 110 },
   bloomLeft: { top: 0, bottom: 0, left: 0, width: 54 },
   bloomRight: { top: 0, bottom: 0, right: 0, width: 54 },
-  flash: { backgroundColor: colors.magenta },
+  // The transition wash. WHITE, not a hue: it fires on a flick, which is a moment rather than a
+  // verdict, and every colour in this palette is a verdict about something.
+  flash: { backgroundColor: colors.text },
 
   strip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
   stripLeft: { flexDirection: 'row', alignItems: 'baseline', gap: space[3] },
@@ -230,8 +251,7 @@ const styles = StyleSheet.create({
   // exactly when the driver has something to do about it.
   hint: { fontFamily: fontFamilies.display.bold, fontSize: 17, lineHeight: 20, letterSpacing: 1.2 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[2], paddingRight: space[3] },
-  bannerBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[3] },
   bannerText: { flex: 1, gap: 1 },
   bannerHeading: { fontFamily: fontFamilies.display.extraboldItalic, fontSize: 20, lineHeight: 22, letterSpacing: 0.4 },
 });

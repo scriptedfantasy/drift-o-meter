@@ -20,6 +20,15 @@
  * antialiasing toward the near-black background preserves hue, so a half-dissolved ember glyph
  * is still ember and a half-dissolved gold pip is still gold.
  *
+ * ── AFTER THE REPAINT ─────────────────────────────────────────────────────────────────────
+ * The palette these bands were cut for is being replaced: green, red, blue and a grey, all
+ * measured off the car and the artwork. `isGreen` and `isRed` are the two that carry the new
+ * colours (87°/77° and 354°, which `isRed`'s 353° wrap already covered). `isEmber`, `isGold`
+ * and `isMagenta` still name hues from the old palette and stay only for the routes that have
+ * not been rewritten yet — a check naming one of those on a repainted screen is measuring a
+ * colour nothing draws. `isCyan` is the same and worse, because there IS a new colour it looks
+ * like it should mean: the palette's blue is 218°, and this band ends at 205°.
+ *
  * Every other palette colour has its own predicate on the same footing, so a check can name the
  * colour it means rather than borrowing one that happens to overlap.
  *
@@ -90,8 +99,25 @@ export const isRed = (r, g, b) => {
 export const isMagenta = band(310, 345);
 /** `#29E3FF` — telemetry and speed. ~187°. */
 export const isCyan = band(170, 205, 0.4, 0.35);
-/** `#3DFF9A` — clean / smooth. ~145°. */
-export const isGreen = band(130, 165);
+/**
+ * `#8AF606` and `#C4FF2E` — THE LIVE INSTRUMENT. 87° and 77° at full strength.
+ *
+ * This band used to be 130–165°, for a `#3DFF9A` "clean / smooth" green that the repaint
+ * deleted. The palette's green is now the one measured off `assets/brand` (theme.ts, and
+ * `assets/brand/README.md`: 36,599 green pixels in the mark), and it is 50° away from the old
+ * one — so every check written against `colour: 'green'` before the repaint measured a hue
+ * nothing on screen draws any more, and would have read 0 on a screen blazing with it.
+ *
+ * 62–105 is wide on purpose at both ends, and neither end is slack:
+ *   • UP to 105 because antialiasing toward `bg0` (#070D18, hue 219) pulls green UP the wheel,
+ *     not down — a 40 %-alpha edge pixel of `#8AF606` measures 92°, and the pool and the glow
+ *     are nothing but such pixels.
+ *   • DOWN to 62 and no further because the dial's ramp does not stop at the highlight: from 55°
+ *     of slip to 70° it runs `#C4FF2E` → `#FF2E43`, and those interpolated pixels sweep 77 → 57
+ *     → 45 → 33 → 12 → 354. 62 is the point past which the arc has stopped being green and
+ *     started being the warning, which is what a check named `green` should stop counting.
+ */
+export const isGreen = band(62, 105);
 /** `#F2F0EB` and friends: light, near-neutral ink. */
 export const isText = (r, g, b) => {
   const max = Math.max(r, g, b);

@@ -10,7 +10,21 @@
  * ── the rim ────────────────────────────────────────────────────────────────────────────────
  * Zero is 12 o'clock, the needle sweeps LEFT for a left-hand slide and RIGHT for a right-hand
  * one, ticks every 10°, and a ghost tick holds the peak of the drift in progress. The arc fills
- * out of the top, blooms ember with |β| and shifts toward gold past 40°.
+ * out of the top and takes its colour from the angle it has reached.
+ *
+ * THE COLOUR IS ONE RAMP AND IT LIVES IN THE THEME. `ANGLE_STOPS` (green to 40°, into the
+ * artwork's highlight at 55°, into the car's tail-light red at 70°, where a slide is a spin) is
+ * read three times here — by the arc's `SweepGradient`, by the needle and numeral through
+ * Reanimated's `interpolateColor`, and by the ghost tick — and once more by the results screen
+ * through `angleColor`. A dial that interpolated its own stops and a verdict screen that
+ * interpolated different ones is how 48° came out one colour on the road and another in the
+ * garage; there is now nothing for them to disagree about. `angleColor` parses hex, so it never
+ * runs here: the worklets below interpolate the same stops on the UI thread instead.
+ *
+ * THE WHOLE SCALE IS PAINTED, not just the lit part. The track behind the needle carries the
+ * same ramp at `TRACK_OPACITY` — dim enough that the pixel classifier's brightness floor does
+ * not count it, bright enough that the red zone is visible BEFORE the needle gets there, which
+ * is the one thing a scale can tell a driver in advance.
  *
  * THE SWEEP IS ±150°, NOT ±78°. The old arc was a shallow bowl because it had to leave room
  * under it for eight other elements; a full ring has no such tenant, so the same ±70° of slip
@@ -53,11 +67,11 @@
  *
  * Imports Skia directly, so on web it must only ever be loaded through `DialView`.
  */
-import { BlurMask, Canvas, Circle, Group, Path, RadialGradient, Skia, type SkFont, Text as SkText, useFont, vec } from '@shopify/react-native-skia';
+import { BlurMask, Canvas, Circle, Group, Path, Skia, type SkFont, SweepGradient, Text as SkText, useFont, vec } from '@shopify/react-native-skia';
 import { useMemo } from 'react';
 import { interpolateColor, useDerivedValue } from 'react-native-reanimated';
 
-import { colors, rgba } from '../theme';
+import { ANGLE_STOPS, colors, MAX_ANGLE_DEG, rgba } from '../theme';
 import { gToFace } from './gVector';
 import type { HudSignals } from './signals';
 
@@ -67,9 +81,61 @@ const HALF_SWEEP = 150;
  * |β| at the ends of the scale. A rigid, well-driven run peaks around 50–60°; 90° left the outer
  * third as dead travel, so the scale ends where a slide ends and anything past it (a spin) pins
  * the needle at the bottom of the dial, which is the correct reading of a spin.
+ *
+ * It is the theme's `MAX_ANGLE_DEG` — the last `ANGLE_STOPS` breakpoint — and not a 70 typed out
+ * again here. The ramp's red end and the scale's end are ONE decision: a dial whose travel ran
+ * past its own ramp would spend its last degrees in a colour the ramp had already finished.
  */
-const MAX_BETA = 70;
+const MAX_BETA = MAX_ANGLE_DEG;
 const DEG = Math.PI / 180;
+/** Where the scale's left end sits, in Skia's arc degrees (0 = three o'clock, clockwise). */
+const ARC_START = -90 - HALF_SWEEP;
+/**
+ * How bright the unlit track is — the mockup's figure, and it has a second job.
+ *
+ * `tools/harness/pixels.mjs` counts a colour only above a brightness floor of v = 0.3, and the
+ * routes that prove this dial goes GREY for a reading the engine refuses assert at most 120
+ * green pixels inside its box. `#8AF606` at 0.18 over `bg0` is (31, 55, 21), v = 0.22, so the
+ * track is under that floor by a wide margin and a refused frame measures what it should.
+ *
+ * A 0.13 white hairline used to be stroked over this track — a leftover from when the track was
+ * a flat dark grey and needed an edge. Over a coloured one it added +31 to every channel, which
+ * put the SAME pixels at v = 0.31 and made three cold routes report 1 700 – 3 340 green pixels
+ * on a dial that was drawing nothing hot at all. The ceiling was right and the screen was wrong.
+ * The ticks give the rim its edge; the hairline is gone.
+ */
+const TRACK_OPACITY = 0.18;
+
+/**
+ * `ANGLE_STOPS` rewritten as one `SweepGradient`: colour by POSITION ALONG THE ARC, 0 at the
+ * left end of the scale and 1 at the right.
+ *
+ * That is deliberately the same parameter the arc `Path`'s own `start` / `end` trim takes, so
+ * the lit part of the ring is a window onto a gradient that never moves — the colour under 48°
+ * is the colour of 48° whether the needle has got there yet or not. The scale is symmetric in
+ * |β|, so every stop appears twice, once per side, and the 0° stop appears once in the middle.
+ *
+ * `interpolateColor` below reads the same table over |β| directly. Neither is a copy of the
+ * other's numbers: both are derived from `ANGLE_STOPS`, which is where a change goes.
+ */
+const RAMP: { colors: string[]; positions: number[] } = (() => {
+  const colors: string[] = [];
+  const positions: number[] = [];
+  const at = (deg: number) => Math.max(0, Math.min(0.5, deg / (2 * MAX_BETA)));
+  for (let i = ANGLE_STOPS.length - 1; i >= 0; i--) {
+    colors.push(ANGLE_STOPS[i].color);
+    positions.push(0.5 - at(ANGLE_STOPS[i].deg));
+  }
+  for (let i = 1; i < ANGLE_STOPS.length; i++) {
+    colors.push(ANGLE_STOPS[i].color);
+    positions.push(0.5 + at(ANGLE_STOPS[i].deg));
+  }
+  return { colors, positions };
+})();
+
+/** `ANGLE_STOPS` split into the two arrays `interpolateColor` wants, built once. */
+const RAMP_DEG: number[] = ANGLE_STOPS.map((s) => s.deg);
+const RAMP_COLOR: string[] = ANGLE_STOPS.map((s) => s.color);
 
 /**
  * |(a_x, a_y)| in g at the radar's outer ring, MEASURED rather than chosen.
@@ -87,18 +153,43 @@ const DEG = Math.PI / 180;
  */
 export const FULL_SCALE_G = 1.0;
 
+/**
+ * The radar's own ramp: the SAME shape as the rim's, on the radar's own quantity.
+ *
+ * The dot's colour is the LOAD, not the angle — a phone can be reading 0.9 g with the wheel
+ * straight — so it cannot borrow the needle's colour. What it can borrow is the ramp: each
+ * `ANGLE_STOPS` breakpoint is carried across as the same FRACTION of full scale, so the two
+ * instruments on one face go green, highlight and red together and there is no second set of
+ * breakpoints to tune. 40°/70° and 0.57 g/1.0 g are one number written once.
+ */
+const RAMP_G: number[] = ANGLE_STOPS.map((s) => (s.deg / MAX_BETA) * FULL_SCALE_G);
+
 const NUMERAL_FONT = require('@expo-google-fonts/barlow-condensed/800ExtraBold_Italic/BarlowCondensed_800ExtraBold_Italic.ttf');
 
 /**
+ * The numeral's cap height as a fraction of the canvas width. 0.32 of the CIRCLE's diameter,
+ * which is the size the approved drive mockup sets it at (96 pt on a 300 pt circle).
+ *
+ * It was 0.2 — 0.23 of the diameter — and the difference is the whole point of the element: a
+ * number read at 60 km/h out of the corner of an eye is the one thing on this screen that can
+ * afford to be enormous, and the 60° the scale leaves open at six o'clock is space nothing else
+ * is using.
+ */
+const NUMERAL_SIZE = 0.28;
+/**
  * How far the numeral's band reaches BELOW the circle's box, as a fraction of it.
  *
- * Small, because the numeral does not hang off the bottom of the dial — it sits IN THE OPENING.
- * The scale stops at ±150°, which leaves 60° of empty face at six o'clock and a 1.0 R-wide gap
- * between the two ends of the arc; the numeral is about 0.6 R wide, so it drops into that gap
- * and reads as part of the instrument. Set flush under the box instead, it floated 92 pt clear
- * of the arc's ends with nothing between, and looked like a caption.
+ * The numeral does not hang off the bottom of the dial — it sits IN THE OPENING. The scale stops
+ * at ±150°, which leaves 60° of empty face at six o'clock and a 1.0 R-wide gap between the two
+ * ends of the arc; the numeral is about 0.6 R wide, so it drops into that gap and reads as part
+ * of the instrument. Set flush under the box instead, it floated 92 pt clear of the arc's ends
+ * with nothing between, and looked like a caption.
+ *
+ * The band is the room the BASELINE needs past the circle: cap top level with the bottom of the
+ * circle (0.94 of the width, at R = 0.44) puts the baseline at 0.94 + 0.7 × `NUMERAL_SIZE`, and
+ * the rest is the descender room a "°" does not use but a clipped glyph would show.
  */
-const NUMERAL_BAND = 0.13;
+const NUMERAL_BAND = 0.19;
 /** Canvas height ÷ width. The drive screen divides the height it has by this to get `size`. */
 export const DIAL_ASPECT = 1 + NUMERAL_BAND;
 
@@ -114,9 +205,27 @@ export default function Dial({ size, signals, testID }: DialProps) {
   const cx = size / 2;
   const cy = size / 2;
   const canvasH = size * DIAL_ASPECT;
-  /** The scale's radius. The rest of the square is the glow's room to fade out in rather than be
-      clipped — a glow that ends in a hard edge reads as a rendering bug. */
-  const R = size * 0.44;
+  /**
+   * The scale's radius. The rest of the square is the glow's room to fade out in rather than be
+   * CLIPPED — a glow that ends in a hard edge reads as a rendering bug — and 0.44 did not give
+   * it that room.
+   *
+   * MEASURED, because the comment above used to stand over a number that could not honour it.
+   * The lit arc blooms through a `BlurMask` of 1.35 × `stroke` on a stroke 2.1 × as wide as the
+   * scale's, so it reaches R + 1.05 × stroke + 3σ = 1.485 R from the centre. At R = 0.44 size
+   * the canvas edge is at 1.136 R, which cuts the bloom at 0.28σ — nearly four fifths of its
+   * height — and the landscape frame stepped from (16, 41, 21) to bg0 across one pixel down the
+   * right edge of the canvas, a bright rectangle in open space beside the instrument. Portrait
+   * hid it only because the canvas is the full screen width there and the cut landed under the
+   * edge bloom.
+   *
+   * 0.385 puts the edge at 1.30 R, so the bloom is cut at 1.55σ instead — about a tenth of its
+   * height. Re-measured across the same edge: the step is 6 to 12 in green against a background
+   * of 13, where it was 28, and it is no longer a line the eye finds. It is also the approved
+   * mockup's own proportion — a 300 pt circle on a 390 pt board, 0.77 of the width against the
+   * 0.88 this was drawing — so the instrument did not lose anything the design asked for.
+   */
+  const R = size * 0.385;
   const stroke = Math.max(9, R * 0.095);
 
   /** The radar is CONCENTRIC with the scale, now that the numeral is not sharing the face. That
@@ -124,9 +233,10 @@ export default function Dial({ size, signals, testID }: DialProps) {
       the same centre keeps the same clearance from it at every angle, where an off-centre one
       was closest at 12 o'clock — the exact spot the needle spends small slip angles in. */
   const radar = useMemo(() => ({ cy, r: R * 0.56 }), [cy, R]);
-  const numeralSize = size * 0.2;
-  const numeralMidY = size * 0.97;
-  const baselineY = numeralMidY + numeralSize * 0.35;
+  const numeralSize = size * NUMERAL_SIZE;
+  /** Cap top level with the bottom of the circle, so the numeral drops into the scale's gap. */
+  const baselineY = cy + R + numeralSize * 0.7;
+  const numeralMidY = baselineY - numeralSize * 0.35;
 
   const font = useFont(NUMERAL_FONT, numeralSize);
 
@@ -163,6 +273,7 @@ export default function Dial({ size, signals, testID }: DialProps) {
   const chevronOffset = metrics.advance + metrics.deg * 0.5 + numeralSize * 0.26;
 
   const rect = useMemo(() => ({ x: cx - R, y: cy - R, width: 2 * R, height: 2 * R }), [cx, cy, R]);
+  const rampTransform = useMemo(() => [{ rotate: ARC_START * DEG }], []);
 
   /** The face, drawn clockwise from the left end of the scale; t = 0.5 is straight up (β = 0). */
   const arc = useMemo(() => Skia.PathBuilder.Make().addArc(rect, -90 - HALF_SWEEP, 2 * HALF_SWEEP).detach(), [rect]);
@@ -264,32 +375,43 @@ export default function Dial({ size, signals, testID }: DialProps) {
   const needleTransform = useDerivedValue(() => [{ rotate: (clamped.value / MAX_BETA) * HALF_SWEEP * DEG }]);
   const peakTransform = useDerivedValue(() => [{ rotate: (Math.max(-MAX_BETA, Math.min(MAX_BETA, signals.peakDeg.value)) / MAX_BETA) * HALF_SWEEP * DEG }]);
   const peakOpacity = useDerivedValue(() => (Math.abs(signals.peakDeg.value) > 8 ? 0.9 : 0));
-  // The ghost tick is a reward marker; on a reading the engine will not stand behind it turns
-  // grey with the rest of the dial instead of being the one gold thing on screen.
-  const peakColor = useDerivedValue(() => (signals.trust.value <= 0 ? colors.muted : colors.gold));
-  // Ember through 34°, shifting to gold from 40° and fully gold by 55° — the design's promise,
-  // on the range a real slide actually uses. An untrusted reading is drawn in muted grey
-  // instead: the engine is not scoring it, so the dial does not celebrate it.
+  // The ghost tick marks an ANGLE, so it is drawn in that angle's own colour off the same ramp
+  // rather than in a marker colour of its own — a peak held at 62° is already in the red zone
+  // and says so. On a reading the engine will not stand behind it turns grey with the rest of
+  // the dial instead of being the one bright thing on screen.
+  const peakColor = useDerivedValue(() =>
+    signals.trust.value <= 0 ? colors.muted : interpolateColor(Math.abs(signals.peakDeg.value), RAMP_DEG, RAMP_COLOR),
+  );
+  // The needle and the numeral, on `ANGLE_STOPS` — the same table the arc's gradient is built
+  // from, so the pointer is always the colour of the part of the ring it is over. An untrusted
+  // reading is drawn in muted grey instead: the engine is not counting it, so the dial does not
+  // celebrate it.
   const hot = useDerivedValue(() =>
-    signals.trust.value <= 0
-      ? colors.muted
-      : interpolateColor(signals.absDeg.value, [0, 34, 40, 55], [colors.ember, colors.ember, colors.ember, colors.gold]),
+    signals.trust.value <= 0 ? colors.muted : interpolateColor(signals.absDeg.value, RAMP_DEG, RAMP_COLOR),
   );
   const glowOpacity = useDerivedValue(() => (0.22 + 0.68 * signals.intensity.value) * signals.trust.value);
-  const bowlOpacity = useDerivedValue(() => (0.12 + 0.5 * signals.intensity.value) * signals.trust.value);
+  const bowlOpacity = useDerivedValue(() => (0.14 + 0.42 * signals.intensity.value) * signals.trust.value);
   const dimmed = useDerivedValue(() => 0.45 + 0.35 * signals.valid.value + 0.2 * signals.trust.value);
+  /**
+   * How much of the LIT arc is the ramp and how much is the grey under it.
+   *
+   * The gradient is a fixed paint — it cannot turn grey the way the needle's single colour can —
+   * so the refusal is a cross-fade instead: a muted arc underneath, always drawn, and the ramp
+   * over it at `trust`. At trust 1 the ramp covers the grey exactly (same path, same trim); at
+   * trust 0 the grey is all that is left, which is what `drive-loose` photographs and what the
+   * harness's ceiling inside `hud-dial-box` asserts.
+   */
+  const believed = useDerivedValue(() => signals.trust.value);
 
   // The radar, on the same honesty rule and on its own quantity: the vector's colour is the LOAD,
-  // not the angle, so it runs its own ember→gold ramp over `FULL_SCALE_G` rather than borrowing
-  // the needle's. At `trust` 0 both go grey together, because a phone loose in a cup holder
-  // reads a LARGER g than the car does, not a smaller one.
+  // not the angle, so it runs the same ramp over `RAMP_G` rather than borrowing the needle's.
+  // At `trust` 0 both go grey together, because a phone loose in a cup holder reads a LARGER g
+  // than the car does, not a smaller one.
   const face = useDerivedValue(() => gToFace(signals.ayG.value, signals.axG.value, FULL_SCALE_G));
   const gMag = useDerivedValue(() => face.value.mag);
   const dotTransform = useDerivedValue(() => [{ translateX: face.value.x * radar.r }, { translateY: face.value.y * radar.r }]);
   const gHot = useDerivedValue(() =>
-    signals.trust.value <= 0
-      ? colors.muted
-      : interpolateColor(gMag.value * FULL_SCALE_G, [0, 0.55, 0.75, 1.0], [colors.ember, colors.ember, colors.ember, colors.gold]),
+    signals.trust.value <= 0 ? colors.muted : interpolateColor(gMag.value * FULL_SCALE_G, RAMP_G, RAMP_COLOR),
   );
   const gGlow = useDerivedValue(() => (0.12 + 0.72 * gMag.value) * signals.trust.value);
 
@@ -314,21 +436,50 @@ export default function Dial({ size, signals, testID }: DialProps) {
   const centre = useMemo(() => vec(cx, cy), [cx, cy]);
   const numeralOrigin = useMemo(() => vec(cx, numeralMidY), [cx, numeralMidY]);
 
+  /**
+   * The ramp, laid over the face so that position 0 of the gradient falls on the LEFT end of the
+   * scale and position 1 on the right.
+   *
+   * Skia measures a sweep from three o'clock and takes its `start` / `end` in [0, 360), so a
+   * scale that begins at −240° cannot be expressed by those two numbers alone — angles past the
+   * wrap clamp to the first stop, which paints the right-hand half of the dial red. The gradient
+   * is instead declared over a plain 0…300° sweep and its own local frame is rotated onto the
+   * arc, which is the same rotation the arc itself was built with (`ARC_START`).
+   */
+  const rampShader = (
+    <SweepGradient
+      c={centre}
+      start={0}
+      end={2 * HALF_SWEEP}
+      colors={RAMP.colors}
+      positions={RAMP.positions}
+      origin={centre}
+      transform={rampTransform}
+    />
+  );
+
   return (
     <Canvas style={{ width: size, height: canvasH }} testID={testID}>
-      {/* the face: ember light pooling inside the ring, fading to nothing before the rim */}
-      <Circle cx={cx} cy={cy} r={R * 0.82} opacity={bowlOpacity}>
-        <RadialGradient
-          c={centre}
-          r={R * 0.82}
-          colors={[rgba(colors.ember, 0.34), rgba(colors.ember, 0.14), rgba(colors.ember, 0)]}
-          positions={[0, 0.55, 1]}
-        />
+      {/* The face: the live colour pooling inside the ring, fading to nothing before the rim.
+          A blurred disc rather than a radial gradient, because the pool follows the ANGLE — the
+          mockup's pool is the ramp colour, not a fixed wash — and a gradient's stops would have
+          to be rebuilt on the UI thread every frame to do that, hex parsing and all.
+
+          0.40 R of disc and 0.24 R of blur, which is a BUDGET and not a look: a Gaussian is
+          gone by 3 sigma, so the pool is spent by 1.12 R, and the canvas edge is at 1.136 R
+          (`size / 2` against `R = 0.44 size`). A wider one is cut off square by the canvas and
+          the cut is visible — measured at 0.46 R + 0.36 R of blur, the landscape frame stepped
+          from (16, 41, 21) to bg0 across one pixel down the canvas's right edge, which is the
+          rectangle a driver reads as a rendering fault rather than as light. */}
+      <Circle cx={cx} cy={cy} r={R * 0.4} color={hot} opacity={bowlOpacity}>
+        <BlurMask blur={R * 0.24} style="normal" />
       </Circle>
 
-      {/* the scale: dark track + ticks */}
-      <Path path={arc} color={rgba(colors.line, 0.95)} style="stroke" strokeWidth={stroke} strokeCap="butt" />
-      <Path path={arc} color={rgba(colors.text, 0.13)} style="stroke" strokeWidth={1} strokeCap="butt" />
+      {/* the scale: the whole ramp at 0.18, so the red zone is visible before the needle reaches
+          it, and the ticks over it */}
+      <Path path={arc} style="stroke" strokeWidth={stroke} strokeCap="butt" opacity={TRACK_OPACITY}>
+        {rampShader}
+      </Path>
       <Path path={ticks} color={rgba(colors.text, 0.5)} style="stroke" strokeWidth={Math.max(1.6, R * 0.011)} />
 
       {/* ghost tick: the peak of the drift in progress */}
@@ -338,14 +489,19 @@ export default function Dial({ size, signals, testID }: DialProps) {
         </Path>
       </Group>
 
-      {/* the live arc, blooming out of the top */}
+      {/* the live arc, blooming out of the top. The glow already scales with `trust`, so it needs
+          no grey twin: a refused reading simply does not bloom. */}
       <Group opacity={glowOpacity}>
-        <Path path={arc} color={hot} style="stroke" strokeWidth={stroke * 2.1} strokeCap="round" start={fillStart} end={fillEnd}>
+        <Path path={arc} style="stroke" strokeWidth={stroke * 2.1} strokeCap="round" start={fillStart} end={fillEnd}>
           <BlurMask blur={stroke * 1.35} style="normal" />
+          {rampShader}
         </Path>
       </Group>
       <Group opacity={dimmed}>
-        <Path path={arc} color={hot} style="stroke" strokeWidth={stroke} strokeCap="butt" start={fillStart} end={fillEnd} />
+        <Path path={arc} color={colors.muted} style="stroke" strokeWidth={stroke} strokeCap="butt" start={fillStart} end={fillEnd} />
+        <Path path={arc} style="stroke" strokeWidth={stroke} strokeCap="butt" start={fillStart} end={fillEnd} opacity={believed}>
+          {rampShader}
+        </Path>
         <Path path={arc} color={rgba('#FFFFFF', 0.45)} style="stroke" strokeWidth={stroke * 0.2} strokeCap="butt" start={fillStart} end={fillEnd} />
 
         {/* the needle, in the band between the radar and the scale */}

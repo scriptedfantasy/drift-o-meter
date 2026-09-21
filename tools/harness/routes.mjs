@@ -67,7 +67,47 @@ function longPress(testId, ms = 700) {
  * 120 is above the harness's own noise floor and far below anything drawn: Chromium renders DOM
  * text with subpixel antialiasing, which leaves a few hundred warm fringe pixels along glyph
  * edges anywhere on the screen. The dial is SKIA, drawn with greyscale antialiasing, so its box
- * measures 0 ember when the instrument is muted and tens of thousands when it is not.
+ * measures 0 green when the instrument is muted and hundreds of thousands when it is not.
+ *
+ * ── THE COLOUR IS `green`, AND EVERY FIGURE BELOW WAS RE-MEASURED ────────────────────────
+ * The instrument was ember and gold; it is now the ramp in `ANGLE_STOPS` — `#8AF606` to 40°,
+ * `#C4FF2E` at 55°, `#FF2E43` at 70°. Nothing on this screen draws ember or gold any more, so
+ * `colour: 'ember'` here would have measured a hue the app no longer has and read 0 on a dial
+ * blazing with light: every ceiling would have passed vacuously and every floor would have
+ * failed. `isGreen` in `pixels.mjs` was likewise repointed — its old 130–165° band was the
+ * deleted `#3DFF9A`, 50° from the green that replaced it.
+ *
+ * THE NEW NUMBERS ARE FIVE TIMES THE OLD ONES and that is the palette, not a regression: the
+ * whole lit arc, its bloom, the pool inside the rim, the needle, the radar dot and a numeral
+ * 40 % larger than before are all one hue now, where before ember and gold split the same
+ * pixels between two bands. Do not compare a figure here with one from before the repaint.
+ *
+ * Measured green pixels inside `hud-dial-box`, at `--scale 3`, on the build these thresholds
+ * were set from:
+ *
+ *                                    portrait   landscape
+ *   drive-open / start / loose /
+ *     lost / loose-peak (refused)           0           0
+ *   drive-bank                         62 840      40 592
+ *   drive-gps                          71 592      46 244
+ *   drive-warn   (trust 0.65)          99 448      66 380
+ *   drive        (LIVE, moves)        115 712      86 260
+ *   drive-transition                  149 268     107 288
+ *   drive-peak   (trust 1)            254 236     170 644
+ *
+ * Every held figure reproduced to the pixel across consecutive runs; `hold=1` freezes the frame
+ * and the grid is deterministic. `drive` is the one route that is not held, and it moves: three
+ * runs gave 99 196 / 105 280 / 115 712 portrait and 84 228 / 86 260 / 94 228 landscape.
+ *
+ * THE DOUBTED FRAME AND THE TRUSTED ONE ARE THE SAME INSTANT of the same run — `drive-warn` is
+ * `drive-peak` with `integrity=suspect` — so the gap between 99 448 and 170 644 is `trust`
+ * multiplying every opacity in `Dial.tsx` and nothing else. ONE NUMBER, `TRUST_LINE`, is the
+ * ceiling on the doubted frame and the floor on the trusted one, which makes the pair a
+ * partition: no doubted frame may reach it in either orientation, no trusted frame may fall
+ * below it. A regression that threw the doubt away fails `drive-warn`; one that left the dial
+ * permanently at suspect brightness fails `drive-peak`. It sits 35 552 pixels above the highest
+ * doubted reading and 35 644 below the lowest trusted one — the widest window the four figures
+ * allow, and the same margin on both sides.
  *
  * EVERY FIGURE IN THIS FILE IS AN ESTIMATE ON A GRID, not an exact count. `pixels.mjs` walks in
  * steps of `sampleStep` (2) and multiplies by 4, and a region's walk starts at the region's own
@@ -79,11 +119,17 @@ function longPress(testId, ms = 700) {
  * information, so thresholds are set with margins in the thousands and never in the tens.
  */
 function dialIsCold(max) {
-  return { name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, max };
+  return { name: 'dial', colour: 'green', testId: 'hud-dial-box', padFrac: 0.01, max };
 }
 function dialIsHot(min) {
-  return { name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, min };
+  return { name: 'dial', colour: 'green', testId: 'hud-dial-box', padFrac: 0.01, min };
 }
+/**
+ * The one number that separates a reading the engine stands behind from one it does not. See the
+ * measured table above: 36 % over the brightest doubted frame, 21 % under the dimmest trusted
+ * one, and within a hundred pixels of the midpoint between them.
+ */
+const TRUST_LINE = 135000;
 
 export const defaultRoutes = [
   // ---- garage: the home screen ----------------------------------------------------------
@@ -93,23 +139,59 @@ export const defaultRoutes = [
   // context starts with empty storage, so `/` on its own IS the empty garage.
   // An empty garage that has to be inviting rather than apologetic.
   { name: 'home', path: '/', waitMs: 1200 },
-  // Six runs across two tracks, newest first: the big last-run card, then the board, then rows.
+  //
+  // A REGION WHOSE ELEMENT IS BELOW THE FOLD MEASURES NOTHING. `resolveRegions` turns a testID
+  // into a rectangle in fractions of the viewport and clamps only the top edge, so an element
+  // scrolled off the bottom yields y > 1, `analyzePng` walks nothing, and a `max: 0` passes
+  // without looking at a pixel. Every scroll below is therefore MEASURED rather than guessed:
+  // the figures are the elements' own offsets inside `garage-scroll`, read off this build with
+  // `getBoundingClientRect().top + scrollTop`. The scroll pane is 713 CSS px tall (852 less the
+  // safe areas and the DRIVE dock, which is outside the scroll).
+  //
+  //   demo=night   hero 0 · driver-bar 216 · board rows 344/412/480/548 · last-run 710
+  //                (its plot 867) · first earlier row 1138 · demo bay 1285 · scrollHeight 1949
+  //   demo=harbor  board rows 344/412/480 · last-run 642 (plot 799) · scrollHeight 1881
+  //   demo=first   board row 344 · last-run 506 (plot 663) · demo bay 1018 · scrollHeight 1682
+  //   demo=flagged board rows 591/659/727 · last-run 889 (plot 1046) · scrollHeight 2115
+  //   demo=spun    board rows 344/412 · last-run 574 (plot 731) · scrollHeight 1828
+  //
+  // The whole screen at rest: the hero, WHO IS DRIVING, the board, and the list head. No region
+  // here — the plot is at 867 and the fold is at 713, so a ceiling on it would be a ceiling on
+  // nothing. The trace maxima live on the scrolled routes below, where the plot is on screen.
+  { name: 'garage', path: '/?demo=night', waitMs: 8000 },
+  // Scrolled to the board: one row per driver, ranked by the biggest angle held, with the
+  // unassigned bucket listed like anybody else. 300 puts the four rows at 44-316 and still has
+  // the last-run card's plot (867 - 300 = 567) inside the frame, which is where the trace
+  // ceiling goes: this run spun nothing, so the plot holds no footprint ink at all, and red
+  // inside `last-run-plot` is what a spin draws.
   {
-    name: 'garage',
+    name: 'garage-bests',
     path: '/?demo=night',
     waitMs: 8000,
-    // The other half of the same claim, as a maximum: this run spun nothing, so the plot holds
-    // no footprint ink at all. Red inside `last-run-plot` is what a spin draws.
+    actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }],
     regions: [{ name: 'trace-spins', colour: 'red', testId: 'last-run-plot', padFrac: 0.004, max: 0 }],
   },
-  // Scrolled to the personal-best board: four records per track, empty tiles where nothing counts.
-  { name: 'garage-bests', path: '/?demo=night', waitMs: 8000, actions: [{ type: 'scroll', y: 780 }, { type: 'wait', ms: 900 }] },
-  // Scrolled to the run list, which is where the NOT SCORED row lives (the hand-held recording).
-  { name: 'garage-runs', path: '/?demo=night', waitMs: 8000, actions: [{ type: 'scroll', y: 1400 }, { type: 'wait', ms: 900 }] },
-  // One track, four scored runs: every record filled, nothing dashed out.
-  { name: 'garage-bests-harbor', path: '/?demo=harbor', waitMs: 7000, actions: [{ type: 'scroll', y: 760 }, { type: 'wait', ms: 900 }] },
-  // The demo bay at the bottom: the simulated source made selectable, looseness and dropouts included.
-  { name: 'garage-simbay', path: '/?demo=first', waitMs: 6000, actions: [{ type: 'scroll', y: 1600 }, { type: 'wait', ms: 900 }] },
+  // Scrolled to the run list. The list follows WHO IS DRIVING, so the hand-held recording — which
+  // nobody claimed — is not in Lukas's list at all; tapping his chip puts nobody at the wheel,
+  // which is what shows every run including that one. The chip's testID is built from the NAME
+  // (`driverHandle`), because a driver id is minted with four random characters and could never
+  // be named here. 760 puts the card at 0 and the rows under it.
+  {
+    name: 'garage-runs',
+    path: '/?demo=night',
+    waitMs: 8000,
+    actions: [
+      { type: 'tap', testId: 'driver-chip-lukas' },
+      { type: 'wait', ms: 600 },
+      { type: 'scroll', y: 760 },
+      { type: 'wait', ms: 900 },
+    ],
+  },
+  // One track, three drivers, four judged runs: the board with something to argue about.
+  { name: 'garage-bests-harbor', path: '/?demo=harbor', waitMs: 7000, actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }] },
+  // The demo bay at the bottom: the simulated source made selectable, looseness and dropouts
+  // included. It sits at 1018 and the pane bottoms out at 969, so 1000 clamps to the end.
+  { name: 'garage-simbay', path: '/?demo=first', waitMs: 6000, actions: [{ type: 'scroll', y: 1000 }, { type: 'wait', ms: 900 }] },
   // The ONLY state in which the garage mentions calibration: the last run was thrown out, so it
   // says what was wrong (the monitor's own words) and offers the screen that fixes it.
   { name: 'garage-flagged', path: '/?demo=flagged', waitMs: 8000 },
@@ -173,6 +255,12 @@ export const defaultRoutes = [
   // that block gone it measures the dial plus the edge bloom, which is the dial counted twice
   // and a glow that can carry a floor on its own.
   //
+  // AND THE BRAND MARK IS NOW GREEN ARTWORK AT THE TOP OF THE SCREEN, which closes off the
+  // frame-wide ceiling as well: `assets/brand/wordmark.webp` measures 56 576 green pixels
+  // portrait and 50 604 landscape on a frame whose instrument is drawing nothing at all. A
+  // whole-frame "no green here" is not a sentence this screen can say any more. The dial's own
+  // box is where every claim about the instrument lives.
+  //
   // ONE INSTRUMENT, ONE HONESTY RULE, ONE CHECK. Nothing on the dial draws hot for a reading the
   // engine has thrown away: every opacity in `Dial.tsx` (`glowOpacity`, `bowlOpacity`, `dimmed`,
   // `gGlow`) scales with `signals.trust`. Measured inside `hud-dial-box` at the identical instant
@@ -182,19 +270,27 @@ export const defaultRoutes = [
   //   suspect (the warn route)     23 104      17 068
   //   refused (the loose route)         0           0
   //
-  // THE TWO ORIENTATIONS NEARLY AGREE NOW, and that is a change worth naming. The landscape dial
-  // used to be squeezed to 315 pt by a centred layout clearing a full-width STOP dock, so it
-  // measured half of portrait's count and a threshold had to fit a 15 % window between them.
+  // THE TWO ORIENTATIONS DIVERGE AGAIN, by about a third, and it is the numeral that did it: it
+  // is 0.32 of the circle's diameter now (the mockup's figure) against 0.23 before, so the
+  // canvas is `DIAL_ASPECT` 1.19 tall rather than 1.13 and height is the one thing landscape has
+  // none of. Portrait spends the extra on a bigger instrument; landscape pays for it out of the
+  // circle. Every threshold below is therefore set under the LANDSCAPE figure, which is the
+  // smaller of the two on every route.
+  //
+  // AND THE CIRCLE ITSELF SHRANK, from 0.88 of the canvas to 0.77 — the mockup's proportion, and
+  // the only one that leaves the arc's bloom somewhere to fade out. At 0.88 the canvas cut the
+  // bloom at 0.28 sigma and drew a bright rectangle down its own right edge in landscape, where
+  // the canvas sits in open space rather than against the screen. `Dial.tsx` has the measurement.
   // Given its own column beside STOP it comes out within 8 % of the portrait one, and the band
   // below has a 2.5× window to sit in.
   //
-  // WHICH IS WHY `drive-peak` CARRIES A FLOOR OF 40 000 rather than a token one. It is not only
-  // "the dial drew": it is above BOTH doubted figures, so a regression that stopped the dial
-  // dimming all the way — leaving it permanently at suspect brightness — fails this route as well
-  // as the band on `drive-warn`. A floor of 15 000 stood here while the doubted landscape figure
-  // was 9 800, and caught that bug by accident; once the orientations closed up it stopped
-  // catching anything, and nothing about the screen had changed. Every other floor below is set under the
-  // smaller of the two orientations, with margin in the thousands.
+  // WHICH IS WHY `drive-peak` CARRIES `TRUST_LINE` AS ITS FLOOR rather than a token one. It is
+  // not only "the dial drew": it is above BOTH doubted figures, so a regression that stopped the
+  // dial dimming all the way — leaving it permanently at suspect brightness — fails this route as
+  // well as the band on `drive-warn`. A floor of 15 000 stood here once while the doubted
+  // landscape figure was 9 800, and caught that bug by accident; when the orientations closed up
+  // it stopped catching anything, and nothing about the screen had changed. Every other floor
+  // below is set under the smaller of the two orientations, with margin in the thousands.
   //
   // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
   // this is the first frame of a live run — needle at rest, radar at zero, nothing claimed.
@@ -206,23 +302,24 @@ export const defaultRoutes = [
   { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, regions: [dialIsCold(120)] },
   // LIVE (the route to record video of): warped to 38 s and left running, so the shot lands on
   // the MANJI flick at 42.4 s and EXTREME ANGLE at 42.8 s, and the video covers the whole flick.
-  // This is the one drive route that is NOT held, so its count moves shot to shot: 148 548,
-  // 151 260 and 169 268 on three consecutive runs. The floor is set well under the lowest of
-  // them rather than near any of them, because the number it is measuring is a moving frame.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [dialIsHot(70000)] },
+  // This is the one drive route that is NOT held, so its count moves shot to shot: 99 196,
+  // 105 280 and 115 712 on three consecutive portrait runs, 84 228 / 86 260 / 94 228 landscape.
+  // The floor is set well under the lowest of the six rather than near any of them, because the
+  // number it is measuring is a moving frame — 40 000 is 47 % of the smallest reading taken.
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [dialIsHot(40000)] },
   // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48 deg right, needle hard
   // over, the R chevron lit. The engine is still banking points and still timing the hold behind
   // it — what changed is that the screen no longer prints them.
-  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(40000)] },
+  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(TRUST_LINE)] },
   // HELD 190 ms after TRANSITION x2, mid-swing through zero: 40 deg left, chevron flipped.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(70000)] },
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(60000)] },
   // HELD 0.46 s after a 10,259-point chain banked.
   //
   // IT USED TO PHOTOGRAPH the bank banner rising over 900 ms, and there is no banner now. What it
   // still photographs is the dial 0.46 s after the chain closed — the slide is over, the angle
   // is falling and the instrument is coming down with it, which is the only account of a bank a
   // driver gets on this screen. The engine's account is unchanged and lands on the results page.
-  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(20000)] },
+  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(22000)] },
   // A REAL hand-held phone (`looseness=1` goes through the simulator, not through the view): the
   // mount reads loose, the scorer pays nothing, and the whole dial — arc, needle, numeral and g
   // vector — is drawn in muted grey with no glow at all: 0 ember pixels inside its box, on a
@@ -233,7 +330,7 @@ export const defaultRoutes = [
   // banner and 9 745 the red STOP, because the pixel classifier counts `#FF3B3B` as ember — so
   // the check was satisfied by the two elements that were SUPPOSED to be loud and could never
   // have failed on the instrument. The banner is gone; the ceiling that replaced the floor is
-  // not, because it is now the whole of what this route proves.
+  // not, because it is now the whole of what this route proves. MEASURED 0, both orientations.
   { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsCold(120)] },
   // The same run 0.2 s after the slide became a spin. Nothing was ever paid for this run, so
   // there is nothing to take away and no event to announce: the dial stays grey through the spin
@@ -244,7 +341,7 @@ export const defaultRoutes = [
   // neither of which is the fix — so the dial stays lit, and this floor says so. GPS LOST used to be spelled out in the status
   // strip; it is not spelled out anywhere on this screen now, and the reason it needn't be is
   // that the reading it would qualify has not changed.
-  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(25000)] },
+  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [dialIsHot(26000)] },
   // STOP on a run that never left walking pace: it is the walk to the car, not a session, so the
   // HUD says so instead of filing it or dropping the driver into the garage with no word.
   {
@@ -526,22 +623,24 @@ export const defaultRoutes = [
   // `integrity=suspect` at the exact instant of `drive-peak`: same run, same warp, same hold, so
   // the two frames differ in nothing but how far the engine believes the reading. Held side by
   // side they look alike at a glance — the arc, the needle, the numeral, the chevron and the g
-  // dot are all drawn — and they are not alike: 23 104 ember pixels inside the dial against
-  // `drive-peak`'s 63 340 portrait, 17 068 against 58 812 landscape, because `trust` multiplies
-  // every opacity in the instrument.
+  // dot are all drawn — and they are not alike: 99 448 green pixels inside the dial against
+  // `drive-peak`'s 254 236 portrait, 66 380 against 170 644 landscape, because `trust` multiplies
+  // every opacity in the instrument. The arc carries that in a way the old one could not: a
+  // `SweepGradient` is a fixed paint and cannot be turned grey by a colour, so `Dial.tsx` draws
+  // the muted arc underneath and cross-fades the ramp over it at `trust`.
   //
   // Hence a BAND and not a floor. The floor says it still drew; the ceiling says it drew dimmer
   // than the trusted twin, and without the ceiling this route would pass on a bug that threw the
-  // doubt away and lit the dial at full. 35 000 clears portrait's doubted 23 104 with half again
-  // to spare and sits at 55 % of the portrait trusted figure and 60 % of the landscape one — a window the earlier
-  // layout could not offer, when the same two numbers were 15 % apart. Both figures are stable:
-  // consecutive runs of each route returned them unchanged, because `hold=1` freezes the frame.
+  // doubt away and lit the dial at full. The ceiling is `TRUST_LINE`, the same number that is
+  // `drive-peak`'s floor, so the two routes partition the range rather than each guessing at a
+  // boundary. 32 000 as the floor is under half the landscape reading. Both held figures are
+  // stable: consecutive runs returned them unchanged, because `hold=1` freezes the frame.
   {
     name: 'drive-warn',
     path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect',
     waitMs: 2800,
     expectCanvas: true,
-    regions: [{ name: 'dial', colour: 'ember', testId: 'hud-dial-box', padFrac: 0.01, min: 6000, max: 35000 }],
+    regions: [{ name: 'dial', colour: 'green', testId: 'hud-dial-box', padFrac: 0.01, min: 32000, max: TRUST_LINE }],
   },
 
   // ---- the feel layer's settings, appended ------------------------------------------------
@@ -579,10 +678,21 @@ export const defaultRoutes = [
       { type: 'wait', ms: 2000 },
     ],
   },
-  // The run list at LANDSCAPE depth. `garage-runs` scrolls 1400 px, which is right in portrait and
-  // lands on the demo bay in landscape, where the two-column layout is barely half as tall — so
-  // the run list had no landscape frame at all. 1020 px puts the rows at the top of both.
-  { name: 'garage-runs-wide', path: '/?demo=night', waitMs: 8000, actions: [{ type: 'scroll', y: 1020 }, { type: 'wait', ms: 900 }] },
+  // The run list at LANDSCAPE depth. The two-column layout is barely half as tall as portrait, so
+  // this carries its own scroll; like `garage-runs` it clears the driver selection first, or the
+  // list shows one person's runs and the unassigned recording is nowhere in the frame. 520 is
+  // portrait's 760 less the board rows that go side by side in landscape.
+  {
+    name: 'garage-runs-wide',
+    path: '/?demo=night',
+    waitMs: 8000,
+    actions: [
+      { type: 'tap', testId: 'driver-chip-lukas' },
+      { type: 'wait', ms: 600 },
+      { type: 'scroll', y: 520 },
+      { type: 'wait', ms: 900 },
+    ],
+  },
 
   // THE VERDICT LANDING. The grade reveal is a motion beat — the letter slams 2.2 → 1.0 with a
   // shockwave ring and ember particles over the last 1.1 s of the run — so it only exists as
@@ -597,6 +707,9 @@ export const defaultRoutes = [
     name: 'garage-spun',
     path: '/?demo=spun',
     waitMs: 7000,
+    // The card is at 574 and the pane is 713 tall, so its plot (731) is below the fold and the
+    // maximum below would have measured an empty rectangle. 400 puts the card at 174.
+    actions: [{ type: 'scroll', y: 400 }, { type: 'wait', ms: 900 }],
     // The same maximum on the run that has spins AND held angles: three spins, none of them on
     // the axis. This is the frame the finding was written from — "the three tallest ridges are
     // the spins, under HELD ANGLE THROUGH THE RUN · 60° TOP, directly above the card's own HELD
@@ -609,17 +722,21 @@ export const defaultRoutes = [
     name: 'garage-flagged-stats',
     path: '/?demo=flagged',
     waitMs: 8000,
-    actions: [{ type: 'scroll', y: 300 }, { type: 'wait', ms: 900 }],
+    // 300 left the plot at 746 with the fold at 713 — just under it, so both maxima below were
+    // measuring an empty rectangle and passing. The card is at 889 here (the mount notice sits
+    // above it), so 700 puts it at 189 and its stats row well inside the frame.
+    actions: [{ type: 'scroll', y: 700 }, { type: 'wait', ms: 900 }],
     // TWO MAXIMA, because the claim is an absence and only a maximum can prove one
     // (docs/CRITIC.md rule 15). `last-run-axis` is the part of the plot ABOVE the footprint
     // gutter — the held-angle axis itself — so "0 red pixels in it" says no slide of a run the
     // monitor did not believe is drawn as an angle. That check FAILS on the build this was found
     // in: all seven slides drew there, in red, at their instantaneous peaks (75–85°), clamped to
-    // the 60° ceiling. The second says the same thing from the other side: no ember either, so
-    // nothing is dressed up as a believed angle. A floor on this frame proves nothing.
+    // the ceiling. The second says the same thing from the other side, and it names GREEN now:
+    // `isEmber` is the hue band 8-32 and the ridge is drawn in the angle ramp's green at 73-87,
+    // so a ceiling on ember here was a ceiling on a colour this screen cannot draw.
     regions: [
       { name: 'axis', colour: 'red', testId: 'last-run-axis', max: 0 },
-      { name: 'plot', colour: 'ember', testId: 'last-run-plot', padFrac: 0.004, max: 0 },
+      { name: 'plot', colour: 'green', testId: 'last-run-plot', padFrac: 0.004, max: 0 },
     ],
   },
 
@@ -848,15 +965,22 @@ export const defaultRoutes = [
   //
   // This is the frame where the instruments are most tempted to celebrate, and the temptation is
   // now the whole of what can go wrong here: the chips, the multiplier and the odometer that used
-  // to take a full-colour branch on this frame are off the screen, so the dial is the only thing
-  // left that could light up for a slide worth zero. The two ceilings are the assertion that it
-  // does not — no ember inside the dial's box, and no gold anywhere on the frame.
+  // to take a full-colour branch on this frame are off the screen, so the dial and the edge bloom
+  // are the only things left that could light up for a slide worth zero. The two ceilings are the
+  // assertion that neither does.
+  //
+  // THE SECOND ONE IS FRAME-WIDE AND CANNOT BE 200 ANY MORE. It used to say "no gold anywhere",
+  // and the repaint put green artwork on the screen: the Drift-O-Mania mark measures 56 576 green
+  // pixels portrait and 50 604 landscape, on this very frame, with the instrument drawing
+  // nothing. So the ceiling is set just over the mark instead — MEASURED, on this route, as the
+  // whole of the frame's green in both orientations — and what the remaining headroom catches is
+  // the edge bloom, which lives outside the dial's box and must be dark on a refused run.
   {
     name: 'drive-loose-peak',
     path: '/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1',
     waitMs: 2800,
     expectCanvas: true,
-    regions: [dialIsCold(120), { name: 'screen-gold', colour: 'gold', max: 200 }],
+    regions: [dialIsCold(120), { name: 'screen-green', colour: 'green', max: 70000 }],
   },
 
   // THE BANKED ROW, which is where the round's headline fix is read. `bank.ts` moved BANKED to

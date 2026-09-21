@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T13:34:52.223Z",
+  "startedAt": "2026-09-21T19:47:35.879Z",
   "viewport": {
     "width": 852,
     "height": 393
@@ -11,13 +11,15 @@
     {
       "name": "home",
       "path": "/",
-      "url": "http://127.0.0.1:37139/",
+      "url": "http://127.0.0.1:40563/",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/home.png",
       "video": null,
-      "ms": 2473,
+      "ms": 2348,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -27,8 +29,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 21,
-        "bodyTextNodes": 27,
+        "displayTextNodes": 18,
+        "bodyTextNodes": 24,
         "otherTextNodes": 0
       },
       "skia": {
@@ -42,196 +44,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 382652,
-        "goldPixels": 0,
-        "redPixels": 0,
-        "cyanPixels": 3956,
-        "textPixels": 99616,
-        "nonBgFraction": 0.7513,
+        "emberPixels": 276,
+        "goldPixels": 56,
+        "redPixels": 2292,
+        "cyanPixels": 160,
+        "textPixels": 75896,
+        "nonBgFraction": 0.9937,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:37139/?demo=night",
+      "url": "http://127.0.0.1:44723/?demo=night",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage.png",
-      "video": null,
-      "ms": 9689,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 496156,
-        "goldPixels": 5244,
-        "redPixels": 0,
-        "cyanPixels": 3956,
-        "textPixels": 64300,
-        "nonBgFraction": 0.6779,
-        "regions": [
-          {
-            "name": "trace-spins",
-            "colour": "red",
-            "rect": {
-              "x": 0.09014758269720101,
-              "y": 0.5839364730046949,
-              "w": 0.819704834605598,
-              "h": 0.07607511737089201
-            },
-            "box": {
-              "x0": 106,
-              "y0": 1493,
-              "x1": 1073,
-              "y1": 1687
-            },
-            "pixels": 0,
-            "max": 0,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "garage-bests",
-      "path": "/?demo=night",
-      "url": "http://127.0.0.1:37139/?demo=night",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/garage-bests.png",
-      "video": null,
-      "ms": 10435,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 54376,
-        "goldPixels": 35368,
-        "redPixels": 0,
-        "cyanPixels": 3816,
-        "textPixels": 30292,
-        "nonBgFraction": 0.7005,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "garage-runs",
-      "path": "/?demo=night",
-      "url": "http://127.0.0.1:37139/?demo=night",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/garage-runs.png",
       "video": null,
       "ms": 10703,
       "fonts": {
@@ -243,8 +96,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -258,47 +111,204 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 28948,
-        "goldPixels": 7384,
-        "redPixels": 9132,
-        "cyanPixels": 43496,
-        "textPixels": 28768,
-        "nonBgFraction": 0.6362,
+        "emberPixels": 356,
+        "goldPixels": 56,
+        "redPixels": 2292,
+        "cyanPixels": 200,
+        "textPixels": 43564,
+        "nonBgFraction": 0.9937,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:46:03.405Z"
+    },
+    {
+      "name": "garage-bests",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:44723/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
+      "screenshot": "artifacts/shots/garage-bests.png",
+      "video": null,
+      "ms": 11312,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "topRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 316,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 200,
+        "textPixels": 35520,
+        "nonBgFraction": 1,
+        "regions": [
+          {
+            "name": "trace-spins",
+            "colour": "red",
+            "rect": {
+              "x": 0.09014758269720101,
+              "y": 0.6614929577464789,
+              "w": 0.819704834605598,
+              "h": 0.07607511737089201
+            },
+            "box": {
+              "x0": 106,
+              "y0": 1691,
+              "x1": 1073,
+              "y1": 1885
+            },
+            "pixels": 0,
+            "max": 0,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T19:46:03.405Z"
+    },
+    {
+      "name": "garage-runs",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:44723/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
+      "screenshot": "artifacts/shots/garage-runs.png",
+      "video": null,
+      "ms": 11660,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "topRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 396,
+        "goldPixels": 0,
+        "redPixels": 3688,
+        "cyanPixels": 200,
+        "textPixels": 26400,
+        "nonBgFraction": 1,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T19:46:03.405Z"
     },
     {
       "name": "garage-bests-harbor",
       "path": "/?demo=harbor",
-      "url": "http://127.0.0.1:37139/?demo=harbor",
+      "url": "http://127.0.0.1:40563/?demo=harbor",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-bests-harbor.png",
       "video": null,
-      "ms": 9492,
+      "ms": 9771,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -308,8 +318,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -323,47 +333,49 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 27304,
-        "goldPixels": 35632,
+        "emberPixels": 316,
+        "goldPixels": 0,
         "redPixels": 0,
-        "cyanPixels": 25784,
-        "textPixels": 40484,
-        "nonBgFraction": 0.5843,
+        "cyanPixels": 200,
+        "textPixels": 36540,
+        "nonBgFraction": 1,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage-simbay",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:37139/?demo=first",
+      "url": "http://127.0.0.1:40563/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-simbay.png",
       "video": null,
-      "ms": 8122,
+      "ms": 8219,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -373,8 +385,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 29,
-        "bodyTextNodes": 42,
+        "displayTextNodes": 27,
+        "bodyTextNodes": 39,
         "otherTextNodes": 0
       },
       "skia": {
@@ -388,47 +400,49 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 0,
+        "emberPixels": 316,
         "goldPixels": 0,
         "redPixels": 0,
-        "cyanPixels": 51440,
-        "textPixels": 6784,
-        "nonBgFraction": 0.5898,
+        "cyanPixels": 200,
+        "textPixels": 6796,
+        "nonBgFraction": 1,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage-flagged",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:37139/?demo=flagged",
+      "url": "http://127.0.0.1:40563/?demo=flagged",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-flagged.png",
       "video": null,
-      "ms": 9714,
+      "ms": 9605,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -438,8 +452,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 18,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -453,47 +467,49 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 365968,
-        "goldPixels": 0,
-        "redPixels": 73496,
-        "cyanPixels": 3956,
-        "textPixels": 64604,
-        "nonBgFraction": 0.7338,
+        "emberPixels": 356,
+        "goldPixels": 56,
+        "redPixels": 31224,
+        "cyanPixels": 200,
+        "textPixels": 59732,
+        "nonBgFraction": 0.9937,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage-delete",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:37139/?demo=first",
+      "url": "http://127.0.0.1:44723/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-delete.png",
       "video": null,
-      "ms": 8975,
+      "ms": 9197,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -503,8 +519,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 29,
-        "bodyTextNodes": 42,
+        "displayTextNodes": 27,
+        "bodyTextNodes": 39,
         "otherTextNodes": 0
       },
       "skia": {
@@ -518,36 +534,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 34748,
+        "redPixels": 17208,
         "cyanPixels": 0,
-        "textPixels": 5828,
-        "nonBgFraction": 0.4417,
+        "textPixels": 6012,
+        "nonBgFraction": 0.9861,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:46:03.405Z"
     },
     {
       "name": "calibrate-nothing",
@@ -1278,21 +1294,22 @@
     {
       "name": "drive-open",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-open.png",
       "video": null,
-      "ms": 4151,
+      "ms": 4126,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1306,48 +1323,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 144,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14396,
+        "redPixels": 14852,
         "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.1129,
+        "textPixels": 136,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
             "pixels": 0,
             "max": 120,
@@ -1356,26 +1373,27 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-start",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 4176,
+      "ms": 4138,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1389,48 +1407,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 144,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14396,
+        "redPixels": 14852,
         "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.1129,
+        "textPixels": 136,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
             "pixels": 0,
             "max": 120,
@@ -1439,26 +1457,27 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 6146,
+      "ms": 6740,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1472,159 +1491,161 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 191228,
-        "goldPixels": 1720,
-        "redPixels": 14528,
+        "emberPixels": 44,
+        "goldPixels": 8,
+        "redPixels": 15284,
         "cyanPixels": 0,
-        "textPixels": 3208,
-        "nonBgFraction": 0.6166,
+        "textPixels": 2564,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
-            "pixels": 156124,
-            "min": 70000,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T13:34:51.414Z"
-    },
-    {
-      "name": "drive-peak",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-peak.png",
-      "video": null,
-      "ms": 4815,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 17,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 123928,
-        "goldPixels": 2488,
-        "redPixels": 14528,
-        "cyanPixels": 0,
-        "textPixels": 3212,
-        "nonBgFraction": 0.6235,
-        "regions": [
-          {
-            "name": "dial",
-            "colour": "ember",
-            "rect": {
-              "x": 0,
-              "y": 0.22938160211267605,
-              "w": 1,
-              "h": 0.54121845657277
-            },
-            "box": {
-              "x0": 0,
-              "y0": 586,
-              "x1": 1179,
-              "y1": 1970
-            },
-            "pixels": 63340,
+            "pixels": 112780,
             "min": 40000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
+    },
+    {
+      "name": "drive-peak",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
+      "screenshot": "artifacts/shots/drive-peak.png",
+      "video": null,
+      "ms": 4820,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_800ExtraBold_Italic"
+        ],
+        "displayTextNodes": 17,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "topRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 196,
+        "goldPixels": 8,
+        "redPixels": 15132,
+        "cyanPixels": 0,
+        "textPixels": 2568,
+        "nonBgFraction": 1,
+        "regions": [
+          {
+            "name": "dial",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.17896713615023474,
+              "w": 1,
+              "h": 0.5688923122065728
+            },
+            "box": {
+              "x0": 0,
+              "y0": 457,
+              "x1": 1179,
+              "y1": 1912
+            },
+            "pixels": 254236,
+            "min": 135000,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-transition",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 4857,
+      "ms": 4738,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1638,76 +1659,77 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 169336,
-        "goldPixels": 0,
-        "redPixels": 15712,
+        "emberPixels": 68,
+        "goldPixels": 8,
+        "redPixels": 15248,
         "cyanPixels": 0,
-        "textPixels": 3196,
-        "nonBgFraction": 0.59,
+        "textPixels": 2556,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
-            "pixels": 164836,
-            "min": 70000,
+            "pixels": 149496,
+            "min": 60000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-bank",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-bank.png",
       "video": null,
-      "ms": 4676,
+      "ms": 4588,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1721,76 +1743,77 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 46720,
-        "goldPixels": 24,
-        "redPixels": 14412,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 15044,
         "cyanPixels": 0,
-        "textPixels": 3196,
-        "nonBgFraction": 0.2269,
+        "textPixels": 2564,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
-            "pixels": 46564,
-            "min": 20000,
+            "pixels": 62840,
+            "min": 22000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-loose",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-loose.png",
       "video": null,
-      "ms": 4459,
+      "ms": 4417,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1804,48 +1827,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 144,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14396,
+        "redPixels": 14852,
         "cyanPixels": 0,
-        "textPixels": 3252,
-        "nonBgFraction": 0.1273,
+        "textPixels": 2608,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
             "pixels": 0,
             "max": 120,
@@ -1854,26 +1877,27 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-lost",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-lost.png",
       "video": null,
-      "ms": 4429,
+      "ms": 4330,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1887,48 +1911,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 144,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14396,
+        "redPixels": 14852,
         "cyanPixels": 0,
-        "textPixels": 3224,
-        "nonBgFraction": 0.1284,
+        "textPixels": 2604,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
             "pixels": 0,
             "max": 120,
@@ -1937,26 +1961,27 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-gps",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-gps.png",
       "video": null,
-      "ms": 4568,
+      "ms": 4650,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1970,76 +1995,77 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 59368,
-        "goldPixels": 1060,
-        "redPixels": 14476,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 15316,
         "cyanPixels": 0,
-        "textPixels": 3188,
-        "nonBgFraction": 0.4104,
+        "textPixels": 2564,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
-            "pixels": 59200,
-            "min": 25000,
+            "pixels": 71592,
+            "min": 26000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-discarded",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-discarded.png",
       "video": null,
-      "ms": 5333,
+      "ms": 5462,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -2053,55 +2079,56 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 63248,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14076,
+        "redPixels": 0,
         "cyanPixels": 0,
-        "textPixels": 32376,
-        "nonBgFraction": 0.3085,
+        "textPixels": 32380,
+        "nonBgFraction": 0.9911,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "drive-savefail",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-savefail.png",
       "video": null,
-      "ms": 6387,
+      "ms": 6489,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -2115,36 +2142,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 68836,
+        "emberPixels": 20,
         "goldPixels": 68,
-        "redPixels": 49876,
-        "cyanPixels": 8768,
-        "textPixels": 3132,
-        "nonBgFraction": 0.6637,
+        "redPixels": 37720,
+        "cyanPixels": 0,
+        "textPixels": 13268,
+        "nonBgFraction": 0.9911,
         "regions": []
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "results-reveal",
@@ -5461,21 +5488,22 @@
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 4809,
+      "ms": 4935,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5489,58 +5517,58 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 23504,
-        "goldPixels": 2384,
-        "redPixels": 14540,
+        "emberPixels": 44,
+        "goldPixels": 0,
+        "redPixels": 15284,
         "cyanPixels": 0,
-        "textPixels": 3176,
-        "nonBgFraction": 0.5374,
+        "textPixels": 2552,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
-            "pixels": 23104,
-            "max": 35000,
-            "min": 6000,
+            "pixels": 99448,
+            "max": 135000,
+            "min": 32000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "settings-feedback",
@@ -5611,13 +5639,15 @@
     {
       "name": "garage-index-broken",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:37139/?demo=first",
+      "url": "http://127.0.0.1:40563/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-index-broken.png",
       "video": null,
-      "ms": 9493,
+      "ms": 9469,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5627,8 +5657,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 29,
-        "bodyTextNodes": 42,
+        "displayTextNodes": 27,
+        "bodyTextNodes": 39,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5642,47 +5672,49 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 365968,
-        "goldPixels": 0,
-        "redPixels": 33844,
-        "cyanPixels": 38312,
-        "textPixels": 62644,
-        "nonBgFraction": 0.6602,
+        "emberPixels": 356,
+        "goldPixels": 56,
+        "redPixels": 28468,
+        "cyanPixels": 200,
+        "textPixels": 38036,
+        "nonBgFraction": 0.9937,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage-index-rebuilt",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:37139/?demo=first",
+      "url": "http://127.0.0.1:40563/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-index-rebuilt.png",
       "video": null,
-      "ms": 11423,
+      "ms": 11481,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5692,8 +5724,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 29,
-        "bodyTextNodes": 42,
+        "displayTextNodes": 27,
+        "bodyTextNodes": 39,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5707,36 +5739,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 497252,
-        "goldPixels": 1024,
-        "redPixels": 0,
-        "cyanPixels": 3956,
-        "textPixels": 64300,
-        "nonBgFraction": 0.6778,
+        "emberPixels": 356,
+        "goldPixels": 56,
+        "redPixels": 2292,
+        "cyanPixels": 200,
+        "textPixels": 36356,
+        "nonBgFraction": 0.9937,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage-runs-wide",
@@ -5870,13 +5902,15 @@
     {
       "name": "garage-spun",
       "path": "/?demo=spun",
-      "url": "http://127.0.0.1:37139/?demo=spun",
+      "url": "http://127.0.0.1:40563/?demo=spun",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-spun.png",
       "video": null,
-      "ms": 8780,
+      "ms": 9541,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5886,8 +5920,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 18,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5901,48 +5935,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 385904,
-        "goldPixels": 1024,
-        "redPixels": 824,
-        "cyanPixels": 3956,
-        "textPixels": 61820,
-        "nonBgFraction": 0.6777,
+        "emberPixels": 316,
+        "goldPixels": 0,
+        "redPixels": 712,
+        "cyanPixels": 200,
+        "textPixels": 27404,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "axis",
             "colour": "red",
             "rect": {
               "x": 0.09414758269720101,
-              "y": 0.5879364730046949,
+              "y": 0.3884976525821596,
               "w": 0.811704834605598,
               "h": 0.05868544600938967
             },
             "box": {
               "x0": 111,
-              "y0": 1503,
+              "y0": 993,
               "x1": 1068,
-              "y1": 1653
+              "y1": 1143
             },
             "pixels": 0,
             "max": 0,
@@ -5951,18 +5985,20 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "garage-flagged-stats",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:37139/?demo=flagged",
+      "url": "http://127.0.0.1:40563/?demo=flagged",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-flagged-stats.png",
       "video": null,
-      "ms": 10674,
+      "ms": 10579,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5972,8 +6008,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 18,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5987,48 +6023,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 20392,
-        "goldPixels": 3024,
-        "redPixels": 74480,
-        "cyanPixels": 0,
-        "textPixels": 50384,
-        "nonBgFraction": 0.7506,
+        "emberPixels": 316,
+        "goldPixels": 0,
+        "redPixels": 12024,
+        "cyanPixels": 200,
+        "textPixels": 23320,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "axis",
             "colour": "red",
             "rect": {
               "x": 0.09414758269720101,
-              "y": 0.4636150234741784,
+              "y": 0.38967136150234744,
               "w": 0.811704834605598,
               "h": 0.025821596244131457
             },
             "box": {
               "x0": 111,
-              "y0": 1185,
+              "y0": 996,
               "x1": 1068,
-              "y1": 1251
+              "y1": 1062
             },
             "pixels": 0,
             "max": 0,
@@ -6037,18 +6073,18 @@
           },
           {
             "name": "plot",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0.09014758269720101,
-              "y": 0.4596150234741784,
+              "y": 0.38567136150234743,
               "w": 0.819704834605598,
               "h": 0.043211267605633805
             },
             "box": {
               "x0": 106,
-              "y0": 1175,
+              "y0": 986,
               "x1": 1073,
-              "y1": 1285
+              "y1": 1096
             },
             "pixels": 0,
             "max": 0,
@@ -6057,7 +6093,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T19:44:35.418Z"
     },
     {
       "name": "replay-spin",
@@ -7219,21 +7255,22 @@
     {
       "name": "drive-loose-peak",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:42557/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:46467/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-loose-peak.png",
       "video": null,
-      "ms": 4631,
+      "ms": 4467,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7247,48 +7284,48 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 144,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14396,
+        "redPixels": 14852,
         "cyanPixels": 0,
-        "textPixels": 3252,
-        "nonBgFraction": 0.1275,
+        "textPixels": 2612,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
-              "y": 0.22938160211267605,
+              "y": 0.17896713615023474,
               "w": 1,
-              "h": 0.54121845657277
+              "h": 0.5688923122065728
             },
             "box": {
               "x0": 0,
-              "y0": 586,
+              "y0": 457,
               "x1": 1179,
-              "y1": 1970
+              "y1": 1912
             },
             "pixels": 0,
             "max": 120,
@@ -7296,8 +7333,8 @@
             "wanted": ""
           },
           {
-            "name": "screen-gold",
-            "colour": "gold",
+            "name": "screen-green",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0,
@@ -7310,14 +7347,14 @@
               "x1": 1179,
               "y1": 2556
             },
-            "pixels": 0,
-            "max": 200,
+            "pixels": 56576,
+            "max": 70000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:34:51.414Z"
+      "shotAt": "2026-09-21T19:47:26.831Z"
     },
     {
       "name": "sound-banked",
@@ -7922,13 +7959,15 @@
     {
       "name": "garage-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:40441/?demo=night",
+      "url": "http://127.0.0.1:34653/?demo=night",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-landscape.png",
       "video": null,
-      "ms": 9958,
+      "ms": 10492,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7938,8 +7977,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7953,46 +7992,113 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 549164,
+        "emberPixels": 192,
+        "goldPixels": 44,
+        "redPixels": 2300,
+        "cyanPixels": 88,
+        "textPixels": 14140,
+        "nonBgFraction": 0.9934,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T19:47:51.138Z"
+    },
+    {
+      "name": "garage-bests-landscape",
+      "path": "/?demo=night",
+      "url": "http://127.0.0.1:34653/?demo=night",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
+      "screenshot": "artifacts/shots/garage-bests-landscape.png",
+      "video": null,
+      "ms": 10902,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "topRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 148,
         "goldPixels": 0,
         "redPixels": 0,
-        "cyanPixels": 3856,
-        "textPixels": 38816,
-        "nonBgFraction": 0.479,
+        "cyanPixels": 88,
+        "textPixels": 29596,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "trace-spins",
             "colour": "red",
             "rect": {
-              "x": 0.5413161678403756,
-              "y": 0.8736638040712468,
-              "w": 0.41925660211267607,
+              "x": 0.039427230046948356,
+              "y": 1.0926921119592876,
+              "w": 0.9211455399061033,
               "h": 0.1555826972010178
             },
             "box": {
-              "x0": 1384,
-              "y0": 1030,
+              "x0": 101,
+              "y0": 1288,
               "x1": 2455,
               "y1": 1179
             },
@@ -8003,72 +8109,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "garage-bests-landscape",
-      "path": "/?demo=night",
-      "url": "http://127.0.0.1:40441/?demo=night",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/garage-bests-landscape.png",
-      "video": null,
-      "ms": 10630,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "BarlowCondensed_700Bold",
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_400Regular",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 41388,
-        "goldPixels": 29060,
-        "redPixels": 0,
-        "cyanPixels": 10500,
-        "textPixels": 12320,
-        "nonBgFraction": 0.5516,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T19:47:51.138Z"
     },
     {
       "name": "garage-runs-landscape",
@@ -9124,21 +9165,22 @@
     {
       "name": "drive-open-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-open-landscape.png",
       "video": null,
-      "ms": 4156,
+      "ms": 4221,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9152,47 +9194,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 224,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14352,
+        "redPixels": 14768,
         "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.0876,
+        "textPixels": 100,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
             "pixels": 0,
@@ -9202,7 +9244,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "drive-start-landscape",
@@ -9290,21 +9332,22 @@
     {
       "name": "drive-landscape",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-landscape.png",
       "video": null,
-      "ms": 6140,
+      "ms": 6089,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9318,159 +9361,161 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 136020,
-        "goldPixels": 888,
-        "redPixels": 15124,
+        "emberPixels": 168,
+        "goldPixels": 4,
+        "redPixels": 15104,
         "cyanPixels": 0,
-        "textPixels": 2172,
-        "nonBgFraction": 0.6091,
+        "textPixels": 1636,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
-            "pixels": 130000,
-            "min": 70000,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T13:36:07.797Z"
-    },
-    {
-      "name": "drive-peak-landscape",
-      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [],
-      "screenshot": "artifacts/shots/drive-peak-landscape.png",
-      "video": null,
-      "ms": 4885,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 17,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "topRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomLeft": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          },
-          "bottomRight": {
-            "r": 7,
-            "g": 9,
-            "b": 13
-          }
-        },
-        "cornersOnBg": true,
-        "cornersNearBg": true,
-        "emberPixels": 126632,
-        "goldPixels": 2312,
-        "redPixels": 14528,
-        "cyanPixels": 0,
-        "textPixels": 2164,
-        "nonBgFraction": 0.633,
-        "regions": [
-          {
-            "name": "dial",
-            "colour": "ember",
-            "rect": {
-              "x": 0.06836340962441315,
-              "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
-              "h": 0.9589312977099237
-            },
-            "box": {
-              "x0": 175,
-              "y0": 24,
-              "x1": 1205,
-              "y1": 1155
-            },
-            "pixels": 58812,
+            "pixels": 99136,
             "min": 40000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
+    },
+    {
+      "name": "drive-peak-landscape",
+      "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
+      "screenshot": "artifacts/shots/drive-peak-landscape.png",
+      "video": null,
+      "ms": 4784,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_800ExtraBold_Italic"
+        ],
+        "displayTextNodes": 17,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "topRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 13,
+            "b": 24
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 248,
+        "goldPixels": 12,
+        "redPixels": 15020,
+        "cyanPixels": 0,
+        "textPixels": 1644,
+        "nonBgFraction": 1,
+        "regions": [
+          {
+            "name": "dial",
+            "colour": "green",
+            "rect": {
+              "x": 0.0780281690140845,
+              "y": 0.02053435114503817,
+              "w": 0.38394146126760564,
+              "h": 0.9589312977099237
+            },
+            "box": {
+              "x0": 199,
+              "y0": 24,
+              "x1": 1181,
+              "y1": 1155
+            },
+            "pixels": 170644,
+            "min": 135000,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "drive-transition-landscape",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-transition-landscape.png",
       "video": null,
-      "ms": 4866,
+      "ms": 4689,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9484,76 +9529,77 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 123388,
-        "goldPixels": 0,
-        "redPixels": 15124,
+        "emberPixels": 168,
+        "goldPixels": 4,
+        "redPixels": 15096,
         "cyanPixels": 0,
-        "textPixels": 2156,
-        "nonBgFraction": 0.5966,
+        "textPixels": 1636,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
-            "pixels": 119900,
-            "min": 70000,
+            "pixels": 107288,
+            "min": 60000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "drive-bank-landscape",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-bank-landscape.png",
       "video": null,
-      "ms": 4703,
+      "ms": 4489,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9567,76 +9613,77 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 33140,
-        "goldPixels": 16,
-        "redPixels": 14396,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 14988,
         "cyanPixels": 0,
-        "textPixels": 2172,
-        "nonBgFraction": 0.2182,
+        "textPixels": 1640,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
-            "pixels": 32876,
-            "min": 20000,
+            "pixels": 40592,
+            "min": 22000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "drive-loose-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-loose-landscape.png",
       "video": null,
-      "ms": 4505,
+      "ms": 4484,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9650,47 +9697,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 224,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14352,
+        "redPixels": 14768,
         "cyanPixels": 0,
-        "textPixels": 2204,
-        "nonBgFraction": 0.0994,
+        "textPixels": 1664,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
             "pixels": 0,
@@ -9700,7 +9747,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "drive-lost-landscape",
@@ -9788,21 +9835,22 @@
     {
       "name": "drive-gps-landscape",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-gps-landscape.png",
       "video": null,
-      "ms": 4713,
+      "ms": 4870,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9816,57 +9864,57 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 40716,
-        "goldPixels": 888,
-        "redPixels": 14504,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 15260,
         "cyanPixels": 0,
-        "textPixels": 2068,
-        "nonBgFraction": 0.4316,
+        "textPixels": 1616,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
-            "pixels": 40532,
-            "min": 25000,
+            "pixels": 46244,
+            "min": 26000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "drive-discarded-landscape",
@@ -13301,21 +13349,22 @@
     {
       "name": "drive-warn-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-warn-landscape.png",
       "video": null,
-      "ms": 5006,
+      "ms": 4870,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -13329,58 +13378,58 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 17672,
-        "goldPixels": 2028,
-        "redPixels": 14516,
+        "emberPixels": 104,
+        "goldPixels": 4,
+        "redPixels": 15132,
         "cyanPixels": 0,
-        "textPixels": 2132,
-        "nonBgFraction": 0.5617,
+        "textPixels": 1628,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
-            "pixels": 17068,
-            "max": 35000,
-            "min": 6000,
+            "pixels": 66380,
+            "max": 135000,
+            "min": 32000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "settings-feedback-landscape",
@@ -13581,13 +13630,15 @@
     {
       "name": "garage-runs-wide-landscape",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:40441/?demo=night",
+      "url": "http://127.0.0.1:34653/?demo=night",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/garage-runs-wide-landscape.png",
       "video": null,
-      "ms": 10673,
+      "ms": 11844,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -13597,8 +13648,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 19,
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
         "otherTextNodes": 0
       },
       "skia": {
@@ -13612,36 +13663,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 28928,
-        "goldPixels": 7384,
-        "redPixels": 9548,
-        "cyanPixels": 11520,
-        "textPixels": 29084,
-        "nonBgFraction": 0.5213,
+        "emberPixels": 244,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 88,
+        "textPixels": 7556,
+        "nonBgFraction": 1,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T19:47:51.138Z"
     },
     {
       "name": "replay-grade-landscape",
@@ -15058,21 +15109,22 @@
     {
       "name": "drive-loose-peak-landscape",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:33693/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:33073/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
-      "warnings": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
+      ],
       "screenshot": "artifacts/shots/drive-loose-peak-landscape.png",
       "video": null,
-      "ms": 4728,
+      "ms": 4714,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_800ExtraBold_Italic",
-          "Barlow_500Medium"
+          "BarlowCondensed_800ExtraBold_Italic"
         ],
         "displayTextNodes": 17,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -15086,47 +15138,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
-        "cornersOnBg": true,
+        "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 224,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 14352,
+        "redPixels": 14768,
         "cyanPixels": 0,
-        "textPixels": 2144,
-        "nonBgFraction": 0.0997,
+        "textPixels": 1688,
+        "nonBgFraction": 1,
         "regions": [
           {
             "name": "dial",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
-              "x": 0.06836340962441315,
+              "x": 0.0780281690140845,
               "y": 0.02053435114503817,
-              "w": 0.4032709800469484,
+              "w": 0.38394146126760564,
               "h": 0.9589312977099237
             },
             "box": {
-              "x0": 175,
+              "x0": 199,
               "y0": 24,
-              "x1": 1205,
+              "x1": 1181,
               "y1": 1155
             },
             "pixels": 0,
@@ -15135,8 +15187,8 @@
             "wanted": ""
           },
           {
-            "name": "screen-gold",
-            "colour": "gold",
+            "name": "screen-green",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0,
@@ -15149,14 +15201,14 @@
               "x1": 2556,
               "y1": 1179
             },
-            "pixels": 0,
-            "max": 200,
+            "pixels": 50604,
+            "max": 70000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T13:36:07.797Z"
+      "shotAt": "2026-09-21T19:48:19.169Z"
     },
     {
       "name": "sound-banked-landscape",
@@ -15697,24 +15749,18 @@
       "shotAt": "2026-09-21T07:54:17.472Z"
     }
   ],
-  "finishedAt": "2026-09-21T13:36:07.797Z",
+  "finishedAt": "2026-09-21T19:48:19.169Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
     "drive-open-landscape",
-    "drive-start-landscape",
     "drive-landscape",
     "drive-peak-landscape",
     "drive-transition-landscape",
     "drive-bank-landscape",
     "drive-loose-landscape",
-    "drive-lost-landscape",
     "drive-gps-landscape",
-    "drive-discarded-landscape",
-    "drive-savefail-landscape",
-    "drive-chain-landscape",
     "drive-warn-landscape",
-    "drive-savefail-untrusted-landscape",
     "drive-loose-peak-landscape"
   ]
 }
