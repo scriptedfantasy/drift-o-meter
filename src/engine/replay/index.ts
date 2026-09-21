@@ -26,8 +26,8 @@ export type {
   SmokeParticle,
   SmokeState,
 } from './types';
-export { buildReplay, DEFAULT_REPLAY_OPTIONS, SEVERITY_EDGES, formatPoints, intensityOf, lerpAngle, peakCallout, refusedLabel, severityOf, trailIndexOf, trailValueAt } from './build';
-export { poseAt, ghostPoseAt, ghostPointsAt, lapAt, activeEvents, shakeAt, scrubTelemetry, type TelemetrySample } from './pose';
+export { beatMagnitude, buildReplay, DEFAULT_REPLAY_OPTIONS, SEVERITY_EDGES, exitLabel, intensityOf, lerpAngle, peakCallout, severityOf, trailIndexOf, trailValueAt } from './build';
+export { poseAt, ghostPoseAt, lapAt, activeEvents, shakeAt, scrubTelemetry, type TelemetrySample } from './pose';
 export { smokeAt, liveSmoke } from './smoke';
 export {
   ReplayCamera,

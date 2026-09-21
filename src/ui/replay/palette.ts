@@ -8,10 +8,16 @@
  * the moment the app's ramp was trust-gated and the copy was not: the tool took `--untrusted`
  * specifically to check that presentation and drew the trail, the markers, the slip label and the
  * band ticks in full ember anyway. A copy is not a shared rule. This is the one file.
+ *
+ * THE RAMP IS NOW THE DIAL'S. `heatColor` was a private ember → gold → red escalation built out
+ * of the severity edges; it is `angleColor` from `src/ui/theme.ts`, the same function and the
+ * same `ANGLE_STOPS` the live dial sweeps and the review's slide list prints, so a 56° on the
+ * replay is the colour a 56° was on the gauge while it was happening and the colour it is in the
+ * list afterwards. Three screens, one ramp, and it is the one the car is painted in.
  */
-import { SEVERITY_EDGES, formatPoints, severityOf, type DriftSeverity, type Replay, type ReplayEventKind } from '../../engine/replay';
-import { clamp } from '../../engine/types';
-import { colors } from '../theme';
+import { severityOf, type DriftSeverity, type Replay, type ReplayEventKind } from '../../engine/replay';
+import { clamp, degToRad, radToDeg } from '../../engine/types';
+import { MAX_ANGLE_DEG, angleColor, colors } from '../theme';
 
 /** Ground plane: night asphalt with a blue bias — deliberately NOT the letterbox black. */
 export const GROUND = '#0E141D';
@@ -22,8 +28,13 @@ export const RUNOFF = '#0C1118';
 export const EDGE_LINE = '#56677D';
 export const CENTRE_LINE = '#222B36';
 export const KERB_PALE = '#8E9AA8';
-export const GRID_LINE = '#18202B';
-/** White-hot core of a fresh smoke puff / the hottest part of the trail. */
+/**
+ * White-hot core of a fresh smoke puff / the hottest part of the trail.
+ *
+ * NOT a palette token and deliberately so: this is burning rubber, which is white where it
+ * leaves the tyre whatever colour the app is. It is mixed INTO a ramp colour rather than drawn
+ * on its own, so it goes through the same trust gate as the colour it lightens.
+ */
 export const HOT = '#FFE9D6';
 
 export const deg = (r: number): number => (r * 180) / Math.PI;
@@ -45,14 +56,15 @@ export function mix(a: string, b: string, f: number): string {
 }
 
 /**
- * The escalation ramp: ember up to 40°, ember → gold to 65°, gold → red beyond.
- * The same |β| always produces the same colour, in every session and both renderers.
+ * |β| in radians → the colour of that angle, the same in every session and both renderers.
+ *
+ * It is `angleColor` with the units changed, and nothing else: the ramp, its knots and the angle
+ * each knot sits at belong to `ANGLE_STOPS` in `src/ui/theme.ts`. This wrapper exists because
+ * the replay works in radians end to end (the engine's convention) and the ramp is stated in
+ * degrees, which is how a driver reads an angle.
  */
 export function heatColor(beta: number): string {
-  const a = Math.abs(Number.isFinite(beta) ? beta : 0);
-  if (a <= SEVERITY_EDGES.extreme) return colors.ember;
-  if (a <= SEVERITY_EDGES.spin) return mix(colors.ember, colors.gold, (a - SEVERITY_EDGES.extreme) / (SEVERITY_EDGES.spin - SEVERITY_EDGES.extreme));
-  return mix(colors.gold, colors.red, clamp((a - SEVERITY_EDGES.spin) / ((Math.PI / 2) * 1.0 - SEVERITY_EDGES.spin), 0, 1));
+  return angleColor(radToDeg(Math.abs(Number.isFinite(beta) ? beta : 0)));
 }
 
 /** How much drama a severity band carries, 0..1 — drives ribbon width, bloom and label size. */
@@ -64,20 +76,41 @@ export function severityWeight(s: DriftSeverity): number {
 export const NO_HEAT = colors.muted;
 
 /**
- * THE GATE. Every colour either renderer spends off the escalation ramp goes through here.
+ * THE GHOST: the reference lap, its tail, its badge and its off-screen chevron.
+ *
+ * It is the palette's green because it is the same car being measured on another lap, and it is
+ * NAMED rather than spelled `colors.green` at ten draw sites because green is also the bottom of
+ * the angle ramp. `replay-ui.test.ts` sweeps the text of both renderers for a ramp colour spent
+ * outside the trust gate, and without this constant every one of those ten lines would have to
+ * be excused by name — which turns a guard that catches one real defect into a list nobody
+ * reads. One name, one exemption, and the sweep still fails on a raw `colors.green` anywhere
+ * else in either renderer.
+ *
+ * IT GOES THROUGH THE TRUST HALF OF THE GATE (`tint`), and not because of an angle — there is
+ * none in it — but because the frame must not say two things at once. A hand-held recording is
+ * stamped NOT SCORED and has every angle on it greyed out; a lit green ghost with a
+ * "FASTEST LAP +3.9 S" badge beside it is the same frame handing that recording a lap record.
+ * Greying it also keeps the harness's strongest check measurable: `replay-untrusted` and its
+ * three siblings assert ZERO lit pixels inside the stage, which only means something if nothing
+ * on the stage is exempt from the refusal.
+ */
+export const GHOST = colors.green;
+
+/**
+ * THE GATE. Every colour either renderer spends off the angle ramp goes through here.
  *
  * `heatColor` answers "what colour is this |β|". This answers the question before it: may this
  * frame spend a slide colour at all? Two refusals, both of them the engine's own assertions:
  *
- *  • `trusted` is `SessionScore.trusted`. A recording the engine refuses to vouch for plays, and
- *    shows what it measured, but its slip angles are not a measurement anyone should dress up —
- *    the points and the grade are already withheld, and the ember goes with them.
+ *  • `trusted` is `SessionIntegrity.scoreTrusted`. A recording the engine refuses to vouch for
+ *    plays, and shows what it measured, but its slip angles are not a measurement anyone should
+ *    dress up — a phone waved in a parked car produces large angles and a plausible run, and the
+ *    ramp is what makes one look like driving.
  *  • Below the 8° `hold` edge the engine says the car is NOT SLIDING (`severityOf` returns
- *    'none'), and ember is the colour of a slide. `heatColor` is flat ember from 0° to 40°, so
- *    without this the same 4.2° drew a grey hero numeral (which keys off `severity`) beside a
- *    full-ember L/R chevron, a full-ember slip label, a full-ember slip arc and a full-ember
- *    playhead — one frame saying both "not sliding" and "sliding" about the same angle, under a
- *    footer reading 0 DRIFTS.
+ *    'none'), and the ramp is the colour of a slide. `angleColor` is flat green from 0° to 40°,
+ *    so without this the same 4.2° drew a grey hero numeral (which keys off `severity`) beside a
+ *    fully lit L/R chevron, slip label, slip arc and playhead — one frame saying both "not
+ *    sliding" and "sliding" about the same angle, under a footer reading 0 DRIFTS.
  *
  * It lives out here, exported and swept by `replay-ui.test.ts`, because it was a module-private
  * pair of one-liners in `scene.ts` that nothing executed: the round it was written, it was
@@ -86,7 +119,7 @@ export const NO_HEAT = colors.muted;
  *
  * A colour that belongs to a drift THE DETECTOR HAS ALREADY DECLARED is floored at the hold edge
  * before it gets here (`driftHeat` in scene.ts): a slide's running peak is a degree or two for
- * its first tenth of a second, and greying the head of every ribbon would take the ember off
+ * its first tenth of a second, and greying the head of every ribbon would take the colour off
  * drift entry, which is the one beat DESIGN.md spends it on.
  */
 export function heatOf(beta: number, trusted: boolean): string {
@@ -106,88 +139,60 @@ export function tintOf(hex: string, trusted: boolean): string {
 }
 
 /**
- * Does this label put a SCORE on the run?
+ * Widest |β| the scrubber ribbon is scaled to: `MAX_ANGLE_DEG`, on every run, with no exception.
  *
- * A run the engine refuses to vouch for may show what it measured — angles, transitions, laps,
- * "LOST IT 118°" — and must show no points at all, anywhere, including inside a sentence: a
- * residual number tells the driver they earned at least that much, which is exactly what
- * `scoreTrusted: false` withholds. The test is a SIGNED number, which is the shape every points
- * label has ("+1250", "CHAIN LOST −8981", "AT RISK +1380") and no measurement label does.
- */
-export function isPointsClaim(label: string): boolean {
-  return /[+−-]\s*\d/.test(label);
-}
-
-/**
- * The POINTS the top HUD prints, as the string it prints — or null when it prints none.
+ * ONE CEILING FOR EVERY ANGLE IN THE APP. It was the 65° spin edge, chosen here on its own, while
+ * the dial swept to 70° and the garage's run trace topped out at 60 — so the same 64° hold drew
+ * at three different heights on three screens. `MAX_ANGLE_DEG` is read off the last knot of
+ * `ANGLE_STOPS`, so the top of this band is exactly where the ramp finishes turning red and
+ * cannot drift apart from it.
  *
- * This lives out here, away from Skia, because it is the one decision on this screen that has
- * been wrong twice and cannot be seen from a test that only reads the replay model. The round
- * before last, `Replay.info.totalPoints` was computed correctly, trust-gated correctly, and the
- * renderer drew `pose.points` beside it — a different number on the last frame from the one the
- * results screen printed. The test that was supposed to catch it asserted the two model fields
- * against each other and stated the renderer's behaviour IN A COMMENT; nothing executed the
- * choice. Now the choice is a function, and `replay-ui.test.ts` runs it.
- *
- * The rules, in order:
- *  • an untrusted recording prints no points at all, ever (`SessionScore.trusted`);
- *  • once the grade has fully landed the reveal owns the number and the HUD prints none;
- *  • while it is landing, and afterwards, the number is the SESSION TOTAL — the same figure the
- *    results screen prints — not the trail's running sum, which is a hair short of it until the
- *    last sample;
- *  • before the reveal starts it is the running total at the playhead, which is the whole point
- *    of watching.
- */
-export function headlinePoints(opts: { trusted: boolean; reveal: number; totalPoints: number | null; posePoints: number }): string | null {
-  if (!opts.trusted || opts.reveal >= 1) return null;
-  const finished = opts.reveal > 0 && opts.totalPoints !== null;
-  return formatPoints(finished ? (opts.totalPoints as number) : opts.posePoints);
-}
-
-/**
- * Widest |β| the scrubber ribbon is scaled to: the spin edge, on every run, with no exception.
- *
- * The band is a gradient in NORMALISED space — ember to 55 % of its height, gold at 80 %, red at
- * the top — so the scale is the whole of what those colours mean. Fixing it at 65° puts the
- * spin edge exactly where the shader already says a spin is, and a given |β| the same number of
- * pixels up the strip in every run, which is the only way two runs are comparable at a glance.
- * A slide past 65° saturates at the top, which is the honest picture of one: the strip is a
- * severity scale, not a log of the peak.
+ * A slide past the ceiling saturates at the top, which is the honest picture of one: the strip is
+ * a severity scale, not a log of the peak.
  *
  * IT WAS `Math.max(spin, maxAngle * 1.05)`, AND THAT IS NOT A SCALE. The exception for a clean
  * lap was removed a round ago — 4.18° filling 80 % of the band drew a lap with nothing in it in
- * gold and red — but the `max` it was removed in favour of kept the same defect for every run
- * ABOVE the spin edge, where the doc comment had already started claiming otherwise. Measured on
- * the eight fixtures: clean/good/touge 65.0°, hero 67.0°, rough 73.5°, handheld 87.9°, sloppy
- * and spin 123.9°. So a 40° slide sat at 61.5 % of the band on `good` and 32.3 % on `sloppy`,
- * and on `sloppy` the 65° spin edge itself sat at 52.5 % — below the gradient's first ember
- * stop. One frame painted a 70° slide gold-to-red in the world and ember on the strip under it,
- * which is the colour that means a controlled drift.
+ * the top of the ramp — but the `max` it was removed in favour of kept the same defect for every
+ * run ABOVE the spin edge, where the doc comment had already started claiming otherwise. Measured
+ * on the eight fixtures: clean/good/touge 65.0°, hero 67.0°, rough 73.5°, handheld 87.9°, sloppy
+ * and spin 123.9°. So a 40° slide sat at 61.5 % of the band on `good` and 32.3 % on `sloppy`, and
+ * on `sloppy` the 65° spin edge itself sat at 52.5 % of the band. One frame painted a 70° slide
+ * red in the world and green on the strip under it, which is the colour that means a slide still
+ * held.
  */
 export function ribbonScale(_replay: Replay): number {
-  return SEVERITY_EDGES.spin;
+  return degToRad(MAX_ANGLE_DEG);
 }
 
-/** Callout colour by beat, as the reference renderer assigns it. */
+/**
+ * Callout colour by BEAT, which is not the same question as the angle ramp: a beat says what
+ * KIND of moment this is, and a transition is not more severe than an exit, it is a different
+ * thing happening.
+ *
+ *   spin        red    — the limit, and the one moment the car got away
+ *   refused     red    — what went wrong with the RECORDING: the seconds the monitor would not
+ *                        believe. The same colour the marker over the road takes at that instant,
+ *                        and the same colour as the NOT SCORED plate that would carry the
+ *                        session's own verdict; a driver reading one has already read the others.
+ *   peak        the angle ramp at that angle, so the word and the world agree (the renderers
+ *                        substitute `driftHeat(seg.peakAngle)` for this beat)
+ *   transition  blue   — structure: the car swapping which way it is sideways
+ *   exit        blue   — structure: how long it was held
+ *   entry/lap/finish  blue — the shape of the run
+ *
+ * `peak` is the only beat whose colour depends on the number it is saying, so it is the only one
+ * that has to go through the trust gate; everything here is a fixed token and does not.
+ */
 export function eventColor(kind: ReplayEventKind): string {
-  switch (kind) {
-    case 'transition':
-      return colors.magenta;
-    case 'spin':
-      return colors.red;
-    case 'peak':
-      return colors.gold;
-    case 'exit':
-      return colors.ember;
-    default:
-      return colors.cyan;
-  }
+  return kind === 'spin' || kind === 'refused' ? colors.red : colors.blue;
 }
 
 /**
  * The type tiers the replay uses — nothing in between (DESIGN.md).
- * `slam` is the grade on the final frame: the verdict is the biggest thing on that frame, the
- * way the results screen's reveal is the biggest thing on its own. `body` is the one place this
- * screen sets a SENTENCE rather than a label, in Barlow instead of Barlow Condensed.
+ *
+ * `hero` is the live |β|, the biggest thing on the frame. `value` is the moving numbers: the
+ * speed, and the callouts, which used to have a `callout` tier of their own set at exactly the
+ * same 34 pt. `body` is the one place this screen sets a SENTENCE rather than a label, in Barlow
+ * instead of Barlow Condensed. The 132 pt `slam` went with the grade it existed to land.
  */
-export const TYPE = { hero: 56, slam: 132, value: 34, label: 13, body: 14, callout: 34, clock: 12 } as const;
+export const TYPE = { hero: 56, value: 34, label: 13, body: 14, clock: 12 } as const;

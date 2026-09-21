@@ -146,11 +146,11 @@ export function ReplayControls({ layout, player, highlightCount, onShare, shareL
           style={styles.play}
           testID="replay-play"
         />
-        <Chips options={RATE_OPTIONS} value={player.rate} onChange={player.setRate} color={colors.cyan} testID="replay-rate" />
+        <Chips options={RATE_OPTIONS} value={player.rate} onChange={player.setRate} color={colors.blue} testID="replay-rate" />
         <Button label={shareLabel} size="sm" variant="secondary" onPress={onShare} disabled={shareDisabled} style={styles.share} testID="replay-share" />
       </View>
       <View style={styles.group}>
-        <Chips options={CAM_OPTIONS} value={player.mode} onChange={player.setMode} color={colors.ember} testID="replay-cam" />
+        <Chips options={CAM_OPTIONS} value={player.mode} onChange={player.setMode} color={colors.green} testID="replay-cam" />
         {highlightCount > 0 ? (
           <>
             <Button label="Best bits" size="sm" variant="secondary" onPress={player.nextHighlight} style={styles.best} testID="replay-highlight" />
@@ -243,8 +243,8 @@ const styles = StyleSheet.create({
     marginTop: space[1],
     padding: space[3],
     borderRadius: radii.md,
-    // OPAQUE. At 94 % a magenta TRANSITION callout and the green ghost label read straight
-    // through the sentences explaining what is wrong with the recording.
+    // OPAQUE. At 94 % a TRANSITION callout and the green ghost label read straight through the
+    // sentences explaining what is wrong with the recording.
     backgroundColor: colors.bg1,
     borderWidth: 1,
     borderColor: alpha(colors.red, 0.5),

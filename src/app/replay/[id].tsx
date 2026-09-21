@@ -14,12 +14,19 @@
  *
  * Nothing on this screen re-renders while the replay plays: the clock, the transport and the
  * scrub position are Reanimated shared values, and the frame loop lives in `ReplayCanvas`.
+ *
+ * UNITS are read here, once, and handed down (`AppSettings.units`). The scene model is SI all the
+ * way through — `ReplayPose.speed` is m/s, like everything the engine publishes — and the stage
+ * converts at the moment it draws the numeral, which is the arrangement the review screen uses.
+ * The stage used to print a hardcoded KM/H over a hardcoded × 3.6, so a driver who set the app to
+ * mph got mph on every screen except the one that plays their run back.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Platform, Pressable, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useSettings } from '@/platform';
 import { AppText, Body, Button, colors, Micro, space } from '@/ui';
 import { fixtureQuery } from '@/ui/results/fixture';
 import { ReplayControls, Scrubber, WarningsOverlay } from '@/ui/replay/Controls';
@@ -39,6 +46,7 @@ export default function ReplayScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const params = useMemo(() => parseReplayParams(query), [queryKey]);
   const { view, loading, error } = useReplaySource(id, params, query);
+  const { settings } = useSettings();
 
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -175,7 +183,7 @@ export default function ReplayScreen() {
   if (loading) {
     return (
       <View style={styles.boot} testID="screen-replay-loading">
-        <AppText variant="micro" color="ember">
+        <AppText variant="micro" color="green">
           Building the replay
         </AppText>
       </View>
@@ -210,6 +218,7 @@ export default function ReplayScreen() {
         focusDriftId={player.focusDriftId}
         chip={player.chip}
         reduceMotion={reduceMotion}
+        units={settings.units}
         controlsVisible={!hidden}
         warningsOpen={warnOpen}
         testID="replay-canvas"

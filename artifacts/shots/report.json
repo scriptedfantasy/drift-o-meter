@@ -1,25 +1,23 @@
 {
-  "startedAt": "2026-09-21T20:01:28.659Z",
+  "startedAt": "2026-09-21T21:14:39.829Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
       "name": "home",
       "path": "/",
-      "url": "http://127.0.0.1:40563/",
+      "url": "http://127.0.0.1:36055/",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/home.png",
       "video": null,
-      "ms": 2348,
+      "ms": 2453,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -63,28 +61,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 276,
-        "goldPixels": 56,
-        "redPixels": 2292,
+        "goldPixels": 64,
+        "redPixels": 1896,
         "cyanPixels": 160,
-        "textPixels": 75896,
-        "nonBgFraction": 0.9937,
+        "bluePixels": 10764,
+        "textPixels": 75532,
+        "nonBgFraction": 0.572,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:41005/?demo=night",
+      "url": "http://127.0.0.1:36055/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage.png",
       "video": null,
-      "ms": 9926,
+      "ms": 9839,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -131,26 +130,26 @@
         "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 356,
-        "goldPixels": 56,
-        "redPixels": 2292,
+        "goldPixels": 64,
+        "redPixels": 1896,
         "cyanPixels": 200,
-        "bluePixels": 15628,
-        "textPixels": 43564,
-        "nonBgFraction": 0.4755,
+        "bluePixels": 13572,
+        "textPixels": 43200,
+        "nonBgFraction": 0.4589,
         "regions": []
       },
-      "shotAt": "2026-09-21T20:01:07.050Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-bests",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:41005/?demo=night",
+      "url": "http://127.0.0.1:36055/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-bests.png",
       "video": null,
-      "ms": 10770,
+      "ms": 10691,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -200,9 +199,9 @@
         "goldPixels": 0,
         "redPixels": 0,
         "cyanPixels": 200,
-        "bluePixels": 9584,
+        "bluePixels": 7800,
         "textPixels": 35520,
-        "nonBgFraction": 0.6564,
+        "nonBgFraction": 0.6567,
         "regions": [
           {
             "name": "trace-spins",
@@ -224,23 +223,84 @@
             "visibleFrac": 1,
             "ok": true,
             "wanted": ""
+          },
+          {
+            "name": "speed-drew",
+            "colour": "blue",
+            "rect": {
+              "x": 0.05089058524173028,
+              "y": 0.051643192488262914,
+              "w": 0.8982188295165394,
+              "h": 0.07042253521126762
+            },
+            "box": {
+              "x0": 60,
+              "y0": 132,
+              "x1": 1119,
+              "y1": 312
+            },
+            "pixels": 728,
+            "min": 300,
+            "visibleFrac": 1.0000000000000002,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "no-speed-unassigned",
+            "colour": "blue",
+            "rect": {
+              "x": 0.05089058524173028,
+              "y": 0.29107981220657275,
+              "w": 0.8982188295165394,
+              "h": 0.07042253521126762
+            },
+            "box": {
+              "x0": 60,
+              "y0": 744,
+              "x1": 1119,
+              "y1": 924
+            },
+            "pixels": 72,
+            "max": 200,
+            "visibleFrac": 1.0000000000000002,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "no-angle-unassigned",
+            "colour": "green",
+            "rect": {
+              "x": 0.05089058524173028,
+              "y": 0.29107981220657275,
+              "w": 0.8982188295165394,
+              "h": 0.07042253521126762
+            },
+            "box": {
+              "x0": 60,
+              "y0": 744,
+              "x1": 1119,
+              "y1": 924
+            },
+            "pixels": 0,
+            "max": 0,
+            "visibleFrac": 1.0000000000000002,
+            "ok": true,
+            "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T20:01:07.050Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-runs",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:44723/?demo=night",
+      "url": "http://127.0.0.1:36055/?demo=night",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-runs.png",
       "video": null,
-      "ms": 11660,
+      "ms": 11197,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -284,30 +344,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 396,
         "goldPixels": 0,
         "redPixels": 3688,
         "cyanPixels": 200,
+        "bluePixels": 12828,
         "textPixels": 26400,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.7469,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:46:03.405Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-bests-harbor",
       "path": "/?demo=harbor",
-      "url": "http://127.0.0.1:40563/?demo=harbor",
+      "url": "http://127.0.0.1:36055/?demo=harbor",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-bests-harbor.png",
       "video": null,
-      "ms": 9771,
+      "ms": 10018,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -315,10 +374,11 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium"
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
         ],
-        "displayTextNodes": 19,
-        "bodyTextNodes": 22,
+        "displayTextNodes": 37,
+        "bodyTextNodes": 50,
         "otherTextNodes": 0
       },
       "skia": {
@@ -351,30 +411,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 316,
         "goldPixels": 0,
         "redPixels": 0,
         "cyanPixels": 200,
+        "bluePixels": 13620,
         "textPixels": 36540,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.6656,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-simbay",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:40563/?demo=first",
+      "url": "http://127.0.0.1:36055/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-simbay.png",
       "video": null,
-      "ms": 8219,
+      "ms": 8419,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -418,30 +477,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 316,
         "goldPixels": 0,
         "redPixels": 0,
         "cyanPixels": 200,
+        "bluePixels": 41700,
         "textPixels": 6796,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.6549,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-flagged",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:40563/?demo=flagged",
+      "url": "http://127.0.0.1:36055/?demo=flagged",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged.png",
       "video": null,
-      "ms": 9605,
+      "ms": 9274,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -485,30 +543,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 356,
-        "goldPixels": 56,
-        "redPixels": 31224,
+        "goldPixels": 64,
+        "redPixels": 30828,
         "cyanPixels": 200,
-        "textPixels": 59732,
-        "nonBgFraction": 0.9937,
+        "bluePixels": 12284,
+        "textPixels": 59368,
+        "nonBgFraction": 0.5587,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-delete",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:44723/?demo=first",
+      "url": "http://127.0.0.1:36055/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-delete.png",
       "video": null,
-      "ms": 9197,
+      "ms": 9095,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -552,17 +609,18 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
         "redPixels": 17208,
         "cyanPixels": 0,
+        "bluePixels": 76,
         "textPixels": 6012,
-        "nonBgFraction": 0.9861,
+        "nonBgFraction": 0.3484,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:46:03.405Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "calibrate-nothing",
@@ -3321,7 +3379,7 @@
     {
       "name": "replay",
       "path": "/replay/demo?cam=chase&t=94.9",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=chase&t=94.9",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=chase&t=94.9",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -3329,652 +3387,14 @@
       ],
       "screenshot": "artifacts/shots/replay.png",
       "video": null,
-      "ms": 21581,
+      "ms": 24395,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 223628,
-        "goldPixels": 1404,
-        "redPixels": 2644,
-        "cyanPixels": 3672,
-        "textPixels": 26336,
-        "nonBgFraction": 0.9794,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-motion",
-      "path": "/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-motion.png",
-      "video": null,
-      "ms": 24453,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 247496,
-        "goldPixels": 1260,
-        "redPixels": 9268,
-        "cyanPixels": 5680,
-        "textPixels": 56436,
-        "nonBgFraction": 0.9795,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-cut",
-      "path": "/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-cut.png",
-      "video": null,
-      "ms": 23943,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 249648,
-        "goldPixels": 1228,
-        "redPixels": 7096,
-        "cyanPixels": 6368,
-        "textPixels": 53044,
-        "nonBgFraction": 0.9794,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-shake",
-      "path": "/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-shake.png",
-      "video": null,
-      "ms": 13449,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 74748,
-        "goldPixels": 1024,
-        "redPixels": 2384,
-        "cyanPixels": 1100,
-        "textPixels": 31576,
-        "nonBgFraction": 0.9721,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-overview",
-      "path": "/replay/demo?cam=overview&t=60&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=overview&t=60&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-overview.png",
-      "video": null,
-      "ms": 5756,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 61640,
-        "goldPixels": 868,
-        "redPixels": 1188,
-        "cyanPixels": 272,
-        "textPixels": 21900,
-        "nonBgFraction": 0.9734,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-chase",
-      "path": "/replay/demo?cam=chase&t=95.9&play=0&ui=1",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=chase&t=95.9&play=0&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-chase.png",
-      "video": null,
-      "ms": 6509,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 241960,
-        "goldPixels": 1188,
-        "redPixels": 5584,
-        "cyanPixels": 6000,
-        "textPixels": 55704,
-        "nonBgFraction": 0.969,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-cinematic",
-      "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-cinematic.png",
-      "video": null,
-      "ms": 7373,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 67080,
-        "goldPixels": 848,
-        "redPixels": 1536,
-        "cyanPixels": 4808,
-        "textPixels": 50572,
-        "nonBgFraction": 0.9791,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-ghost",
-      "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-ghost.png",
-      "video": null,
-      "ms": 6824,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 55452,
-        "goldPixels": 820,
-        "redPixels": 12380,
-        "cyanPixels": 3912,
-        "textPixels": 24504,
-        "nonBgFraction": 0.9755,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-highlight",
-      "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
-      "url": "http://127.0.0.1:37139/replay/demo?hl=1&play=0&cam=chase&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-highlight.png",
-      "video": null,
-      "ms": 14354,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 233716,
-        "goldPixels": 5908,
-        "redPixels": 1752,
-        "cyanPixels": 6076,
-        "textPixels": 36816,
-        "nonBgFraction": 0.9698,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-scrub",
-      "path": "/replay/demo?cam=chase&scrub=0.36&ui=1",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=chase&scrub=0.36&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-scrub.png",
-      "video": null,
-      "ms": 12342,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 96544,
-        "goldPixels": 844,
-        "redPixels": 44,
-        "cyanPixels": 8776,
-        "textPixels": 28524,
-        "nonBgFraction": 0.9676,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-untrusted",
-      "path": "/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-untrusted.png",
-      "video": null,
-      "ms": 7818,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -4010,15 +3430,880 @@
         "cornersOnBg": false,
         "cornersNearBg": true,
         "emberPixels": 0,
-        "goldPixels": 480,
-        "redPixels": 948,
-        "cyanPixels": 6556,
-        "textPixels": 22428,
-        "nonBgFraction": 0.9709,
+        "goldPixels": 56,
+        "redPixels": 84,
+        "cyanPixels": 384,
+        "bluePixels": 27960,
+        "textPixels": 22096,
+        "nonBgFraction": 0.8498,
         "regions": [
           {
             "name": "stage",
-            "colour": "ember",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 206632,
+            "min": 15000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-motion",
+      "path": "/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-motion.png",
+      "video": null,
+      "ms": 29869,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 8,
+        "goldPixels": 508,
+        "redPixels": 3696,
+        "cyanPixels": 1120,
+        "bluePixels": 39128,
+        "textPixels": 52596,
+        "nonBgFraction": 0.8364,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 223816,
+            "min": 19000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-cut",
+      "path": "/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cut.png",
+      "video": null,
+      "ms": 28169,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 624,
+        "goldPixels": 32,
+        "redPixels": 3576,
+        "cyanPixels": 1668,
+        "bluePixels": 28192,
+        "textPixels": 48180,
+        "nonBgFraction": 0.8285,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 223556,
+            "min": 20000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-shake",
+      "path": "/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-shake.png",
+      "video": null,
+      "ms": 13268,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 300,
+        "goldPixels": 12,
+        "redPixels": 108,
+        "cyanPixels": 40,
+        "bluePixels": 26460,
+        "textPixels": 23916,
+        "nonBgFraction": 0.7482,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 61096,
+            "min": 3500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-overview",
+      "path": "/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-overview.png",
+      "video": null,
+      "ms": 5773,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 192,
+        "goldPixels": 4,
+        "redPixels": 36,
+        "cyanPixels": 36,
+        "bluePixels": 18100,
+        "textPixels": 18320,
+        "nonBgFraction": 0.7474,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 37432,
+            "min": 4000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-chase",
+      "path": "/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-chase.png",
+      "video": null,
+      "ms": 7975,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 16,
+        "goldPixels": 400,
+        "redPixels": 2424,
+        "cyanPixels": 1176,
+        "bluePixels": 37636,
+        "textPixels": 51368,
+        "nonBgFraction": 0.8566,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 222692,
+            "min": 19000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-cinematic",
+      "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cinematic.png",
+      "video": null,
+      "ms": 7373,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 380,
+        "bluePixels": 58732,
+        "textPixels": 47260,
+        "nonBgFraction": 0.8438,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 49916,
+            "min": 10000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-ghost",
+      "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-ghost.png",
+      "video": null,
+      "ms": 6723,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 48,
+        "cyanPixels": 20,
+        "bluePixels": 30708,
+        "textPixels": 20960,
+        "nonBgFraction": 0.8554,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 54888,
+            "min": 4000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-highlight",
+      "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "url": "http://127.0.0.1:39251/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-highlight.png",
+      "video": null,
+      "ms": 15554,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 32,
+        "goldPixels": 168,
+        "redPixels": 408,
+        "cyanPixels": 8,
+        "bluePixels": 28092,
+        "textPixels": 32180,
+        "nonBgFraction": 0.8595,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 223720,
+            "min": 17000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-scrub",
+      "path": "/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-scrub.png",
+      "video": null,
+      "ms": 13033,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 60,
+        "bluePixels": 41724,
+        "textPixels": 25656,
+        "nonBgFraction": 0.8747,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 69252,
+            "min": 3500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-untrusted",
+      "path": "/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-untrusted.png",
+      "video": null,
+      "ms": 7694,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 40320,
+        "textPixels": 20172,
+        "nonBgFraction": 0.8566,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.11206572769953052,
@@ -4033,17 +4318,18 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9803921568627451,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-warnings",
       "path": "/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -4051,15 +4337,14 @@
       ],
       "screenshot": "artifacts/shots/replay-warnings.png",
       "video": null,
-      "ms": 7411,
+      "ms": 7437,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -4094,20 +4379,43 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 20276,
-        "goldPixels": 24576,
-        "redPixels": 11180,
-        "cyanPixels": 6988,
-        "textPixels": 26724,
-        "nonBgFraction": 0.9697,
-        "regions": []
+        "emberPixels": 988,
+        "goldPixels": 712,
+        "redPixels": 21492,
+        "cyanPixels": 12,
+        "bluePixels": 22000,
+        "textPixels": 14552,
+        "nonBgFraction": 0.7489,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 11620,
+            "min": 750,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-warnings-open",
       "path": "/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -4115,7 +4423,7 @@
       ],
       "screenshot": "artifacts/shots/replay-warnings-open.png",
       "video": null,
-      "ms": 8366,
+      "ms": 8768,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4123,7 +4431,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -4158,20 +4466,21 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 71084,
-        "goldPixels": 7288,
-        "redPixels": 14768,
-        "cyanPixels": 4500,
-        "textPixels": 36652,
-        "nonBgFraction": 0.971,
+        "emberPixels": 16,
+        "goldPixels": 8,
+        "redPixels": 11468,
+        "cyanPixels": 12,
+        "bluePixels": 28028,
+        "textPixels": 33044,
+        "nonBgFraction": 0.8928,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-end",
       "path": "/replay/demo?cam=overview&t=999&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/demo?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=overview&t=999&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -4179,15 +4488,14 @@
       ],
       "screenshot": "artifacts/shots/replay-end.png",
       "video": null,
-      "ms": 6548,
+      "ms": 7100,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -4222,20 +4530,43 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 85508,
-        "goldPixels": 952,
-        "redPixels": 1152,
-        "cyanPixels": 0,
-        "textPixels": 42024,
-        "nonBgFraction": 0.5586,
-        "regions": []
+        "emberPixels": 248,
+        "goldPixels": 64,
+        "redPixels": 128,
+        "cyanPixels": 56,
+        "bluePixels": 22128,
+        "textPixels": 18552,
+        "nonBgFraction": 0.7482,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 64676,
+            "min": 3500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-from-results",
-      "path": "/results/fixture-good?reveal=off",
-      "url": "http://127.0.0.1:37139/results/fixture-good?reveal=off",
+      "path": "/results/fixture-good",
+      "url": "http://127.0.0.1:39251/results/fixture-good",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -4243,7 +4574,7 @@
       ],
       "screenshot": "artifacts/shots/replay-from-results.png",
       "video": null,
-      "ms": 13981,
+      "ms": 11002,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -4251,11 +4582,10 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 139,
-        "bodyTextNodes": 183,
+        "displayTextNodes": 35,
+        "bodyTextNodes": 60,
         "otherTextNodes": 0
       },
       "skia": {
@@ -4290,20 +4620,21 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 193364,
-        "goldPixels": 1092,
-        "redPixels": 928,
-        "cyanPixels": 3540,
-        "textPixels": 24720,
-        "nonBgFraction": 0.9794,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 8,
+        "bluePixels": 34288,
+        "textPixels": 17892,
+        "nonBgFraction": 0.8612,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-touge",
       "path": "/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -4311,14 +4642,14 @@
       ],
       "screenshot": "artifacts/shots/replay-touge.png",
       "video": null,
-      "ms": 7014,
+      "ms": 7558,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -4353,15 +4684,38 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 114844,
-        "goldPixels": 484,
-        "redPixels": 240,
-        "cyanPixels": 11972,
-        "textPixels": 62268,
-        "nonBgFraction": 0.9826,
-        "regions": []
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 4,
+        "cyanPixels": 40,
+        "bluePixels": 84168,
+        "textPixels": 57912,
+        "nonBgFraction": 0.8445,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 71800,
+            "min": 5500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "settings",
@@ -5660,15 +6014,13 @@
     {
       "name": "garage-index-broken",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:40563/?demo=first",
+      "url": "http://127.0.0.1:36055/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-index-broken.png",
       "video": null,
-      "ms": 9469,
+      "ms": 9554,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5712,30 +6064,29 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 356,
-        "goldPixels": 56,
-        "redPixels": 28468,
+        "goldPixels": 64,
+        "redPixels": 28072,
         "cyanPixels": 200,
-        "textPixels": 38036,
-        "nonBgFraction": 0.9937,
+        "bluePixels": 27680,
+        "textPixels": 37672,
+        "nonBgFraction": 0.5009,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-index-rebuilt",
       "path": "/?demo=first",
-      "url": "http://127.0.0.1:40563/?demo=first",
+      "url": "http://127.0.0.1:36055/?demo=first",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-index-rebuilt.png",
       "video": null,
-      "ms": 11481,
+      "ms": 11666,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5779,17 +6130,18 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 356,
-        "goldPixels": 56,
-        "redPixels": 2292,
+        "goldPixels": 64,
+        "redPixels": 1896,
         "cyanPixels": 200,
-        "textPixels": 36356,
-        "nonBgFraction": 0.9937,
+        "bluePixels": 11556,
+        "textPixels": 35992,
+        "nonBgFraction": 0.4822,
         "regions": []
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-runs-wide",
@@ -5923,13 +6275,13 @@
     {
       "name": "garage-spun",
       "path": "/?demo=spun",
-      "url": "http://127.0.0.1:41005/?demo=spun",
+      "url": "http://127.0.0.1:36055/?demo=spun",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage-spun.png",
       "video": null,
-      "ms": 9749,
+      "ms": 9754,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5979,9 +6331,9 @@
         "goldPixels": 0,
         "redPixels": 712,
         "cyanPixels": 200,
-        "bluePixels": 13524,
+        "bluePixels": 12768,
         "textPixels": 27404,
-        "nonBgFraction": 0.6433,
+        "nonBgFraction": 0.6436,
         "regions": [
           {
             "name": "axis",
@@ -6006,20 +6358,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T20:01:07.050Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "garage-flagged-stats",
       "path": "/?demo=flagged",
-      "url": "http://127.0.0.1:40563/?demo=flagged",
+      "url": "http://127.0.0.1:36055/?demo=flagged",
       "ok": true,
       "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#070D18 #070D18 #070D18 #070D18)"
-      ],
+      "warnings": [],
       "screenshot": "artifacts/shots/garage-flagged-stats.png",
       "video": null,
-      "ms": 10579,
+      "ms": 10518,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6063,14 +6413,15 @@
             "b": 24
           }
         },
-        "cornersOnBg": false,
+        "cornersOnBg": true,
         "cornersNearBg": true,
         "emberPixels": 316,
         "goldPixels": 0,
         "redPixels": 12024,
         "cyanPixels": 200,
+        "bluePixels": 10540,
         "textPixels": 23320,
-        "nonBgFraction": 1,
+        "nonBgFraction": 0.6162,
         "regions": [
           {
             "name": "axis",
@@ -6079,7 +6430,7 @@
               "x": 0.09414758269720101,
               "y": 0.38967136150234744,
               "w": 0.811704834605598,
-              "h": 0.025821596244131457
+              "h": 0.02582159624413144
             },
             "box": {
               "x0": 111,
@@ -6089,6 +6440,7 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9999999999999993,
             "ok": true,
             "wanted": ""
           },
@@ -6099,7 +6451,7 @@
               "x": 0.09014758269720101,
               "y": 0.38567136150234743,
               "w": 0.819704834605598,
-              "h": 0.043211267605633805
+              "h": 0.04321126760563382
             },
             "box": {
               "x0": 106,
@@ -6109,17 +6461,18 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 1.0000000000000004,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T19:44:35.418Z"
+      "shotAt": "2026-09-21T20:09:25.455Z"
     },
     {
       "name": "replay-spin",
       "path": "/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6127,14 +6480,14 @@
       ],
       "screenshot": "artifacts/shots/replay-spin.png",
       "video": null,
-      "ms": 7227,
+      "ms": 7910,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6169,15 +6522,37 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 21052,
-        "goldPixels": 1436,
-        "redPixels": 43372,
-        "cyanPixels": 6492,
-        "textPixels": 67984,
-        "nonBgFraction": 0.9771,
-        "regions": []
+        "emberPixels": 9660,
+        "goldPixels": 228,
+        "redPixels": 6824,
+        "cyanPixels": 0,
+        "bluePixels": 47056,
+        "textPixels": 52704,
+        "nonBgFraction": 0.7932,
+        "regions": [
+          {
+            "name": "frame",
+            "colour": "red",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "w": 1,
+              "h": 1
+            },
+            "box": {
+              "x0": 0,
+              "y0": 0,
+              "x1": 1179,
+              "y1": 2556
+            },
+            "pixels": 6824,
+            "min": 140,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-chain-lost",
@@ -6246,7 +6621,7 @@
     {
       "name": "replay-spin-end",
       "path": "/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6254,7 +6629,7 @@
       ],
       "screenshot": "artifacts/shots/replay-spin-end.png",
       "video": null,
-      "ms": 6399,
+      "ms": 7041,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6262,7 +6637,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6297,15 +6672,38 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 37636,
-        "goldPixels": 1612,
-        "redPixels": 22564,
-        "cyanPixels": 21908,
-        "textPixels": 48140,
-        "nonBgFraction": 0.5552,
-        "regions": []
+        "emberPixels": 13868,
+        "goldPixels": 1180,
+        "redPixels": 13772,
+        "cyanPixels": 4,
+        "bluePixels": 23484,
+        "textPixels": 18460,
+        "nonBgFraction": 0.7435,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "red",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 13620,
+            "min": 1100,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "sound-felt",
@@ -6508,7 +6906,7 @@
     {
       "name": "replay-zero-paid",
       "path": "/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6516,7 +6914,7 @@
       ],
       "screenshot": "artifacts/shots/replay-zero-paid.png",
       "video": null,
-      "ms": 7202,
+      "ms": 7792,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6524,7 +6922,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6559,20 +6957,43 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 61996,
-        "goldPixels": 7632,
-        "redPixels": 2508,
+        "emberPixels": 6452,
+        "goldPixels": 8,
+        "redPixels": 164,
         "cyanPixels": 0,
-        "textPixels": 55128,
-        "nonBgFraction": 0.9737,
-        "regions": []
+        "bluePixels": 25472,
+        "textPixels": 42184,
+        "nonBgFraction": 0.8808,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 33336,
+            "min": 700,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-zero-chip",
       "path": "/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6580,15 +7001,14 @@
       ],
       "screenshot": "artifacts/shots/replay-zero-chip.png",
       "video": null,
-      "ms": 10518,
+      "ms": 11345,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6623,20 +7043,43 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 42288,
-        "goldPixels": 11448,
-        "redPixels": 48,
-        "cyanPixels": 1800,
-        "textPixels": 22764,
-        "nonBgFraction": 0.9651,
-        "regions": []
+        "emberPixels": 6452,
+        "goldPixels": 8,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 28096,
+        "textPixels": 9672,
+        "nonBgFraction": 0.8791,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 40400,
+            "min": 700,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-untrusted-slid",
       "path": "/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6644,14 +7087,15 @@
       ],
       "screenshot": "artifacts/shots/replay-untrusted-slid.png",
       "video": null,
-      "ms": 8538,
+      "ms": 7919,
       "fonts": {
         "status": "loaded",
         "families": [
+          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6687,15 +7131,16 @@
         "cornersOnBg": false,
         "cornersNearBg": true,
         "emberPixels": 0,
-        "goldPixels": 492,
-        "redPixels": 948,
-        "cyanPixels": 2900,
-        "textPixels": 15556,
-        "nonBgFraction": 0.97,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 35880,
+        "textPixels": 11556,
+        "nonBgFraction": 0.8811,
         "regions": [
           {
             "name": "stage",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.11206572769953052,
@@ -6710,17 +7155,18 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9803921568627451,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-clean-band",
       "path": "/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6728,7 +7174,7 @@
       ],
       "screenshot": "artifacts/shots/replay-clean-band.png",
       "video": null,
-      "ms": 6395,
+      "ms": 5703,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6736,7 +7182,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 25,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6771,21 +7217,22 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 33952,
-        "goldPixels": 0,
-        "redPixels": 1704,
-        "cyanPixels": 3648,
-        "textPixels": 16520,
-        "nonBgFraction": 0.951,
+        "emberPixels": 0,
+        "goldPixels": 996,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 34960,
+        "textPixels": 10072,
+        "nonBgFraction": 0.8539,
         "regions": [
           {
-            "name": "band-gold",
-            "colour": "gold",
+            "name": "band-green",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.8415492957746479,
               "w": 1,
-              "h": 0.051643192488262914
+              "h": 0.05164319248826288
             },
             "box": {
               "x0": 0,
@@ -6795,6 +7242,7 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9999999999999993,
             "ok": true,
             "wanted": ""
           },
@@ -6805,7 +7253,7 @@
               "x": 0,
               "y": 0.8415492957746479,
               "w": 1,
-              "h": 0.051643192488262914
+              "h": 0.05164319248826288
             },
             "box": {
               "x0": 0,
@@ -6815,17 +7263,18 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9999999999999993,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "replay-zero-highlight",
       "path": "/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6833,14 +7282,15 @@
       ],
       "screenshot": "artifacts/shots/replay-zero-highlight.png",
       "video": null,
-      "ms": 11728,
+      "ms": 11403,
       "fonts": {
         "status": "loaded",
         "families": [
+          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -6875,15 +7325,38 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 42288,
-        "goldPixels": 12556,
-        "redPixels": 48,
-        "cyanPixels": 1760,
-        "textPixels": 22504,
-        "nonBgFraction": 0.965,
-        "regions": []
+        "emberPixels": 6452,
+        "goldPixels": 8,
+        "redPixels": 0,
+        "cyanPixels": 4,
+        "bluePixels": 28864,
+        "textPixels": 9636,
+        "nonBgFraction": 0.8766,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 40628,
+            "min": 650,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "settings-stored",
@@ -7578,7 +8051,7 @@
     {
       "name": "replay-untrusted-leak",
       "path": "/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -7586,183 +8059,14 @@
       ],
       "screenshot": "artifacts/shots/replay-untrusted-leak.png",
       "video": null,
-      "ms": 9176,
+      "ms": 9525,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 0,
-        "goldPixels": 488,
-        "redPixels": 948,
-        "cyanPixels": 3388,
-        "textPixels": 38916,
-        "nonBgFraction": 0.9715,
-        "regions": [
-          {
-            "name": "stage",
-            "colour": "ember",
-            "rect": {
-              "x": 0,
-              "y": 0.11206572769953052,
-              "w": 1,
-              "h": 0.7453521126760564
-            },
-            "box": {
-              "x0": 0,
-              "y0": 286,
-              "x1": 1179,
-              "y1": 2192
-            },
-            "pixels": 0,
-            "max": 0,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-untrusted-overview",
-      "path": "/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-untrusted-overview.png",
-      "video": null,
-      "ms": 7660,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 1179,
-        "height": 2556,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 0,
-        "goldPixels": 484,
-        "redPixels": 948,
-        "cyanPixels": 232,
-        "textPixels": 10336,
-        "nonBgFraction": 0.9612,
-        "regions": [
-          {
-            "name": "stage",
-            "colour": "ember",
-            "rect": {
-              "x": 0,
-              "y": 0.11206572769953052,
-              "w": 1,
-              "h": 0.7453521126760564
-            },
-            "box": {
-              "x0": 0,
-              "y0": 286,
-              "x1": 1179,
-              "y1": 2192
-            },
-            "pixels": 0,
-            "max": 0,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T07:41:57.364Z"
-    },
-    {
-      "name": "replay-clean-world",
-      "path": "/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-clean-world.png",
-      "video": null,
-      "ms": 6228,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 25,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7799,14 +8103,15 @@
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 44,
-        "cyanPixels": 76,
-        "textPixels": 15024,
-        "nonBgFraction": 0.9732,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 56012,
+        "textPixels": 35648,
+        "nonBgFraction": 0.9139,
         "regions": [
           {
             "name": "stage",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.11206572769953052,
@@ -7821,32 +8126,33 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9803921568627451,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
-      "name": "replay-sloppy-band",
-      "path": "/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
-      "url": "http://127.0.0.1:37139/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
+      "name": "replay-untrusted-overview",
+      "path": "/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
         "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-sloppy-band.png",
+      "screenshot": "artifacts/shots/replay-untrusted-overview.png",
       "video": null,
-      "ms": 6183,
+      "ms": 7493,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7881,12 +8187,186 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 47328,
-        "goldPixels": 1960,
-        "redPixels": 9552,
-        "cyanPixels": 1680,
-        "textPixels": 47064,
-        "nonBgFraction": 0.7112,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 26020,
+        "textPixels": 11208,
+        "nonBgFraction": 0.7763,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.11206572769953052,
+              "w": 1,
+              "h": 0.7453521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 286,
+              "x1": 1179,
+              "y1": 2192
+            },
+            "pixels": 0,
+            "max": 0,
+            "visibleFrac": 0.9803921568627451,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-clean-world",
+      "path": "/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0&ghost=off",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0&ghost=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-clean-world.png",
+      "video": null,
+      "ms": 5800,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 43540,
+        "textPixels": 8584,
+        "nonBgFraction": 0.8506,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.11206572769953052,
+              "w": 1,
+              "h": 0.7453521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 286,
+              "x1": 1179,
+              "y1": 2192
+            },
+            "pixels": 0,
+            "max": 0,
+            "visibleFrac": 0.9803921568627451,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-sloppy-band",
+      "path": "/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
+      "url": "http://127.0.0.1:39251/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-sloppy-band.png",
+      "video": null,
+      "ms": 6710,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 624,
+        "goldPixels": 340,
+        "redPixels": 284,
+        "cyanPixels": 0,
+        "bluePixels": 44696,
+        "textPixels": 26632,
+        "nonBgFraction": 0.8469,
         "regions": [
           {
             "name": "band-red",
@@ -7895,7 +8375,7 @@
               "x": 0,
               "y": 0.8415492957746479,
               "w": 1,
-              "h": 0.051643192488262914
+              "h": 0.05164319248826288
             },
             "box": {
               "x0": 0,
@@ -7903,14 +8383,15 @@
               "x1": 1179,
               "y1": 2283
             },
-            "pixels": 4524,
-            "min": 2000,
+            "pixels": 276,
+            "min": 150,
+            "visibleFrac": 0.9999999999999993,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-21T21:14:39.225Z"
     },
     {
       "name": "home-landscape",
@@ -11188,7 +11669,7 @@
     {
       "name": "replay-landscape",
       "path": "/replay/demo?cam=chase&t=94.9",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=chase&t=94.9",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=chase&t=94.9",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -11196,322 +11677,7 @@
       ],
       "screenshot": "artifacts/shots/replay-landscape.png",
       "video": null,
-      "ms": 19130,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 91180,
-        "goldPixels": 1296,
-        "redPixels": 140,
-        "cyanPixels": 928,
-        "textPixels": 21616,
-        "nonBgFraction": 0.8546,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-motion-landscape",
-      "path": "/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-motion-landscape.png",
-      "video": null,
-      "ms": 21908,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 124880,
-        "goldPixels": 1280,
-        "redPixels": 1348,
-        "cyanPixels": 2424,
-        "textPixels": 43172,
-        "nonBgFraction": 0.8611,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-cut-landscape",
-      "path": "/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-cut-landscape.png",
-      "video": null,
-      "ms": 22539,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 126340,
-        "goldPixels": 1256,
-        "redPixels": 2636,
-        "cyanPixels": 2224,
-        "textPixels": 45320,
-        "nonBgFraction": 0.8632,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-shake-landscape",
-      "path": "/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-shake-landscape.png",
-      "video": null,
-      "ms": 8844,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 54032,
-        "goldPixels": 1220,
-        "redPixels": 1396,
-        "cyanPixels": 1048,
-        "textPixels": 31300,
-        "nonBgFraction": 0.777,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-overview-landscape",
-      "path": "/replay/demo?cam=overview&t=60&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=overview&t=60&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-overview-landscape.png",
-      "video": null,
-      "ms": 4585,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 50336,
-        "goldPixels": 904,
-        "redPixels": 1644,
-        "cyanPixels": 180,
-        "textPixels": 18760,
-        "nonBgFraction": 0.7876,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-chase-landscape",
-      "path": "/replay/demo?cam=chase&t=95.9&play=0&ui=1",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=chase&t=95.9&play=0&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-chase-landscape.png",
-      "video": null,
-      "ms": 7602,
+      "ms": 19553,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -11519,325 +11685,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 3,
-            "g": 1,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 156884,
-        "goldPixels": 1264,
-        "redPixels": 984,
-        "cyanPixels": 3144,
-        "textPixels": 45404,
-        "nonBgFraction": 0.8587,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-cinematic-landscape",
-      "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-cinematic-landscape.png",
-      "video": null,
-      "ms": 7488,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 68348,
-        "goldPixels": 904,
-        "redPixels": 184,
-        "cyanPixels": 1204,
-        "textPixels": 42476,
-        "nonBgFraction": 0.8523,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-ghost-landscape",
-      "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-ghost-landscape.png",
-      "video": null,
-      "ms": 7465,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 23996,
-        "goldPixels": 944,
-        "redPixels": 10716,
-        "cyanPixels": 944,
-        "textPixels": 20784,
-        "nonBgFraction": 0.8579,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-highlight-landscape",
-      "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
-      "url": "http://127.0.0.1:40441/replay/demo?hl=1&play=0&cam=chase&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-highlight-landscape.png",
-      "video": null,
-      "ms": 13574,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 3,
-            "g": 1,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 148040,
-        "goldPixels": 5780,
-        "redPixels": 2580,
-        "cyanPixels": 3080,
-        "textPixels": 23876,
-        "nonBgFraction": 0.8384,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-scrub-landscape",
-      "path": "/replay/demo?cam=chase&scrub=0.36&ui=1",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=chase&scrub=0.36&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-scrub-landscape.png",
-      "video": null,
-      "ms": 12252,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 3,
-            "g": 1,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 82140,
-        "goldPixels": 884,
-        "redPixels": 44,
-        "cyanPixels": 2116,
-        "textPixels": 23828,
-        "nonBgFraction": 0.8361,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-untrusted-landscape",
-      "path": "/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-untrusted-landscape.png",
-      "video": null,
-      "ms": 7158,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -11873,15 +11721,884 @@
         "cornersOnBg": false,
         "cornersNearBg": true,
         "emberPixels": 0,
-        "goldPixels": 464,
-        "redPixels": 952,
-        "cyanPixels": 1964,
-        "textPixels": 10136,
-        "nonBgFraction": 0.8443,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 44,
+        "bluePixels": 9308,
+        "textPixels": 17300,
+        "nonBgFraction": 0.8053,
         "regions": [
           {
             "name": "stage",
-            "colour": "ember",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 62504,
+            "min": 15000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-motion-landscape",
+      "path": "/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=chase&t=95&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-motion-landscape.png",
+      "video": null,
+      "ms": 22981,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 64,
+        "goldPixels": 4,
+        "redPixels": 0,
+        "cyanPixels": 460,
+        "bluePixels": 25236,
+        "textPixels": 39680,
+        "nonBgFraction": 0.8151,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 79972,
+            "min": 19000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-cut-landscape",
+      "path": "/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=chase&t=95.5&rate=0.25&cutTo=cinematic&cutAt=95.65&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cut-landscape.png",
+      "video": null,
+      "ms": 23970,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 496,
+        "goldPixels": 32,
+        "redPixels": 0,
+        "cyanPixels": 216,
+        "bluePixels": 12040,
+        "textPixels": 40688,
+        "nonBgFraction": 0.8147,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 80580,
+            "min": 20000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-shake-landscape",
+      "path": "/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=overview&t=99.9&rate=0.25&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-shake-landscape.png",
+      "video": null,
+      "ms": 8880,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 516,
+        "goldPixels": 460,
+        "redPixels": 120,
+        "cyanPixels": 88,
+        "bluePixels": 16944,
+        "textPixels": 22964,
+        "nonBgFraction": 0.6276,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 14524,
+            "min": 3500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-overview-landscape",
+      "path": "/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=overview&t=60&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-overview-landscape.png",
+      "video": null,
+      "ms": 4659,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 252,
+        "goldPixels": 68,
+        "redPixels": 432,
+        "cyanPixels": 36,
+        "bluePixels": 6200,
+        "textPixels": 15152,
+        "nonBgFraction": 0.6393,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 16972,
+            "min": 4000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-chase-landscape",
+      "path": "/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=chase&t=95.9&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-chase-landscape.png",
+      "video": null,
+      "ms": 8483,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 1,
+            "g": 3,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 4,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 604,
+        "bluePixels": 25524,
+        "textPixels": 41960,
+        "nonBgFraction": 0.8152,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 79272,
+            "min": 19000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-cinematic-landscape",
+      "path": "/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=cinematic&t=39.14&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-cinematic-landscape.png",
+      "video": null,
+      "ms": 7863,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 20,
+        "bluePixels": 29364,
+        "textPixels": 39928,
+        "nonBgFraction": 0.8058,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 43760,
+            "min": 10000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-ghost-landscape",
+      "path": "/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-ghost-landscape.png",
+      "video": null,
+      "ms": 6813,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 156,
+        "cyanPixels": 0,
+        "bluePixels": 8328,
+        "textPixels": 17160,
+        "nonBgFraction": 0.7957,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 16720,
+            "min": 4000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-highlight-landscape",
+      "path": "/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "url": "http://127.0.0.1:39985/replay/demo?hl=1&play=0&cam=chase&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-highlight-landscape.png",
+      "video": null,
+      "ms": 13763,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 1,
+            "g": 3,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 72,
+        "cyanPixels": 16,
+        "bluePixels": 13884,
+        "textPixels": 20064,
+        "nonBgFraction": 0.7624,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 71904,
+            "min": 17000,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-scrub-landscape",
+      "path": "/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=chase&scrub=0.36&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-scrub-landscape.png",
+      "video": null,
+      "ms": 13442,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 1,
+            "g": 3,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 19092,
+        "textPixels": 20896,
+        "nonBgFraction": 0.7571,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 14576,
+            "min": 3500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-untrusted-landscape",
+      "path": "/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-untrusted-landscape.png",
+      "video": null,
+      "ms": 8171,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 8200,
+        "textPixels": 8240,
+        "nonBgFraction": 0.7941,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.173206106870229,
@@ -11896,17 +12613,18 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9803921568627452,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-warnings-landscape",
       "path": "/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -11914,7 +12632,7 @@
       ],
       "screenshot": "artifacts/shots/replay-warnings-landscape.png",
       "video": null,
-      "ms": 5514,
+      "ms": 5609,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -11922,7 +12640,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -11957,35 +12675,58 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 20960,
-        "goldPixels": 13420,
-        "redPixels": 11100,
-        "cyanPixels": 6940,
-        "textPixels": 23412,
-        "nonBgFraction": 0.7744,
-        "regions": []
+        "emberPixels": 380,
+        "goldPixels": 168,
+        "redPixels": 12604,
+        "cyanPixels": 96,
+        "bluePixels": 10280,
+        "textPixels": 11020,
+        "nonBgFraction": 0.6438,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 3076,
+            "min": 750,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-warnings-open-landscape",
       "path": "/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
       ],
       "screenshot": "artifacts/shots/replay-warnings-open-landscape.png",
       "video": null,
-      "ms": 7947,
+      "ms": 8825,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -12008,8 +12749,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 1,
+            "g": 3,
             "b": 0
           },
           "bottomRight": {
@@ -12020,20 +12761,21 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 65812,
-        "goldPixels": 9656,
-        "redPixels": 14756,
-        "cyanPixels": 2316,
-        "textPixels": 47216,
-        "nonBgFraction": 0.86,
+        "emberPixels": 24,
+        "goldPixels": 20,
+        "redPixels": 13744,
+        "cyanPixels": 4,
+        "bluePixels": 10396,
+        "textPixels": 43272,
+        "nonBgFraction": 0.837,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-end-landscape",
       "path": "/replay/demo?cam=overview&t=999&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/demo?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=overview&t=999&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -12041,15 +12783,14 @@
       ],
       "screenshot": "artifacts/shots/replay-end-landscape.png",
       "video": null,
-      "ms": 4580,
+      "ms": 4736,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -12084,20 +12825,43 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 57380,
-        "goldPixels": 1092,
-        "redPixels": 1232,
-        "cyanPixels": 0,
-        "textPixels": 29100,
-        "nonBgFraction": 0.5071,
-        "regions": []
+        "emberPixels": 484,
+        "goldPixels": 364,
+        "redPixels": 88,
+        "cyanPixels": 116,
+        "bluePixels": 13320,
+        "textPixels": 15376,
+        "nonBgFraction": 0.6386,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 14036,
+            "min": 3500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-from-results-landscape",
-      "path": "/results/fixture-good?reveal=off",
-      "url": "http://127.0.0.1:40441/results/fixture-good?reveal=off",
+      "path": "/results/fixture-good",
+      "url": "http://127.0.0.1:39985/results/fixture-good",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -12105,7 +12869,7 @@
       ],
       "screenshot": "artifacts/shots/replay-from-results-landscape.png",
       "video": null,
-      "ms": 13070,
+      "ms": 10721,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -12113,11 +12877,10 @@
           "BarlowCondensed_700Bold",
           "BarlowCondensed_800ExtraBold_Italic",
           "Barlow_400Regular",
-          "Barlow_500Medium",
-          "Barlow_600SemiBold"
+          "Barlow_500Medium"
         ],
-        "displayTextNodes": 139,
-        "bodyTextNodes": 183,
+        "displayTextNodes": 35,
+        "bodyTextNodes": 60,
         "otherTextNodes": 0
       },
       "skia": {
@@ -12152,20 +12915,21 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 68468,
-        "goldPixels": 1036,
-        "redPixels": 360,
-        "cyanPixels": 1012,
-        "textPixels": 20008,
-        "nonBgFraction": 0.8645,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 9584,
+        "textPixels": 13492,
+        "nonBgFraction": 0.7892,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-touge-landscape",
       "path": "/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -12173,15 +12937,14 @@
       ],
       "screenshot": "artifacts/shots/replay-touge-landscape.png",
       "video": null,
-      "ms": 5886,
+      "ms": 5919,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -12216,15 +12979,38 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 78268,
-        "goldPixels": 472,
-        "redPixels": 100,
-        "cyanPixels": 3808,
-        "textPixels": 41836,
-        "nonBgFraction": 0.861,
-        "regions": []
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 20,
+        "bluePixels": 27052,
+        "textPixels": 38236,
+        "nonBgFraction": 0.7956,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 22644,
+            "min": 5500,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "settings-landscape",
@@ -13973,7 +14759,7 @@
     {
       "name": "replay-spin-landscape",
       "path": "/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -13981,15 +14767,14 @@
       ],
       "screenshot": "artifacts/shots/replay-spin-landscape.png",
       "video": null,
-      "ms": 7011,
+      "ms": 7142,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -14024,15 +14809,37 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 39032,
-        "goldPixels": 2252,
-        "redPixels": 22524,
-        "cyanPixels": 2156,
-        "textPixels": 50940,
-        "nonBgFraction": 0.8394,
-        "regions": []
+        "emberPixels": 796,
+        "goldPixels": 408,
+        "redPixels": 584,
+        "cyanPixels": 0,
+        "bluePixels": 10984,
+        "textPixels": 36248,
+        "nonBgFraction": 0.7646,
+        "regions": [
+          {
+            "name": "frame",
+            "colour": "red",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "w": 1,
+              "h": 1
+            },
+            "box": {
+              "x0": 0,
+              "y0": 0,
+              "x1": 2556,
+              "y1": 1179
+            },
+            "pixels": 584,
+            "min": 140,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-chain-lost-landscape",
@@ -14100,7 +14907,7 @@
     {
       "name": "replay-spin-end-landscape",
       "path": "/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/fixture-spin?cam=overview&t=999&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -14108,14 +14915,14 @@
       ],
       "screenshot": "artifacts/shots/replay-spin-end-landscape.png",
       "video": null,
-      "ms": 4974,
+      "ms": 5067,
       "fonts": {
         "status": "loaded",
         "families": [
           "Barlow_500Medium"
         ],
         "displayTextNodes": 16,
-        "bodyTextNodes": 18,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -14150,15 +14957,38 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 42584,
-        "goldPixels": 2244,
-        "redPixels": 15184,
-        "cyanPixels": 13716,
-        "textPixels": 33188,
-        "nonBgFraction": 0.5098,
-        "regions": []
+        "emberPixels": 1692,
+        "goldPixels": 760,
+        "redPixels": 5608,
+        "cyanPixels": 80,
+        "bluePixels": 13436,
+        "textPixels": 15328,
+        "nonBgFraction": 0.6386,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "red",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 4428,
+            "min": 1100,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "sound-felt-landscape",
@@ -14361,7 +15191,7 @@
     {
       "name": "replay-zero-paid-landscape",
       "path": "/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=hero&seed=13&cam=chase&t=47.45&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -14369,70 +15199,7 @@
       ],
       "screenshot": "artifacts/shots/replay-zero-paid-landscape.png",
       "video": null,
-      "ms": 6847,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 16,
-        "bodyTextNodes": 18,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 43348,
-        "goldPixels": 10128,
-        "redPixels": 4180,
-        "cyanPixels": 0,
-        "textPixels": 52132,
-        "nonBgFraction": 0.8456,
-        "regions": []
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-zero-chip-landscape",
-      "path": "/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-zero-chip-landscape.png",
-      "video": null,
-      "ms": 11188,
+      "ms": 6790,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -14440,7 +15207,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -14463,8 +15230,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 0,
+            "g": 0,
             "b": 0
           },
           "bottomRight": {
@@ -14475,20 +15242,129 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 49488,
-        "goldPixels": 13996,
-        "redPixels": 80,
-        "cyanPixels": 1672,
-        "textPixels": 19460,
-        "nonBgFraction": 0.8062,
-        "regions": []
+        "emberPixels": 8752,
+        "goldPixels": 16,
+        "redPixels": 268,
+        "cyanPixels": 0,
+        "bluePixels": 7280,
+        "textPixels": 39088,
+        "nonBgFraction": 0.789,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 2896,
+            "min": 700,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-zero-chip-landscape",
+      "path": "/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=hero&seed=13&drift=3&cam=chase&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-zero-chip-landscape.png",
+      "video": null,
+      "ms": 11021,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 1,
+            "g": 3,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 8752,
+        "goldPixels": 16,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 11744,
+        "textPixels": 6444,
+        "nonBgFraction": 0.7232,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 2940,
+            "min": 700,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-untrusted-slid-landscape",
       "path": "/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/fixture-handheld?cam=chase&t=46&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -14496,7 +15372,7 @@
       ],
       "screenshot": "artifacts/shots/replay-untrusted-slid-landscape.png",
       "video": null,
-      "ms": 7268,
+      "ms": 8175,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -14504,7 +15380,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -14540,15 +15416,16 @@
         "cornersOnBg": false,
         "cornersNearBg": true,
         "emberPixels": 0,
-        "goldPixels": 472,
-        "redPixels": 988,
-        "cyanPixels": 664,
-        "textPixels": 11652,
-        "nonBgFraction": 0.8218,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 6380,
+        "textPixels": 7988,
+        "nonBgFraction": 0.7607,
         "regions": [
           {
             "name": "stage",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.173206106870229,
@@ -14563,33 +15440,33 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9803921568627452,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-clean-band-landscape",
       "path": "/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
       ],
       "screenshot": "artifacts/shots/replay-clean-band-landscape.png",
       "video": null,
-      "ms": 5906,
+      "ms": 6031,
       "fonts": {
         "status": "loaded",
         "families": [
-          "BarlowCondensed_600SemiBold",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 25,
-        "bodyTextNodes": 17,
+        "displayTextNodes": 16,
+        "bodyTextNodes": 21,
         "otherTextNodes": 0
       },
       "skia": {
@@ -14612,8 +15489,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 1,
+            "g": 3,
             "b": 0
           },
           "bottomRight": {
@@ -14624,16 +15501,17 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 33252,
+        "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 88,
-        "cyanPixels": 1672,
-        "textPixels": 12732,
-        "nonBgFraction": 0.8264,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 9592,
+        "textPixels": 6392,
+        "nonBgFraction": 0.757,
         "regions": [
           {
-            "name": "band-gold",
-            "colour": "gold",
+            "name": "band-green",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.727735368956743,
@@ -14648,6 +15526,7 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 1,
             "ok": true,
             "wanted": ""
           },
@@ -14668,25 +15547,26 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 1,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "replay-zero-highlight-landscape",
       "path": "/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=hero&seed=13&hl=8&cam=chase&play=0&ui=1",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
       ],
       "screenshot": "artifacts/shots/replay-zero-highlight-landscape.png",
       "video": null,
-      "ms": 10670,
+      "ms": 11554,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -14694,7 +15574,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -14717,8 +15597,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 1,
+            "g": 3,
             "b": 0
           },
           "bottomRight": {
@@ -14729,15 +15609,38 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 49572,
-        "goldPixels": 15100,
-        "redPixels": 56,
-        "cyanPixels": 1672,
-        "textPixels": 19096,
-        "nonBgFraction": 0.8034,
-        "regions": []
+        "emberPixels": 8752,
+        "goldPixels": 16,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 12052,
+        "textPixels": 6304,
+        "nonBgFraction": 0.7155,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 2644,
+            "min": 650,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
       "name": "settings-stored-landscape",
@@ -15432,7 +16335,7 @@
     {
       "name": "replay-untrusted-leak-landscape",
       "path": "/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/fixture-handheld?cam=chase&t=60&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -15440,7 +16343,7 @@
       ],
       "screenshot": "artifacts/shots/replay-untrusted-leak-landscape.png",
       "video": null,
-      "ms": 7157,
+      "ms": 8974,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -15448,177 +16351,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 0,
-        "goldPixels": 476,
-        "redPixels": 952,
-        "cyanPixels": 744,
-        "textPixels": 13548,
-        "nonBgFraction": 0.8142,
-        "regions": [
-          {
-            "name": "stage",
-            "colour": "ember",
-            "rect": {
-              "x": 0,
-              "y": 0.173206106870229,
-              "w": 1,
-              "h": 0.5823409669211196
-            },
-            "box": {
-              "x0": 0,
-              "y0": 204,
-              "x1": 2556,
-              "y1": 891
-            },
-            "pixels": 0,
-            "max": 0,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-untrusted-overview-landscape",
-      "path": "/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-untrusted-overview-landscape.png",
-      "video": null,
-      "ms": 6448,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 28,
-        "bodyTextNodes": 17,
-        "otherTextNodes": 0
-      },
-      "skia": {
-        "canvases": 1,
-        "webgl": true,
-        "canvasKit": true
-      },
-      "pixels": {
-        "width": 2556,
-        "height": 1179,
-        "corners": {
-          "topLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "topRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomLeft": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          },
-          "bottomRight": {
-            "r": 0,
-            "g": 0,
-            "b": 0
-          }
-        },
-        "cornersOnBg": false,
-        "cornersNearBg": true,
-        "emberPixels": 0,
-        "goldPixels": 472,
-        "redPixels": 952,
-        "cyanPixels": 224,
-        "textPixels": 11792,
-        "nonBgFraction": 0.7734,
-        "regions": [
-          {
-            "name": "stage",
-            "colour": "ember",
-            "rect": {
-              "x": 0,
-              "y": 0.173206106870229,
-              "w": 1,
-              "h": 0.5823409669211196
-            },
-            "box": {
-              "x0": 0,
-              "y0": 204,
-              "x1": 2556,
-              "y1": 891
-            },
-            "pixels": 0,
-            "max": 0,
-            "ok": true,
-            "wanted": ""
-          }
-        ]
-      },
-      "shotAt": "2026-09-21T07:54:17.472Z"
-    },
-    {
-      "name": "replay-clean-world-landscape",
-      "path": "/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0",
-      "ok": true,
-      "errors": [],
-      "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
-      ],
-      "screenshot": "artifacts/shots/replay-clean-world-landscape.png",
-      "video": null,
-      "ms": 5708,
-      "fonts": {
-        "status": "loaded",
-        "families": [
-          "BarlowCondensed_600SemiBold",
-          "Barlow_500Medium"
-        ],
-        "displayTextNodes": 25,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -15655,14 +16388,15 @@
         "cornersNearBg": true,
         "emberPixels": 0,
         "goldPixels": 0,
-        "redPixels": 88,
+        "redPixels": 0,
         "cyanPixels": 0,
-        "textPixels": 11172,
-        "nonBgFraction": 0.8268,
+        "bluePixels": 16004,
+        "textPixels": 11076,
+        "nonBgFraction": 0.7427,
         "regions": [
           {
             "name": "stage",
-            "colour": "ember",
+            "colour": "green",
             "rect": {
               "x": 0,
               "y": 0.173206106870229,
@@ -15677,25 +16411,26 @@
             },
             "pixels": 0,
             "max": 0,
+            "visibleFrac": 0.9803921568627452,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
     },
     {
-      "name": "replay-sloppy-band-landscape",
-      "path": "/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
-      "url": "http://127.0.0.1:40441/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
+      "name": "replay-untrusted-overview-landscape",
+      "path": "/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/fixture-handheld?cam=overview&t=90&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
-        "pixels: a glow tints a corner (#000000 #000000 #030100 #000000)"
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
       ],
-      "screenshot": "artifacts/shots/replay-sloppy-band-landscape.png",
+      "screenshot": "artifacts/shots/replay-untrusted-overview-landscape.png",
       "video": null,
-      "ms": 5534,
+      "ms": 6253,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -15703,7 +16438,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 28,
-        "bodyTextNodes": 17,
+        "bodyTextNodes": 20,
         "otherTextNodes": 0
       },
       "skia": {
@@ -15726,8 +16461,8 @@
             "b": 0
           },
           "bottomLeft": {
-            "r": 3,
-            "g": 1,
+            "r": 0,
+            "g": 0,
             "b": 0
           },
           "bottomRight": {
@@ -15738,12 +16473,187 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 59416,
-        "goldPixels": 3324,
-        "redPixels": 14980,
-        "cyanPixels": 1672,
-        "textPixels": 32480,
-        "nonBgFraction": 0.574,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 6960,
+        "textPixels": 10592,
+        "nonBgFraction": 0.6185,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.173206106870229,
+              "w": 1,
+              "h": 0.5823409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 204,
+              "x1": 2556,
+              "y1": 891
+            },
+            "pixels": 0,
+            "max": 0,
+            "visibleFrac": 0.9803921568627452,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-clean-world-landscape",
+      "path": "/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0&ghost=off",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=clean&cam=chase&t=66&play=0&ui=0&ghost=off",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-clean-world-landscape.png",
+      "video": null,
+      "ms": 5979,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 25,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 7692,
+        "textPixels": 4828,
+        "nonBgFraction": 0.7574,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.173206106870229,
+              "w": 1,
+              "h": 0.5823409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 204,
+              "x1": 2556,
+              "y1": 891
+            },
+            "pixels": 0,
+            "max": 0,
+            "visibleFrac": 0.9803921568627452,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-sloppy-band-landscape",
+      "path": "/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
+      "url": "http://127.0.0.1:39985/replay/x?fixture=sloppy&cam=chase&t=999&play=0&ui=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #010300 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-sloppy-band-landscape.png",
+      "video": null,
+      "ms": 5009,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 1,
+            "g": 3,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 1452,
+        "goldPixels": 788,
+        "redPixels": 812,
+        "cyanPixels": 0,
+        "bluePixels": 17444,
+        "textPixels": 18800,
+        "nonBgFraction": 0.7293,
         "regions": [
           {
             "name": "band-red",
@@ -15760,18 +16670,222 @@
               "x1": 2556,
               "y1": 990
             },
-            "pixels": 10392,
-            "min": 2000,
+            "pixels": 812,
+            "min": 150,
+            "visibleFrac": 1,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-21T21:19:02.722Z"
+    },
+    {
+      "name": "replay-held",
+      "path": "/replay/demo?cam=chase&t=43.9&play=0&ui=0",
+      "url": "http://127.0.0.1:39251/replay/demo?cam=chase&t=43.9&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-held.png",
+      "video": null,
+      "ms": 6866,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 39500,
+        "textPixels": 24768,
+        "nonBgFraction": 0.8697,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.12206572769953052,
+              "w": 1,
+              "h": 0.7253521126760564
+            },
+            "box": {
+              "x0": 0,
+              "y0": 312,
+              "x1": 1179,
+              "y1": 2166
+            },
+            "pixels": 43844,
+            "min": 900,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:14:39.225Z"
+    },
+    {
+      "name": "replay-held-landscape",
+      "path": "/replay/demo?cam=chase&t=43.9&play=0&ui=0",
+      "url": "http://127.0.0.1:39985/replay/demo?cam=chase&t=43.9&play=0&ui=0",
+      "ok": true,
+      "errors": [],
+      "warnings": [
+        "pixels: a glow tints a corner (#000000 #000000 #000000 #000000)"
+      ],
+      "screenshot": "artifacts/shots/replay-held-landscape.png",
+      "video": null,
+      "ms": 6419,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 28,
+        "bodyTextNodes": 20,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "topRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomLeft": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "bottomRight": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "cornersOnBg": false,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 0,
+        "bluePixels": 17864,
+        "textPixels": 21196,
+        "nonBgFraction": 0.7193,
+        "regions": [
+          {
+            "name": "stage",
+            "colour": "green",
+            "rect": {
+              "x": 0,
+              "y": 0.183206106870229,
+              "w": 1,
+              "h": 0.5623409669211196
+            },
+            "box": {
+              "x0": 0,
+              "y0": 216,
+              "x1": 2556,
+              "y1": 879
+            },
+            "pixels": 3712,
+            "min": 900,
+            "visibleFrac": 1,
+            "ok": true,
+            "wanted": ""
+          }
+        ]
+      },
+      "shotAt": "2026-09-21T21:19:02.722Z"
     }
   ],
-  "finishedAt": "2026-09-21T20:01:39.787Z",
+  "finishedAt": "2026-09-21T21:19:02.722Z",
   "failed": 0,
   "failedAll": 0,
-  "shotThisRun": []
+  "shotThisRun": [
+    "replay-landscape",
+    "replay-motion-landscape",
+    "replay-cut-landscape",
+    "replay-shake-landscape",
+    "replay-overview-landscape",
+    "replay-chase-landscape",
+    "replay-cinematic-landscape",
+    "replay-ghost-landscape",
+    "replay-highlight-landscape",
+    "replay-scrub-landscape",
+    "replay-untrusted-landscape",
+    "replay-warnings-landscape",
+    "replay-warnings-open-landscape",
+    "replay-end-landscape",
+    "replay-from-results-landscape",
+    "replay-touge-landscape",
+    "replay-spin-landscape",
+    "replay-spin-end-landscape",
+    "replay-held-landscape",
+    "replay-zero-paid-landscape",
+    "replay-zero-chip-landscape",
+    "replay-untrusted-slid-landscape",
+    "replay-clean-band-landscape",
+    "replay-zero-highlight-landscape",
+    "replay-untrusted-leak-landscape",
+    "replay-untrusted-overview-landscape",
+    "replay-clean-world-landscape",
+    "replay-sloppy-band-landscape"
+  ]
 }

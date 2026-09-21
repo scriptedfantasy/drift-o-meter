@@ -12,7 +12,8 @@
 import { BlurStyle, FilterMode, PaintStyle, Skia, StrokeCap, StrokeJoin, TileMode, type SkColor, type SkFont, type SkPaint, type SkPathEffect, type SkPoint, type SkShader } from '@shopify/react-native-skia';
 
 import { SEVERITY_EDGES } from '../../engine/replay';
-import { colors } from '../theme';
+import { radToDeg } from '../../engine/types';
+import { ANGLE_STOPS, MAX_ANGLE_DEG, colors } from '../theme';
 
 export interface SceneResources {
   fill: SkPaint;
@@ -48,12 +49,6 @@ export interface SceneResources {
   glyphs(font: SkFont, key: string, s: string, tracking: number): { ids: number[]; pos: SkPoint[]; width: number };
   setGlowBlur(sigma: number): void;
   setStrokeGlowBlur(sigma: number): void;
-  /**
-   * The paint for a `saveLayer` that fades a whole group at once — the car and its arc, its
-   * under-glow and its velocity vector are a dozen draws that have to fade as ONE thing, or the
-   * overlaps show through each other as they go.
-   */
-  layerAlpha(alpha: number): SkPaint;
   dispose(): void;
 }
 
@@ -120,7 +115,6 @@ export function createSceneResources(): SceneResources {
   glowStroke.setStyle(PaintStyle.Stroke);
   glowStroke.setStrokeCap(StrokeCap.Round);
   glowStroke.setStrokeJoin(StrokeJoin.Round);
-  const layer = Skia.Paint();
 
   const smoke = gradient(
     [
@@ -153,24 +147,34 @@ export function createSceneResources(): SceneResources {
     ],
     true,
   );
-  // bottom (y = 1) is the calm end of the ribbon, the top (y = 0) is a spin
+  // THE BAND IS THE ANGLE RAMP, STOOD ON END. Bottom (y = 1) is 0° and the top (y = 0) is
+  // `MAX_ANGLE_DEG`, which is what `ribbonScale` scales the strip to, so every knot below is
+  // `ANGLE_STOPS` read straight out of the theme rather than a second set of stops that has to
+  // be kept in step with it by hand. The old gradient was three chosen offsets — red at 0, gold
+  // at 0.2, ember at 0.45 — against a ramp whose knots were at 40° and 55°: on a 65° band that
+  // put gold at 52° where the world drew it at 55°, and the strip and the trail disagreed about
+  // the same slide by three degrees of colour on every frame.
+  //
+  // Alpha still ramps with height, because the strip is read at a glance and a flat-alpha
+  // gradient reads as a block of colour rather than an escalation.
   //
   // BELOW THE HOLD EDGE THE RIBBON IS GREY, because below it the engine says the car is not
-  // sliding, and ember is the colour that says it is. The calm end used to be ember at 0.25
-  // alpha, so a lap whose peak was 4.18° — footer: 0 DRIFTS — drew 34,426 ember pixels, 88 % of
+  // sliding, and the ramp is the colour that says it is. The calm end used to be lit at 0.25
+  // alpha, so a lap whose peak was 4.18° — footer: 0 DRIFTS — drew 34,426 lit pixels, 88 % of
   // them in this band. `heat()` already returns MUTED under the same edge for everything drawn in
   // the world; this shader is the one place the rule was not applied, because it paints a
   // gradient rather than asking for a colour.
   //
-  // The stop is DERIVED, not chosen. `ribbonScale` is fixed at the spin edge, so the hold edge
-  // sits at a known fraction of the band and moves with the engine if either edge does.
-  const holdStop = 1 - SEVERITY_EDGES.hold / SEVERITY_EDGES.spin;
+  // The stop is DERIVED, not chosen: the hold edge sits at a known fraction of the band and
+  // moves with the engine if either edge does.
+  const holdStop = 1 - radToDeg(SEVERITY_EDGES.hold) / MAX_ANGLE_DEG;
+  const ribbonStops = ANGLE_STOPS.filter((k) => k.deg / MAX_ANGLE_DEG > 1 - holdStop)
+    .map((k) => [1 - k.deg / MAX_ANGLE_DEG, k.color, 0.34 + 0.61 * (k.deg / MAX_ANGLE_DEG)] as [number, string, number])
+    .sort((a, b) => a[0] - b[0]);
   const ribbon = gradient(
     [
-      [0, colors.red, 0.95],
-      [0.2, colors.gold, 0.9],
-      [0.45, colors.ember, 0.8],
-      [holdStop, colors.ember, 0.34],
+      ...ribbonStops,
+      [holdStop, ANGLE_STOPS[0].color, 0.34],
       [Math.min(1, holdStop + 0.015), colors.muted, 0.3],
       [1, colors.muted, 0.22],
     ],
@@ -271,10 +275,6 @@ export function createSceneResources(): SceneResources {
       }
       return run;
     },
-    layerAlpha(alpha: number): SkPaint {
-      layer.setAlphaf(Math.max(0, Math.min(1, Number.isFinite(alpha) ? alpha : 1)));
-      return layer;
-    },
     setGlowBlur(sigma: number): void {
       if (Math.abs(sigma - blurSigma) < 0.05) return;
       blurSigma = sigma;
@@ -287,7 +287,7 @@ export function createSceneResources(): SceneResources {
       glowStroke.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(1e-3, sigma), true));
     },
     dispose(): void {
-      for (const o of [fill, stroke, dashed, shaded, text, glow, glowStroke, layer, smoke, smokeHot, pool, vignette, ribbon, topFade, bottomFade, grain]) {
+      for (const o of [fill, stroke, dashed, shaded, text, glow, glowStroke, smoke, smokeHot, pool, vignette, ribbon, topFade, bottomFade, grain]) {
         try {
           o.dispose();
         } catch {

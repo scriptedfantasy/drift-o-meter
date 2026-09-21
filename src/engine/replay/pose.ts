@@ -27,9 +27,6 @@ export function poseAt(replay: Replay, t: number): ReplayPose {
     course: lerpAngle(trail.course[i0], trail.course[i1], f),
     beta,
     speed: lin(trail.speed),
-    points: lin(trail.score),
-    multiplier: lin(trail.multiplier),
-    chain: lin(trail.chain),
     phase: segment >= 0 ? 'drifting' : 'idle',
     intensity: clamp((Math.abs(beta) - replay.options.intensityLo) / (replay.options.intensityHi - replay.options.intensityLo), 0, 1),
     severity: severityOf(beta),
@@ -68,15 +65,6 @@ function tauAtDistance(dist: Float64Array, tau: Float64Array, d: number): number
   return tau[lo] + (tau[hi] - tau[lo]) * f;
 }
 
-/** Same idea for points: how many points the ghost had scored by lap-time τ. */
-function valueAtTau(arr: Float64Array, tau: number, hz: number): number {
-  const n = arr.length;
-  const fi = clamp(tau * hz, 0, n - 1);
-  const i0 = Math.floor(fi);
-  const i1 = Math.min(i0 + 1, n - 1);
-  return arr[i0] + (arr[i1] - arr[i0]) * (fi - i0);
-}
-
 /**
  * Where the ghost is at replay time t.
  *
@@ -89,10 +77,9 @@ function valueAtTau(arr: Float64Array, tau: number, hz: number): number {
  * it on screen essentially always and makes the comparison the useful one for a drift app: the
  * same corner, the reference line and angle against yours. The ahead/behind information is not
  * lost, it moves into the labels:
- *   `gapS`      how much earlier (+) or later (−) the car reached this point than the reference
- *               lap did — a true time gap from the distance→time curve, so it does not flicker
- *   `gapPoints` the score delta at the same point of the lap
- *   `gapM`      how far the car is off the reference line here, metres
+ *   `gapS`  how much earlier (+) or later (−) the car reached this point than the reference lap
+ *           did — a true time gap from the distance→time curve, so it does not flicker
+ *   `gapM`  how far the car is off the reference line here, metres
  * Returns null outside laps or when the replay has no ghost.
  */
 export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
@@ -106,9 +93,7 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
   const carX = trailValueAt(trail, trail.x, clamp(t, 0, replay.durationS));
   const carY = trailValueAt(trail, trail.y, clamp(t, 0, replay.durationS));
   const refD0 = trailValueAt(trail, trail.dist, ref.startT);
-  const refP0 = trailValueAt(trail, trail.score, ref.startT);
   const carDist = trailValueAt(trail, trail.dist, clamp(t, 0, replay.durationS)) - trailValueAt(trail, trail.dist, lap.startT);
-  const carPoints = trailValueAt(trail, trail.score, clamp(t, 0, replay.durationS)) - trailValueAt(trail, trail.score, lap.startT);
   // when did the reference lap reach this distance?
   const g = replay.ghost;
   let refTau: number;
@@ -131,16 +116,14 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
   // to chase rather than a line to compare. The gaps below are identical either way.
   const poseTau = replay.options.ghostSync === 'time' ? Math.min(tau, ref.durationS) : Math.min(refTau, ref.durationS);
   const tg = clamp(ref.startT + poseTau, 0, replay.durationS);
-  // the GAPS are always measured at the same point of the lap (distance-matched), whichever way
-  // the pose is placed, so the numbers a driver reads do not change with the camera option
-  const tGap = clamp(ref.startT + Math.min(refTau, ref.durationS), 0, replay.durationS);
+  // the GAP is always measured at the same point of the lap (distance-matched), whichever way
+  // the pose is placed, so the number a driver reads does not change with the camera option
   const fi = trailIndexOf(trail, tg);
   const i0 = Math.floor(fi);
   const i1 = Math.min(i0 + 1, trail.n - 1);
   const f = fi - i0;
   const gx = trailValueAt(trail, trail.x, tg);
   const gy = trailValueAt(trail, trail.y, tg);
-  const ghostPoints = trailValueAt(trail, trail.score, tGap) - refP0;
   const gapS = refTau - tau;
   return {
     x: gx,
@@ -153,17 +136,9 @@ export function ghostPoseAt(replay: Replay, t: number): GhostPose | null {
     lapIndex: ref.index,
     gapM: Math.hypot(carX - gx, carY - gy),
     gapS: Number.isFinite(gapS) ? gapS : 0,
-    gapPoints: carPoints - ghostPoints,
     inLap,
     sync: replay.options.ghostSync,
   };
-}
-
-/** Points the ghost had scored τ seconds into its lap (for a live points delta). */
-export function ghostPointsAt(replay: Replay, tau: number): number {
-  const g = replay.ghost;
-  if (!g) return 0;
-  return valueAtTau(g.points_, tau, g.hz);
 }
 
 /**
@@ -205,7 +180,6 @@ export interface TelemetrySample {
   /** |β|, radians. */
   angle: number;
   beta: number;
-  points: number;
   drifting: boolean;
 }
 
@@ -219,7 +193,6 @@ export function scrubTelemetry(replay: Replay, t: number): TelemetrySample {
     speed: tel.speed[index],
     angle: tel.angle[index],
     beta: tel.beta[index],
-    points: tel.points[index],
     drifting: tel.drifting[index] === 1,
   };
 }

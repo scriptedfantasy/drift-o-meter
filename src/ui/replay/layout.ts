@@ -49,9 +49,14 @@ export interface ReplayLayout {
   controls: Rect;
   /** The hero |β| numeral: left-aligned at `x`, sitting on `baseline`. */
   hero: { x: number; baseline: number; inBar: boolean };
-  /** Speed / points block: right-aligned at `x`, centred on `baseline`. */
+  /**
+   * The speed block: right-aligned at `x`, sitting on `baseline`.
+   *
+   * It held the speed AND the running points under it, which is why it is a block and not a
+   * line; the points went with the scoring and the corner is one number now.
+   */
   readout: { x: number; baseline: number };
-  /** The bottom info line (lap, session name, total). */
+  /** The bottom info line: which lap, the session name, the slide count and the biggest angle. */
   info: { x: number; y: number; right: number };
   /** Top row: the REPLAY tally, the clock and the camera name. */
   chrome: { y: number; left: number; right: number };
@@ -81,7 +86,7 @@ export function replayLayout(w: number, h: number, insets: Insets, controlsRows 
     ? { x: left, baseline: scrub.y - 30, inBar: false }
     : { x: left, baseline: insets.top + 86, inBar: true };
   const readout = landscape ? { x: right, baseline: scrub.y - 30 } : { x: right, baseline: insets.top + 86 };
-  // Landscape runs the lap / track / total line as a second row of the top bar, because the
+  // Landscape runs the lap / track / slides line as a second row of the top bar, because the
   // bottom bar belongs to the transport.
   const info = landscape ? { x: left, y: insets.top + 52, right } : { x: left, y: h - bottomBar + 26, right };
   const chrome = { y: insets.top + (landscape ? 24 : 30), left, right };

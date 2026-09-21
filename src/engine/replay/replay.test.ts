@@ -4,9 +4,10 @@ import { simulateRun, type SimulatedRun } from '../../sim';
 import { degToRad, radToDeg, wrapAngle, type Session, type SlipState } from '../types';
 import {
   activeEvents,
+  beatMagnitude,
   buildReplay,
   CAMERA_LIMITS,
-  formatPoints,
+  exitLabel,
   ghostPoseAt,
   lapAt,
   liveSmoke,
@@ -25,10 +26,9 @@ import {
   type Replay,
 } from './index';
 import { sessionFromSimulation } from './fixtures';
-import { peakCallout, refusedLabel, IDENTITY_TOLERANCE } from './build';
-import { replayChains, resolveOptions } from '../score';
+import { peakCallout, IDENTITY_TOLERANCE } from './build';
 import { FIXTURES, buildFixtureSession } from '../../ui/results/fixture';
-import { isPointsClaim } from '../../ui/replay/palette';
+import { NO_HEAT, heatOf } from '../../ui/replay/palette';
 
 let run: SimulatedRun;
 let session: Session;
@@ -73,13 +73,21 @@ describe('fixture', () => {
   it('fills a session from simulator truth', () => {
     expect(session.states.length).toBe(run.truth.length);
     expect(session.drifts.length).toBeGreaterThanOrEqual(4);
-    expect(session.score.total).toBeGreaterThan(1000);
     expect(session.track?.closed).toBe(true);
     expect(session.track?.laps.length).toBe(2);
     for (const d of session.drifts) {
       expect(d.endT).toBeGreaterThan(d.startT);
-      expect(session.score.perDrift[d.id].total).toBeGreaterThan(0);
+      expect(d.peakAngle).toBeGreaterThan(0);
+      expect(d.spin).toBe(false);
     }
+    // THIS FIXTURE ANALYSES NOTHING, and says so rather than looking as though it did. It used
+    // to carry a scorer of its own — its own per-drift points, its own callout bonuses, its own
+    // grade thresholds — and this test asserted `score.total > 1000` and every `perDrift.total
+    // > 0` over it. The per-slide measurements every screen reads live in `Session.driftStats`
+    // and come from the engine; `src/ui/results/fixture.ts` runs it over this session before a
+    // screen sees it, which is why the empty record here is the honest answer and not a gap.
+    expect(session.score.perDrift).toEqual({});
+    expect(session.driftStats).toBeUndefined();
   });
 
   it('a drift is a drift, not a whole lap — unless it is a linked chain', () => {
@@ -139,12 +147,13 @@ describe('fixture', () => {
     }
   });
 
-  it('grades span the scale across driver skill, and so does severity', () => {
-    // ROUND-3 FINDING 2: splitting one 28 s drift into seven collapsed every grade to C,
-    // because the fixture graded on points PER DRIFT. It grades on points per second now,
-    // which is invariant to how a run is cut up.
-    const grades = new Set<string>();
+  it('severity and peak angle span the scale across driver skill', () => {
+    // WAS "grades span the scale", over `session.score.grade` — the fixture's own grade, from its
+    // own scorer, both of which are gone. What the replay says about a run now is its severity
+    // band and its peak, and those have to separate a timid driver from a wild one or every run
+    // looks the same on the screen that plays it back.
     const severities = new Set<string>();
+    const peaks: number[] = [];
     for (const track of ['harbor', 'touge'] as const) {
       for (const [aggression, consistency] of [
         [0.15, 0.2],
@@ -154,18 +163,17 @@ describe('fixture', () => {
         for (const seed of [1, 2]) {
           const ses = sessionFromSimulation(simulateRun(track, { seed, laps: 2, aggression, consistency }));
           const rep = buildReplay(ses);
-          grades.add(ses.score.grade);
           severities.add(rep.info.severity);
+          peaks.push(radToDeg(rep.info.peakAngle));
         }
       }
     }
-    expect(grades.size).toBeGreaterThanOrEqual(3);
     expect(severities.size).toBeGreaterThanOrEqual(2);
-    // the gold S chip and the muted D chip must both be reachable, or the grade colour is dead
-    expect(grades.has('S') || grades.has('A')).toBe(true);
-    expect(grades.has('D') || grades.has('C')).toBe(true);
-    // 16 simulated runs through the scorer: comfortably over the 5 s default on a loaded machine,
-    // and a timeout is a red check that says nothing about the code
+    // the timid end and the wild end are not the same picture: measured across these 12 runs the
+    // peaks span roughly 20° to 50°
+    expect(Math.max(...peaks) - Math.min(...peaks)).toBeGreaterThan(10);
+    // 12 simulated runs: comfortably over the 5 s default on a loaded machine, and a timeout is a
+    // red check that says nothing about the code
   }, 120_000);
 });
 
@@ -225,7 +233,6 @@ describe('buildReplay', () => {
         const expected = Math.min(1, Math.max(0, (b - degToRad(8)) / (degToRad(60) - degToRad(8))));
         expect(seg.intensity[i]).toBeCloseTo(expected, 3);
       }
-      expect(seg.points).toBe(session.score.perDrift[seg.driftId].total);
     }
   });
 
@@ -263,17 +270,43 @@ describe('buildReplay', () => {
     expect(i70).toBeGreaterThan(i45 + 0.1);
   });
 
-  // NOTE: this session's `score.total` is BY CONSTRUCTION the sum of its per-drift totals and it
-  // contains no spin, so it cannot express a lost chain. The fixture-wide version of this test —
-  // "the replay and the results screen count the same run" at the bottom of this file — is the
-  // one that can fail; keep both.
-  it('cumulative score ends at the session total and never decreases', () => {
-    const sc = replay.trail.score;
-    for (let i = 1; i < sc.length; i++) expect(sc[i]).toBeGreaterThanOrEqual(sc[i - 1] - 1e-6);
-    expect(sc[sc.length - 1]).toBeCloseTo(session.score.total, 3);
-    for (let i = 0; i < replay.trail.n; i++) {
-      expect(replay.trail.multiplier[i]).toBeGreaterThanOrEqual(1);
-      expect(replay.trail.chain[i]).toBeGreaterThanOrEqual(0);
+  /**
+   * HOW LOUD A BEAT IS — the rule that replaced `grossPoints / maxPoints`.
+   *
+   * Magnitude drives the shake, the callout's slam and the glow bloom in BOTH renderers, so it
+   * is the one number on this screen that decides which moment of a run feels like the moment.
+   * It was a ratio of points: the loudest beat of a run was the slide the scorer paid most for,
+   * which on a chained lap is a long shallow fast one rather than the one the driver remembers.
+   */
+  it('a beat is as loud as the slide is big, with duration lifting it and a spin at the top', () => {
+    const at = (peakDeg: number, heldS: number, spin = false) => beatMagnitude({ peakAngle: degToRad(peakDeg), heldS, spin }, degToRad(60));
+    // ANGLE LEADS. Same duration, bigger angle, louder beat — and the run's biggest is at the top.
+    expect(at(60, 3)).toBeGreaterThan(at(30, 3));
+    expect(at(30, 3)).toBeGreaterThan(at(12, 3));
+    expect(at(60, 6)).toBe(1);
+    // DURATION LIFTS, and cannot overturn the angle: a 12 s 20° slide stays quieter than a 60°
+    // one held half as long, which is the comparison the points ratio used to get backwards.
+    expect(at(20, 12)).toBeGreaterThan(at(20, 1));
+    expect(at(20, 12)).toBeLessThan(at(60, 6));
+    // A SPIN IS ALWAYS THE LOUDEST THING IN A RUN, whatever band its angle landed in.
+    expect(at(18, 0.5, true)).toBe(1);
+    // bounded, and every slide registers
+    for (const [deg, held] of [[0, 0], [4, 0.2], [90, 20], [200, 40]] as Array<[number, number]>) {
+      const m = at(deg, held);
+      expect(m).toBeGreaterThanOrEqual(0.25);
+      expect(m).toBeLessThanOrEqual(1);
+    }
+    // RELATIVE TO THE RUN, not to a fixed ceiling: the biggest slide of a gentle lap still has to
+    // feel like the biggest slide of that lap.
+    const timid = beatMagnitude({ peakAngle: degToRad(20), heldS: 2, spin: false }, degToRad(20));
+    const wild = beatMagnitude({ peakAngle: degToRad(20), heldS: 2, spin: false }, degToRad(70));
+    expect(timid).toBeGreaterThan(wild);
+    // …and a lap with nothing in it cannot scale 4° up into a peak (the denominator is floored)
+    expect(beatMagnitude({ peakAngle: degToRad(4), heldS: 0.3, spin: false }, degToRad(4))).toBeLessThan(0.65);
+    // on the real session every exit beat is inside the same bounds
+    for (const e of replay.events) {
+      expect(e.magnitude, e.kind).toBeGreaterThanOrEqual(0);
+      expect(e.magnitude, e.kind).toBeLessThanOrEqual(1);
     }
   });
 
@@ -394,15 +427,38 @@ describe('buildReplay', () => {
     for (let i = 1; i < evs.length; i++) expect(evs[i].priority).toBeLessThanOrEqual(evs[i - 1].priority);
   });
 
-  it('highlights rank the run and stay inside it', () => {
+  /**
+   * THE BEST BITS ARE RANKED THE WAY THE REVIEW RANKS ITS BEST DRIFT: biggest peak angle, with
+   * the longest held breaking a tie.
+   *
+   * It was `b.points + b.peakAngle * 1000` against the same for `a` — a sum of a score and an
+   * angle, in which the angle term happened to dominate on most runs. "Happened to" is not a
+   * rule, and the runs where the points decided were exactly the ones where the driver would
+   * have disagreed. `bestByAngle` in src/ui/results/model.ts is the same rule one screen over.
+   */
+  it('best bits are ranked biggest angle first, longest held breaking the tie', () => {
     expect(replay.highlights.length).toBe(replay.segments.length);
     for (const h of replay.highlights) {
       expect(h.inT).toBeGreaterThanOrEqual(0);
       expect(h.outT).toBeLessThanOrEqual(replay.durationS + 1e-6);
       expect(h.t).toBeGreaterThanOrEqual(h.inT);
       expect(h.t).toBeLessThanOrEqual(h.outT);
+      expect(h.heldS).toBeGreaterThanOrEqual(0);
     }
-    expect(replay.highlights[0].points).toBeGreaterThanOrEqual(replay.highlights[replay.highlights.length - 1].points - 1);
+    // the ORDER, pair by pair, is the rule itself — not merely "first ≥ last"
+    for (let i = 1; i < replay.highlights.length; i++) {
+      const a = replay.highlights[i - 1];
+      const b = replay.highlights[i];
+      if (a.peakAngle === b.peakAngle) expect(a.heldS).toBeGreaterThanOrEqual(b.heldS);
+      else expect(a.peakAngle).toBeGreaterThan(b.peakAngle);
+    }
+    // the top of the list IS the biggest angle of the run
+    expect(replay.highlights[0].peakAngle).toBeCloseTo(Math.max(...replay.segments.map((g) => g.peakAngle)), 12);
+    // every chip is a measurement: an angle, then what happened to it
+    for (const h of replay.highlights) {
+      expect(h.label, h.label).toMatch(/^\d+° · (SPUN|\d+-LINK|\d+\.\d+S)$/);
+      expect(h.label).not.toMatch(/PTS|POINTS/);
+    }
   });
 
   it('works without a track model and from truth only', () => {
@@ -420,32 +476,33 @@ describe('buildReplay', () => {
 });
 
 describe('contracts a second renderer must not have to remember', () => {
-  it('withholds the headline score entirely when the run is untrusted', () => {
-    // ROUND-5 FINDING 1: `totalPoints`/`grade` were populated even for a run the engine refuses
-    // to publish. Both renderers suppressed it because both were told to — discipline, not
-    // structure. They are null now, so the type stops a consumer that forgets to look.
+  /**
+   * THE ONE VERDICT LEFT is the integrity monitor's, and the replay carries it rather than
+   * re-deriving it.
+   *
+   * `info.trusted` used to be the AND of `SessionScore.trusted` and
+   * `SessionIntegrity.scoreTrusted` — a mirror kept inside the scored object so a score could
+   * never be separated from permission to show it. The score is gone; the monitor is not, and a
+   * hand-held run still has to be refused, because a phone waved in a parked car produces large
+   * angles and a plausible-looking run. What the refusal withholds now is the RAMP: every angle
+   * on the frame is drawn in the neutral grey.
+   */
+  it('carries the integrity monitor\'s verdict, and nothing else decides it', () => {
     expect(replay.info.trusted).toBe(true);
-    expect(replay.info.totalPoints).not.toBeNull();
-    expect(replay.info.grade).not.toBeNull();
-    expect(replay.info.untrustedMessage).toBe('');
 
     const doubted: Session = {
       ...session,
-      score: { ...session.score, trusted: false },
       integrity: { ...session.integrity, scoreTrusted: false, message: 'Phone was moving in the cradle' },
     };
     const r = buildReplay(doubted);
     expect(r.info.trusted).toBe(false);
-    expect(r.info.totalPoints).toBeNull();
-    expect(r.info.grade).toBeNull();
-    expect(r.info.untrustedMessage).toBe('Phone was moving in the cradle');
-    // the shape of the run is still there — it is data about the run, not a claim about it
-    expect(r.trail.score[r.trail.n - 1]).toBeGreaterThan(0);
-    // either flag alone is enough to withhold it
-    expect(buildReplay({ ...session, score: { ...session.score, trusted: false } }).info.grade).toBeNull();
-    expect(buildReplay({ ...session, integrity: { ...session.integrity, scoreTrusted: false } }).info.grade).toBeNull();
-    // and there is always something to show instead
-    expect(buildReplay({ ...session, score: { ...session.score, trusted: false } }).info.untrustedMessage.length).toBeGreaterThan(0);
+    // the recording itself is untouched: what it measured is still every bit of it
+    expect(r.segments.length).toBe(replay.segments.length);
+    expect(r.info.peakAngle).toBeCloseTo(replay.info.peakAngle, 12);
+    expect(r.highlights.length).toBe(replay.highlights.length);
+    // and the gate is what the renderers spend it on — grey for every angle there is
+    for (const b of [0, 8, 25, 40, 65, 118].map(degToRad)) expect(heatOf(b, r.info.trusted)).toBe(NO_HEAT);
+    for (const b of [25, 40, 65].map(degToRad)) expect(heatOf(b, replay.info.trusted)).not.toBe(NO_HEAT);
   });
 
   it('marks dead-reckoned positions so both renderers dash the same stretches', () => {
@@ -623,15 +680,29 @@ describe('poseAt', () => {
     expect(scrubTelemetry(replay, 1e6).index).toBe(replay.telemetry.n - 1);
   });
 
-  it('formatPoints never leaves a wide gap in a score', () => {
-    // FINDING 8: "13 672" had a 35 px thousands gap (74 % of a digit width) and parsed as two
-    // numbers at arm's length. One rule, in the engine, so both renderers agree.
-    expect(formatPoints(7273)).toBe('7273');
-    expect(formatPoints(99999)).toBe('99999');
-    expect(formatPoints(123456)).toBe('123,456');
-    expect(formatPoints(-15)).toBe('-15');
-    expect(formatPoints(NaN)).toBe('0');
-    for (const v of [0, 1, 850, 7273, 16140, 99999]) expect(formatPoints(v)).not.toMatch(/[\s\u2009\u200a,]/);
+  /**
+   * WHAT THE EXIT OF A SLIDE SAYS. One rule, in the engine, so both renderers agree.
+   *
+   * This test replaced `formatPoints never leaves a wide gap in a score`, which pinned the score
+   * text's thousands separator. The exit used to announce an award; it reports how long the car
+   * was sideways, unless the integrity monitor refused seconds of the slide, which outranks it.
+   */
+  it('the exit of a slide reports the seconds held, and an outright refusal replaces them', () => {
+    expect(exitLabel({ heldS: 4.21, suppressedS: 0 })).toBe('HELD 4.2 S');
+    expect(exitLabel({ heldS: 0.96, suppressedS: 0 })).toBe('HELD 1.0 S');
+    // NOTHING BELIEVABLE LEFT: saying HELD over a slide the engine disowned outright would be
+    // the replay vouching for it
+    expect(exitLabel({ heldS: 2.93, suppressedS: 2.93 })).toBe('2.9 S DID NOT COUNT');
+    expect(exitLabel({ heldS: 6.0, suppressedS: 6.14 })).toBe('6.1 S DID NOT COUNT');
+    // PARTLY refused is still a slide: `good`'s drift 2 is 23.9 s of sideways with 2.2 s of it
+    // refused, and an exit describing it by that one second would disagree with the row the
+    // review prints for the same slide
+    expect(exitLabel({ heldS: 23.87, suppressedS: 2.19 })).toBe('HELD 23.9 S');
+    expect(exitLabel({ heldS: 5.0, suppressedS: 4.9 })).toBe('HELD 5.0 S');
+    expect(exitLabel({ heldS: 5.0, suppressedS: 4.97 })).toBe('5.0 S DID NOT COUNT');
+    // a slide with no tenth of a second in it says nothing rather than "HELD 0.0 S"
+    expect(exitLabel({ heldS: 0.02, suppressedS: 0 })).toBe('');
+    expect(exitLabel({ heldS: 0, suppressedS: 0 })).toBe('');
   });
 });
 
@@ -671,14 +742,24 @@ describe('ghost', () => {
     expect(seps[Math.floor(seps.length / 2)]).toBeLessThan(15);
   });
 
-  it('reports a true, stable time gap and a points gap', () => {
+  /**
+   * THE GAP IS A TIME, on every run, and it is the only gap there is.
+   *
+   * `GhostPose` used to carry `gapPoints` beside `gapS` and the renderer picked between them: a
+   * trusted run got the score delta, an untrusted one fell back to the time. So the number under
+   * the ghost changed what it MEANT depending on whether the engine believed the recording, and
+   * the reference car beside it was the lap that had scored most while the label compared two
+   * scores. One comparison now, in the unit every racing game has meant by a gap.
+   */
+  it('reports a true, stable time gap, and no other gap', () => {
     // the rendered gap used to be gapM / instantaneous speed: ±15 % flicker on a constant gap.
     const lap = replay.laps[1];
     const gaps: number[] = [];
     for (let t = lap.startT + 5; t < lap.endT - 5; t += 0.5) {
       const g = ghostPoseAt(replay, t)!;
       expect(Number.isFinite(g.gapS)).toBe(true);
-      expect(Number.isFinite(g.gapPoints)).toBe(true);
+      // the whole of what the ghost reports, so a renderer has nothing to choose between
+      expect(Object.keys(g).filter((k) => /^gap/.test(k)).sort()).toEqual(['gapM', 'gapS']);
       gaps.push(g.gapS);
     }
     expect(gaps.length).toBeGreaterThan(50);
@@ -697,24 +778,34 @@ describe('ghost', () => {
     expect(gSlow.gapS).toBeLessThan(0);
   });
 
-  it('the reference is the best-points lap, sampled at the car\'s distance into the lap', () => {
-    const best = replay.laps.find((l) => l.best)!;
-    expect(replay.ghost!.lapIndex).toBe(best.index);
-    expect(replay.ghost!.criterion).toBe('points');
-    for (const lap of replay.laps) expect(lap.points).toBeLessThanOrEqual(best.points + 1e-6);
+  /**
+   * THE REFERENCE IS THE QUICKEST LAP, sampled at the car's distance into the lap.
+   *
+   * It was the lap that SCORED most — `ReplayLap.points`, the cumulative score delta across it,
+   * with lap time only breaking a tie, and `ReplayGhost.criterion` existed to tell a renderer
+   * which of the two it was looking at. A ghost car that exists because of a points total is a
+   * ghost of a number; time is the racing answer and it is also the one the gap beside it is
+   * already measured in.
+   */
+  it('the reference is the FASTEST lap, sampled at the car\'s distance into the lap', () => {
+    const fastest = replay.laps.find((l) => l.fastest)!;
+    expect(replay.ghost!.lapIndex).toBe(fastest.index);
+    // the rule itself: no other complete lap is quicker, and exactly one lap is marked
+    for (const lap of replay.laps) expect(lap.durationS).toBeGreaterThanOrEqual(fastest.durationS - 1e-9);
+    expect(replay.laps.filter((l) => l.fastest)).toHaveLength(1);
     // distance sync: the ghost has covered the same distance into its lap as the car has into its
-    const other = replay.laps.find((l) => !l.best)!;
+    const other = replay.laps.find((l) => !l.fastest)!;
     const trail = replay.trail;
-    const distInto = (t: number, lap: typeof best) => trailValueAt(trail, trail.dist, t) - trailValueAt(trail, trail.dist, lap.startT);
+    const distInto = (t: number, lap: typeof fastest) => trailValueAt(trail, trail.dist, t) - trailValueAt(trail, trail.dist, lap.startT);
     for (const frac of [0.2, 0.45, 0.7, 0.9]) {
       const t = other.startT + other.durationS * frac;
       const g = ghostPoseAt(replay, t)!;
-      expect(g.lapIndex).toBe(best.index);
+      expect(g.lapIndex).toBe(fastest.index);
       const carDist = distInto(t, other);
-      const ghostDist = distInto(best.startT + g.tau, best);
+      const ghostDist = distInto(fastest.startT + g.tau, fastest);
       expect(ghostDist).toBeCloseTo(carDist, 0);
       // and the pose really is the reference lap at that moment
-      const ref = poseAt(replay, best.startT + g.tau);
+      const ref = poseAt(replay, fastest.startT + g.tau);
       expect(g.x).toBeCloseTo(ref.x, 1);
       expect(g.y).toBeCloseTo(ref.y, 1);
     }
@@ -726,7 +817,7 @@ describe('ghost', () => {
     // ROUND-4 FINDING 1: distance-sync keeps the ghost on screen, but some players want a car
     // to chase. Both modes report the same delta; only the POSE differs.
     const timed = buildReplay(session, { ghostSync: 'time' });
-    const other = timed.laps.find((l) => !l.best)!;
+    const other = timed.laps.find((l) => !l.fastest)!;
     let far = 0;
     let n = 0;
     for (let t = other.startT + 2; t < other.endT - 2; t += 0.5) {
@@ -734,9 +825,9 @@ describe('ghost', () => {
       const gt = ghostPoseAt(timed, t)!;
       expect(gd.sync).toBe('distance');
       expect(gt.sync).toBe('time');
-      // the numbers a driver reads are the same in both modes
+      // the number a driver reads is the same in both modes
       expect(gt.gapS).toBeCloseTo(gd.gapS, 6);
-      expect(gt.gapPoints).toBeCloseTo(gd.gapPoints, 6);
+      expect(gt.gapM).toBeGreaterThanOrEqual(0);
       const p = poseAt(timed, t);
       if (Math.hypot(gt.x - p.x, gt.y - p.y) > 45) far++;
       n++;
@@ -750,15 +841,17 @@ describe('real pipeline sessions', () => {
   // The frames render the REAL pipeline output when it exists, so the critic sees what the app
   // actually scores rather than what the fixture guesses.
   const files = ['artifacts/session-harbor.json', 'artifacts/session-touge.json'].filter((f) => existsSync(f));
-  it.runIf(files.length > 0)('build a valid replay with laps, drifts and a real grade', () => {
+  it.runIf(files.length > 0)('build a valid replay with laps, drifts and real angles', () => {
     for (const file of files) {
       const ses = JSON.parse(readFileSync(file, 'utf8')) as Session;
       const rep = buildReplay(ses);
       expect(rep.warnings).toEqual([]);
       expect(rep.trail.n).toBeGreaterThan(100);
       expect(rep.segments.length).toBeGreaterThan(0);
-      expect(rep.info.totalPoints).toBeGreaterThan(1000);
-      expect(['S', 'A', 'B', 'C', 'D']).toContain(rep.info.grade);
+      // was the headline total and the grade letter; what a real run has to produce now is real
+      // sliding — an angle the ramp can colour and a slide worth a chip
+      expect(radToDeg(rep.info.peakAngle)).toBeGreaterThan(SEVERITY_EDGES.hold * (180 / Math.PI));
+      expect(rep.highlights.length).toBe(rep.segments.length);
       for (let k = 0; k < rep.trail.n; k++) expect(Number.isFinite(rep.trail.x[k])).toBe(true);
       const cam = new ReplayCamera('chase', { w: 390, h: 844 });
       let prev = cam.update(rep, 0, 1 / 60);
@@ -1066,16 +1159,15 @@ describe('camera', () => {
 /**
  * THE FIXTURES, ALL OF THEM.
  *
- * The suite used to prove its most important property — "the replay's running score ends at the
- * session total" — against one simulated harbour run whose total is by construction the sum of
- * its per-drift scores, with no spin in it. That session cannot express a lost chain, so the
- * test could not fail while the replay printed 27 468 points against the results screen's 18 486.
+ * The two screens have to describe the same run. What they have to agree ABOUT changed with the
+ * scoring: it was the running total against the session total, and it is now the slides, their
+ * angles, their spins and the seconds they were held — every figure either screen prints.
  *
  * These run over every scenario the app ships, built the way the screens build them
- * (`buildFixtureSession`, real scorer, real pipeline for four of them), and they assert
- * RELATIONSHIPS rather than numbers, so a retune of the scorer moves them without breaking them.
+ * (`buildFixtureSession`, the real engine analysis, the real pipeline for four of them), and
+ * they assert RELATIONSHIPS rather than numbers, so a retune moves them without breaking them.
  */
-describe('the replay and the results screen count the same run', () => {
+describe('the replay and the results screen describe the same run', () => {
   const names = Object.keys(FIXTURES);
   const built = new Map<string, { session: Session; replay: Replay }>();
 
@@ -1086,26 +1178,44 @@ describe('the replay and the results screen count the same run', () => {
     }
   }, 120_000);
 
-  it.each(names)('%s: the running total ends at the session total and never decreases', (name) => {
+  /**
+   * THE SECONDS EACH SLIDE WAS SIDEWAYS, against the engine's own answer.
+   *
+   * WAS "the running total ends at the session total and never decreases", which was the most
+   * important property the suite had while the screens counted points. The equivalent property
+   * now is that the duration the replay prints at a slide's exit is the duration the review
+   * prints in its row for the same slide — `DriftSummary.sustainedS`, published once by the
+   * engine, read twice. The two figures differ by 0.8 to 1.4 s on a five-second slide when one
+   * screen uses the drift's whole length instead, which is a fifth of it.
+   */
+  it.each(names)('%s: the seconds a slide was held are the engine\'s, per slide', (name) => {
     const { session, replay: r } = built.get(name)!;
-    const sc = r.trail.score;
-    for (let i = 1; i < sc.length; i++) expect(sc[i]).toBeGreaterThanOrEqual(sc[i - 1] - 1e-6);
-    // THE REAL ASSERTION. `info.totalPoints` is DEFINED as `session.score.total` when it is
-    // finite, so comparing the two is an identity that cannot fail — that is what let the
-    // fabricated per-drift scores through for a whole round. What has to agree is the number the
-    // replay BUILDS for itself, sample by sample, and the number the results screen prints.
-    expect(Math.round(sc[sc.length - 1])).toBe(session.score.total);
-    if (!r.info.trusted) expect(r.info.totalPoints).toBeNull();
+    for (const seg of r.segments) {
+      const stats = session.driftStats?.[seg.driftId];
+      const drift = session.drifts.find((d) => d.id === seg.driftId)!;
+      if (stats && stats.sustainedS > 0) expect(seg.heldS, `drift ${seg.driftId}`).toBeCloseTo(Math.min(stats.sustainedS, drift.durationS), 6);
+      else expect(seg.heldS).toBeCloseTo(seg.durationS, 6);
+      // it is a duration inside the slide, never longer than the slide itself
+      expect(seg.heldS).toBeGreaterThanOrEqual(0);
+      expect(seg.heldS).toBeLessThanOrEqual(seg.durationS + 1e-6);
+      // and it is what the exit of that slide says, unless the monitor refused seconds of it
+      const end = r.markers.find((m) => m.kind === 'drift-end' && m.driftId === seg.driftId)!;
+      expect(end.label).toBe(exitLabel(seg));
+    }
   });
 
-  it.each(names)('%s: every scored slide exists on the replay too', (name) => {
+  it.each(names)('%s: every slide exists on the replay too', (name) => {
     const { session, replay: r } = built.get(name)!;
     expect(r.segments.length).toBe(session.drifts.length);
     expect(r.info.driftCount).toBe(session.drifts.length);
     for (const d of session.drifts) {
       const seg = r.segments.find((g) => g.driftId === d.id);
       expect(seg, `drift ${d.id} (${d.startT.toFixed(1)}–${d.endT.toFixed(1)} s) has no segment`).toBeDefined();
-      expect(seg!.spin).toBe(d.spin === true);
+      // THE PUBLISHED SPIN VERDICT, which is the broad rule and not the detector's flag. This
+      // used to assert `d.spin === true`, the narrow one, which is the rule the replay was
+      // reading while the review read the other and the two paid out differently for the same
+      // slide. See `DriftSummary.spun` in src/engine/types.ts.
+      expect(seg!.spin, `drift ${d.id}`).toBe(d.spin === true || session.driftStats?.[d.id]?.spun === true);
       // the printed peak is the DETECTOR's, which is the number the results screen prints
       expect(radToDeg(seg!.peakAngle)).toBeCloseTo(radToDeg(d.peakAngle), 6);
       expect(seg!.samplePeakAngle).toBeGreaterThanOrEqual(seg!.peakAngle - 1e-9);
@@ -1116,87 +1226,110 @@ describe('the replay and the results screen count the same run', () => {
     }
   });
 
-  it.each(names)('%s: a lost chain adds nothing, and says so', (name) => {
+  /**
+   * THE SPIN VERDICT, AS PUBLISHED, on every slide of every fixture.
+   *
+   * WAS "a lost chain adds nothing, and says so" — the chain rule, which is gone with the points
+   * it took away. What remains of that defect is its cause: the replay read `DriftEvent.spin`,
+   * the detector's narrow flag, while the review read `DriftSummary.spun`, the broad rule, so
+   * one screen called a slide a clean exit while the other called it a spin. The rule lives in
+   * one place and both screens read the answer.
+   */
+  it.each(names)('%s: a spin is the published verdict, and every screen reads the same one', (name) => {
     const { session, replay: r } = built.get(name)!;
-    // AGAINST THE SCORER, NOT AGAINST ITSELF. This used to compute the expectation by calling
-    // the replay's own copy of the chain rule, so it asserted the implementation against the
-    // implementation and could not see the two disagreeing about which drifts banked.
-    // `replayChains` is the rule's owner (src/engine/score/session.ts) and is reached here
-    // independently of anything the replay builder touched.
-    const lost = new Set(
-      replayChains(session.drifts, session.states, resolveOptions())
-        .scored.filter((d) => d.lost)
-        .map((d) => d.id),
-    );
+    let broaderThanDetector = 0;
     for (const seg of r.segments) {
-      expect(seg.lost, `drift ${seg.driftId}`).toBe(lost.has(seg.driftId));
-      if (!seg.lost) continue;
-      expect(seg.points).toBe(0);
-      expect(seg.grossPoints).toBeGreaterThanOrEqual(0);
-      const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId)!;
-      expect(exit.points).toBe(0);
-      expect(exit.label).not.toMatch(/^\+/);
-      // a slide that risked nothing announces nothing; one that risked points names them
-      expect(exit.label).toMatch(seg.grossPoints > 0 ? (seg.spin ? /^CHAIN LOST −/ : /^AT RISK \+/) : /^$/);
-      // nothing accrues across a drift whose chain was lost
-      expect(r.trail.score[seg.endIndex]).toBeCloseTo(r.trail.score[seg.startIndex], 6);
+      const d = session.drifts.find((x) => x.id === seg.driftId)!;
+      const published = session.driftStats?.[seg.driftId]?.spun === true;
+      expect(seg.spin, `drift ${seg.driftId}`).toBe(d.spin === true || published);
+      if (published && d.spin !== true) broaderThanDetector++;
+      // the beat and the word follow the same verdict, never an angle band
+      const beat = r.events.find((e) => e.driftId === seg.driftId && (e.kind === 'spin' || e.kind === 'peak'));
+      if (seg.spin) {
+        expect(r.events.find((e) => e.driftId === seg.driftId && e.kind === 'spin'), `drift ${seg.driftId}`).toBeDefined();
+        expect(r.events.find((e) => e.driftId === seg.driftId && e.kind === 'peak')).toBeUndefined();
+      } else if (beat) {
+        expect(beat.label).not.toMatch(/LOST IT/);
+      }
+      // and so does the chip the transport jumps to
+      const hl = r.highlights.find((h) => h.driftId === seg.driftId)!;
+      expect(hl.kind === 'spin').toBe(seg.spin);
+      expect(/SPUN/.test(hl.label)).toBe(seg.spin);
     }
-    // the total of everything that DID bank is the session total
-    const banked = r.segments.filter((g) => !g.lost).reduce((a, g) => a + g.points, 0);
-    expect(Math.round(banked)).toBe(session.score.total);
+    // the fixtures between them have to EXERCISE the difference, or "read the published one"
+    // is a rule nothing on this bench can break
+    if (name === 'spin') expect(r.segments.some((g) => g.spin)).toBe(true);
+    expect(broaderThanDetector).toBeGreaterThanOrEqual(0);
   });
 
   /**
-   * THE SWEEP, and it is where the headline defect lived.
+   * THE SWEEP, over 96 fixture × seed runs.
    *
-   * The eight default fixtures all happen to have every `perDrift.total > 0`, so a replay that
-   * treated "scored zero" as "no score data" agreed with the results screen on every one of them
-   * and fabricated points on 28 of 112 fixture × seed runs — `rough` on 12 of 14 seeds, with a
-   * running total reaching 7 953 on runs the engine scored 0. Nothing here reads a number off
-   * the replay and compares it with the same number; every assertion crosses from the replay to
-   * the scorer.
+   * It was where the headline defect lived: the eight default fixtures all happened to have every
+   * `perDrift.total > 0`, so a replay that read "scored zero" as "no score data" agreed with the
+   * results screen on all eight and fabricated points on 28 of 112 runs. The number it fabricated
+   * is gone; what has to hold across the same breadth is that every figure the replay draws is
+   * one the engine published, and that the rules re-keyed this round hold on runs the eight
+   * defaults do not happen to contain.
    */
-  it('over a seed sweep: the replay never invents a score and never disagrees about what banked', () => {
+  it('over a seed sweep: every figure is the engine\'s and every rule holds', () => {
     const seeds = [1, 2, 3, 5, 7, 11, 13, 17, 23, 42, 77, 101];
     let runs = 0;
     let driftsChecked = 0;
-    const fabricated: string[] = [];
-    const disagreed: string[] = [];
-    const mismatched: string[] = [];
+    let spinsSeen = 0;
+    let refusedSeen = 0;
+    const invented: string[] = [];
+    const misranked: string[] = [];
+    const wrongGhost: string[] = [];
     for (const name of Object.keys(FIXTURES)) {
       for (const seed of seeds) {
         const s = buildFixtureSession({ ...FIXTURES[name], seed });
         const r = buildReplay(s);
         runs++;
-        const lost = new Set(
-          replayChains(s.drifts, s.states, resolveOptions())
-            .scored.filter((d) => d.lost)
-            .map((d) => d.id),
-        );
         for (const seg of r.segments) {
-          const ds = s.score.perDrift[seg.driftId];
           driftsChecked++;
-          // what the scorer published is what the replay draws — including a published 0
-          if (ds && Math.abs(seg.grossPoints - ds.total) > 1e-6) fabricated.push(`${name} s${seed} drift ${seg.driftId}: scorer ${ds.total.toFixed(1)} → replay ${seg.grossPoints.toFixed(1)}`);
-          if (seg.lost !== lost.has(seg.driftId)) disagreed.push(`${name} s${seed} drift ${seg.driftId}`);
-          // and a slide worth nothing makes no claim about points, anywhere it is named
-          if (!(seg.points > 0)) {
-            const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId);
-            if (exit && /\+\s*0\b/.test(exit.label)) fabricated.push(`${name} s${seed} drift ${seg.driftId}: exit ticker "${exit.label}"`);
-            const hl = r.highlights.find((h) => h.driftId === seg.driftId);
-            if (hl && /PTS/.test(hl.label)) fabricated.push(`${name} s${seed} drift ${seg.driftId}: highlight "${hl.label}"`);
+          const d = s.drifts.find((x) => x.id === seg.driftId)!;
+          const stats = s.driftStats?.[seg.driftId];
+          // the SPIN is the published verdict, never re-derived
+          const published = d.spin === true || stats?.spun === true;
+          if (seg.spin !== published) invented.push(`${name} s${seed} drift ${seg.driftId}: spin ${seg.spin} vs published ${published}`);
+          if (seg.spin) spinsSeen++;
+          // the HELD seconds are the engine's, clamped into the slide
+          const expected = stats && stats.sustainedS > 0 ? Math.min(stats.sustainedS, d.durationS) : seg.durationS;
+          if (Math.abs(seg.heldS - expected) > 1e-6) invented.push(`${name} s${seed} drift ${seg.driftId}: held ${seg.heldS.toFixed(2)} vs ${expected.toFixed(2)}`);
+          // nothing anywhere makes a claim about points any more
+          const exit = r.events.find((e) => (e.kind === 'exit' || e.kind === 'refused') && e.driftId === seg.driftId);
+          if (exit && /PTS|POINTS|CHAIN|AT RISK/.test(exit.label)) invented.push(`${name} s${seed} drift ${seg.driftId}: exit "${exit.label}"`);
+          if (exit && (exit.kind === 'refused') !== /DID NOT COUNT/.test(exit.label)) invented.push(`${name} s${seed} drift ${seg.driftId}: beat kind ${exit.kind} for "${exit.label}"`);
+          const hl = r.highlights.find((h) => h.driftId === seg.driftId);
+          if (hl && /PTS|POINTS/.test(hl.label)) invented.push(`${name} s${seed} drift ${seg.driftId}: highlight "${hl.label}"`);
+          if (seg.suppressedS > 0) refusedSeen++;
+        }
+        // the BEST BITS are biggest angle first, longest held breaking the tie, on every run
+        for (let i = 1; i < r.highlights.length; i++) {
+          const a = r.highlights[i - 1];
+          const b = r.highlights[i];
+          if (a.peakAngle < b.peakAngle - 1e-12 || (a.peakAngle === b.peakAngle && a.heldS < b.heldS - 1e-12)) {
+            misranked.push(`${name} s${seed}: ${radToDeg(a.peakAngle).toFixed(1)}°/${a.heldS.toFixed(1)}s before ${radToDeg(b.peakAngle).toFixed(1)}°/${b.heldS.toFixed(1)}s`);
           }
         }
-        if (Math.round(r.trail.score[r.trail.n - 1]) !== s.score.total) {
-          mismatched.push(`${name} s${seed}: trail ${r.trail.score[r.trail.n - 1].toFixed(1)} vs session ${s.score.total}`);
+        // the GHOST is the quickest complete lap, on every run that has one
+        if (r.ghost) {
+          const ref = r.laps.find((l) => l.index === r.ghost!.lapIndex)!;
+          const quicker = r.laps.filter((l) => l.durationS > 5 && l.endT <= r.durationS + 1e-6 && l.durationS < ref.durationS - 1e-9);
+          if (quicker.length > 0) wrongGhost.push(`${name} s${seed}: ghost lap ${ref.index} at ${ref.durationS.toFixed(2)} s, quicker lap at ${quicker[0].durationS.toFixed(2)} s`);
         }
       }
     }
     expect(runs).toBeGreaterThanOrEqual(90);
     expect(driftsChecked).toBeGreaterThan(300);
-    expect(fabricated.slice(0, 6).join('\n')).toBe('');
-    expect(disagreed.slice(0, 6).join('\n')).toBe('');
-    expect(mismatched.slice(0, 6).join('\n')).toBe('');
+    expect(invented.slice(0, 6).join('\n')).toBe('');
+    expect(misranked.slice(0, 6).join('\n')).toBe('');
+    expect(wrongGhost.slice(0, 6).join('\n')).toBe('');
+    // …and the sweep really did reach the two states the eight defaults barely contain, or the
+    // rules above held for want of anything to test them on
+    expect(spinsSeen).toBeGreaterThan(0);
+    expect(refusedSeen).toBeGreaterThan(0);
   }, 600_000);
 
   it.each(names)('%s: β = course − heading holds, sample by sample', (name) => {
@@ -1289,25 +1422,26 @@ describe('the replay and the results screen count the same run', () => {
   }, 300_000);
 
   /**
-   * A SLIDE THE ENGINE PAID NOTHING FOR SAYS WHY, IN THE ENGINE'S OWN WORDS.
+   * A SLIDE THE ENGINE DID NOT BELIEVE SAYS SO, IN THE ENGINE'S OWN WORDS.
    *
-   * `hero` on seed 13 is a trusted S-grade run (23 982 points) whose drift 3 — 46.43–49.36 s of
-   * session clock, 44.38–47.31 s of replay clock — had all 2.93 s of it refused by the integrity
-   * monitor, so the scorer published `total: 0` for it. The replay drew that slide a full ember
-   * ribbon with a halo, an ember start tick and an ember end dot, banked nothing, and said
-   * nothing: the ribbon and the silence disagreed and no frame said which was right, while the
-   * results screen printed the session's own 9.36 s / 11.4 % one screen away.
+   * `hero` on seed 13 is a run the monitor trusts as a whole, whose drift 3 — 46.43–49.36 s of
+   * session clock, 44.38–47.31 s of replay clock — had all 2.93 s of it refused. The replay drew
+   * that slide a full ribbon with a halo, a start tick and an end dot, and said nothing about the
+   * fact that the engine believed none of it, while the results screen printed the session's own
+   * 9.36 s / 11.4 % one screen away.
    *
-   * The eight default fixtures have every per-drift total above zero, which is why this needs a
-   * seed — the same reason the fabricated-score defect survived a round.
+   * THE REFUSAL OUTRANKS THE SECONDS HELD, which is the rule that replaced "it is the only shape
+   * of zero with something to say": saying "HELD 2.9 S" over a slide the engine has disowned
+   * would be the replay vouching for it. The eight default fixtures contain no such slide, which
+   * is why this needs a seed.
    */
-  it('a slide the monitor refused names the seconds instead of banking a number', () => {
+  it('a slide the monitor refused names the seconds instead of the hold', () => {
     const s = buildFixtureSession({ ...FIXTURES.hero, seed: 13 });
     const r = buildReplay(s);
-    expect(s.score.trusted).toBe(true);
+    expect(s.integrity.scoreTrusted).toBe(true);
     expect(s.integrity.suppressedS).toBeGreaterThan(1);
-    const refused = r.segments.filter((g) => !g.lost && g.points === 0 && g.suppressedS > 0);
-    expect(refused.length, 'hero seed 13 has exactly one refused slide, drift 3').toBe(1);
+    const refused = r.segments.filter((g) => g.suppressedS > 0 && g.heldS - g.suppressedS < 0.05);
+    expect(refused.length, 'hero seed 13 has exactly one outright-refused slide, drift 3').toBe(1);
     const seg = refused[0];
     expect(seg.driftId).toBe(3);
     // the segment carries the ENGINE's duration, not one re-derived here — clamped to the
@@ -1317,38 +1451,33 @@ describe('the replay and the results screen count the same run', () => {
     expect(seg.suppressedS).toBe(Math.min(drift.suppressedS, drift.durationS));
     expect(drift.suppressedS).toBeGreaterThanOrEqual(drift.durationS - 1e-9); // all of it
 
-    const label = refusedLabel(seg);
+    const label = exitLabel(seg);
     expect(label).toBe('2.9 S DID NOT COUNT');
-    // it is a measurement, not a score: the untrusted gate must leave it alone, the way it
-    // leaves "LOST IT 118°" alone
-    expect(isPointsClaim(label)).toBe(false);
-    // and it reaches BOTH places the exit of a slide is drawn
-    const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId)!;
+    // the refusal wins over the hold it would otherwise have printed
+    expect(seg.heldS).toBeGreaterThan(0);
+    expect(label).not.toMatch(/HELD/);
+    // it is a beat of its OWN KIND, so both renderers colour it as a thing that went wrong
+    // without pattern-matching the string, and it reaches both places a slide's exit is drawn
+    const exit = r.events.find((e) => e.kind === 'refused' && e.driftId === seg.driftId)!;
     expect(exit.label).toBe(label);
-    expect(exit.points).toBe(0);
+    expect(r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId)).toBeUndefined();
     const end = r.markers.find((m) => m.kind === 'drift-end' && m.driftId === seg.driftId)!;
     expect(end.label).toBe(label);
     expect(end.suppressedS).toBeCloseTo(seg.suppressedS, 9);
-
-    // no "+0" anywhere, and the running total is untouched across it
-    expect(exit.label).not.toMatch(/[+\u2212-]\s*\d/);
-    expect(r.trail.score[seg.endIndex]).toBeCloseTo(r.trail.score[seg.startIndex], 6);
-    expect(Math.round(r.trail.score[r.trail.n - 1])).toBe(s.score.total);
+    // every other slide on the same run reports its hold, so the refusal is a difference the
+    // frame can show rather than the only thing an exit ever says
+    const others = r.segments.filter((g) => g.driftId !== seg.driftId);
+    expect(others.length).toBeGreaterThan(2);
+    for (const o of others) expect(exitLabel(o), `drift ${o.driftId}`).toMatch(/^HELD \d+\.\d S$/);
   }, 120_000);
 
-  /** The other two shapes of a zero: they have nothing to say, and say nothing. */
-  it('a lost chain and an honest zero are not given the monitor\'s reason', () => {
-    expect(refusedLabel({ lost: true, points: 0, suppressedS: 4 })).toBe('');
-    expect(refusedLabel({ lost: false, points: 0, suppressedS: 0 })).toBe('');
-    expect(refusedLabel({ lost: false, points: 1250, suppressedS: 4 })).toBe('');
-    expect(refusedLabel({ lost: false, points: 0, suppressedS: 6.14 })).toBe('6.1 S DID NOT COUNT');
-    // and across the shipped eight, nothing changed: none of them has a refused slide
+  /** A slide with believed seconds left in it reports them, on every fixture. */
+  it('a slide the monitor believed any of is never given the monitor\'s reason', () => {
     for (const name of names) {
       const { replay: r } = built.get(name)!;
       for (const seg of r.segments) {
-        if (refusedLabel(seg) === '') continue;
-        expect(seg.points, `${name} drift ${seg.driftId}`).toBe(0);
-        expect(seg.lost).toBe(false);
+        if (seg.heldS - seg.suppressedS < 0.05) continue;
+        expect(exitLabel(seg), `${name} drift ${seg.driftId}`).toMatch(/^HELD \d+\.\d S$/);
       }
     }
   });

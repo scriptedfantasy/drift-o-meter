@@ -32,6 +32,7 @@ import {
   type Replay,
 } from '../../engine/replay';
 import { clamp } from '../../engine/types';
+import type { SpeedUnits } from '../format';
 import { buildSceneGeometry } from './geometry';
 import { safeFrame, type ReplayLayout } from './layout';
 import { TYPE } from './palette';
@@ -57,6 +58,12 @@ export interface ReplayCanvasProps {
   focusDriftId: number | null;
   chip: { current: HighlightChip | null };
   reduceMotion: boolean;
+  /**
+   * `AppSettings.units`. The scene model is SI; the speed is converted where it is drawn, which
+   * is the arrangement the review screen uses — `useSettings` at the screen, `formatSpeed` at the
+   * render — so the two screens cannot disagree about what unit a run was driven in.
+   */
+  units: SpeedUnits;
   /** The transport is on screen (the canvas puts a scrim behind it). */
   controlsVisible: boolean;
   /** The warnings plate is expanded over the stage, so the canvas keeps that area clear. */
@@ -80,15 +87,15 @@ function makeFonts(
   };
   const fonts: SceneFonts = {
     hero: font(bc800, TYPE.hero),
-    callout: font(bc800, TYPE.callout),
+    // Upright, at the same size as the italic `value`: a callout is a word about what just
+    // happened, and italic is reserved on this screen for the numbers that move.
+    callout: font(bc800, TYPE.value),
     mid: font(bc800, 17),
     peak: font(bc800, 16),
-    grade: font(bc800, 18),
     value: font(bcItalic, TYPE.value),
     label: font(bc700, TYPE.label),
     clock: font(orbitron, TYPE.clock),
     body: font(barlow, TYPE.body),
-    slam: font(bc800, TYPE.slam),
   };
   return {
     fonts,
@@ -114,7 +121,7 @@ function actionRect(layout: ReplayLayout, mode: CameraMode) {
   return mode === 'overview' ? layout.stage : layout.action;
 }
 
-export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, controlsVisible, warningsOpen, testID }: ReplayCanvasProps) {
+export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, units, controlsVisible, warningsOpen, testID }: ReplayCanvasProps) {
   const res = useMemo(() => createSceneResources(), []);
   const geo = useMemo(() => buildSceneGeometry(replay), [replay]);
   const tfHero = useTypeface(BC_800);
@@ -128,8 +135,8 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   const picture = useSharedValue<SkPicture>(empty);
 
   // Everything the loop reads, refreshed on every render so the loop itself never restarts.
-  const stateRef = useRef({ replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, warningsOpen, fonts: fontBook.fonts });
-  stateRef.current = { replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, warningsOpen, fonts: fontBook.fonts };
+  const stateRef = useRef({ replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, units, controlsVisible, warningsOpen, fonts: fontBook.fonts });
+  stateRef.current = { replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, units, controlsVisible, warningsOpen, fonts: fontBook.fonts };
   /** Wall-clock ms until which the frame must keep being redrawn even when paused. */
   const dirtyUntil = useRef(0);
   const markDirty = (ms = 400) => {
@@ -152,7 +159,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   }, [camera, layout, mode]);
   useEffect(() => {
     markDirty(600);
-  }, [fontBook, geo, view, focusDriftId, controlsVisible, warningsOpen]);
+  }, [fontBook, geo, view, focusDriftId, units, controlsVisible, warningsOpen]);
 
   useEffect(() => {
     let raf = 0;
@@ -231,7 +238,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       // key and not in `moving` either, so tapping 2× while paused changed the rate and left the
       // last frame on screen without the chip. Loading with `rate=2` showed it, which is what a
       // route-by-route screenshot check cannot catch: the difference was in the transition.
-      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}${s.fonts.body ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.controlsVisible ? 1 : 0}${s.warningsOpen ? 1 : 0}|${sv.rate.value}|${sv.playing.value}`;
+      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}${s.fonts.body ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.units}|${s.controlsVisible ? 1 : 0}${s.warningsOpen ? 1 : 0}|${sv.rate.value}|${sv.playing.value}`;
       if (!moving && t === lastDrawnT && inputs === lastInputs) return;
       lastDrawnT = t;
       lastInputs = inputs;
@@ -262,6 +269,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
               warningsOpen: s.warningsOpen,
               controlsVisible: s.controlsVisible,
               reduceMotion: s.reduceMotion,
+              units: s.units,
             },
           });
         },

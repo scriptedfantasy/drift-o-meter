@@ -21,7 +21,6 @@ import type { Session } from '../../src/engine/types';
 import {
   activeEvents,
   buildReplay,
-  formatPoints,
   ghostPoseAt,
   lapAt,
   liveSmoke,
@@ -41,25 +40,21 @@ import {
   type ReplayMarker,
   type ReplayPose,
 } from '../../src/engine/replay';
-import { colors, gradeColors } from '../../src/ui/theme';
+import { ANGLE_STOPS, MAX_ANGLE_DEG, colors } from '../../src/ui/theme';
 // THE ONE COPY OF THE COLOUR AND WORDING RULES. This file used to carry its own `heatColor`,
 // its own `mix`, its own `severityWeight`, its own `fmtTime` and its own inline ribbon scale,
 // under a claim in palette.ts that every rule there was "a copy of the one the SVG reference
 // renderer uses". They stopped agreeing the round the app's ramp was trust-gated and the copies
 // were not — this tool takes `--untrusted` specifically to check that presentation and drew the
-// trail, the markers, the slip label, the band ticks and the footer's BEST in full ember anyway,
+// trail, the markers, the slip label, the band ticks and the footer's BEST at full heat anyway,
 // so the frame a critic judged disagreed with the phone about the one thing it was shot for.
-import { fmtTime, heatColor, heatOf, isPointsClaim, mix, ribbonScale, severityWeight, tintOf } from '../../src/ui/replay/palette';
+import { GHOST, eventColor, fmtTime, heatColor, heatOf, mix, ribbonScale, severityWeight, tintOf } from '../../src/ui/replay/palette';
 import { clamp, wrapAngle } from '../../src/engine/types';
 
 // ---------------------------------------------------------------- palette (src/ui/theme.ts)
 const BG = colors.bg0;
-const EMBER = colors.ember;
-const GOLD = colors.gold;
 const RED = colors.red;
-const CYAN = colors.cyan;
-const MAGENTA = colors.magenta;
-const GREEN = colors.green;
+const BLUE = colors.blue;
 const WHITE = colors.text;
 const MUTED = colors.muted;
 const HOT = '#FFE9D6';
@@ -89,8 +84,6 @@ const f3 = (v: number) => (Number.isFinite(v) ? v : 0).toFixed(3).replace(/\.?0+
 const deg = (r: number) => (r * 180) / Math.PI;
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const kmh = (v: number) => Math.round(v * 3.6);
-/** Score text; the engine owns the rule so both renderers agree. */
-const pts = formatPoints;
 
 function pointsAttr(pts: Array<[number, number]>): string {
   let s = '';
@@ -168,16 +161,16 @@ interface Frame {
   vis: { minX: number; maxX: number; minY: number; maxY: number };
   track: TrackId;
   seed: number;
-  /** Suppress every points/grade claim AND every ramp colour (untrusted recording). */
-  noScore: boolean;
+  /** The integrity monitor will not vouch for this recording: every ramp colour greys out. */
+  untrusted: boolean;
 }
 
 /** The gate, with this frame's trust plugged in — identical to `heat` in `scene.ts`. */
-const heat = (f: Frame, beta: number) => heatOf(beta, !f.noScore);
+const heat = (f: Frame, beta: number) => heatOf(beta, !f.untrusted);
 /** The gate for a colour that belongs to a drift the DETECTOR declared: floored at the hold edge. */
 const driftHeat = (f: Frame, beta: number) => heat(f, Math.max(Math.abs(beta), SEVERITY_EDGES.hold));
 /** The gate for a ramp colour something else already worked out. */
-const tint = (f: Frame, hex: string) => tintOf(hex, !f.noScore);
+const tint = (f: Frame, hex: string) => tintOf(hex, !f.untrusted);
 
 const inView = (f: Frame, x: number, y: number) => x >= f.vis.minX && x <= f.vis.maxX && y >= f.vis.minY && y <= f.vis.maxY;
 /** Width in metres that is at least `px` logical points on screen. */
@@ -455,7 +448,7 @@ function drawMarkers(f: Frame): string {
   for (const m of r.markers) {
     if (m.t > f.t || (m.lapIndex === li && li >= 0) || !inView(f, m.x, m.y)) continue;
     if (m.kind === 'transition' || m.kind === 'drift-peak') {
-      s += `<circle cx="${f2(m.x)}" cy="${f2(m.y)}" r="${f2(mOrPx(f, 0.5, 1.5))}" fill="${m.kind === 'transition' ? MAGENTA : driftHeat(f, SEVERITY_EDGES.hold)}" opacity="0.28"/>`;
+      s += `<circle cx="${f2(m.x)}" cy="${f2(m.y)}" r="${f2(mOrPx(f, 0.5, 1.5))}" fill="${m.kind === 'transition' ? BLUE : driftHeat(f, SEVERITY_EDGES.hold)}" opacity="0.28"/>`;
     }
   }
   for (const m of visibleMarkers(f)) {
@@ -467,8 +460,8 @@ function drawMarkers(f: Frame): string {
         const pulse = age < 0.7 ? 1 + 0.9 * (1 - age / 0.7) : 1;
         const rr = mOrPx(f, 1.6, 4) * pulse;
         s += `<g transform="translate(${f2(m.x)} ${f2(m.y)})">`;
-        s += `<circle r="${f2(rr * 1.9)}" fill="${MAGENTA}" opacity="${f3(0.1 * (age < 1 ? 1 : 0.4))}"/>`;
-        s += `<polygon points="0,${f2(rr)} ${f2(rr * 0.72)},0 0,${f2(-rr)} ${f2(-rr * 0.72)},0" fill="${MAGENTA}"/>`;
+        s += `<circle r="${f2(rr * 1.9)}" fill="${BLUE}" opacity="${f3(0.1 * (age < 1 ? 1 : 0.4))}"/>`;
+        s += `<polygon points="0,${f2(rr)} ${f2(rr * 0.72)},0 0,${f2(-rr)} ${f2(-rr * 0.72)},0" fill="${BLUE}"/>`;
         s += `<polygon points="0,${f2(rr * 0.45)} ${f2(rr * 0.33)},0 0,${f2(-rr * 0.45)} ${f2(-rr * 0.33)},0" fill="${WHITE}" opacity="0.9"/>`;
         s += '</g>';
         break;
@@ -514,7 +507,7 @@ function drawGhost(f: Frame): string {
     tail.push([gp.x, gp.y]);
   }
   if (tail.length > 1) {
-    s += `<polyline points="${pointsAttr(tail)}" fill="none" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.45, 1.4))}" stroke-linecap="round" opacity="0.5" stroke-dasharray="${f2(mOrPx(f, 1.1, 3))} ${f2(mOrPx(f, 1.1, 3))}"/>`;
+    s += `<polyline points="${pointsAttr(tail)}" fill="none" stroke="${tint(f, GHOST)}" stroke-width="${f3(mOrPx(f, 0.45, 1.4))}" stroke-linecap="round" opacity="0.5" stroke-dasharray="${f2(mOrPx(f, 1.1, 3))} ${f2(mOrPx(f, 1.1, 3))}"/>`;
   }
   const carS = toS(f, f.pose.x, f.pose.y);
   // Distance-syncing puts the ghost beside the car, and for part of the lap underneath it (the
@@ -525,8 +518,8 @@ function drawGhost(f: Frame): string {
   if (ghostOnScreen && bodyFade > 0.03) {
     const cs = carScale(f) * 0.92;
     s += `<g transform="translate(${f2(g.x)} ${f2(g.y)}) rotate(${f2(deg(g.heading))}) scale(${f3(cs)})" opacity="${f3(0.8 * bodyFade)}">`;
-    s += `<path d="${carPath()}" fill="${BG}" fill-opacity="0.45" stroke="${GREEN}" stroke-width="${f3(mOrPx(f, 0.22, 0.9) / cs)}" stroke-linejoin="round" stroke-dasharray="${f2(0.9 / cs)} ${f2(0.45 / cs)}"/>`;
-    s += `<polygon points="-0.55,-0.45 0.5,0 -0.55,0.45 -0.25,0" fill="${GREEN}" opacity="0.6"/>`;
+    s += `<path d="${carPath()}" fill="${BG}" fill-opacity="0.45" stroke="${tint(f, GHOST)}" stroke-width="${f3(mOrPx(f, 0.22, 0.9) / cs)}" stroke-linejoin="round" stroke-dasharray="${f2(0.9 / cs)} ${f2(0.45 / cs)}"/>`;
+    s += `<polygon points="-0.55,-0.45 0.5,0 -0.55,0.45 -0.25,0" fill="${tint(f, GHOST)}" opacity="0.6"/>`;
     s += '</g>';
   }
   return s + '</g>';
@@ -550,11 +543,11 @@ function drawCar(f: Frame): string {
     const L = clamp(0.5 * p.speed, 3, 18) * (f.mode === 'overview' ? cs * 0.5 : 1);
     const cx = Math.cos(p.course) * L;
     const cy = Math.sin(p.course) * L;
-    s += `<g stroke="${CYAN}" stroke-linecap="round" fill="none" opacity="${f3(op)}">`;
+    s += `<g stroke="${BLUE}" stroke-linecap="round" fill="none" opacity="${f3(op)}">`;
     s += `<line x1="0" y1="0" x2="${f2(cx)}" y2="${f2(cy)}" stroke-width="${f3(mOrPx(f, 0.35, 1.1))}"/>`;
     s += '</g>';
     const ah = mOrPx(f, 1.2, 3.4);
-    s += `<g transform="rotate(${f2(deg(p.course))})" opacity="${f3(op)}"><polygon points="${f2(L + ah * 0.9)},0 ${f2(L - ah)},${f2(ah * 0.6)} ${f2(L - ah)},${f2(-ah * 0.6)}" fill="${CYAN}"/></g>`;
+    s += `<g transform="rotate(${f2(deg(p.course))})" opacity="${f3(op)}"><polygon points="${f2(L + ah * 0.9)},0 ${f2(L - ah)},${f2(ah * 0.6)} ${f2(L - ah)},${f2(-ah * 0.6)}" fill="${BLUE}"/></g>`;
   }
   // heading line + slip arc, scaled with the marker so they stay legible
   if (f.mode !== 'overview' && slip > 0.035) {
@@ -642,7 +635,7 @@ function speedStreaks(f: Frame): string {
  * Two-line ghost readout placed wherever it fits. The gap indicator is load-bearing, so if no
  * candidate is free it is drawn at the last one anyway rather than leaving a mute chevron.
  */
-function ghostLabel(col: LabelCollider, x: number, y: number, w: number, gapText: string, gapPoints: number, r = 12, away: { x: number; y: number } | null = null): string {
+function ghostLabel(f: Frame, col: LabelCollider, x: number, y: number, w: number, gapText: string, ahead: boolean, r = 12, away: { x: number; y: number } | null = null): string {
   // the ghost is distance-synced, so it sits right beside the car: bias the label AWAY from
   // the car first, and start well clear of both markers
   const d = away ? Math.hypot(away.x, away.y) : 0;
@@ -667,8 +660,8 @@ function ghostLabel(col: LabelCollider, x: number, y: number, w: number, gapText
   }
   const [dx, dy, anchor] = pick;
   return (
-    text(x + dx, y + dy - 14, 'BEST LAP', { size: T_LABEL, fill: GREEN, spacing: 1.2, anchor, stroke: BG, strokeW: 3.5 }) +
-    text(x + dx, y + dy, gapText, { size: T_LABEL, fill: gapPoints >= 0 ? GREEN : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3.5 })
+    text(x + dx, y + dy - 14, 'FASTEST LAP', { size: T_LABEL, fill: tint(f, GHOST), spacing: 1.2, anchor, stroke: BG, strokeW: 3.5 }) +
+    text(x + dx, y + dy, gapText, { size: T_LABEL, fill: ahead ? tint(f, GHOST) : MUTED, weight: 800, anchor, stroke: BG, strokeW: 3.5 })
   );
 }
 
@@ -697,7 +690,7 @@ function worldLabels(f: Frame): string {
     let size = T_LABEL;
     if (m.kind === 'transition' && !overview) {
       label = m.label;
-      fill = MAGENTA;
+      fill = BLUE;
     } else if (m.kind === 'drift-peak') {
       const sev = severityWeight(m.severity ?? 'none');
       if (overview && sev < 0.45) continue;
@@ -705,8 +698,11 @@ function worldLabels(f: Frame): string {
       fill = driftHeat(f, m.peakAngle ?? 0);
       size = sev >= 0.75 ? 16 : T_LABEL;
     } else if (m.kind === 'drift-end' && !overview) {
+      // How long the car was sideways, or the seconds the monitor refused — a measurement of the
+      // recording either way, so an untrusted run keeps it, and the refusal takes the colour of
+      // the thing that went wrong (the same one its callout takes; see `eventColor`).
       label = m.label;
-      fill = MUTED;
+      fill = m.suppressedS !== undefined ? RED : MUTED;
     } else if (m.kind === 'lap') {
       label = m.label;
       fill = MUTED;
@@ -729,10 +725,13 @@ function worldLabels(f: Frame): string {
     const g = f.ghost;
     const gp = toS(f, g.x, g.y);
     const onScreen = gp.x > 8 && gp.x < W - 8 && gp.y > TOP_BAR && gp.y < H - BOTTOM_BAR - SCRUB_H;
-    const gapPts = `${g.gapPoints >= 0 ? '+' : '−'}${pts(Math.abs(g.gapPoints))} PTS`;
+    // THE GAP IS A TIME, on every run — see `drawWorldLabels` in scene.ts for what it was and
+    // why. The reference beside the car is the quickest lap, and this is how far ahead of it the
+    // car reached this point of the lap.
+    const gapText = `${g.gapS >= 0 ? '+' : '−'}${Math.abs(g.gapS).toFixed(1)} S`;
     if (onScreen) {
-      const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
-      s += ghostLabel(col, gp.x, gp.y, gw, gapPts, g.gapPoints, 12, { x: gp.x - carS.x, y: gp.y - carS.y });
+      const gw = Math.max(58, gapText.length * T_LABEL * 0.46);
+      s += ghostLabel(f, col, gp.x, gp.y, gw, gapText, g.gapS >= 0, 12, { x: gp.x - carS.x, y: gp.y - carS.y });
     } else {
       const dx = gp.x - carS.x;
       const dy = gp.y - carS.y;
@@ -747,11 +746,11 @@ function worldLabels(f: Frame): string {
         const ey = carS.y + dy * k;
         const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
         s += `<g transform="translate(${f2(ex)} ${f2(ey)})">`;
-        s += `<circle r="13" fill="${BG}" fill-opacity="0.8" stroke="${GREEN}" stroke-width="1.2" opacity="0.85"/>`;
-        s += `<g transform="rotate(${f2(ang)})"><polygon points="4,-6 11,0 4,6 6,0" fill="${GREEN}"/><path d="M -5,-4 L -1,0 L -5,4" fill="none" stroke="${GREEN}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/></g>`;
+        s += `<circle r="13" fill="${BG}" fill-opacity="0.8" stroke="${tint(f, GHOST)}" stroke-width="1.2" opacity="0.85"/>`;
+        s += `<g transform="rotate(${f2(ang)})"><polygon points="4,-6 11,0 4,6 6,0" fill="${tint(f, GHOST)}"/><path d="M -5,-4 L -1,0 L -5,4" fill="none" stroke="${tint(f, GHOST)}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/></g>`;
         s += '</g>';
-        const gw = Math.max(58, gapPts.length * T_LABEL * 0.46);
-        s += ghostLabel(col, ex, ey, gw, gapPts, g.gapPoints, 18, { x: ex - carS.x, y: ey - carS.y });
+        const gw = Math.max(58, gapText.length * T_LABEL * 0.46);
+        s += ghostLabel(f, col, ex, ey, gw, gapText, g.gapS >= 0, 18, { x: ex - carS.x, y: ey - carS.y });
       }
     }
   }
@@ -764,9 +763,12 @@ function callout(f: Frame): string {
   if (!e) return '';
   // A points award is a claim; the beat still plays, without the number (`isPointsClaim`, the
   // app's own rule). "LOST IT 118°" and "2.9 S DID NOT COUNT" are measurements and stay.
-  const label = f.noScore && isPointsClaim(e.label) ? '' : e.label;
+  const label = e.label;
   if (!label) return '';
-  const color = e.kind === 'transition' ? MAGENTA : e.kind === 'spin' ? RED : e.kind === 'peak' ? GOLD : e.kind === 'exit' ? EMBER : CYAN;
+  // A peak beat SAYS an angle, so it is drawn in that angle's colour and goes through the gate;
+  // every other beat takes a fixed token from `eventColor` (the one copy, in palette.ts).
+  const seg = e.driftId === undefined ? undefined : f.replay.segments.find((g) => g.driftId === e.driftId);
+  const color = e.kind === 'peak' && seg ? driftHeat(f, seg.peakAngle) : eventColor(e.kind);
   const size = 34;
   const y = Math.round(H * 0.33);
   let s = `<g opacity="${f3(e.opacity)}" transform="translate(${W / 2} ${y}) scale(${f3(e.scale)}) translate(${-W / 2} ${-y})">`;
@@ -800,29 +802,22 @@ function topHud(f: Frame): string {
   const angle = Math.round(Math.abs(deg(p.beta)));
   const side = Math.abs(p.beta) > 0.05 ? (p.beta > 0 ? 'R' : 'L') : '';
   const col = heat(f, p.beta);
-  const hot = p.severity !== 'none' && !f.noScore;
+  const hot = p.severity !== 'none' && !f.untrusted;
   const baseline = 86;
   if (hot) s += glowText(20, baseline, `${angle}°`, T_HERO, WHITE, col, 0.4 + 0.6 * p.intensity, 'start', 800);
   else s += text(20, baseline, `${angle}°`, { size: T_HERO, fill: MUTED, weight: 800 });
   if (side) s += text(20 + `${angle}°`.length * T_HERO * 0.42 + 6, baseline - T_HERO * 0.58, side, { size: T_LABEL, fill: col, weight: 800 });
   s += text(20, baseline + 14, 'SLIP ANGLE', { size: T_LABEL, spacing: 2, fill: MUTED, weight: 700 });
-  // tier 2: speed and points, italic (things that move)
-  s += text(W - 18, baseline - 26, `${kmh(p.speed)}`, { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
+  // TIER 2: THE SPEED, and nothing under it. The running points and the ×N multiplier chip used
+  // to stack below it in the same 34 pt italic; the corner is one number now, in the blue every
+  // cold fact on this screen takes.
+  //
+  // The unit is km/h because this tool has no settings to read — the app reads `AppSettings.units`
+  // at the screen and converts at the draw (`SceneUi.units`), which a standalone renderer that
+  // takes a track and a seed on the command line has no equivalent of. It is stated rather than
+  // implied: the harness shoots the real app, so what a driver sees is the app's unit.
+  s += text(W - 18, baseline - 26, `${kmh(p.speed)}`, { size: T_VALUE, fill: f.untrusted ? MUTED : BLUE, anchor: 'end', weight: 800, italic: true });
   s += text(W - 18, baseline - 12, 'KM/H', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
-  const ptsCol = p.phase === 'drifting' ? EMBER : WHITE;
-  if (r.info.trusted) {
-    s += text(W - 18, baseline + 12, pts(p.points), { size: T_VALUE, fill: ptsCol, anchor: 'end', weight: 800, italic: true });
-    s += text(W - 18, baseline + 26, 'POINTS', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
-  } else {
-    s += text(W - 18, baseline + 12, '\u2014', { size: T_VALUE, fill: MUTED, anchor: 'end', weight: 800, italic: true });
-    s += text(W - 18, baseline + 26, 'NOT SCORED', { size: T_LABEL, spacing: 2, fill: RED, anchor: 'end', weight: 700 });
-  }
-  if (p.multiplier > 1.05 && r.info.trusted) {
-    const cw = 34;
-    const cx = W - 18 - pts(p.points).length * T_VALUE * 0.46 - cw - 8;
-    s += `<rect x="${f2(cx)}" y="${f2(baseline - 12)}" width="${cw}" height="17" rx="3" fill="${EMBER}"/>`;
-    s += text(cx + cw / 2, baseline + 1, `×${p.multiplier.toFixed(1)}`, { size: 12, fill: '#000', anchor: 'middle', weight: 800 });
-  }
   return s;
 }
 
@@ -848,10 +843,10 @@ function bottomHud(f: Frame): string {
   const step = Math.max(1, Math.floor(tel.n / (pw * 1.5)));
   for (let i = 0; i <= cutIdx; i += step) ribbon += `${f2(xAt(tel.t[i]))},${f2(yA(tel.angle[i]))} `;
   ribbon += `${f2(xAt(tel.t[cutIdx]))},${f2(yA(tel.angle[cutIdx]))} ${f2(xAt(tel.t[cutIdx]))},${f2(yBot)}`;
-  // THE SAME GATE AS THE WORLD: this gradient IS the heat ramp, drawn in band space, so on a
-  // recording the engine does not believe it makes exactly the claim the trail was just stopped
-  // from making.
-  s += f.noScore ? `<polygon points="${ribbon}" fill="${MUTED}" opacity="0.62"/>` : `<polygon points="${ribbon}" fill="url(#ribbon)" opacity="0.95"/>`;
+  // THE SAME GATE AS THE WORLD: this gradient IS the angle ramp, stood on end in band space, so
+  // on a recording the engine does not believe it makes exactly the claim the trail was just
+  // stopped from making.
+  s += f.untrusted ? `<polygon points="${ribbon}" fill="${MUTED}" opacity="0.62"/>` : `<polygon points="${ribbon}" fill="url(#ribbon)" opacity="0.95"/>`;
   // drift windows as ticks under the baseline (only those already played)
   for (const seg of r.segments) {
     if (seg.startT > f.t) continue;
@@ -874,7 +869,7 @@ function bottomHud(f: Frame): string {
   for (const m of r.markers) {
     if (m.kind !== 'transition' || m.t > f.t) continue;
     const x = xAt(m.t);
-    s += `<polygon points="${f2(x)},${f2(yTop - 4)} ${f2(x + 2.6)},${f2(yTop)} ${f2(x)},${f2(yTop + 4)} ${f2(x - 2.6)},${f2(yTop)}" fill="${MAGENTA}" opacity="0.85"/>`;
+    s += `<polygon points="${f2(x)},${f2(yTop - 4)} ${f2(x + 2.6)},${f2(yTop)} ${f2(x)},${f2(yTop + 4)} ${f2(x - 2.6)},${f2(yTop)}" fill="${BLUE}" opacity="0.85"/>`;
   }
   // remaining time as a hairline, so the length of the run is still legible
   s += `<line x1="${f2(xAt(f.t))}" y1="${f2(yBot)}" x2="${f2(W - px)}" y2="${f2(yBot)}" stroke="#2A3340" stroke-width="1.5"/>`;
@@ -891,39 +886,25 @@ function bottomHud(f: Frame): string {
   const lapStr = r.laps.length === 0 ? 'STAGE' : lap ? `LAP ${lap.index + 1}/${r.laps.length}` : last && f.t > last.endT ? 'FINISH' : `LAP 1/${r.laps.length}`;
   s += text(18, ly, lapStr, { size: T_LABEL, spacing: 1.6, fill: WHITE, weight: 800 });
   s += text(18 + lapStr.length * T_LABEL * 0.52 + 14, ly, r.info.name.toUpperCase().replace(' (SIM)', ''), { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
-  // An untrusted run has no headline: `info.totalPoints` and `info.grade` are null, so this is
-  // not a rule a renderer can forget. Show the reason and offer the run as a recording.
-  const finished = f.t >= r.durationS - 0.05;
+  // A run the monitor refused says so once, here, in the monitor's own words. There is no total
+  // to withhold any more; what is withheld is the ramp, everywhere on the frame.
   if (!r.info.trusted) {
-    // no total, no grade, no multiplier chip: the reason takes the whole row instead
     s += `<rect x="${f2(W - 18 - 74)}" y="${f2(ly - 11)}" width="74" height="16" rx="3" fill="${RED}" opacity="0.9"/>`;
     s += text(W - 18 - 37, ly + 1, 'NOT SCORED', { size: T_LABEL, fill: '#000', anchor: 'middle', weight: 800, spacing: 1.2 });
-    const msg = r.info.untrustedMessage.toUpperCase();
-    const fit = Math.floor((W - 36) / (T_LABEL * 0.47));
-    s += text(18, ly + 21, msg.length > fit ? `${msg.slice(0, fit - 1)}\u2026` : msg, { size: T_LABEL, fill: MUTED, weight: 700 });
-  } else {
-    // live totals only: TOTAL is the running score, the grade lands on the final frame
-    s += text(W - 18, ly, 'TOTAL', { size: T_LABEL, spacing: 2, fill: MUTED, anchor: 'end', weight: 700 });
-    s += text(W - 18, ly + 22, pts(f.pose.points), { size: T_VALUE, fill: WHITE, anchor: 'end', weight: 800, italic: true });
   }
-  if (finished && r.info.grade) {
-    const gcol = (gradeColors as Record<string, string>)[r.info.grade] ?? EMBER;
-    s += `<rect x="18" y="${f2(ly + 6)}" width="30" height="22" rx="4" fill="${gcol}"/>`;
-    s += text(33, ly + 23, r.info.grade, { size: 18, fill: '#000', anchor: 'middle', weight: 800 });
-    s += text(54, ly + 22, 'FINAL GRADE', { size: T_LABEL, spacing: 1.6, fill: MUTED, weight: 700 });
-  } else if (!finished && r.info.trusted) {
-    // masked to elapsed time, like the points, the total and the grade: "BEST 71°" on the
-    // opening frame is a small forward-looking spoiler
-    let best = 0;
-    let done = 0;
-    for (const seg of r.segments) {
-      if (seg.startT > f.t) continue;
-      done++;
-      if (seg.peakT <= f.t && seg.peakAngle > best) best = seg.peakAngle;
-    }
-    s += text(18, ly + 22, `${done} DRIFT${done === 1 ? '' : 'S'}`, { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
-    if (best > 0) s += text(96, ly + 22, `BEST ${Math.round(deg(best))}°`, { size: T_LABEL, spacing: 1.4, fill: driftHeat(f, best), weight: 700 });
+  // The slide count and the biggest angle so far, MASKED to elapsed time: "BEST 71°" on the
+  // opening frame is a small forward-looking spoiler. SO FAR, because it is a running best over
+  // the slides the playhead has passed, while the numeral at the top of the frame is this
+  // instant's |β| — unlabelled, the two read as one frame arguing with itself.
+  let best = 0;
+  let done = 0;
+  for (const seg of r.segments) {
+    if (seg.startT > f.t) continue;
+    done++;
+    if (seg.peakT <= f.t && seg.peakAngle > best) best = seg.peakAngle;
   }
+  s += text(18, ly + 22, `${done} DRIFT${done === 1 ? '' : 'S'}`, { size: T_LABEL, spacing: 1.4, fill: MUTED, weight: 700 });
+  if (best > 0) s += text(96, ly + 22, `BEST SO FAR ${Math.round(deg(best))}°`, { size: T_LABEL, spacing: 1.4, fill: driftHeat(f, best), weight: 700 });
   return s;
 }
 
@@ -951,7 +932,7 @@ function minimap(f: Frame): string {
     for (let i = seg.startIndex; i <= end; i += 3) sp.push([mx(r.trail.x[i]), my(r.trail.y[i])]);
     if (sp.length > 1) s += `<polyline points="${pointsAttr(sp)}" fill="none" stroke="${driftHeat(f, seg.peakAngle)}" stroke-width="1.7" stroke-linecap="round" opacity="0.95"/>`;
   }
-  if (f.ghost) s += `<circle cx="${f2(mx(f.ghost.x))}" cy="${f2(my(f.ghost.y))}" r="2" fill="none" stroke="${GREEN}" stroke-width="1"/>`;
+  if (f.ghost) s += `<circle cx="${f2(mx(f.ghost.x))}" cy="${f2(my(f.ghost.y))}" r="2" fill="none" stroke="${tint(f, GHOST)}" stroke-width="1"/>`;
   s += `<circle cx="${f2(mx(f.pose.x))}" cy="${f2(my(f.pose.y))}" r="3" fill="${WHITE}" stroke="${BG}" stroke-width="1"/>`;
   return s + '</g>';
 }
@@ -987,7 +968,13 @@ function renderFrame(f: Frame): string {
   svg += `<radialGradient id="vignette" gradientUnits="userSpaceOnUse" cx="${W / 2}" cy="${H / 2}" r="${Math.hypot(W / 2, H / 2) * 0.95}"><stop offset="0.45" stop-color="#000" stop-opacity="0"/><stop offset="0.8" stop-color="#000" stop-opacity="0.16"/><stop offset="1" stop-color="#000" stop-opacity="0.5"/></radialGradient>`;
   svg += `<linearGradient id="lbTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>`;
   svg += `<linearGradient id="lbBot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="1"/></linearGradient>`;
-  svg += `<linearGradient id="ribbon" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${EMBER}" stop-opacity="0.25"/><stop offset="0.55" stop-color="${EMBER}" stop-opacity="0.8"/><stop offset="0.8" stop-color="${GOLD}" stop-opacity="0.9"/><stop offset="1" stop-color="${RED}" stop-opacity="0.95"/></linearGradient>`;
+  // THE BAND IS THE ANGLE RAMP, STOOD ON END: every stop is `ANGLE_STOPS` from the theme, at the
+  // height `ribbonScale` puts that angle at, so the strip and the trail above it cannot disagree
+  // about what a given |β| looks like. The Skia renderer builds the identical shader in
+  // `resources.ts` from the same array; three chosen offsets used to sit here instead, and on a
+  // 65° band they put the ramp's 55° knot at 52°.
+  const ribbonStops = ANGLE_STOPS.map((k) => `<stop offset="${f3(k.deg / MAX_ANGLE_DEG)}" stop-color="${k.color}" stop-opacity="${f3(0.25 + 0.7 * (k.deg / MAX_ANGLE_DEG))}"/>`).join('');
+  svg += `<linearGradient id="ribbon" x1="0" y1="1" x2="0" y2="0">${ribbonStops}</linearGradient>`;
   svg += `<radialGradient id="pool" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2C3A4C" stop-opacity="0.5"/><stop offset="0.55" stop-color="#1B2532" stop-opacity="0.28"/><stop offset="1" stop-color="#0D131B" stop-opacity="0"/></radialGradient>`;
   svg += grainPattern();
   svg += '</defs>';
@@ -1212,7 +1199,7 @@ export function renderReplayFrame(
     track,
     seed,
     // the same flag the app derives, from the same field: `SessionScore.trusted`
-    noScore: !replay.info.trusted,
+    untrusted: !replay.info.trusted,
   };
   return { svg: renderFrame(frame), t, replay, source };
 }
@@ -1244,7 +1231,7 @@ function main(): void {
   const p = poseAt(replay, t);
   const g = ghostPoseAt(replay, t);
   process.stderr.write(
-    `wrote ${out}  [${source}] t=${t.toFixed(2)}s mode=${mode} ${p.phase} β=${deg(p.beta).toFixed(1)}° (${p.severity}) v=${kmh(p.speed)} km/h pts=${Math.round(p.points)} smoke=${liveSmoke(replay.smoke, t).length} ghost=${g ? `lap ${g.lapIndex + 1} ${g.gapPoints >= 0 ? '+' : ''}${Math.round(g.gapPoints)} pts / ${g.gapS.toFixed(1)} s` : 'none'}${replay.warnings.length ? ` warnings=${replay.warnings.length}` : ''}\n`,
+    `wrote ${out}  [${source}] t=${t.toFixed(2)}s mode=${mode} ${p.phase} β=${deg(p.beta).toFixed(1)}° (${p.severity}) v=${kmh(p.speed)} km/h smoke=${liveSmoke(replay.smoke, t).length} ghost=${g ? `lap ${g.lapIndex + 1} ${g.gapS >= 0 ? '+' : ''}${g.gapS.toFixed(1)} s` : 'none'}${replay.warnings.length ? ` warnings=${replay.warnings.length}` : ''}\n`,
   );
 }
 

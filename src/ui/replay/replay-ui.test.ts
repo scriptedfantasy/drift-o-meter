@@ -14,7 +14,7 @@
  */
 import { describe, expect, it, beforeAll } from 'vitest';
 
-import { buildReplay, formatPoints, poseAt, ReplayCamera, SEVERITY_EDGES, severityOf, worldToScreen, type CameraMode, type Replay } from '../../engine/replay';
+import { buildReplay, exitLabel, poseAt, ReplayCamera, SEVERITY_EDGES, severityOf, worldToScreen, type CameraMode, type Replay } from '../../engine/replay';
 import { degToRad, radToDeg, type Session } from '../../engine/types';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -37,7 +37,8 @@ import {
   type Pt,
 } from './kerbs';
 import { replayLayout, safeFrame } from './layout';
-import { NO_HEAT, fmtTime, headlinePoints, heatColor, heatOf, isPointsClaim, ribbonScale, tintOf } from './palette';
+import { NO_HEAT, eventColor, fmtTime, heatColor, heatOf, ribbonScale, tintOf } from './palette';
+import { MAX_ANGLE_DEG, angleColor, colors } from '../theme';
 import { buildReplayView, gapWindows } from './view';
 import { parseReplayParams } from './params';
 
@@ -269,13 +270,26 @@ describe('source: one gap rule, one warning per problem', () => {
     expect(dropouts).toHaveLength(1);
   });
 
-  it('an untrusted run keeps its refusal and its reason', () => {
+  /**
+   * THE REFUSAL COMES FROM THE INTEGRITY MONITOR, and from nothing else.
+   *
+   * `buildReplayView` read `session.score.trusted` — the mirror the scorer kept of
+   * `SessionIntegrity.scoreTrusted` so that a scored object could never be separated from
+   * permission to show it. The score is gone; the monitor is what survives, and a run it will
+   * not vouch for still has to play in grey with the reason on it.
+   */
+  it('an untrusted run keeps its refusal and its reason, from the monitor', () => {
     const { session } = built.get('handheld')!;
     const view = buildReplayView(session, params, null);
+    expect(session.integrity.scoreTrusted).toBe(false);
     expect(view.trusted).toBe(false);
+    expect(view.replay.info.trusted).toBe(false);
     expect(view.untrustedBody.length).toBeGreaterThan(10);
-    expect(view.replay.info.totalPoints).toBeNull();
-    expect(view.replay.info.grade).toBeNull();
+    // the monitor alone decides: flipping its verdict flips the screen's
+    const believed = buildReplayView({ ...session, integrity: { ...session.integrity, scoreTrusted: true } }, params, null);
+    expect(believed.trusted).toBe(true);
+    const doubted = buildReplayView({ ...built.get('good')!.session, integrity: { ...built.get('good')!.session.integrity, scoreTrusted: false } }, params, null);
+    expect(doubted.trusted).toBe(false);
   });
 });
 
@@ -302,10 +316,29 @@ describe('layout: nothing lands on top of the transport', () => {
 });
 
 describe('palette', () => {
-  it('the heat ramp is absolute and escalates', () => {
+  /**
+   * THE REPLAY'S RAMP IS THE DIAL'S RAMP, not a second one that happens to look similar.
+   *
+   * `heatColor` was a private ember → gold → red escalation with its knots at the severity edges;
+   * the dial swept `ANGLE_STOPS` and the review's slide list printed `angleColor`, so the same
+   * 56° was three colours on three screens. This asserts the IDENTITY rather than the shape of
+   * the ramp: a test that only checked "flat, then escalating" would pass for either function.
+   */
+  it('the ramp is the theme\'s angle ramp, degree for degree', () => {
+    for (const d of [0, 4, 8, 20, 39, 40, 48, 55, 62, 70, 90, 118, 180]) {
+      expect(heatColor(degToRad(d)), `${d}°`).toBe(angleColor(d));
+      expect(heatColor(degToRad(-d)), `-${d}°`).toBe(angleColor(d));
+    }
+    // it is absolute and it escalates: flat green to 40°, then up the ramp into the car's red.
+    // (`angleColor` composes its hex lowercase, the tokens are written upper — same colour.)
+    const hex = (c: string) => c.toLowerCase();
     expect(heatColor(degToRad(20))).toBe(heatColor(degToRad(39)));
+    expect(hex(heatColor(degToRad(20)))).toBe(hex(colors.green));
     expect(heatColor(degToRad(50))).not.toBe(heatColor(degToRad(20)));
-    expect(heatColor(degToRad(90))).not.toBe(heatColor(degToRad(SEVERITY_EDGES.spin)));
+    expect(hex(heatColor(degToRad(MAX_ANGLE_DEG)))).toBe(hex(colors.red));
+    // past the top of the scale it saturates rather than wrapping back down the ramp
+    expect(hex(heatColor(degToRad(90)))).toBe(hex(colors.red));
+    expect(hex(heatColor(degToRad(180)))).toBe(hex(colors.red));
     expect(heatColor(NaN)).toBe(heatColor(0));
   });
 
@@ -319,26 +352,28 @@ describe('palette', () => {
   /**
    * The scrubber's |β| band is ABSOLUTE, and it has to be on every run or it is not a scale.
    *
-   * The band's shader is a gradient in normalised space — ember to 55 % of its height, gold at
-   * 80 %, red at the top — so a run scaled to its own maximum paints those words at whatever
-   * its maximum happens to be. A clean lap did: 4.18° at 80 % of the band, next to `good`'s real
-   * 55.54° at 85 %.
+   * The band's shader is a gradient in normalised space, so a run scaled to its own maximum
+   * paints the ramp's colours at whatever that maximum happens to be. A clean lap did: 4.18° at
+   * 80 % of the band, next to `good`'s real 55.54° at 85 %.
+   *
+   * THE CEILING IS `MAX_ANGLE_DEG`, not the 65° spin edge it used to be chosen as here. That was
+   * a third ceiling in an app that already had two — the dial's 70° and the garage trace's 60° —
+   * so the same 64° hold drew at three heights on three screens. One number, read off the last
+   * knot of `ANGLE_STOPS`, so the top of the band is exactly where the ramp finishes turning red.
    *
    * THE TEST THAT USED TO BE HERE CARRIED THIS TITLE AND COULD NOT FAIL (CRITIC.md rule 16). It
    * asserted `ribbonScale(r) >= SEVERITY_EDGES.spin` and `>= r.telemetry.maxAngle` over every
-   * fixture — both restatements of `Math.max(spin, 1.05 * maxAngle)`, false for no input — while
-   * the property in its own title was not true of half the fixtures: 65.0° on clean/good/touge
-   * against 123.9° on sloppy and spin, which put `sloppy`'s 65° spin edge at 52.5 % of its band,
-   * in the ember zone, under a world drawing the same angle gold-to-red. EQUALITY is the claim.
+   * fixture — both restatements of `Math.max(spin, 1.05 * maxAngle)`, false for no input.
+   * EQUALITY is the claim.
    */
   it('the scrub band is the same scale on a clean lap as on a lap full of spins', () => {
     const clean = built.get('clean')!.replay;
     const good = built.get('good')!.replay;
     expect(clean.segments.length).toBe(0);
-    // ONE scale, the spin edge, on every fixture — the assertion the title makes
+    // ONE scale, the app's angle ceiling, on every fixture — the assertion the title makes
     for (const name of Object.keys(FIXTURES)) {
       const r = built.get(name)!.replay;
-      expect(ribbonScale(r), name).toBe(SEVERITY_EDGES.spin);
+      expect(radToDeg(ribbonScale(r)), name).toBeCloseTo(MAX_ANGLE_DEG, 12);
     }
     // …including every fixture the old `Math.max(spin, 1.05 * maxAngle)` gave a band of its own:
     // hero 67.0°, rough 73.5°, handheld 87.9°, sloppy and spin 123.9° (measured, degrees).
@@ -346,104 +381,96 @@ describe('palette', () => {
     for (const [name, oldDeg] of Object.entries(hadOwnBand)) {
       const r = built.get(name)!.replay;
       expect(radToDeg(Math.max(SEVERITY_EDGES.spin, r.telemetry.maxAngle * 1.05)), name).toBeCloseTo(oldDeg, 1);
-      expect(ribbonScale(r), name).toBe(SEVERITY_EDGES.spin);
+      expect(radToDeg(ribbonScale(r)), name).toBeCloseTo(MAX_ANGLE_DEG, 12);
     }
-    // so a given |β| is the same height everywhere, and the spin edge is the top of the band
+    // so a given |β| is the same height everywhere, and the top of the band is the top of the ramp
     const heightOf = (r: Replay, beta: number) => Math.min(1, beta / ribbonScale(r));
     for (const name of Object.keys(FIXTURES)) {
       const r = built.get(name)!.replay;
       expect(heightOf(r, degToRad(40)), name).toBeCloseTo(heightOf(good, degToRad(40)), 12);
-      expect(heightOf(r, SEVERITY_EDGES.spin), name).toBe(1);
+      expect(heightOf(r, degToRad(MAX_ANGLE_DEG)), name).toBe(1);
     }
+    // the height a slide sits at and the colour it is drawn in come off the SAME scale: the
+    // band's top is the ramp's last knot, which is what a gradient built from `ANGLE_STOPS`
+    // needs in order to paint each knot at the height that angle really is
+    expect(heatColor(ribbonScale(good)).toLowerCase()).toBe(colors.red.toLowerCase());
     // and a clean lap draws a flat line rather than filling the band
     expect(clean.telemetry.maxAngle / ribbonScale(clean)).toBeLessThan(0.15);
     expect(good.telemetry.maxAngle / ribbonScale(good)).toBeGreaterThan(0.6);
   });
+
+  /**
+   * A BEAT'S COLOUR IS KEYED BY WHAT KIND OF MOMENT IT IS, never by severity.
+   *
+   * The switch used to spend four separate tokens — magenta for a transition, gold for a peak,
+   * ember for an exit, cyan for everything else — three of which named hues the app no longer
+   * paints. What is left is the palette: red is the limit and what went wrong, blue is structure.
+   */
+  it('a beat takes the limit\'s red or the structure blue, and nothing else', () => {
+    // the limit, and the recording going wrong: both are red, and both match the plate or the
+    // marker a driver reads the same fact off elsewhere on the frame
+    expect(eventColor('spin')).toBe(colors.red);
+    expect(eventColor('refused')).toBe(colors.red);
+    for (const kind of ['transition', 'exit', 'entry', 'lap', 'finish'] as const) {
+      expect(eventColor(kind), kind).toBe(colors.blue);
+    }
+    // `peak` is the one beat that SAYS an angle, so the renderers colour it off the ramp instead
+    // (`drawCallout`); the fallback here must still be a token and never a deprecated one
+    expect([colors.blue, colors.red]).toContain(eventColor('peak'));
+  });
 });
 
 describe('what the screen prints about a run', () => {
-  it.each(Object.keys(FIXTURES))('%s: the headline agrees with the session, or is withheld', (name) => {
-    const { session, replay } = built.get(name)!;
-    if (session.score.trusted === false) {
-      expect(replay.info.totalPoints).toBeNull();
-      return;
+  /**
+   * EVERY LABEL ON THIS SCREEN IS A MEASUREMENT NOW, on every fixture, trusted or not.
+   *
+   * This replaces five tests that guarded the withholding machinery: `headlinePoints` (which
+   * number the top-right readout was), `isPointsClaim` (which labels were awards), and the two
+   * halves of the rule — an untrusted run makes no claim, a scored one does and the gate catches
+   * it. There is nothing left to withhold, so the property worth keeping is the stronger one:
+   * NOTHING the replay draws is a score, anywhere, on any run. It is written as a sweep over
+   * every label of every fixture because that is what the five tests between them were reaching
+   * for, and it fails the moment a number without a unit comes back.
+   */
+  it.each(Object.keys(FIXTURES))('%s: no label anywhere is a score', (name) => {
+    const { replay: r } = built.get(name)!;
+    // A SIGNED number, or any of the score vocabulary. `\u00d7N` is deliberately NOT here: the
+    // multiplier chip is gone, and "TRANSITION \u00d73" counts direction changes, which is a
+    // thing the driver did.
+    const claim = /[+\u2212]\s*\d|\bPTS\b|\bPOINTS\b|CHAIN LOST|AT RISK|\bGRADE\b/;
+    for (const e of r.events) expect(claim.test(e.label), `event "${e.label}"`).toBe(false);
+    for (const m of r.markers) expect(claim.test(m.label), `marker "${m.label}"`).toBe(false);
+    for (const h of r.highlights) expect(claim.test(h.label), `highlight "${h.label}"`).toBe(false);
+    // …and every exit label is the one the engine's rule produces for that slide
+    for (const seg of r.segments) {
+      const end = r.markers.find((m) => m.kind === 'drift-end' && m.driftId === seg.driftId)!;
+      expect(end.label).toBe(exitLabel(seg));
     }
-    // `info.totalPoints` IS `session.score.total` by construction, so comparing them is an
-    // identity. What the screen has to agree with is the running number it draws while playing.
-    expect(Math.round(replay.trail.score[replay.trail.n - 1])).toBe(session.score.total);
   });
 
   /**
-   * THE STRING THE TOP HUD DRAWS, run rather than described.
-   *
-   * This used to be a comment \u2014 "what `drawTopHud` prints once the run has finished is
-   * `info.totalPoints`" \u2014 with nothing executing it, which is how the renderer came to print
-   * `pose.points` there for a whole round while the suite stayed green. `headlinePoints` is that
-   * choice, lifted out of the Skia call so a test can make it.
+   * A REFUSED RECORDING STILL SHOWS WHAT IT MEASURED. It plays, it says LOST IT 118°, it counts
+   * its transitions; what it loses is the RAMP — every angle on the frame goes to the neutral
+   * grey, because a phone waved in a parked car produces large angles that the colour would
+   * otherwise dress up as driving.
    */
-  describe('headlinePoints: which number the top-right readout is', () => {
-    it('prints the running total while the run is playing', () => {
-      expect(headlinePoints({ trusted: true, reveal: 0, totalPoints: 23050, posePoints: 17410 })).toBe('17410');
-    });
-
-    it('hands over to the SESSION TOTAL the moment the grade starts landing', () => {
-      // the trail's own sum is a hair short of the total until its very last sample; the frame
-      // the driver reads at the end has to be the number the results screen prints
-      expect(headlinePoints({ trusted: true, reveal: 0.3, totalPoints: 23050, posePoints: 23049 })).toBe('23050');
-    });
-
-    it('prints nothing once the reveal owns the frame, so the total is never on screen twice', () => {
-      expect(headlinePoints({ trusted: true, reveal: 1, totalPoints: 23050, posePoints: 23050 })).toBeNull();
-    });
-
-    it('prints nothing at all on a run the engine will not vouch for', () => {
-      expect(headlinePoints({ trusted: false, reveal: 0, totalPoints: null, posePoints: 812 })).toBeNull();
-      expect(headlinePoints({ trusted: false, reveal: 0.5, totalPoints: null, posePoints: 812 })).toBeNull();
-    });
-
-    it.each(Object.keys(FIXTURES))('%s: the last frame draws the session total, or no points', (name) => {
-      const { session, replay: r } = built.get(name)!;
-      const drawn = headlinePoints({ trusted: r.info.trusted, reveal: 0.5, totalPoints: r.info.totalPoints, posePoints: 0 });
-      expect(drawn).toBe(session.score.trusted === false ? null : formatPoints(session.score.total));
-    });
-  });
-
-  it('an untrusted run makes no points claim to withhold, and still shows what it measured', () => {
+  it('an untrusted run shows what it measured, in grey', () => {
     const { session, replay: r } = built.get('handheld')!;
-    expect(session.score.trusted).toBe(false);
-    expect(r.info.totalPoints).toBeNull();
-    expect(r.info.grade).toBeNull();
-    // Every slide on this recording was refused, so every one of them is worth exactly 0 and the
-    // replay makes no claim about points ANYWHERE \u2014 there is nothing for the renderer's gate to
-    // withhold. This used to assert the opposite (`withheld.length > 0`), which only held
-    // because the replay was inventing the numbers it was then careful not to show.
-    for (const e of r.events) expect(isPointsClaim(e.label), `event "${e.label}"`).toBe(false);
-    for (const m of r.markers) expect(isPointsClaim(m.label), `marker "${m.label}"`).toBe(false);
-    for (const h of r.highlights) expect(h.label).not.toMatch(/PTS/);
+    expect(session.integrity.scoreTrusted).toBe(false);
+    expect(r.info.trusted).toBe(false);
     const shown = r.events.filter((e) => e.label !== '').map((e) => e.label);
     expect(shown.some((l) => /^LOST IT \d+\u00b0$/.test(l))).toBe(true);
     expect(shown.some((l) => /^TRANSITION/.test(l))).toBe(true);
-  });
-
-  it('a scored run with a lost chain DOES make claims, and the gate catches every one', () => {
-    // the other half of the same rule: the withholding path has to have something real to
-    // withhold, or "no points on screen" is true for the wrong reason
-    const { replay: r } = built.get('spin')!;
-    const claims = r.events.filter((e) => e.label && isPointsClaim(e.label)).map((e) => e.label);
-    expect(claims.length).toBeGreaterThan(0);
-    for (const label of claims) expect(label).toMatch(/CHAIN LOST|AT RISK|^\+/);
-    for (const label of r.events.filter((e) => e.label && !isPointsClaim(e.label)).map((e) => e.label)) {
-      expect(label).not.toMatch(/\d+\s*(PTS|POINTS)/);
-    }
-  });
-
-  it('the points-claim rule keeps measurements and catches scores', () => {
-    for (const claim of ['+1250', 'CHAIN LOST \u22128981', 'AT RISK +1380', '\u22128981', '+84 PTS']) {
-      expect(isPointsClaim(claim)).toBe(true);
-    }
-    for (const measurement of ['LOST IT 118\u00b0', 'SAVED IT 70\u00b0', 'TRANSITION \u00d73', 'BIG ANGLE', 'LAP 2', 'FINISH', '54\u00b0']) {
-      expect(isPointsClaim(measurement)).toBe(false);
-    }
+    // every slide on THIS recording was refused outright, so every exit names the seconds the
+    // monitor would not believe rather than a hold — and the trusted run one line down still
+    // reports its holds, so the two are a difference the screen can show
+    expect(shown.filter((l) => /DID NOT COUNT$/.test(l)).length).toBe(r.segments.length);
+    expect(shown.some((l) => /^HELD /.test(l))).toBe(false);
+    const good = built.get('good')!.replay;
+    expect(good.events.filter((e) => /^HELD \d+\.\d S$/.test(e.label)).length).toBeGreaterThan(4);
+    // and every colour the frame would have spent on an angle is refused
+    for (const seg of r.segments) expect(heatOf(seg.peakAngle, r.info.trusted)).toBe(NO_HEAT);
+    expect(heatOf(degToRad(70), r.info.trusted)).toBe(NO_HEAT);
   });
 
   it.each(Object.keys(FIXTURES))('%s: the footer’s BEST is the detector’s peak', (name) => {
@@ -487,8 +514,8 @@ describe('the heat gate', () => {
 
   it('below the 8° hold edge the engine says NOT SLIDING, and nothing draws a slide colour', () => {
     // the hero numeral has always greyed here (`p.severity !== 'none'`); the L/R chevron beside
-    // it, the world slip label, the slip arc and the playhead dot did not, because `heatColor`
-    // returns identical ember from 0° to 40°. One frame said both things about the same 4.2°.
+    // it, the world slip label, the slip arc and the playhead dot did not, because the ramp is
+    // identical from 0° to 40°. One frame said both things about the same 4.2°.
     for (const b of SWEEP) {
       const expected = severityOf(b) === 'none' ? NO_HEAT : heatColor(b);
       expect(heatOf(b, true), `${radToDeg(b).toFixed(1)}°`).toBe(expected);
@@ -504,32 +531,35 @@ describe('the heat gate', () => {
   /**
    * EVERY DRAW SITE, read off the source of both renderers.
    *
-   * A colour that comes off the escalation ramp — `colors.ember`/`EMBER`, `colors.gold`/`GOLD`,
-   * anything `heatColor()` returned, a chunk colour `geometry.ts` pre-computed off it — may only
-   * reach a paint through `heat(`, `driftHeat(` or `tint(`. Anything else has to be named below
-   * with a reason, which is the point: adding an ungated ember draw is a two-line change and this
-   * makes the second line a sentence someone has to write.
+   * A colour that comes off the angle ramp — `angleColor`/`heatColor`, the theme's `ANGLE_STOPS`
+   * themselves, `colors.green`/`greenHot` (its first two knots), a chunk colour `geometry.ts`
+   * pre-computed off it — may only reach a paint through `heat(`, `driftHeat(` or `tint(`.
+   * Anything else has to be named below with a reason, which is the point: adding an ungated
+   * slide colour is a two-line change and this makes the second line a sentence someone writes.
+   *
+   * THE RAMP'S COLOURS ARE THE PALETTE'S COLOURS NOW, which is what the repaint changed here. The
+   * ramp used to be ember and gold, two tokens nothing else on the screen spent, so the sweep
+   * could name them and be done. It runs green → greenHot → red, and green is also the ghost and
+   * red is also the alarm, so a sweep over every token would return a list of plates and chevrons
+   * rather than a list of slide colours. `red` is therefore NOT swept — on this screen it is the
+   * STOP colour (the REPLAY dot, the NOT SCORED plate, the DATA GAPS plate, the kerb dash), none
+   * of which varies with an angle — and the ghost's green is spent through one named constant
+   * (`GHOST` in palette.ts) rather than ten raw ones, so a raw `colors.green` anywhere in either
+   * renderer is still a failure.
    */
   const GATE = /(?:^|[^A-Za-z_$])(?:heat|driftHeat|tint)\s*\(/;
-  const RAMP = /colors\.ember|colors\.gold|\bEMBER\b|\bGOLD\b|heatColor\s*\(|chunk\.color/;
+  const RAMP = /colors\.(green|greenHot)\b|\bGREEN\b|heatColor\s*\(|angleColor\s*\(|ANGLE_STOPS|chunk\.color/;
 
   /** Lines that legitimately hold a ramp token outside the gate, each with why. */
   const EXEMPT: Array<{ needle: string; why: string }> = [
-    { needle: 'const EMBER = colors.ember', why: 'the token definition itself' },
-    { needle: 'const GOLD = colors.gold', why: 'the token definition itself' },
-    { needle: "p.phase === 'drifting' ? colors.ember : WHITE", why: 'the POINTS numeral, drawn only inside the trusted headline (headlinePoints returns null otherwise)' },
-    { needle: "p.phase === 'drifting' ? EMBER : WHITE", why: 'same, in the SVG renderer, inside its `if (r.info.trusted)` branch' },
-    { needle: 'width: cw, height: 17 }, fillPaint(f, colors.ember, fade)', why: 'the multiplier chip, inside the same trusted headline block' },
-    { needle: 'height="17" rx="3" fill="${EMBER}"', why: 'the multiplier chip, inside `p.multiplier > 1.05 && r.info.trusted`' },
-    { needle: 'width: w, height: 18 }, fillPaint(f, colors.ember)', why: 'the scrub time bubble: UI chrome for the clock, not a claim about a slide' },
-    { needle: "e.kind === 'exit' ? EMBER : CYAN", why: 'the callout beat colour, keyed by BEAT and not by severity (`eventColor` in palette.ts is the app\'s copy of the same switch)' },
-    { needle: '[grade] ?? colors.ember', why: 'the grade reveal, which returns early on `f.noScore`' },
-    { needle: '[r.info.grade] ?? EMBER', why: 'the grade chip in the SVG footer, inside `if (finished && r.info.grade)`' },
-    { needle: 'i % 3 === 0 ? colors.gold : colors.ember', why: 'the grade reveal particles, after the same early return' },
-    { needle: 'stop-color="${EMBER}"', why: 'the scrub ribbon gradient definition; the untrusted branch draws MUTED and never references it' },
-    { needle: 'fillPaint(f, colors.gold, 0.8)', why: 'the highlight pips above the scrub band: a bookmark marker, not a severity' },
-    { needle: 'strokePaint(f, colors.gold, 1, 0.55 * h.alpha', why: 'the highlight chip border \u2014 the same bookmark gold as the pips it names' },
-    { needle: "kicker, lay.w / 2, top + 17, { color: colors.gold", why: 'the highlight chip kicker, same bookmark gold' },
+    {
+      needle: 'import { ANGLE_STOPS, MAX_ANGLE_DEG, colors }',
+      why: 'the import of the ramp itself, for the SVG ribbon gradient below',
+    },
+    {
+      needle: 'const ribbonStops = ANGLE_STOPS.map(',
+      why: 'the scrub ribbon gradient DEFINITION, built from the ramp so the strip and the trail cannot disagree; the untrusted branch draws MUTED and never references it (`resources.ts` builds the identical Skia shader)',
+    },
   ];
 
   it.each([
@@ -551,7 +581,10 @@ describe('the heat gate', () => {
       leaks.push(`${rel}:${i + 1}  ${line.trim()}`);
     });
     expect(leaks, `ungated ramp colour:\n${leaks.join('\n')}`).toEqual([]);
-    expect(usedExemptions.size, 'every exemption still describes a real line').toBeGreaterThan(0);
+    // Both current exemptions are in the SVG renderer, so a per-file "at least one was used"
+    // assertion would fail on the app's file for being clean. Staleness is checked across both
+    // files by the test below, which is where it belongs.
+    expect(usedExemptions.size).toBeLessThanOrEqual(EXEMPT.length);
   });
 
   it('the exemption list is not a way to keep dead entries', () => {

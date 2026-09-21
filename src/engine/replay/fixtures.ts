@@ -1,23 +1,26 @@
 /**
  * Test/demo fixture: fill a `Session` straight from simulator ground truth, bypassing the
- * estimator/detector/scorer pipeline. Drift events, laps and a plausible score are derived
- * with simple rules so the replay module (and the renderers) have something to chew on.
- * Other modules will replace this with the real pipeline output.
+ * estimator/detector pipeline. Drift events and laps are derived with simple rules so the replay
+ * module (and the renderers) have something to chew on.
+ *
+ * IT NO LONGER ANALYSES THE SLIDES IT MAKES. It used to carry a second scorer — its own
+ * per-drift points, its own callout bonuses, its own grade thresholds — a few hundred lines away
+ * from the engine's, which meant a fixture run and a real run were described by two different
+ * sets of rules that had to be kept in step by hand. The per-slide measurements every screen
+ * reads (`Session.driftStats`) come from the engine, and `src/ui/results/fixture.ts` runs it
+ * over whatever this produces before a fixture reaches a screen. What is left here is the
+ * RECORDING: a trace, the slides in it, and the laps around them.
  */
 import type { SimulatedRun } from '../../sim';
 import {
-  clamp,
   degToRad,
   type DriftEvent,
-  type DriftScore,
-  type Grade,
   type Lap,
   type MountCalibration,
   type SessionIntegrity,
   type Session,
   type SessionScore,
   type SlipState,
-  type StyleCallout,
   type TrackCorner,
   type TrackModel,
   type TruthSample,
@@ -32,8 +35,8 @@ export interface FixtureOptions {
   strongAngle: number;
   /**
    * A drift ENDS when |β| falls below `settleAngle` for at least `settleS`: linked corners with
-   * a straight in between are separate drifts, not one 28-second "drift" that shades most of the
-   * telemetry strip ember.
+   * a straight in between are separate drifts, not one 28-second "drift" that lights most of the
+   * telemetry strip.
    */
   settleAngle: number;
   settleS: number;
@@ -42,13 +45,9 @@ export interface FixtureOptions {
   /**
    * How much extra length each linked transition buys. A switchback must not be severed, but
    * "has one transition" cannot license any duration: a 35 s continuous drift is still not a
-   * drift. The allowance is `maxDurationS + chainBonusS × transitions`.
+   * drift. The allowance is `maxDurationS + linkBonusS × transitions`.
    */
-  chainBonusS: number;
-  /** Points per second at the reference angle. */
-  pointsPerS: number;
-  /** Angle at which the angle factor is 1. */
-  refAngle: number;
+  linkBonusS: number;
   /** Track name used as session name prefix. */
   name?: string;
   /** Build a TrackModel (true) or leave `track` null. */
@@ -62,9 +61,7 @@ const DEFAULT_FIXTURE: FixtureOptions = {
   settleAngle: degToRad(10),
   settleS: 0.35,
   maxDurationS: 10,
-  chainBonusS: 8,
-  pointsPerS: 100,
-  refAngle: degToRad(30),
+  linkBonusS: 8,
   track: true,
 };
 
@@ -156,7 +153,7 @@ function driftIntervals(truth: TruthSample[], opt: FixtureOptions): Array<[numbe
   const cut = (a: number, b: number, depth: number): void => {
     const lobes = lobesIn(a, b);
     const transitions = Math.max(0, lobes.length - 1);
-    const allowance = opt.maxDurationS + opt.chainBonusS * transitions;
+    const allowance = opt.maxDurationS + opt.linkBonusS * transitions;
     if (truth[b].t - truth[a].t <= allowance || depth > 5) {
       out.push([a, b]);
       return;
@@ -251,81 +248,6 @@ function makeDrift(id: number, truth: TruthSample[], a: number, b: number, opt: 
   };
 }
 
-function scoreDrift(d: DriftEvent, truth: TruthSample[], opt: FixtureOptions): DriftScore {
-  // base: pointsPerS × angle factor (|β|/refAngle, capped at 1.5) × speed factor
-  let base = 0;
-  for (let i = d.sampleStart + 1; i <= d.sampleEnd; i++) {
-    const s = truth[i];
-    const dt = s.t - truth[i - 1].t;
-    const angleF = clamp(Math.abs(s.beta) / opt.refAngle, 0, 1.5);
-    const speedF = clamp(0.5 + s.speed / 30, 0.5, 1.5);
-    base += opt.pointsPerS * angleF * speedF * dt;
-  }
-  base = Math.round(base);
-  const callouts: StyleCallout[] = [{ t: d.startT, kind: 'initiation', label: 'INITIATION', points: 0 }];
-  let bonus = 0;
-  if (d.transitions > 0) {
-    const pts = 250 * d.transitions;
-    // U+00D7, matching `calloutLabel` in the scorer and the multiplier chip: the replay used to
-    // print an ASCII x on the callout and a × on the chip above it in the same frame
-    callouts.push({ t: d.startT + d.durationS * 0.5, kind: 'transition', label: `TRANSITION \u00d7${d.transitions}`, points: pts });
-    bonus += pts;
-  }
-  if (d.peakAngle > degToRad(40)) {
-    callouts.push({ t: d.peakAngleT, kind: 'extreme-angle', label: 'EXTREME ANGLE', points: 500 });
-    bonus += 500;
-  }
-  if (d.durationS > 5) {
-    callouts.push({ t: d.startT + 5, kind: 'long-drift', label: 'LONG DRIFT', points: 300 });
-    bonus += 300;
-  }
-  if (d.angleStdDev < degToRad(4) && d.durationS > 2) {
-    callouts.push({ t: d.endT, kind: 'smooth', label: 'SMOOTH', points: 200 });
-    bonus += 200;
-  }
-  if (d.meanSpeed > 22) {
-    callouts.push({ t: d.endT, kind: 'high-speed', label: 'HIGH SPEED', points: 300 });
-    bonus += 300;
-  }
-  const multiplier = clamp(1 + 0.5 * d.transitions + 0.1 * Math.floor(d.durationS / 3), 1, 5);
-  const total = Math.round(base * multiplier + bonus);
-  return {
-    base,
-    multiplier,
-    bonus,
-    total,
-    // This stand-in scorer has no chain model, so it cannot take a drift's points away — but the
-    // contract makes it say so rather than leaving a consumer to guess. `spun` is the detector's
-    // flag, which is the most this fixture knows; the real scorer's rule is broader.
-    lost: false,
-    spun: d.spin,
-    angle: clamp((d.peakAngle / degToRad(50)) * 100, 0, 100),
-    consistency: clamp(100 - (d.angleStdDev * 180) / Math.PI * 8, 0, 100),
-    speed: clamp((d.meanSpeed / 30) * 100, 0, 100),
-    style: clamp(d.transitions * 30 + bonus / 10, 0, 100),
-    callouts,
-  };
-}
-
-/**
- * Grade on scoring RATE — points per second of the whole session — not points per drift.
- *
- * Points per drift is split-dependent: when the drift splitter turned one 28 s slide into seven
- * 2–8 s ones, the same driving collapsed every grade to C. Rate is invariant to how a run is cut
- * up, and across the driver-skill range the simulator produces (aggression 0.15 → 1.0) it moves
- * monotonically from ~98 to ~169 pts/s, so the whole S–D scale is reachable.
- */
-export const GRADE_RATE_THRESHOLDS = { S: 164, A: 148, B: 128, C: 106 } as const;
-
-function gradeFor(total: number, durationS: number): Grade {
-  const rate = durationS > 1 ? total / durationS : 0;
-  if (rate >= GRADE_RATE_THRESHOLDS.S) return 'S';
-  if (rate >= GRADE_RATE_THRESHOLDS.A) return 'A';
-  if (rate >= GRADE_RATE_THRESHOLDS.B) return 'B';
-  if (rate >= GRADE_RATE_THRESHOLDS.C) return 'C';
-  return 'D';
-}
-
 function buildTrack(run: SimulatedRun, truth: TruthSample[]): TrackModel {
   const cl = run.centreLine;
   const first = cl[0];
@@ -382,41 +304,23 @@ export function sessionFromSimulation(run: SimulatedRun, partial: Partial<Fixtur
   const truth = run.truth;
   const states = truth.map(stateFromTruth);
   const drifts = driftIntervals(truth, opt).map(([a, b], i) => makeDrift(i + 1, truth, a, b, opt));
-  const perDrift: Record<number, DriftScore> = {};
-  let total = 0;
-  let bestId: number | null = null;
-  let best = -1;
-  let angle = 0;
-  let consistency = 0;
-  let speed = 0;
-  let style = 0;
-  let longest = 0;
-  for (const d of drifts) {
-    const s = scoreDrift(d, truth, opt);
-    perDrift[d.id] = s;
-    total += s.total;
-    if (s.total > best) {
-      best = s.total;
-      bestId = d.id;
-    }
-    angle += s.angle;
-    consistency += s.consistency;
-    speed += s.speed;
-    style += s.style;
-    if (s.total > longest) longest = s.total;
-  }
-  const n = Math.max(1, drifts.length);
+  // `Session.score` is still a required field, and this fixture is the one producer that has
+  // nothing to put in it: the figures every screen reads come from `Session.driftStats`, which
+  // only the engine's own analysis can fill (`src/ui/results/fixture.ts` runs it over this
+  // session before a screen ever sees it). An empty record is the honest answer, and it is
+  // deliberately not a plausible-looking one — a fixture that invented a total was how the
+  // replay came to draw points the engine had never paid.
   const score: SessionScore = {
-    total,
-    grade: gradeFor(total, truth.length ? truth[truth.length - 1].t - truth[0].t : 0),
-    angle: angle / n,
-    consistency: consistency / n,
-    quality: clamp((angle + consistency) / (2 * n), 0, 100),
-    speed: speed / n,
-    style: style / n,
-    bestDriftId: bestId,
-    longestChainPoints: longest,
-    perDrift,
+    total: 0,
+    grade: 'D',
+    angle: 0,
+    consistency: 0,
+    quality: 0,
+    speed: 0,
+    style: 0,
+    bestDriftId: null,
+    longestChainPoints: 0,
+    perDrift: {},
     trusted: true,
   };
   const calibration: MountCalibration = { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 1, forwardResolved: true, t: 0 };

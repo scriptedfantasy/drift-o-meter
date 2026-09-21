@@ -6,9 +6,12 @@
  *
  * It settles the two things the replay has to be honest about:
  *
- *  • `trusted` — mirrored from `SessionScore.trusted`, the same contract the results screen
- *    settled on: when false the recording still plays, but nothing on screen may present points
- *    or a grade (see `src/ui/results/model.ts`).
+ *  • `trusted` — `SessionIntegrity.scoreTrusted`, the integrity monitor's own verdict on whether
+ *    the run may be presented as a drive at all. It used to be read from `SessionScore.trusted`,
+ *    a mirror of it kept inside the scorer so a scored object could never be separated from the
+ *    verdict; the scorer is gone and the monitor is the one that survives. When false the
+ *    recording still plays and every angle on it is drawn in the neutral grey, because a phone
+ *    waved in a parked car produces large angles and a plausible-looking run.
  *  • `gaps` — stretches where the GPS gave no fix, so the positions in them are dead reckoning.
  *    These are `Replay.gapWindows`, NOT a second derivation: the engine's contract says they are
  *    "derived once, here… renderers draw these dashed rather than each deriving their own windows
@@ -33,7 +36,7 @@ export interface GapWindow {
 export interface ReplayView {
   session: Session;
   replay: Replay;
-  /** False when the engine refuses to publish this run's score (hand-held phone, etc.). */
+  /** False when the integrity monitor will not vouch for the recording (hand-held phone, etc.). */
   trusted: boolean;
   /** Why it refused, in the integrity monitor's own words. */
   untrustedBody: string;
@@ -84,7 +87,7 @@ export function buildReplayView(session: Session, params: ReplayParams, fixture:
   return {
     session: damaged,
     replay,
-    trusted: damaged.score.trusted !== false,
+    trusted: damaged.integrity?.scoreTrusted !== false,
     untrustedBody: damaged.integrity?.message || 'The recording is valid; the judgement is not.',
     title: titleOf(damaged, replay),
     // one line per problem, in the engine's words: the dropouts are already in here, and saying

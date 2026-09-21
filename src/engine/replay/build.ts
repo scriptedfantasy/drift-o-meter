@@ -1,4 +1,4 @@
-import { clamp, degToRad, radToDeg, wrapAngle, type DriftEvent, type DriftScore, type Session, type SlipState, type StyleCallout } from '../types';
+import { clamp, degToRad, radToDeg, wrapAngle, type DriftEvent, type DriftSummary, type Session, type SlipState } from '../types';
 import type {
   DriftSeverity,
   Replay,
@@ -29,7 +29,6 @@ export const DEFAULT_REPLAY_OPTIONS: ReplayOptions = {
   intensityHi: degToRad(60),
   ghost: true,
   ghostSync: 'distance',
-  fallbackPointsPerS: 100,
   deadAirS: 1.5,
   gpsGapS: 2.5,
   gpsMaxHAccM: 50,
@@ -47,10 +46,10 @@ export const SEVERITY_EDGES = {
 /**
  * The callout for a drift's peak.
  *
- * `spun` is `DriftEvent.spin` — the DETECTOR's verdict — never an angle band. The band used to
- * stand in for it, which put "SAVED IT 118°" on a drift the engine had marked as a spin, and
- * "BIG ANGLE" in gold on one that genuinely spun. An angle is what the car reached; whether the
- * driver held it is a different fact, and only the engine knows it.
+ * `spun` is the ENGINE's published verdict (`ReplaySegment.spin`, from `DriftSummary.spun`),
+ * never an angle band. The band used to stand in for it, which put "SAVED IT 118°" on a drift
+ * the engine had marked as a spin, and "BIG ANGLE" on one that genuinely spun. An angle is what
+ * the car reached; whether the driver held it is a different fact, and only the engine knows it.
  *
  * SAVED IT is therefore reserved for an angle past the spin edge that the driver DID hold, which
  * is the one moment in a run that deserves the phrase.
@@ -63,16 +62,32 @@ export function peakCallout(spun: boolean, peakAngle: number): string {
 }
 
 /**
- * What the scorer said about one drift, or `undefined` when it said nothing at all.
+ * What the run MEASURED about one slide, or null when it measured nothing.
  *
- * THE PRESENCE of the entry is the only test of whether the scorer spoke. Its VALUE never is:
- * `total === 0` is a real answer (a slide the integrity monitor refused to believe earns exactly
- * nothing) and `lost === true` is a real answer (a spin took the chain). Both used to be read as
- * "no data" somewhere on this screen. See the doc blocks on `DriftScore.total` and
- * `DriftScore.lost` in src/engine/types.ts.
+ * `Session.driftStats` is where the engine publishes it now. A session stored before that field
+ * existed still has the same figures in the old place — inside the scorer's per-drift record —
+ * so this is the accessor pattern `src/platform/sessionStore.ts:statsOf` established, and it is
+ * a pattern rather than a one-liner because the fallback is the whole point: every run already
+ * on a phone is read through it.
  */
-function scoreOf(session: Session, id: number): DriftScore | undefined {
-  return session.score?.perDrift?.[id];
+function statsOf(session: Session, id: number): DriftSummary | null {
+  const own = session.driftStats?.[id];
+  if (own && typeof own === 'object') return own;
+  const legacy = (session.score?.perDrift as Record<number, { stats?: DriftSummary }> | undefined)?.[id];
+  return legacy && typeof legacy.stats === 'object' && legacy.stats !== null ? legacy.stats : null;
+}
+
+/**
+ * Did this slide end in a spin? The published answer, never a re-derivation.
+ *
+ * `DriftSummary.spun` is the BROAD rule — any sample inside the slide past the spin angle — and
+ * `DriftEvent.spin` is the detector's narrower flag, raised off the slide's peak, which can miss
+ * exactly that sample. The replay read the narrow one and drew a clean exit over a slide the
+ * review had already called a spin. Either saying yes is a yes, which is also what makes a
+ * session with no `driftStats` at all still honest about the spins its detector did catch.
+ */
+function spunOf(session: Session, d: DriftEvent): boolean {
+  return d.spin === true || statsOf(session, d.id)?.spun === true;
 }
 
 /** |β| → drama band. Absolute, so it means the same in every session. */
@@ -94,8 +109,6 @@ export function lerpAngle(a: number, b: number, f: number): number {
 export function intensityOf(beta: number, opts: ReplayOptions): number {
   return clamp((Math.abs(beta) - opts.intensityLo) / (opts.intensityHi - opts.intensityLo), 0, 1);
 }
-
-const fin = (v: number, fallback = 0): number => (Number.isFinite(v) ? v : fallback);
 
 /**
  * How far β may drift from `course − heading` before the trail is rebuilt from the identity.
@@ -270,9 +283,6 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
     course,
     beta,
     speed,
-    score: new Float64Array(n),
-    multiplier: new Float32Array(n).fill(1),
-    chain: new Float32Array(n),
     dist,
     intensity,
     segmentOf: new Int16Array(n).fill(-1),
@@ -357,7 +367,7 @@ function buildLaps(session: Session, t0: number, trail: ReplayTrail, durationS: 
     if (endT - startT < 1) continue;
     const startIndex = Math.ceil(startT * trail.hz - 1e-6);
     const endIndex = Math.min(trail.n - 1, Math.floor(endT * trail.hz + 1e-6));
-    laps.push({ index: lap.index, startT, endT, durationS: endT - startT, startIndex, endIndex, points: 0, best: false, fastest: false, ghostRef: -1 });
+    laps.push({ index: lap.index, startT, endT, durationS: endT - startT, startIndex, endIndex, fastest: false, ghostRef: -1 });
   }
   laps.sort((a, b) => a.startT - b.startT);
   for (let li = 0; li < laps.length; li++) {
@@ -365,43 +375,6 @@ function buildLaps(session: Session, t0: number, trail: ReplayTrail, durationS: 
     for (let k = lap.startIndex; k <= lap.endIndex; k++) if (trail.lapOf[k] < 0) trail.lapOf[k] = li;
   }
   return laps;
-}
-
-/**
- * What a drift is worth on the replay's running total: what it BANKED, not what it earned.
- *
- * `gross` is the scorer's per-drift total. `total` is 0 when the scorer says a spin took it,
- * which is what keeps the replay's running score equal to the session total the results screen
- * prints.
- *
- * THE FALLBACK IS FOR A SESSION THAT WAS NEVER SCORED, and for nothing else. This used to test
- * `ds.total > 0`, so a drift the integrity monitor refused to believe — base 0, bonus 0, total
- * exactly 0 — fell through to a synthetic generator and the replay drew a number the engine had
- * refused to pay. Measured over 112 fixture × seed runs: 28 of them fabricated at least one
- * segment score, `rough` on 12 of 14 seeds, where the replay's running total reached 7 953–8 402
- * on runs the engine scored 0. The entry existing means the scorer spoke; `Number.isFinite`
- * decides whether what it said is usable; the value itself decides nothing.
- */
-function driftPoints(
-  ds: DriftScore | undefined,
-  trail: ReplayTrail,
-  startIndex: number,
-  endIndex: number,
-  opts: ReplayOptions,
-  lost: boolean,
-): { total: number; gross: number; callouts: StyleCallout[] } {
-  const gross = ds
-    ? Number.isFinite(ds.total)
-      ? Math.max(0, ds.total)
-      : 0
-    : (() => {
-        let pts = 0;
-        for (let k = startIndex; k <= endIndex; k++) {
-          pts += (opts.fallbackPointsPerS * clamp(Math.abs(trail.beta[k]) / degToRad(30), 0, 1.5)) / trail.hz;
-        }
-        return Math.round(pts);
-      })();
-  return { total: lost ? 0 : gross, gross, callouts: lost ? [] : (ds?.callouts ?? []) };
 }
 
 function buildSegments(session: Session, t0: number, trail: ReplayTrail, durationS: number, opts: ReplayOptions, warnings: string[]): ReplaySegment[] {
@@ -434,13 +407,7 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
         lastStrong = sg;
       }
     }
-    // WHO DECIDES a drift never banked: the scorer, which publishes it. The replay used to
-    // replay the chain rule itself off `DriftEvent.spin`, and the scorer's spin rule is broader
-    // (any sample past `spinAngleDeg`, which the detector's peak can miss) — so one screen paid
-    // out points the other had taken away. See `DriftScore.lost` in src/engine/types.ts.
-    const ds = scoreOf(session, d.id);
-    const isLost = ds?.lost === true;
-    const { total, gross } = driftPoints(ds, trail, startIndex, endIndex, opts, isLost);
+    const stats = statsOf(session, d.id);
     const peakT = Number.isFinite(d.peakAngleT) && d.peakAngleT >= d.startT && d.peakAngleT <= d.endT ? d.peakAngleT - t0 : trail.t[peakIndex];
     // The DETECTOR's peak is the one that gets printed, because it is the one the results screen
     // prints; the trail maximum runs up to a few degrees higher on a noisy mount and is kept only
@@ -460,78 +427,22 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
       peakT,
       peakIndex,
       severity: severityOf(peakAngle),
-      spin: d.spin === true,
-      lost: isLost,
+      spin: spunOf(session, d),
       initialDirection: firstSign !== 0 ? firstSign : d.initialDirection === -1 ? -1 : 1,
       transitions: Math.max(transitions, d.transitions | 0),
-      points: total,
-      grossPoints: gross,
+      // The seconds the results screen prints under HELD, when the run kept measurements; the
+      // whole slide when it did not, which is the most a recording that old knows about itself.
+      heldS: stats && Number.isFinite(stats.sustainedS) && stats.sustainedS > 0 ? Math.min(stats.sustainedS, Math.max(0, endT - startT)) : endT - startT,
       suppressedS: Number.isFinite(d.suppressedS) && d.suppressedS > 0 ? Math.min(d.suppressedS, Math.max(0, d.durationS)) : 0,
       lapIndex: trail.lapOf[startIndex],
     });
   }
-  // Every scored slide has to exist on both screens. A drift clipped away by the active window
+  // Every slide has to exist on both screens. A drift clipped away by the active window
   // used to leave the replay saying "8 DRIFTS" where the results screen listed 9.
   const kept = new Set(segments.map((g) => g.driftId));
   const dropped = drifts.filter((d) => !kept.has(d.id));
   if (dropped.length > 0) warnings.push(`${dropped.length} drift${dropped.length === 1 ? '' : 's'} fell outside the replay window and are not drawn`);
   return segments;
-}
-
-/**
- * Cumulative score, multiplier and chain along the trail. Each drift's points accrue with
- * weight (0.15 + intensity); callout bonuses step in at their time.
- */
-function fillScore(session: Session, t0: number, trail: ReplayTrail, segments: ReplaySegment[]): void {
-  const inc = new Float64Array(trail.n);
-  for (const seg of segments) {
-    const ds = scoreOf(session, seg.driftId);
-    // A lost chain adds nothing — not its base, not its callout bonuses. Neither does a slide
-    // the monitor refused to believe, which earns exactly 0: its callouts cannot step in over a
-    // total of nothing, or the running score would climb past a session total of 0. The
-    // multiplier ramp below still runs, because the driver really did have it while the slide
-    // was alive.
-    const callouts = seg.lost || !(seg.points > 0) ? [] : (ds?.callouts ?? []);
-    const mult = ds && Number.isFinite(ds.multiplier) && ds.multiplier > 0 ? ds.multiplier : 1 + 0.5 * seg.transitions;
-    let raw = 0;
-    for (const c of callouts) if (Number.isFinite(c.points) && c.points > 0) raw += c.points;
-    // the bonuses can never add up to more than the drift banked, whatever a stored session's
-    // callout list says: the running total has to land on the session total, not past it
-    const keep = raw > seg.points && raw > 0 ? seg.points / raw : 1;
-    const base = Math.max(0, seg.points - raw * keep);
-    let wsum = 0;
-    for (let k = seg.startIndex; k <= seg.endIndex; k++) wsum += 0.15 + trail.intensity[k];
-    if (wsum > 0) {
-      for (let k = seg.startIndex; k <= seg.endIndex; k++) inc[k] += (base * (0.15 + trail.intensity[k])) / wsum;
-    }
-    for (const c of callouts) {
-      if (!(Number.isFinite(c.points) && c.points > 0)) continue;
-      const tc = clamp(Number.isFinite(c.t) ? c.t - t0 : seg.startT, seg.startT, seg.endT);
-      const k = clamp(Math.round(tc * trail.hz), seg.startIndex, seg.endIndex);
-      inc[k] += c.points * keep;
-    }
-    // multiplier ramps with the transitions banked so far inside this drift
-    let done = 0;
-    let lastStrong: 1 | -1 | 0 = 0;
-    for (let k = seg.startIndex; k <= seg.endIndex; k++) {
-      const ab = Math.abs(trail.beta[k]);
-      if (ab > degToRad(8)) {
-        const sg: 1 | -1 = trail.beta[k] > 0 ? 1 : -1;
-        if (lastStrong !== 0 && sg !== lastStrong) done++;
-        lastStrong = sg;
-      }
-      trail.multiplier[k] = Math.max(1, Math.min(mult, 1 + (mult - 1) * (seg.transitions > 0 ? done / seg.transitions : 1)));
-    }
-  }
-  let acc = 0;
-  for (let k = 0; k < trail.n; k++) {
-    acc += inc[k];
-    trail.score[k] = acc;
-  }
-  for (const seg of segments) {
-    const at0 = trail.score[seg.startIndex];
-    for (let k = seg.startIndex; k <= seg.endIndex; k++) trail.chain[k] = trail.score[k] - at0;
-  }
 }
 
 function hash01(i: number): number {
@@ -611,40 +522,40 @@ function poseFields(trail: ReplayTrail, t: number): { x: number; y: number; head
   };
 }
 
-/**
- * Score text, one rule for every renderer. No thousands separator below six digits: a space is
- * ~74 % of a digit width, so "7 273" parses as two numbers at arm's length — and Barlow has no
- * thin-space glyph, so a renderer that substitutes one gets a full-width gap.
- */
-export function formatPoints(p: number): string {
-  const v = Math.round(Number.isFinite(p) ? p : 0);
-  const a = Math.abs(v);
-  return (v < 0 ? '-' : '') + (a < 100000 ? String(a) : a.toLocaleString('en-US'));
-}
-
 const MARKER_PRIORITY: Record<string, number> = { 'drift-peak': 40, transition: 30, 'drift-end': 20, lap: 15, 'drift-start': 10 };
 
 /**
- * WHY a slide banked nothing, when the reason is the integrity monitor — or '' when it is not.
+ * WHAT THE EXIT OF A SLIDE SAYS. One rule, exported, so both renderers say the same thing and a
+ * test can run it.
  *
- * A slide worth zero has exactly three shapes, and they are not the same thing to a driver:
- *  • a spin took the chain (`lost`), which the exit already names: "CHAIN LOST −8981";
- *  • the monitor refused the seconds it was made of, so the scorer paid for none of it;
- *  • it simply was not worth much and rounded to nothing.
- * Only the middle one has something to say, and `DriftEvent.suppressedS` is the engine's own
- * words for it: src/engine/types.ts calls the duration "the only form a driver can be shown:
- * '6.1 s of this slide did not count, because the phone was moving in its mount'".
+ * The exit used to announce an award — "+1250", "CHAIN LOST −8981", "AT RISK +1380" — and those
+ * are gone with the points behind them. What is left at the end of a slide is what the driver
+ * actually did with it: how many seconds they held the car sideways. That is
+ * `ReplaySegment.heldS`, the same figure the review prints under HELD, so the two screens cannot
+ * describe the same slide with two different durations.
  *
- * It is a MEASUREMENT of the recording, not a claim about a score — no signed number, so
- * `isPointsClaim` leaves it alone and an untrusted recording may still show it, the same way it
- * still shows "LOST IT 118°". Before this, `hero` seed 13's drift 3 (2.93 s, all 2.93 s of it
- * refused) drew a full ember ribbon with a halo and two ember ticks, banked nothing, and said
- * nothing: the ribbon and the silence disagreed and no frame on the replay said which was right,
- * while the results screen printed the session's 9.36 s / 11.4 % one screen away.
+ * THE MONITOR OUTRANKS IT WHEN NOTHING BELIEVABLE IS LEFT, and only then. A slide the monitor
+ * refused outright has no hold to report — saying "HELD 2.9 S" over it would be the replay
+ * vouching for a measurement the engine has already disowned — so it says what it does know:
+ * `src/engine/types.ts` calls this duration "the only form a driver can be shown: '6.1 s of this
+ * slide did not count, because the phone was moving in its mount'". Before this existed, `hero`
+ * seed 13's drift 3 (2.93 s long, all 2.93 s of it refused) drew a full ribbon with a halo and
+ * two ticks and said nothing at all, while the results screen printed the session's 9.36 s /
+ * 11.4 % one screen away.
+ *
+ * A PARTLY refused slide still reports its hold, because it is still a slide: `good`'s drift 2
+ * is 23.9 s of sideways with 2.2 s of it refused, and an exit reading "2.2 S DID NOT COUNT" over
+ * it would describe a twenty-four-second drift by the one second of it the monitor blinked at,
+ * and would disagree with the row the review prints for the same slide. The refusal is not
+ * dropped — the review itemises it, and the frame's own plate carries the session's verdict —
+ * it is simply not what the exit of that slide is about.
+ *
+ * A slide too short to have a tenth of a second in it says nothing rather than "HELD 0.0 S".
  */
-export function refusedLabel(seg: Pick<ReplaySegment, 'lost' | 'points' | 'suppressedS'>): string {
-  if (seg.lost || seg.points > 0 || !(seg.suppressedS > 0)) return '';
-  return `${seg.suppressedS.toFixed(1)} S DID NOT COUNT`;
+export function exitLabel(seg: Pick<ReplaySegment, 'heldS' | 'suppressedS'>): string {
+  const believed = seg.heldS - seg.suppressedS;
+  if (seg.suppressedS > 0 && believed < 0.05) return `${seg.suppressedS.toFixed(1)} S DID NOT COUNT`;
+  return seg.heldS >= 0.05 ? `HELD ${seg.heldS.toFixed(1)} S` : '';
 }
 
 function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: ReplayLap[], opts: ReplayOptions): ReplayMarker[] {
@@ -676,7 +587,9 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
           }
         }
         n++;
-        // U+00D7, the same character the multiplier chip and the scorer's own labels use
+        // U+00D7, and a COUNT of direction changes rather than anything that was ever multiplied
+        // by it: the chip that spelled a score multiplier this way is gone, the transitions are
+        // what the driver did and stay
         push({ kind: 'transition', t: tz, ...poseFields(trail, tz), label: n > 1 ? `TRANSITION \u00d7${n}` : 'TRANSITION', driftId: seg.driftId });
       }
       lastStrong = sg;
@@ -686,14 +599,14 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
       kind: 'drift-end',
       t: seg.endT,
       ...poseFields(trail, seg.endT),
-      // A drift whose chain was lost never banked these: it is marked as taken away, not awarded.
-      // A drift the scorer paid NOTHING for gets no number at all \u2014 "+0" over the road is the
-      // replay announcing an award the engine refused to make. The dot still marks the exit, and
-      // when the monitor is the reason there is nothing to award, the exit says so instead.
-      label: seg.lost ? (seg.grossPoints > 0 ? `\u2212${formatPoints(seg.grossPoints)}` : '') : seg.points > 0 ? `+${formatPoints(seg.points)}` : refusedLabel(seg),
+      // The seconds the car was sideways, or the seconds the monitor refused when there were any
+      // \u2014 `exitLabel` owns that choice for both renderers. The dot marks the exit either way.
+      label: exitLabel(seg),
       driftId: seg.driftId,
-      points: seg.points,
-      suppressedS: refusedLabel(seg) ? seg.suppressedS : undefined,
+      heldS: seg.heldS,
+      // present only when the refusal is what the marker is SAYING, so a renderer never has to
+      // work out which of two durations the label in front of it is
+      suppressedS: exitLabel(seg).includes('DID NOT COUNT') ? seg.suppressedS : undefined,
     });
   }
   for (const lap of laps) {
@@ -706,29 +619,52 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
 }
 
 /**
+ * How loud a beat is, 0..1 — the shake it puts through the frame, the scale the callout slams
+ * to, and how far the glow blooms.
+ *
+ * IT WAS A RATIO OF POINTS: `seg.grossPoints / maxPoints`, clamped to 0.25..1, with a lost chain
+ * forced to 1 and a lost-but-not-spun drift to 0.35. So the loudest moment of a run was the one
+ * the scorer paid most for, which on a chained lap is a long, shallow, fast slide rather than
+ * the one the driver remembers — and a slide the integrity monitor refused shook the screen at
+ * 0.35 for reasons no frame could show.
+ *
+ * The replacement is the slide itself, and both halves of it are things a driver can see:
+ *
+ *   ANGLE, against the run's own biggest. The peak is the headline of any slide and is what the
+ *   review leads with, so a 64° moment on a run whose best is 64° is at the top of the scale and
+ *   a 30° one on the same run is a little under half of it. It is relative to the RUN and not to
+ *   a fixed ceiling because the beat is a moment inside this run, not a comparison with another:
+ *   on a 20° touge lap the biggest slide of the lap still has to feel like the biggest slide of
+ *   the lap. `SEVERITY_EDGES.hold` floors the denominator so a lap with nothing in it cannot
+ *   scale 4° up into a peak.
+ *
+ *   DURATION, as a lift rather than a second axis. Two slides that reach the same angle are not
+ *   the same moment if one was held four times as long, but duration cannot be allowed to
+ *   outrank angle either — a 12 s shallow slide is not the loudest thing in a run with a 70°
+ *   save in it. So it is a 0..0.3 bonus that saturates at 6 s, measured on `heldS`, the seconds
+ *   the car was actually sideways, which is the figure the review prints.
+ *
+ * Floored at 0.25 so every slide registers, capped at 1. A spin stays at 1 whatever its angle:
+ * losing the car is the loudest thing that can happen in a run, and the engine has already said
+ * so (`ReplaySegment.spin`).
+ */
+export function beatMagnitude(seg: Pick<ReplaySegment, 'peakAngle' | 'heldS' | 'spin'>, runPeakAngle: number): number {
+  if (seg.spin) return 1;
+  const scale = Math.max(runPeakAngle, SEVERITY_EDGES.hold);
+  const angle = clamp(Math.abs(seg.peakAngle) / scale, 0, 1);
+  const held = clamp(seg.heldS / 6, 0, 1);
+  return clamp(0.75 * angle + 0.3 * held, 0.25, 1);
+}
+
+/**
  * The dramatic beats, in time order. Both renderers animate from this so the app and the
  * harness cannot diverge (DESIGN.md motion language: slam 1.8 → 1.0, shake on transitions).
  */
 function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: ReplayLap[], markers: ReplayMarker[]): ReplayEvent[] {
   const events: ReplayEvent[] = [];
-  const endOfRun = trail.t[trail.n - 1];
-  const maxPoints = Math.max(1, ...segments.map((s) => s.grossPoints));
-  // a lost chain's total, banked against the spin that ended it, so the beat can name the number
-  const chainLoss = new Map<number, number>();
-  let pending = 0;
+  const runPeak = Math.max(0, ...segments.map((g) => Math.abs(g.peakAngle)));
   for (const seg of segments) {
-    if (!seg.lost) {
-      pending = 0;
-      continue;
-    }
-    pending += seg.grossPoints;
-    if (seg.spin) {
-      chainLoss.set(seg.driftId, pending);
-      pending = 0;
-    }
-  }
-  for (const seg of segments) {
-    const mag = clamp(seg.samplePeakAngle / SEVERITY_EDGES.spin, 0.2, 1);
+    const mag = beatMagnitude(seg, runPeak);
     events.push({ kind: 'entry', t: seg.startT, holdS: 0.6, magnitude: 0.45 * mag, priority: 20, label: '', driftId: seg.driftId, lapIndex: seg.lapIndex });
     // The kind comes from the engine's own verdict. A spun drift ALWAYS gets its beat, whatever
     // band its angle landed in, and a held angle never borrows the spin's word or its colour.
@@ -737,36 +673,28 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
         kind: seg.spin ? 'spin' : 'peak',
         t: seg.peakT,
         holdS: 1.1,
-        magnitude: seg.spin ? 1 : mag,
+        magnitude: mag,
         priority: seg.spin ? 90 : 60,
         label: peakCallout(seg.spin, seg.peakAngle),
         driftId: seg.driftId,
         lapIndex: seg.lapIndex,
       });
     }
-    const loss = chainLoss.get(seg.driftId) ?? 0;
-    // The exit of a spin is the chain going up in smoke, and it is the biggest number on screen
-    // at that moment — so it is reported the way the live HUD reports it, a beat AFTER the spin
-    // itself (`LiveScorer` fires CHAIN LOST on the tick after the drift ends) rather than on top
-    // of it. A drift the spin will later take exits with its points still AT RISK: they are
-    // never added to the running total, so its exit must not read as an award either.
-    //
-    // A slide the monitor refused to believe banked nothing and risked nothing: there is no
-    // number to announce, so the beat never carries a "+0" or an "AT RISK +0". The ticker is a
-    // claim about a score; zero points is not a score to claim. It is not silent either — it
-    // says how many seconds of the slide did not count, which is the reason (`refusedLabel`).
-    const risked = seg.lost ? (seg.spin ? loss || seg.grossPoints : seg.grossPoints) : 0;
-    const lostLabel = risked > 0 ? (seg.spin ? `CHAIN LOST \u2212${formatPoints(risked)}` : `AT RISK +${formatPoints(risked)}`) : '';
-    // …unless the monitor is WHY there is nothing to announce, in which case that is the beat.
-    const refused = refusedLabel(seg);
+    // The exit says how long the car was sideways, or — when the monitor refused the slide
+    // outright — that it did not believe it, which is a beat of its own (`refused`, so both
+    // renderers can colour it without reading the string). It used to be an award, and a spun
+    // drift's exit was pushed 0.35 s past the spin beat so "CHAIN LOST −8981" would not land on
+    // top of "LOST IT 118°"; with no number to announce there is nothing to get out of the way
+    // of, and the exit sits where the slide actually ended. Priority still keeps the spin's word
+    // on the frame while it is up.
+    const exit = exitLabel(seg);
     events.push({
-      kind: 'exit',
-      t: seg.lost && seg.spin ? Math.min(seg.endT + 0.35, endOfRun) : seg.endT,
+      kind: exit.includes('DID NOT COUNT') ? 'refused' : 'exit',
+      t: seg.endT,
       holdS: 1.3,
-      magnitude: seg.lost ? (seg.spin ? 1 : 0.35) : clamp(seg.grossPoints / maxPoints, 0.25, 1),
-      priority: seg.lost && seg.spin ? 92 : 50,
-      label: seg.lost ? lostLabel : seg.points > 0 ? `+${formatPoints(seg.points)}` : refused,
-      points: seg.points,
+      magnitude: 0.6 * mag,
+      priority: 50,
+      label: exit,
       driftId: seg.driftId,
       lapIndex: seg.lapIndex,
     });
@@ -784,34 +712,49 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
   return events;
 }
 
+/**
+ * THE BEST BITS, best first — and "best" is the app's one rule for it: the biggest peak angle,
+ * with the longest held breaking a tie.
+ *
+ * IT WAS RANKED BY POINTS: `b.points + b.peakAngle * 1000` against the same for `a`, where
+ * `points` was the slide's gross score. The angle term dominated that sum on almost every run
+ * (1000 × radians is 0–2 000 against a few hundred to a few thousand points), which is why the
+ * order barely moves — but "barely" is not a rule, and the runs where the points DID decide were
+ * exactly the ones where the driver disagreed: a long fast shallow slide inside a chain, ranked
+ * over the save of the run. The review screen already picks its BEST DRIFT this way
+ * (`bestByAngle` in src/ui/results/model.ts), and "best bits" and "best drift" have to be the
+ * same words about the same run.
+ *
+ * The tie-break is `heldS`, the seconds the car was actually sideways — the same figure the chip
+ * prints and the same one the review prints under HELD — so a driver comparing two equal angles
+ * is comparing the number they can see.
+ *
+ * A SPIN CAN WIN, because a spin really is the biggest angle of a run. The chip says SPUN when
+ * it does, rather than quietly handing the title to the runner-up and calling it the biggest.
+ */
 function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[], lead: number): ReplayHighlight[] {
   const out: ReplayHighlight[] = [];
   for (const seg of segments) {
-    const kind: ReplayHighlight['kind'] = seg.transitions >= 2 ? 'chain' : seg.spin || seg.severity === 'extreme' || seg.severity === 'spin' ? 'peak' : 'transition';
+    const kind: ReplayHighlight['kind'] = seg.spin ? 'spin' : seg.transitions >= 2 ? 'link' : 'angle';
     const inT = Math.max(0, seg.startT - 1);
+    const deg = Math.round((seg.peakAngle * 180) / Math.PI);
     out.push({
       t: seg.peakT,
       // land on the moment, not on the run-up: a three-link chain starts 25 s before its peak
       cueT: Math.max(inT, seg.peakT - lead),
       inT,
       outT: Math.min(trail.t[trail.n - 1], seg.endT + 1.2),
-      // A chip that reads "23° · 0 PTS" is the replay putting a score on a slide the engine paid
-      // nothing for. With nothing banked, the angle is the whole of what is true about it.
-      label: seg.spin
-        ? `${Math.round((seg.peakAngle * 180) / Math.PI)}° · SPUN`
-        : seg.transitions >= 2
-          ? `${seg.transitions}-LINK CHAIN`
-          : seg.points > 0
-            ? `${Math.round((seg.peakAngle * 180) / Math.PI)}° · ${formatPoints(seg.points)} PTS`
-            : `${Math.round((seg.peakAngle * 180) / Math.PI)}°`,
+      // The angle, then what happened to it: how long it was held, or that it was lost. Both are
+      // measurements of the slide. The chip used to read "23° · 0 PTS" on a slide the engine had
+      // paid nothing for, which is a score printed over a refusal.
+      label: seg.spin ? `${deg}° · SPUN` : kind === 'link' ? `${deg}° · ${seg.transitions}-LINK` : `${deg}° · ${seg.heldS.toFixed(1)}S`,
       kind,
       driftId: seg.driftId,
-      // a spin is worth watching and worth nothing: rank it by what it was worth before it went
-      points: seg.grossPoints,
       peakAngle: seg.peakAngle,
+      heldS: seg.heldS,
     });
   }
-  out.sort((a, b) => b.points + b.peakAngle * 1000 - (a.points + a.peakAngle * 1000));
+  out.sort((a, b) => (b.peakAngle !== a.peakAngle ? b.peakAngle - a.peakAngle : b.heldS - a.heldS));
   return out;
 }
 
@@ -820,7 +763,7 @@ function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[], lead: nu
  * the lap being watched against a DIFFERENT lap (never itself — a ghost that is the car is a
  * rendering glitch, not a ghost).
  */
-function sampleLap(trail: ReplayTrail, lap: ReplayLap, criterion: 'points' | 'time'): ReplayGhost {
+function sampleLap(trail: ReplayTrail, lap: ReplayLap): ReplayGhost {
   const hz = trail.hz;
   const n = Math.max(2, Math.round(lap.durationS * hz) + 1);
   const tau = new Float64Array(n);
@@ -831,9 +774,7 @@ function sampleLap(trail: ReplayTrail, lap: ReplayLap, criterion: 'points' | 'ti
   const beta = new Float64Array(n);
   const speed = new Float64Array(n);
   const dist = new Float64Array(n);
-  const points_ = new Float64Array(n);
   const d0 = trailValueAt(trail, trail.dist, lap.startT);
-  const p0 = trailValueAt(trail, trail.score, lap.startT);
   for (let k = 0; k < n; k++) {
     const tk = k / hz;
     const t = Math.min(lap.startT + tk, lap.endT);
@@ -845,39 +786,42 @@ function sampleLap(trail: ReplayTrail, lap: ReplayLap, criterion: 'points' | 'ti
     beta[k] = trailAngleAt(trail, trail.beta, t);
     speed[k] = trailValueAt(trail, trail.speed, t);
     dist[k] = trailValueAt(trail, trail.dist, t) - d0;
-    points_[k] = trailValueAt(trail, trail.score, t) - p0;
   }
-  return { lapIndex: lap.index, startT: lap.startT, endT: lap.endT, durationS: lap.durationS, points: lap.points, criterion, n, hz, tau, x, y, heading, course, beta, speed, dist, points_ };
+  return { lapIndex: lap.index, startT: lap.startT, endT: lap.endT, durationS: lap.durationS, n, hz, tau, x, y, heading, course, beta, speed, dist };
 }
 
 /**
  * Choose the reference lap and, for every lap, which OTHER lap its ghost shows.
- * Returns the primary ghost (the best lap) or null.
+ * Returns the primary ghost (the fastest lap) or null.
+ *
+ * THE REFERENCE IS THE QUICKEST LAP. It used to be the lap that SCORED most — `lap.points`, the
+ * cumulative score delta across it, with lap time only breaking a tie — so a ghost car existed
+ * because of a number that no longer does. Time is the racing answer and the only one left that
+ * is a fact about the driving: the gap the screen reports is already a time gap (`GhostPose.gapS`,
+ * from the reference lap's own distance→time curve), so the ghost and its readout now agree about
+ * what is being compared. `ReplayLap.fastest` was already computed here, one line apart from the
+ * old `best`, for the same laps.
+ *
+ * Every lap's ghost is the fastest of the OTHER laps, so the ghost is never the car being
+ * watched — a cyan outline sitting exactly on the white car reads as a rendering glitch.
  */
 function buildGhost(trail: ReplayTrail, laps: ReplayLap[], closed: boolean, durationS: number, opts: ReplayOptions): ReplayGhost | null {
-  for (const lap of laps) lap.points = trailValueAt(trail, trail.score, lap.endT) - trailValueAt(trail, trail.score, lap.startT);
   if (!opts.ghost || !closed) return null;
   const complete = laps.filter((l) => l.endT <= durationS + 1e-6 && l.durationS > 5);
   if (complete.length < 2) return null;
-  const better = (a: ReplayLap, b: ReplayLap) => a.points > b.points + 1e-9 || (Math.abs(a.points - b.points) <= 1e-9 && a.durationS < b.durationS);
-  let best = complete[0];
+  const quicker = (a: ReplayLap, b: ReplayLap) => a.durationS < b.durationS;
   let fastest = complete[0];
-  for (const lap of complete) {
-    if (better(lap, best)) best = lap;
-    if (lap.durationS < fastest.durationS) fastest = lap;
-  }
-  best.best = true;
+  for (const lap of complete) if (quicker(lap, fastest)) fastest = lap;
   fastest.fastest = true;
-  // every lap's ghost is the best of the OTHER laps, so the ghost is never the car itself
   for (const lap of laps) {
     let ref: ReplayLap | null = null;
     for (const other of complete) {
       if (other.index === lap.index) continue;
-      if (!ref || better(other, ref)) ref = other;
+      if (!ref || quicker(other, ref)) ref = other;
     }
     lap.ghostRef = ref ? ref.index : -1;
   }
-  return sampleLap(trail, best, 'points');
+  return sampleLap(trail, fastest);
 }
 
 function buildTelemetry(trail: ReplayTrail, durationS: number, opts: ReplayOptions): ReplayTelemetry {
@@ -887,7 +831,6 @@ function buildTelemetry(trail: ReplayTrail, durationS: number, opts: ReplayOptio
   const speed = new Float32Array(n);
   const angle = new Float32Array(n);
   const beta = new Float32Array(n);
-  const points = new Float32Array(n);
   const drifting = new Uint8Array(n);
   let maxSpeed = 0;
   let maxAngle = 0;
@@ -898,12 +841,11 @@ function buildTelemetry(trail: ReplayTrail, durationS: number, opts: ReplayOptio
     const b = trailAngleAt(trail, trail.beta, tk);
     beta[k] = b;
     angle[k] = Math.abs(b);
-    points[k] = trailValueAt(trail, trail.score, tk);
     drifting[k] = trail.segmentOf[Math.round(trailIndexOf(trail, tk))] >= 0 ? 1 : 0;
     if (speed[k] > maxSpeed) maxSpeed = speed[k];
     if (angle[k] > maxAngle) maxAngle = angle[k];
   }
-  return { n, hz, t, speed, angle, beta, points, drifting, maxSpeed, maxAngle, maxPoints: points[n - 1] };
+  return { n, hz, t, speed, angle, beta, drifting, maxSpeed, maxAngle };
 }
 
 function buildBounds(trail: ReplayTrail, track: Replay['track'], opts: ReplayOptions, pad = true): ReplayBounds {
@@ -930,7 +872,7 @@ function buildBounds(trail: ReplayTrail, track: Replay['track'], opts: ReplayOpt
 /**
  * First/last times worth watching: the replay must not open on a parked car, nor keep rolling
  * for twenty seconds after the chequered flag. On a closed circuit it ends just after the last
- * lap's finish so the FINISH beat and the grade land on the final frame.
+ * lap's finish so the FINISH beat lands on the final frame.
  */
 function activeWindow(session: Session, src: SourceSample[], opts: ReplayOptions): { start: number; end: number } {
   const moving = (s: SourceSample) => Number.isFinite(s.speed) && s.speed > 1.5;
@@ -946,7 +888,7 @@ function activeWindow(session: Session, src: SourceSample[], opts: ReplayOptions
     const finish = Math.max(...laps.map((l) => (Number.isFinite(l.endT) ? l.endT : -Infinity)));
     if (Number.isFinite(finish) && finish > start + 5) end = Math.min(end, finish + 2.5);
   }
-  // ...but never at the cost of a scored slide. The chequered flag is not the end of the
+  // ...but never at the cost of a slide. The chequered flag is not the end of the
   // recording: a drift that runs past it (or begins before the car was judged to be moving) is
   // still on the results screen, and a window that cuts it makes the two screens count
   // different runs. The FINISH beat stays at the flag; the replay simply keeps rolling.
@@ -989,7 +931,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
       telemetry,
       highlights: [],
       track: null,
-      info: { name: session.name ?? '', trusted: false, totalPoints: null, grade: null, untrustedMessage: 'No usable data in this session', driftCount: 0, peakAngle: 0, typicalAngle: 0, maxSpeed: 0, severity: 'none' },
+      info: { name: session.name ?? '', trusted: false, driftCount: 0, peakAngle: 0, typicalAngle: 0, maxSpeed: 0, severity: 'none' },
       gapWindows: [],
       warnings,
       options: opts,
@@ -1002,7 +944,6 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   const gapWindows = markMeasured(session, t0, trail, durationS, opts, warnings);
   const laps = buildLaps(session, t0, trail, durationS);
   const segments = buildSegments(session, t0, trail, durationS, opts, warnings);
-  fillScore(session, t0, trail, segments);
   const smoke = buildSmoke(trail, opts);
   const markers = buildMarkers(trail, segments, laps, opts);
   const events = buildEvents(trail, segments, laps, markers);
@@ -1030,15 +971,12 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   for (let k = 0; k < trail.n; k++) if (trail.segmentOf[k] >= 0) driftAngles.push(Math.abs(trail.beta[k]));
   driftAngles.sort((a, b) => a - b);
   const typicalAngle = driftAngles.length ? driftAngles[Math.min(driftAngles.length - 1, Math.floor(driftAngles.length * 0.9))] : 0;
-  // Same rule as `driftPoints`, one level up: the SCORE OBJECT existing is what says the scorer
-  // spoke, and a session total of exactly 0 is a run that earned nothing rather than a run
-  // nobody judged. Only a session with no score at all falls back to the trail's own sum.
-  const rawTotal = session.score && Number.isFinite(session.score.total) ? session.score.total : trail.score[trail.n - 1];
-  // `SessionScore.trusted` mirrors `SessionIntegrity.scoreTrusted`; either saying no means the
-  // run may not be presented as an achievement, so the headline is null rather than merely
-  // flagged — a renderer cannot print it by forgetting to look.
-  const trusted = session.score?.trusted !== false && session.integrity?.scoreTrusted !== false;
-  const untrustedMessage = trusted ? '' : (session.integrity?.message ?? '').trim() || 'This run was not believed well enough to score';
+  // THE ONE VERDICT LEFT, and it is the integrity monitor's. It used to be read from two places
+  // at once — `SessionScore.trusted` and `SessionIntegrity.scoreTrusted`, either saying no being
+  // enough — because a scored object must never be separated from the verdict on whether it may
+  // be shown. The score is gone; the monitor is not, and its answer is the same answer it always
+  // was: whether a phone waved in a parked car is about to be presented as a drive.
+  const trusted = session.integrity?.scoreTrusted !== false;
   return {
     t0,
     durationS,
@@ -1058,9 +996,6 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
     info: {
       name: session.name ?? '',
       trusted,
-      totalPoints: trusted ? fin(rawTotal) : null,
-      grade: trusted ? (session.score?.grade ?? 'D') : null,
-      untrustedMessage,
       driftCount: segments.length,
       peakAngle,
       typicalAngle,
