@@ -212,7 +212,7 @@ export default function SoundLabScreen() {
             {/* The silent switch. `playsInSilentMode: false` is a deliberate non-default (the
                 expo-audio declaration says `@default true`), and a driver whose phone is on
                 silent needs to know that this switch is not the only one in play. */}
-            <Micro>A phone flicked to silent makes no sound here, whatever this switch says — the app is a guest on the audio session and respects the ringer. The haptics still carry the run.</Micro>
+            <Small>A phone on silent stays silent whatever this says: the app never talks over the ringer switch. The haptics still carry the run.</Small>
           </Panel>
 
           {/* ── the continuous layer ───────────────────────────────────────────────────── */}
@@ -270,15 +270,12 @@ export default function SoundLabScreen() {
             <AppText variant="heading" uppercase>
               In sequence
             </AppText>
-            <Small>
-              Real moments, FOUND in real runs by `npx tsx tools/audio/bench.ts emit=1` and written into `src/ui/audio/sequences.ts` — never typed out here. Each one names the command that
-              reproduces it. The gaps are the point.
-            </Small>
+            <Small>Real moments, found in real runs by the bench and written into a generated file — never typed out on this page. Each one names the command that reproduces it, so the timing under it can be checked rather than believed. The gaps are the point.</Small>
             {SOUND_SEQUENCES.map((seq) => (
               <View key={seq.key} style={styles.sequence}>
                 <LabButton label={seq.label} color={colors.magenta} testID={`seq-${seq.key}`} onPress={() => runSequence(seq.steps)} wide />
                 <Micro style={styles.sequenceNote}>{seq.note}</Micro>
-                {seq.command ? <Micro style={styles.sequenceNote}>{seq.command}</Micro> : null}
+                {seq.command ? <Small style={styles.command}>{seq.command}</Small> : null}
               </View>
             ))}
           </Panel>
@@ -321,7 +318,7 @@ export default function SoundLabScreen() {
           ))}
 
           <Micro style={styles.footer}>
-            Synthesised by tools/audio/render.mjs · measured by tools/audio/analyse.mjs · scheduled by src/ui/audio/mixer.ts
+            Synthesised and measured by tools/audio/render.mjs · re-measured off the shipped bytes by tools/audio/analyse.mjs · scheduled by src/ui/audio/mixer.ts · cadence and coverage by tools/audio/coverage.ts
           </Micro>
         </ScrollView>
       </SafeAreaView>
@@ -510,6 +507,8 @@ const styles = StyleSheet.create({
   meterFill: { height: '100%', borderRadius: 3 },
   sequence: { gap: 4, marginTop: space[2] },
   sequenceNote: { lineHeight: 15 },
+  // The command is meant to be read and retyped, so it keeps its own case and its slashes.
+  command: { fontSize: 12, lineHeight: 16 },
   decision: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: 3, borderBottomWidth: 1, borderBottomColor: colors.line },
   decisionId: { width: 88 },
   decisionOutcome: { flex: 1 },

@@ -1,0 +1,76 @@
+{
+  "startedAt": "2026-09-21T01:46:22.459Z",
+  "viewport": {
+    "width": 393,
+    "height": 852
+  },
+  "scale": 3,
+  "landscape": false,
+  "chromium": "141.0.7390.37",
+  "routes": [
+    {
+      "name": "trace-stop-then-grade",
+      "path": "/drive?sim=harbor&rate=4&at=40",
+      "url": "http://127.0.0.1:41393/drive?sim=harbor&rate=4&at=40",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/feel-round2/trace/trace-stop-then-grade.png",
+      "video": null,
+      "ms": 14393,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_700Bold_Italic",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium"
+        ],
+        "displayTextNodes": 73,
+        "bodyTextNodes": 30,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 78820,
+        "cyanPixels": 74520,
+        "textPixels": 64244,
+        "nonBgFraction": 0.3612
+      },
+      "shotAt": "2026-09-21T01:46:37.008Z"
+    }
+  ],
+  "finishedAt": "2026-09-21T01:46:37.008Z",
+  "failed": 0
+}

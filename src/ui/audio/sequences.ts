@@ -33,7 +33,7 @@ export const SOUND_SEQUENCES: readonly SoundSequence[] = [
     label: "The bank",
     command: "npx tsx tools/audio/bench.ts harbor 1 2",
     atS: 47.75,
-    note: "at 47.75 s: the exit verdict, the chain banking 2009 ms later, then the next drift opening as a LINK at 2880 ms",
+    note: "at 47.75 s: the exit verdict, the chain banking 2.01 s later, then the next drift opening as a LINK at 2.88 s",
     steps: [{ id: "exit", atS: 0 }, { id: "banked", atS: 2.009 }, { id: "link", atS: 2.88 }],
   },
   {

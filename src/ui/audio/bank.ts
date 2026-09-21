@@ -443,7 +443,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     gated: false,
     haptic: 'heavy',
     hapticThen: { shape: 'success', delayS: 0.14 },
-    why: 'The most cinematic 1.6 s in the app: an impact, a shockwave sweeping 7 kHz down to the floor, an ember chord blooming behind it with one gold bell — the letterbox slam, the shockwave ring and the ember particles, in sound. Two haptics 140 ms apart because the API has no "boom": Heavy is the letter landing, Success is the ring going out. S, A and B only — see `gradeCueFor`.',
+    why: 'The most cinematic 1.6 s in the app: an impact, a shockwave sweeping 7 kHz down to the floor, an ember chord blooming behind it with one gold bell — the letterbox slam, the shockwave ring and the ember particles, in sound. Two haptics 140 ms apart because the API has no "boom": Heavy is the letter landing, Success is the ring going out. S, A and B only; below that the reveal is GRADE (C/D).',
   },
   {
     id: 'grade-low',
@@ -456,7 +456,7 @@ export const SOUND_BANK: readonly SoundSpec[] = [
     minGapS: 2,
     gated: false,
     haptic: 'heavy',
-    why: 'The same 1.65 s figure with the gold taken out of it: same impact, same sub drop, same shockwave (swept from 3.4 kHz instead of 7), same chord bloom an octave lower with a minor third where the octave was — and no bell, no shimmer, no Success notification. `src/ui/theme.ts` paints a D muted and a C plain text, and the results screen draws the letter in that colour; a gold fanfare and a Success buzz under the word "Rough" is the screen and the feel layer telling the driver two different things. Heavy alone: the letter still lands.',
+    why: 'The same 1.65 s figure with the gold taken out of it: same impact, same sub drop, same shockwave (swept from 3.4 kHz instead of 7), same chord bloom an octave lower with a minor third where the octave was — and no bell, no shimmer, no Success notification. src/ui/theme.ts paints a D muted and a C plain text, and the results screen draws the letter in that colour; a gold fanfare and a Success buzz under the word "Rough" is the screen and the feel layer telling the driver two different things. Heavy alone: the letter still lands.',
   },
 ];
 

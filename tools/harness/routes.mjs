@@ -449,4 +449,44 @@ export const defaultRoutes = [
   // no `minEmber`: this run grades B, the reveal's letter and label are CYAN, and the world
   // behind them is dimmed to 42 % for the slam — an ember floor would be a check on the grade
   { name: 'replay-spin-end', path: '/replay/fixture-spin?cam=overview&t=999&play=0&ui=0', waitMs: 3200, expectCanvas: true },
+
+  // ---- /sound: the rows that have no clip, and the two the run hopes never to need ---------
+  // THE LANDING. The exit phase edge is the one row in the bank with no file: a light haptic and
+  // nothing to hear, because docs/DESIGN.md gives the exit a haptic and leaves the sound to the
+  // bed's own release — and because a driver with the phone on silent still has to feel a slide
+  // end. The row says FELT where the others say PLAY, and this is the frame that shows it.
+  {
+    name: 'sound-felt',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'clip-exit-edge' },
+      { type: 'eval', js: "document.querySelector('[data-testid=\"clip-exit-edge\"]').scrollIntoView({ block: 'center' })" },
+      { type: 'wait', ms: 700 },
+    ],
+  },
+  // THE FAULT PAIR. A hand-held run offers the mixer 56 cues and plays none of them; these two
+  // rows are the one sound that says why, and the one that says it is over.
+  {
+    name: 'sound-fault',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'clip-fault' },
+      { type: 'eval', js: "document.querySelector('[data-testid=\"clip-fault\"]').scrollIntoView({ block: 'start' })" },
+      { type: 'wait', ms: 700 },
+    ],
+  },
+  // THE TWO GRADE RENDERS, side by side at the end of the bank: the gold one for S/A/B and the
+  // unlit one for C/D, same figure, same length, same tier, measurably darker.
+  {
+    name: 'sound-grades',
+    path: '/sound',
+    waitMs: 2600,
+    actions: [
+      { type: 'waitFor', testId: 'clip-grade-low' },
+      { type: 'eval', js: "document.querySelector('[data-testid=\"clip-grade\"]').scrollIntoView({ block: 'start' })" },
+      { type: 'wait', ms: 700 },
+    ],
+  },
 ];

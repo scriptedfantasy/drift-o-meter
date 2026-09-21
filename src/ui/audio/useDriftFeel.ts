@@ -263,7 +263,15 @@ function hookUnload(): void {
   unloadHooked = true;
   // `pagehide` rather than `beforeunload`: it also fires when a mobile browser freezes the tab,
   // and it does not make the page ineligible for the back/forward cache.
-  target.addEventListener('pagehide', () => releaseFeel(), { once: true });
+  //
+  // AND ONLY WHEN THE PAGE IS REALLY GOING. `persisted` is true when the browser is putting the
+  // page into that cache rather than destroying it; releasing then would tear down the
+  // AudioContext behind a page that is about to come back with its React tree intact and no
+  // effect to rebuild it, which is a silent app for the rest of the session.
+  target.addEventListener('pagehide', (e: Event) => {
+    if ((e as PageTransitionEvent).persisted) return;
+    releaseFeel();
+  });
 }
 
 /**

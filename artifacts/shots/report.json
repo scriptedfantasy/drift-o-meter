@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T01:28:13.266Z",
+  "startedAt": "2026-09-21T01:46:42.282Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -784,13 +784,587 @@
         "nonBgFraction": 0.7366
       },
       "shotAt": "2026-09-21T01:28:17.793Z"
+    },
+    {
+      "name": "sound",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound.png",
+      "video": null,
+      "ms": 3797,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 5208,
+        "cyanPixels": 15084,
+        "textPixels": 57316,
+        "nonBgFraction": 0.7379
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-played",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-played.png",
+      "video": null,
+      "ms": 5786,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 1216,
+        "cyanPixels": 3008,
+        "textPixels": 33620,
+        "nonBgFraction": 0.8115
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-bank",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-bank.png",
+      "video": null,
+      "ms": 4330,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "cyanPixels": 792,
+        "textPixels": 33620,
+        "nonBgFraction": 0.8113
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-slide",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-slide.png",
+      "video": null,
+      "ms": 5900,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 27056,
+        "cyanPixels": 0,
+        "textPixels": 30364,
+        "nonBgFraction": 0.872
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-muted",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-muted.png",
+      "video": null,
+      "ms": 5465,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 10224,
+        "cyanPixels": 0,
+        "textPixels": 61492,
+        "nonBgFraction": 0.7379
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "settings-feedback",
+      "path": "/settings",
+      "url": "http://127.0.0.1:43783/settings",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/settings-feedback.png",
+      "video": null,
+      "ms": 2599,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 46,
+        "bodyTextNodes": 36,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 2872,
+        "cyanPixels": 0,
+        "textPixels": 20396,
+        "nonBgFraction": 0.8101
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-felt",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-felt.png",
+      "video": null,
+      "ms": 4750,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 0,
+        "cyanPixels": 71612,
+        "textPixels": 0,
+        "nonBgFraction": 0.872
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-fault",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-fault.png",
+      "video": null,
+      "ms": 4607,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 52920,
+        "cyanPixels": 19348,
+        "textPixels": 0,
+        "nonBgFraction": 0.8717
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
+    },
+    {
+      "name": "sound-grades",
+      "path": "/sound",
+      "url": "http://127.0.0.1:43783/sound",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/sound-grades.png",
+      "video": null,
+      "ms": 4461,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 79,
+        "bodyTextNodes": 229,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 1179,
+        "height": 2556,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 1256,
+        "cyanPixels": 1920,
+        "textPixels": 0,
+        "nonBgFraction": 0.7923
+      },
+      "shotAt": "2026-09-21T01:47:24.053Z"
     }
   ],
-  "finishedAt": "2026-09-21T01:28:17.793Z",
+  "finishedAt": "2026-09-21T01:47:24.053Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "home",
-    "settings"
+    "sound",
+    "sound-played",
+    "sound-bank",
+    "sound-slide",
+    "sound-muted",
+    "settings-feedback",
+    "sound-felt",
+    "sound-fault",
+    "sound-grades"
   ]
 }

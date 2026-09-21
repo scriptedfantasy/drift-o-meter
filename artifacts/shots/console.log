@@ -23,3 +23,21 @@
 ===== home  http://127.0.0.1:38625/
 
 ===== settings  http://127.0.0.1:38625/settings
+
+===== sound  http://127.0.0.1:43783/sound
+
+===== sound-played  http://127.0.0.1:43783/sound
+
+===== sound-bank  http://127.0.0.1:43783/sound
+
+===== sound-slide  http://127.0.0.1:43783/sound
+
+===== sound-muted  http://127.0.0.1:43783/sound
+
+===== settings-feedback  http://127.0.0.1:43783/settings
+
+===== sound-felt  http://127.0.0.1:43783/sound
+
+===== sound-fault  http://127.0.0.1:43783/sound
+
+===== sound-grades  http://127.0.0.1:43783/sound
