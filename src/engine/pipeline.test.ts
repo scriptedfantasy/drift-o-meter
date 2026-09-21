@@ -352,7 +352,14 @@ describe('DriftPipeline end to end', () => {
       expect(replay.durationS).toBeGreaterThan(30);
       expect(replay.segments.length).toBe(back.drifts.length);
       expect(replay.info.driftCount).toBe(back.drifts.length);
-      expect(replay.info.grade).toBe(back.score.grade);
+      // Was `replay.info.grade`. The grade is gone; the point of the line was that a session
+      // put through JSON and back describes the same run, so it now checks a fact the replay
+      // measures for itself rather than one it copied off the scorer.
+      expect(replay.info.trusted).toBe(back.integrity.scoreTrusted);
+      expect(replay.info.peakAngle).toBeCloseTo(
+        back.drifts.reduce((m, d) => Math.max(m, Math.abs(d.peakAngle)), 0),
+        6,
+      );
       expect(replay.markers.length).toBeGreaterThan(0);
       expect(Number.isFinite(replay.bounds.minX)).toBe(true);
     }
