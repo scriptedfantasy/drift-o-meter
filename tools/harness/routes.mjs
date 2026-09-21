@@ -145,52 +145,73 @@ export const defaultRoutes = [
   { name: 'calibrate-fault-services', path: '/calibrate?fault=services', waitMs: 1200 },
   { name: 'calibrate-fault-failed', path: '/calibrate?fault=failed', waitMs: 1200 },
 
-  // ---- drive: the live HUD at the moments that matter -----------------------------------
+  // ---- drive: the live display at the moments that matter --------------------------------
+  //
+  // THE SCREEN IS TWO THINGS NOW: the angle gauge and STOP. The status strip, integrity banner,
+  // drift strip, callout stack, score odometer, multiplier chip, chain bar, telemetry row and
+  // mini-map were all taken off it — a driver at 60 km/h has no time to read any of them — so
+  // every check below is a check on the GAUGE, and the frame-wide `minEmber` that used to stand
+  // in for one is gone. It measured a screen whose ember came mostly from the score block; with
+  // that block gone it measures the gauge plus the edge bloom, which is the gauge counted twice
+  // and a glow that can carry a floor on its own. `regions` names the element instead.
+  //
+  // The gauge is the only thing left that can be honest or dishonest, and it still is: every
+  // opacity in `AngleGauge.tsx` (`glowOpacity`, `bowlOpacity`, `dimmed`, lines 184-186) scales
+  // with `signals.trust`, so the instrument fades exactly as far as the engine's doubt goes.
+  // Measured at the identical instant of the identical run, inside `hud-gauge-box`:
+  //   trusted (peak, below)      44 352 ember px
+  //   suspect (the warn route)   17 716 ember px
+  //   refused (the loose route)       0 ember px
+  // Three bands from one continuous quantity, which is why each route below carries the band it
+  // belongs in rather than a floor that all three would clear.
+  //
   // The instant the screen opens. There is no GO gate: entering /drive IS the arming step, so
-  // this is the first frame of a live run — gauge at rest, clock at zero, nothing claimed.
-  // No `minEmber`: at t=0.3 the run has no fix yet, so the engine will not stand behind the
-  // reading and the gauge is drawn muted. A FLOOR CANNOT CERTIFY THAT. The ceiling inside the
-  // gauge box can, and it is the same check `drive-loose` carries.
+  // this is the first frame of a live run — gauge at rest, nothing claimed.
+  // No floor: at t=0.3 the run has no fix yet, so the engine will not stand behind the reading
+  // and the gauge is drawn muted. A FLOOR CANNOT CERTIFY THAT; the ceiling inside the box can.
   { name: 'drive-open', path: '/drive?sim=harbor&rate=1&at=0.3&hold=1', waitMs: 2400, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // The first seconds of EVERY run: the calibrator has not resolved which way the car points and
-  // there is no fix yet. Calm cyan FINDING FORWARD, gauge muted, score not counting.
+  // there is no fix yet. Gauge muted, nothing counted.
   { name: 'drive-start', path: '/drive?sim=harbor&rate=1&at=2.2&hold=1', waitMs: 2600, expectCanvas: true, regions: [gaugeIsCold(120)] },
   // LIVE (the route to record video of): warped to 38 s and left running, so the shot lands on
   // the MANJI flick at 42.4 s and EXTREME ANGLE at 42.8 s, and the video covers the whole flick.
-  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
-  // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48° right, ×4.5, 22,675
-  // points with 7,927 at risk, 47 km/h, three callouts stacked, peak 50°, 23.9 s held.
-  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
-  // HELD 190 ms after TRANSITION ×2, mid-swing through zero: 40° left, chevron flipped, ×2.75.
-  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
-  // HELD 0.46 s after a 10,259-point chain banked — inside the banner's 900 ms rise.
+  // This is the one drive route that is NOT held, so its count moves shot to shot: 148 548,
+  // 151 260 and 169 268 on three consecutive runs. The floor is set well under the lowest of
+  // them rather than near any of them, because the number it is measuring is a moving frame.
+  { name: 'drive', path: '/drive?sim=harbor&rate=1&at=39.2', waitMs: 3200, expectCanvas: true, regions: [gaugeIsHot(60000)] },
+  // HELD 20 ms after EXTREME ANGLE in the second lap's long drift: 48 deg right, needle hard
+  // over, the R chevron lit. The engine is still banking points and still timing the hold behind
+  // it — what changed is that the screen no longer prints them.
+  { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(20000)] },
+  // HELD 190 ms after TRANSITION x2, mid-swing through zero: 40 deg left, chevron flipped.
+  { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(60000)] },
+  // HELD 0.46 s after a 10,259-point chain banked.
   //
-  // IT USED TO SAY the next drift opened with LINK ×3, and there is no LINK here. The detector's
-  // own account of these two slides puts them 3.02 s apart, past `chainGapS`; the live scorer had
-  // been measuring 2.93 s off its own late-starting window and keeping the chain at ×4.75. Now
-  // that both paths score a drift over the window the detector published, the chain breaks where
-  // the engine always said it broke, and this frame photographs a bank that ENDS a chain rather
-  // than one that continues. The multiplier reads ×1.00 for that reason.
-  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
-  // A REAL hand-held phone (`looseness=1` goes through the simulator, not through the view):
-  // the mount reads loose, so the gauge is drawn muted with no bloom and the score block says
-  // NOT SCORING — the HUD must not celebrate an angle the scorer has already thrown away.
-  // `minEmber: 100` used to stand here, under that comment. It measured 30 591 — 17 169 of them
-  // the red LOOSE MOUNT banner and 9 745 the red STOP, because the pixel classifier counted
-  // `#FF3B3B` as ember — so the check was satisfied by the two elements that are SUPPOSED to be
-  // loud, and could never have failed on the gauge. A floor cannot certify "muted". This is the
-  // ceiling that can, measured inside the gauge's own box.
+  // IT USED TO PHOTOGRAPH the bank banner rising over 900 ms, and there is no banner now. What it
+  // still photographs is the gauge 0.46 s after the chain closed — the slide is over, the angle
+  // is falling and the instrument is coming down with it, which is the only account of a bank a
+  // driver gets on this screen. The engine's account is unchanged and lands on the results page.
+  { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(40000)] },
+  // A REAL hand-held phone (`looseness=1` goes through the simulator, not through the view): the
+  // mount reads loose, the scorer pays nothing, and the gauge is drawn in muted grey with no glow
+  // at all — 0 ember pixels inside its own box, on a frame whose angle is large.
+  //
+  // `minEmber: 100` used to stand here. It measured 30 591 — 17 169 of them the red LOOSE MOUNT
+  // banner and 9 745 the red STOP, because the pixel classifier counts `#FF3B3B` as ember — so
+  // the check was satisfied by the two elements that were SUPPOSED to be loud and could never
+  // have failed on the gauge. The banner is gone; the ceiling that replaced the floor is not,
+  // because it is now the whole of what this route proves.
   { name: 'drive-loose', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120)] },
-  // The same run 0.2 s after the slide became a spin. There is deliberately NO "CHAIN LOST −N"
-  // banner on it: nothing was ever paid for this run, so there is nothing to lose, and a banner
-  // for nothing is a lie in the other direction. What the frame does show is the same muted
-  // dial, the same unpriced chips and the same NOT SCORING note as `drive-loose`.
+  // The same run 0.2 s after the slide became a spin. Nothing was ever paid for this run, so
+  // there is nothing to take away and no event to announce: the gauge stays grey through the
+  // spin exactly as it was grey before it.
   { name: 'drive-lost', path: '/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsCold(120)] },
-  // A REAL GPS dropout (`dropouts=1`), 1.2 s into the second gap: GPS LOST is severe here
-  // because a fix HAS been held before — "no fix yet" at the start of a run is not an alarm.
-  // The engine KEEPS SCORING through a dropout, so this frame is meant to be hot: the floor is
-  // real here, not a token.
-  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
+  // A REAL GPS dropout (`dropouts=1`), 1.2 s into the second gap. The engine KEEPS SCORING
+  // through a dropout — slip angle comes off the gyro, not the fix — so the gauge stays lit, and
+  // this floor is the assertion that it does. GPS LOST used to be spelled out in the status
+  // strip; it is not spelled out anywhere on this screen now, and the reason it needn't be is
+  // that the reading it would qualify has not changed.
+  { name: 'drive-gps', path: '/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(40000)] },
   // STOP on a run that never left walking pace: it is the walk to the car, not a session, so the
   // HUD says so instead of filing it or dropping the driver into the garage with no word.
   {
@@ -463,15 +484,39 @@ export const defaultRoutes = [
   // `sim=harbor&seed=1`) and `calibrate-nothing` / `calibrate` photograph it.
   { name: 'calibrate-early', path: '/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1', waitMs: 2400, expectCanvas: true },
   // ---- drive display, appended ------------------------------------------------------------
-  // BETWEEN slides with the chain still open: 48.5 s, 10 528 points at risk, two slides done.
-  // The middle band is the one that used to go dark here (0.71 % lit on an idle frame), and the
-  // coaching line that used to be 11 px is the thing to read in this shot.
-  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
-  // The warn tier, via the presentation-only `?integrity=` override: MOUNT SHAKING over a clean
-  // recording. `drive-warn.png` existed with no route behind it, so it had gone stale; it is now
-  // shot again, and it is where the chain bar and the integrity note appear TOGETHER (a note
-  // used to replace the bar, taking AT RISK off the screen exactly when it mattered).
-  { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect', waitMs: 2800, expectCanvas: true, minEmber: 40000 },
+  // MID-CHAIN, 1.2 s after the second link opened. The chain bar and the xN chip that used to
+  // report it are gone from the screen; the chain itself is not, and neither is what it pays.
+  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, regions: [gaugeIsHot(25000)] },
+  // THE DOUBTED MOUNT, and the only route that photographs the middle of the trust scale.
+  // `integrity=suspect` at the exact instant of `drive-peak`: same run, same warp, same hold, so
+  // the two frames differ in nothing but how far the engine believes the reading. Held side by
+  // side they look alike at a glance — the arc, the needle, the numeral and the chevron are all
+  // drawn — and they are not alike. Inside `hud-gauge-box`, doubted against trusted:
+  //   portrait    17 716  vs  44 352   (x 2.50)
+  //   landscape   31 392  vs  77 300   (x 2.46)
+  // because `trust` multiplies every opacity in the instrument. The whole thing is dimmer, which
+  // is the screen saying "this, but less sure" in the one channel it has left.
+  //
+  // Hence a BAND and not a floor. The floor says it still drew; the ceiling says it drew dimmer
+  // than the trusted twin, and without the ceiling this route would pass on a bug that threw the
+  // doubt away and lit the gauge at full.
+  //
+  // THE CEILING IS SET BY THE LANDSCAPE FRAME AND IS THEREFORE LOOSE IN PORTRAIT. One route entry
+  // is shot at both orientations and a pixel count is not orientation-free: the landscape gauge
+  // box is 1.78x the area of the portrait one and every count in it scales by very nearly that
+  // (31 392 / 17 716 = 1.77). So 38 000 has to clear landscape's 31 392 while staying under
+  // portrait's trusted 44 352, and there is only that window to sit in. It catches a full-trust
+  // regression at both orientations, which is what it is for; it would not catch a regression
+  // that merely doubled the doubted portrait glow. Both figures are stable — consecutive runs of
+  // each route returned them unchanged, because `hold=1` freezes the frame.
+  {
+    name: 'drive-warn',
+    path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect',
+    waitMs: 2800,
+    expectCanvas: true,
+    regions: [{ name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, min: 6000, max: 38000 }],
+  },
+
   // ---- the feel layer's settings, appended ------------------------------------------------
   // The Feedback section, which is below the fold on `settings`: the two switches and the way
   // through to the lab. A switch is a stronger claim than a label, so this screen has to be able
@@ -768,12 +813,17 @@ export const defaultRoutes = [
     ],
   },
   // THE CELEBRATION FRAME OF A RUN WORTH NOTHING, which is the frame `drive-loose` cannot show.
-  // `looseness=1` reads as a LOOSE mount, so the HUD greys out and the shot proves only the easy
-  // case. At 0.3 the mount reads SUSPECT: physics possible, state valid, `believable` true on
-  // 95.5 % of the run — and `counting` false on 100.0 % of it, `finish()` total 0, grade C,
-  // `trusted: false`. Held at the peak of the second lap's long drift (56.2°, ×5.00, three flicks,
-  // TRANSITION ×3 / MANJI / EXTREME ANGLE all on the stack). Every colour decision on this screen
-  // used to take the full-colour branch here. The ceiling inside the gauge is what says otherwise.
+  // `looseness=1` reads as a LOOSE mount, so the gauge greys out and the shot proves only the
+  // easy case. At 0.3 the mount reads SUSPECT: physics possible, state valid, `believable` true
+  // on 95.5 % of the run — and `counting` false on 100.0 % of it, `finish()` total 0, grade C,
+  // `trusted: false`. Held at the peak of the second lap's long drift, 56.2 deg — the largest
+  // angle the harbor run ever reaches, on a session that will be paid nothing.
+  //
+  // This is the frame where the instrument is most tempted to celebrate, and the temptation is
+  // now the whole of what can go wrong here: the chips, the multiplier and the odometer that
+  // used to take a full-colour branch on this frame are off the screen, so the gauge is the only
+  // thing left that could light up for a slide worth zero. The two ceilings are the assertion
+  // that it does not — no ember inside the gauge's box, and no gold anywhere on the frame.
   {
     name: 'drive-loose-peak',
     path: '/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1',

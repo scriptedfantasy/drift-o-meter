@@ -58,16 +58,36 @@ reached from those four, never inserted between them. When a feature and this fl
 flow wins.
 
 ## Screens
-### Drive HUD (`/drive`)
-Portrait: status row (session clock, lap, integrity pill, GPS pill) → the angle gauge: a
-wide arc like a tachometer with a needle for signed β (left slide sweeps left), tick
-marks every 10°, the peak of the current drift as a ghost tick → the giant |β|° numeral
-with an L/R chevron → speed (km/h, italic, cyan) and a lateral-g ball beside it → score
-line: total (odometer) + multiplier chip + chain bar → callout stack above the gauge →
-live mini-map (trail so far, ember where drifting) → STOP control at the bottom.
-Landscape: gauge + numeral left, speed/score right, mini-map bottom-right.
-The HUD must read at a glance at 60 km/h: the angle numeral is the biggest thing on
-screen, everything else is secondary.
+### Drive display (`/drive`)
+Two elements. The angle gauge, centred and as wide as the frame allows: a tachometer arc with a
+needle for signed β (a left slide sweeps left), ticks every 10°, the current drift's peak as a
+ghost tick, the giant |β|° numeral and an L/R chevron inside the bowl. And STOP, docked at the
+bottom where a hand finds it without looking. Nothing else. Landscape is the same two things,
+with STOP in the right half clear of the arc.
+
+IT USED TO BE NINE THINGS: a status row (clock, lap, integrity pill, GPS pill), an integrity
+banner, a peak/held/flicks strip, a callout stack, a speed and lateral-g row, a score line
+(odometer, multiplier chip, chain bar) and a live mini-map, all around the gauge. Every one of
+them was real and most of them were good, and the rule at the top of this file — *read at a
+glance at 60 km/h* — was still failed by the count alone. A driver does not read nine things at
+60 km/h; a driver reads one, for a fraction of a second, between corners. So the display is now
+the one thing worth that fraction, and the other eight live in the results and the replay, where
+there is time to read them.
+
+NOTHING WAS TURNED OFF BEHIND IT. The engine still takes ~100 samples a second, the scorer still
+scores, the integrity monitor still judges, the session is still saved, and the verdict screen
+still publishes the same grade. What changed is what the driver spends attention on mid-run.
+The components are still in `src/ui/hud/` and still tested; they are a shelf to put things back
+from, one at a time, when a measurement says a thing earns its place on the glass.
+
+THE GAUGE STILL TELLS THE TRUTH ABOUT ITSELF, and this is the one non-furniture thing it does.
+`glowOpacity`, `bowlOpacity` and `dimmed` in `AngleGauge.tsx` all scale with `signals.trust`, so
+the instrument fades continuously as the engine's doubt grows: measured inside its own box,
+44,352 ember pixels trusted, 17,716 doubted, 0 refused — at one identical instant of one
+identical run. A refused reading is drawn in grey with no glow at all, so the screen never
+celebrates an angle the scorer has already thrown away. The words that used to qualify it
+(LOOSE MOUNT, GPS LOST, NOT SCORING) are gone; the brightness that meant the same thing is not,
+and the results screen still says it in words once there is time to read them.
 
 ### Results (`/results/[id]`)
 Grade hero (letter, points, name/track/date), component bars (angle, consistency,

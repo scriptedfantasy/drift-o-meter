@@ -1,31 +1,42 @@
 /**
- * The live drive HUD — the screen a driver actually looks at, clamped to a dashboard, at night.
+ * The live drive display — one gauge and one control.
  *
- * Layout: the angle gauge and the hero numeral own the frame, the callout stack sits above them
- * and never over the number, cold telemetry and the score sit under them, the mini-map and the
- * STOP control close the screen. Landscape is a different arrangement of the same parts, not a
- * squeezed portrait: gauge left, telemetry and score right, mini-map bottom-right.
+ * WHY THERE IS NOTHING ELSE HERE. This screen used to carry a status strip, an integrity banner,
+ * a peak/held/flicks strip, a callout stack, a speed and lateral-g row, a score odometer with a
+ * multiplier chip and a chain bar, and a live mini-map. All of it was real and most of it was
+ * good, and none of it survives the thing it was built for: a driver at 60 km/h has no time to
+ * read a screen. One visual they can take in at a glance is worth more than nine they cannot.
  *
- * Everything that moves comes from `useDriveRun`, which pushes ~100 motion samples a second into
- * the engine and writes shared values; this component re-renders at ~10 Hz for words and on
- * events. Skia components are imported through their `*View` wrappers so the web build never
- * evaluates Skia before CanvasKit is ready.
+ * So the angle gauge owns the frame — it already carries the hero numeral and the left/right
+ * chevron inside its own bowl — and STOP is docked where a hand can find it without looking.
+ *
+ * NOTHING WAS TURNED OFF BEHIND IT. `useDriveRun` still pushes ~100 samples a second through the
+ * whole engine, the scorer still scores, the integrity monitor still judges, the session is still
+ * saved and the verdict screen still publishes a grade. What changed is what this screen SHOWS,
+ * which is the only thing a driver spends attention on.
+ *
+ * The gauge keeps one piece of honesty that is not furniture: it greys when the engine does not
+ * believe the reading. That is the same single visual telling the truth, not a tenth element.
+ *
+ * Sound and haptics stay, and matter more here than they did before: they are the channel that
+ * does not need eyes.
+ *
+ * `useDriveRun` STILL PUBLISHES ITS 10 Hz SNAPSHOT and nothing here reads it. That is deliberate
+ * and it is close to free: the gauge is driven by reanimated shared values on the UI thread, so
+ * the ten React renders a second find every child's dependencies unchanged and bail out, and the
+ * cost is one allocation and one memoised call per 100 ms against an engine already doing 100.
+ * Cutting the publish would mean unpicking the hook that every shelved component reads, which is
+ * the opposite of leaving them ready to come back.
  */
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, Pressable, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useSettings } from '@/platform';
 import { AppText, Body, Button, colors, fontFamilies, formatDuration, gradeColors, gutter, Micro, Panel, radii, space } from '@/ui';
 import { useDriftFeel } from '@/ui/audio';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
-import { CalloutStack, CALLOUT_GAP, ScoreBanner } from '@/ui/hud/CalloutStack';
-import { DriftStrip, EdgeBloom, IntegrityBanner, StatusStrip } from '@/ui/hud/HudChrome';
-import MiniMapView from '@/ui/hud/MiniMapView';
-import ScorePanel from '@/ui/hud/ScorePanel';
+import { EdgeBloom } from '@/ui/hud/HudChrome';
 import { useHudSignals } from '@/ui/hud/signals';
-import TelemetryRow from '@/ui/hud/TelemetryRow';
 import { useDriveRun, type RunError, type RunVerdict } from '@/ui/hud/useDriveRun';
 
 export default function DriveScreen() {
@@ -34,152 +45,37 @@ export default function DriveScreen() {
   // Sound and haptics for the run. It builds the bank the first time any screen asks and does
   // NOT release it when this screen goes: the STOP clip is fired by `useDriveRun.stop()` a few
   // milliseconds before `router.replace` unmounts this tree, and a port released here used to
-  // close the AudioContext 215 ms into that 520 ms clip. The cues themselves are dispatched from
-  // `useDriveRun`'s sample callback, one call per frame.
+  // close the AudioContext 215 ms into that 520 ms clip.
   useDriftFeel();
-  const { settings } = useSettings();
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
 
   const shake = useAnimatedStyle(() => ({ transform: [{ translateX: signals.shake.value * 2 }, { translateY: signals.shake.value * -1.2 }] }));
 
-  // The HUD is live from the moment the screen opens: there is no pre-run state to render.
+  // The display is live from the moment the screen opens: there is no pre-run state to render.
   const live = run.status !== 'error';
-  const stageW = width - gutter * 2;
 
-  // The gauge's box is the arc's bounding box (a wide, shallow bowl): height ≈ 0.56 × width.
-  // Portrait runs it full-bleed — the arc is the widest thing on the screen, as it should be.
-  const gaugeW = landscape ? Math.min(stageW * 0.52, height * 1.3) : width;
-  const gauge = { w: gaugeW, h: Math.min(gaugeW * 0.56, height * (landscape ? 0.62 : 0.32)) };
-
-  const [stageH, setStageH] = useState(148);
-  const onStageLayout = useCallback((e: LayoutChangeEvent) => {
-    const h = Math.round(e.nativeEvent.layout.height);
-    setStageH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
-  }, []);
-
-  // Portrait: the mini-map gives the callout column the width it needs. MEASURED in the browser,
-  // the widest chip the scorer can fire — "EXTREME ANGLE +675" — is 211.6 CSS px, and beside a
-  // 146 px map the column was 195, so the chip overflowed by 17 px at REST and by 380 mid-slam,
-  // across the only other live graphic on the screen. At 124 the column is 217.
-  //
-  // ITS HEIGHT IS MEASURED, NOT CHOSEN, and that is what closes the hole in the middle of the
-  // portrait frame. The column used `justifyContent: 'space-between'`, so every pixel the layout
-  // did not spend went into the GAPS: on an idle frame 47.8 % of the screen's rows were under
-  // 1 % lit and 11.0 % of its height was one contiguous dead run at y 58–69 %, between a map
-  // that could not grow and the speed row. Now the middle band takes the slack (`flex: 1`) and
-  // the map fills it, so the space goes into the only graphic on the screen that can use it —
-  // the trail — instead of into a void. Landscape never had the hole and keeps its fixed box.
-  const map = landscape ? { w: 168, h: 116 } : { w: 124, h: Math.max(148, Math.min(280, stageH)) };
-
-  // Landscape gives the callout stack whatever the right column has left, and an integrity
-  // banner takes most of it: with MOUNT SHAKING on screen a chip was cut across its middle by
-  // the clip that keeps the stack inside its column, which reads as a broken chip rather than as
-  // a full stack.
-  //
-  // COUNTED, NOT GUESSED, and BOTH numbers are measured. The rule here used to be "one chip fits
-  // under a banner, three fit without one", which was true of the banner it was measured against
-  // and false of a three-line one: `drive-loose-peak-landscape` showed EXTREME ANGLE sliced in
-  // half under a wrapped FINDING FORWARD. So the column measures its own height, the chip
-  // measures its own — a chip's height is a font's line box, not anything this file can compute —
-  // and the column shows as many WHOLE chips as those two allow. None, if the banner took the lot.
-  const [calloutBox, setCalloutBox] = useState(0);
-  const [chipPitch, setChipPitch] = useState(LANDSCAPE_CHIP_PITCH_GUESS);
-  const onCalloutsLayout = useCallback((e: LayoutChangeEvent) => {
-    const h = e.nativeEvent.layout.height;
-    setCalloutBox((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
-  }, []);
-  const onChipPitch = useCallback((pitch: number) => {
-    setChipPitch((prev) => (Math.abs(prev - pitch) < 0.5 ? prev : pitch));
-  }, []);
-  // the last chip carries no gap under it, so the box holds `n` chips when
-  // n·pitch − gap ≤ box, i.e. n ≤ (box + gap) / pitch
-  const calloutSlots = Math.max(0, Math.floor((calloutBox - CALLOUT_COLUMN_PAD + CALLOUT_GAP) / Math.max(1, chipPitch)));
-  const landscapeEvents = run.events.slice(0, calloutSlots);
+  // The gauge's box is the arc's bounding box — a wide, shallow bowl of h ≈ 0.56 × w — and with
+  // nothing else competing for the frame it simply takes the widest box that fits. Portrait runs
+  // it full-bleed; landscape is capped by the height the arc needs rather than by the width.
+  const gaugeW = landscape ? Math.min(width - gutter * 2, (height - STOP_DOCK_H) * 1.5) : width;
+  const gauge = { w: gaugeW, h: gaugeW * 0.56 };
 
   return (
     <View style={styles.root} testID="screen-drive">
       <EdgeBloom signals={signals} />
       <Animated.View style={[styles.fill, shake]}>
         <SafeAreaView style={styles.fill} edges={['top', 'bottom', 'left', 'right']}>
-          <View style={[styles.frame, landscape && styles.frameLandscape, live && styles.frameLive, live && landscape && styles.frameLiveLandscape]}>
-            {landscape ? (
-              <View style={styles.landscapeRow}>
-                <View style={styles.leftColumn}>
-                  <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} live={live} testID="hud-status" />
-                  <View style={styles.gaugeWrapLandscape}>
-                    {/* The box exists so a harness check can name the gauge: on web the Skia
-                        canvas does not forward its own testID to the DOM, and a ceiling like
-                        "at most N ember pixels inside the gauge" has to be measured on the
-                        element, not on a hand-written fraction of the screen. */}
-                    <View testID="hud-gauge-box">
-                      <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
-                    </View>
-                    {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
-                  </View>
-                </View>
-
-                <View style={styles.rightColumn}>
-                  {live ? <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" /> : null}
-                  <View style={styles.calloutsLandscape} pointerEvents="none" onLayout={onCalloutsLayout}>
-                    <CalloutStack events={landscapeEvents} fromRight size={22} muted={run.snapshot.trust <= 0} onChipPitch={onChipPitch} testID="hud-callouts" />
-                  </View>
-                  {live ? (
-                    <>
-                      <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={56} testID="hud-telemetry" />
-                      <View style={styles.scoreRowLandscape}>
-                        <View style={styles.scoreCell}>
-                          <ScoreBanner banner={run.banner} size={24} />
-                          <ScorePanel signals={signals} snapshot={run.snapshot} size={46} testID="hud-score" />
-                        </View>
-                        <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
-                      </View>
-                    </>
-                  ) : null}
-                </View>
-              </View>
-            ) : (
-              <>
-                <StatusStrip snapshot={run.snapshot} sourceLabel={run.sourceLabel} live={live} testID="hud-status" />
-                {live ? <IntegrityBanner snapshot={run.snapshot} testID="hud-integrity" /> : null}
-
-                {/* The gauge sits high: a phone in a dash mount is read from below, so the
-                    clearest sightline is the top of the screen. */}
-                <View style={styles.bleed} testID="hud-gauge-box">
-                  <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
-                </View>
-
-                {/* Middle band: what the slide is doing (strip), what it just earned (callouts)
-                    and where it is happening (map). Nothing here is decoration. */}
-                <View style={[styles.stage, { marginTop: -Math.round(gauge.h * 0.18) }]}>
-                  {live ? <DriftStrip snapshot={run.snapshot} testID="hud-drift" /> : null}
-                  <View style={styles.stageRow} onLayout={onStageLayout}>
-                    <View style={styles.stageCallouts}>
-                      <CalloutStack events={run.events} size={24} muted={run.snapshot.trust <= 0} testID="hud-callouts" />
-                    </View>
-                    {live ? (
-                      <MiniMapView width={map.w} height={map.h} trail={run.trail} count={run.snapshot.trailCount} signals={signals} testID="hud-map" />
-                    ) : null}
-                  </View>
-                </View>
-
-                {/* Nothing below the gauge claims a number until the run is actually armed. */}
-                {live ? (
-                  <>
-                    <TelemetryRow signals={signals} speedKmh={run.snapshot.speedKmh} units={settings.units} size={68} testID="hud-telemetry" />
-
-                    <View style={styles.scoreBlock}>
-                      <ScoreBanner banner={run.banner} size={28} />
-                      <ScorePanel signals={signals} snapshot={run.snapshot} size={58} testID="hud-score" />
-                    </View>
-                  </>
-                ) : null}
-              </>
-            )}
+          {/* Centred, because with one thing on the screen the middle is where an eye returns
+              to. The box exists so a harness check can name the gauge: on web the Skia canvas
+              does not forward its own testID to the DOM, and a ceiling like "at most N ember
+              pixels inside the gauge" has to be measured on the element. */}
+          <View style={styles.stage}>
+            <View testID="hud-gauge-box">
+              <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
+            </View>
           </View>
-          {/* STOP is docked, not stacked: in a warning state the status strip and the banner
-              grow, and a flex column has nowhere to put the excess but under the home
-              indicator — which is exactly when the driver needs to reach it. */}
+
           {live ? (
             <View style={[styles.stopDock, landscape && styles.stopDockLandscape]}>
               <StopControl onPress={run.stop} compact={landscape} />
@@ -308,57 +204,19 @@ function SavingOverlay() {
 
 /** Height reserved for the docked STOP control. */
 const STOP_DOCK_H = 54;
-/**
- * What one landscape chip is assumed to cost — its height plus the gap under it — until a real
- * one has laid out and reported the truth (`CalloutStack.onChipPitch`). Only the very first
- * frame of a run ever uses it, and it is deliberately on the generous side, because guessing
- * high shows one chip too few for a frame and guessing low cuts one in half.
- */
-const LANDSCAPE_CHIP_PITCH_GUESS = 44;
-/** `calloutsLandscape`'s own `paddingTop`, which is not room for a chip. */
-const CALLOUT_COLUMN_PAD = space[2];
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   fill: { flex: 1 },
-  // Bands, not a stack with a hole in it: whatever height is left over after the gauge, the
-  // callout band and the numbers is shared between the gaps, so nothing pools in one place.
-  frame: { flex: 1, paddingHorizontal: gutter, paddingTop: space[2], paddingBottom: space[3], gap: space[3] },
-  // Room for the docked STOP control, so nothing in the column can ever slide underneath it.
-  frameLive: { justifyContent: 'space-between', paddingBottom: STOP_DOCK_H + space[4] },
-  frameLiveLandscape: { paddingBottom: space[2] },
+  // One thing on the screen, so it sits in the middle: with nothing else competing there is no
+  // reading order to establish, and the centre is where an eye returns to when it comes back from
+  // the road. The gauge is a shallow bowl (h = 0.56 w) whose own bottom quarter is transparent,
+  // so centring the BOX puts the arc itself a little high in the frame, which is where it wants
+  // to be — the numeral lands nearer eye level and the dead strip falls towards the STOP dock.
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   stopDock: { position: 'absolute', left: gutter, right: gutter, bottom: space[3] },
+  // Landscape puts STOP in the right half, clear of the gauge that now spans the frame.
   stopDockLandscape: { left: '52%', right: gutter, bottom: space[2] },
-  frameLandscape: { paddingTop: space[2], paddingBottom: space[2] },
-
-  // The middle band absorbs whatever the fixed rows do not use, so the frame's `space-between`
-  // has no slack left to pool into one gap. See the note on `map` above.
-  //
-  // It is also pulled UP into the gauge's own empty bottom. The arc is a shallow bowl in a
-  // square-ish canvas: the pivot sits at 0.92 of the canvas height and the arc's ends are at
-  // ±78°, so the lowest thing drawn is at about 0.74 of it and the last quarter of the canvas is
-  // transparent but for the soft pool glow. Measured on the idle frame, that empty strip was the
-  // longest dead run left on the screen once the big void below the map was closed. The drift
-  // strip now sits inside it, tight under the arc, where it reads as part of the instrument.
-  stage: { alignSelf: 'stretch', flex: 1, justifyContent: 'flex-start', gap: space[2] },
-  stageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3], flex: 1 },
-  // `overflow: 'hidden'` for the same reason the landscape column has it: a callout SLAMS in at
-  // 1.8× from its left edge, so a 250 pt chip is 450 pt wide for the first frames of the 320 ms
-  // and lands on top of the mini-map — measured, "MANJI +990" and "TRANSITION ×3 +405" drawn
-  // across the ember trail with the "+405" illegible. Clipped, the drama stays in its column.
-  stageCallouts: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'hidden' },
-  scoreBlock: { alignSelf: 'stretch', gap: space[1] },
-  bleed: { marginHorizontal: -gutter },
-
-  landscapeRow: { flex: 1, flexDirection: 'row', gap: space[5] },
-  leftColumn: { flex: 1.06, gap: space[2] },
-  gaugeWrapLandscape: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: space[2] },
-  rightColumn: { flex: 1, justifyContent: 'flex-end', gap: space[3], paddingBottom: STOP_DOCK_H - space[2] },
-  calloutsLandscape: { flex: 1, flexShrink: 1, overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: space[2], paddingRight: space[1] },
-  scoreRowLandscape: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
-
-  bottomRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
-  scoreCell: { flex: 1, gap: space[1] },
 
   stop: {
     alignSelf: 'stretch',
