@@ -57,6 +57,19 @@ export function severityWeight(s: DriftSeverity): number {
   return s === 'spin' ? 1 : s === 'extreme' ? 0.75 : s === 'big' ? 0.5 : s === 'hold' ? 0.28 : 0;
 }
 
+/**
+ * Does this label put a SCORE on the run?
+ *
+ * A run the engine refuses to vouch for may show what it measured — angles, transitions, laps,
+ * "LOST IT 118°" — and must show no points at all, anywhere, including inside a sentence: a
+ * residual number tells the driver they earned at least that much, which is exactly what
+ * `scoreTrusted: false` withholds. The test is a SIGNED number, which is the shape every points
+ * label has ("+1250", "CHAIN LOST −8981", "AT RISK +1380") and no measurement label does.
+ */
+export function isPointsClaim(label: string): boolean {
+  return /[+−-]\s*\d/.test(label);
+}
+
 /** Callout colour by beat, as the reference renderer assigns it. */
 export function eventColor(kind: ReplayEventKind): string {
   switch (kind) {

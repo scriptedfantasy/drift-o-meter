@@ -252,6 +252,31 @@ describe('what the screen prints about a run', () => {
     expect(Math.round(replay.trail.score[replay.trail.n - 1])).toBe(session.score.total);
   });
 
+  it('an untrusted run shows no points anywhere, and still shows what it measured', () => {
+    const { session, replay: r } = built.get('handheld')!;
+    expect(session.score.trusted).toBe(false);
+    expect(r.info.totalPoints).toBeNull();
+    expect(r.info.grade).toBeNull();
+    // the renderer withholds any label `isPointsClaim` matches; what is left has to be the
+    // measurements, or the refusal has quietly become a silence
+    const shown = r.events.filter((e) => e.label && !isPointsClaim(e.label)).map((e) => e.label);
+    const withheld = r.events.filter((e) => e.label && isPointsClaim(e.label)).map((e) => e.label);
+    expect(withheld.length).toBeGreaterThan(0);
+    for (const label of withheld) expect(label).toMatch(/CHAIN LOST|AT RISK|^\+/);
+    expect(shown.some((l) => /^LOST IT \d+\u00b0$/.test(l))).toBe(true);
+    expect(shown.some((l) => /^TRANSITION/.test(l))).toBe(true);
+    for (const label of shown) expect(isPointsClaim(label)).toBe(false);
+  });
+
+  it('the points-claim rule keeps measurements and catches scores', () => {
+    for (const claim of ['+1250', 'CHAIN LOST \u22128981', 'AT RISK +1380', '\u22128981', '+84 PTS']) {
+      expect(isPointsClaim(claim)).toBe(true);
+    }
+    for (const measurement of ['LOST IT 118\u00b0', 'SAVED IT 70\u00b0', 'TRANSITION \u00d73', 'BIG ANGLE', 'LAP 2', 'FINISH', '54\u00b0']) {
+      expect(isPointsClaim(measurement)).toBe(false);
+    }
+  });
+
   it.each(Object.keys(FIXTURES))('%s: the footer’s BEST is the detector’s peak', (name) => {
     const { session, replay } = built.get(name)!;
     if (session.drifts.length === 0) return;

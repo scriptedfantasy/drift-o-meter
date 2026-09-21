@@ -37,7 +37,7 @@ import { colors, gradeColors } from '../theme';
 import type { SceneGeometry, WorldBounds } from './geometry';
 import { ribbonScale, ROAD_W } from './geometry';
 import type { ReplayLayout } from './layout';
-import { ASPHALT_HI, ASPHALT_LO, CENTRE_LINE, EDGE_LINE, GRID_LINE, GROUND, HOT, KERB_PALE, RUNOFF, TYPE, VERGE, deg, eventColor, fmtTime, heatColor, kmh, mix, severityWeight } from './palette';
+import { ASPHALT_HI, ASPHALT_LO, CENTRE_LINE, EDGE_LINE, GROUND, HOT, KERB_PALE, RUNOFF, TYPE, VERGE, deg, eventColor, fmtTime, heatColor, isPointsClaim, kmh, mix, severityWeight } from './palette';
 import type { SceneResources } from './resources';
 import type { ReplayView } from './source';
 
@@ -990,7 +990,7 @@ function drawCallout(canvas: SkCanvas, f: Frame): void {
   // SIGNED number anywhere in the label, because the beats that carry points are no longer
   // bare numbers: "+1250", "CHAIN LOST \u22128981" and "AT RISK +1380" are all claims about a
   // score, while "LOST IT 118\u00b0" is a measurement of the recording and stays.
-  const label = f.noScore && /[+\u2212-]\s*\d/.test(e.label) ? '' : e.label;
+  const label = f.noScore && isPointsClaim(e.label) ? '' : e.label;
   if (!label) return;
   const color = eventColor(e.kind);
   const y = Math.round(f.action.y + f.action.h * 0.3);
