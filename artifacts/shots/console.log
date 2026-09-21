@@ -1,24 +1,28 @@
 
-===== replay  http://127.0.0.1:45203/replay/demo?cam=chase&t=94.9
+===== calibrate-nothing  http://127.0.0.1:45573/calibrate?sim=harbor&hold=1
 
-===== replay-overview  http://127.0.0.1:45203/replay/demo?cam=overview&t=60&play=0&ui=0
+===== calibrate  http://127.0.0.1:45573/calibrate?sim=harbor&at=0.5&hold=1
 
-===== replay-chase  http://127.0.0.1:45203/replay/demo?cam=chase&t=95.9&play=0&ui=1
+===== calibrate-level  http://127.0.0.1:45573/calibrate?sim=harbor&at=3&hold=1
 
-===== replay-cinematic  http://127.0.0.1:45203/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+===== calibrate-ready  http://127.0.0.1:45573/calibrate?sim=harbor&at=12&hold=1
 
-===== replay-ghost  http://127.0.0.1:45203/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+===== calibrate-loose  http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1
 
-===== replay-highlight  http://127.0.0.1:45203/replay/demo?hl=1&play=0&cam=chase&ui=1
+===== calibrate-flat  http://127.0.0.1:45573/calibrate?sim=harbor&mount=flat-console&at=12&hold=1
 
-===== replay-scrub  http://127.0.0.1:45203/replay/demo?cam=chase&scrub=0.36&ui=1
+===== calibrate-rejected  http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected
 
-===== replay-untrusted  http://127.0.0.1:45203/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
+===== calibrate-fault-permission  http://127.0.0.1:45573/calibrate?fault=permission
 
-===== replay-warnings  http://127.0.0.1:45203/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0
+===== calibrate-fault-unsupported  http://127.0.0.1:45573/calibrate?fault=unsupported
 
-===== replay-warnings-open  http://127.0.0.1:45203/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1
+===== calibrate-fault-services  http://127.0.0.1:45573/calibrate?fault=services
 
-===== replay-end  http://127.0.0.1:45203/replay/demo?cam=overview&t=999&play=0&ui=0
+===== calibrate-fault-failed  http://127.0.0.1:45573/calibrate?fault=failed
 
-===== replay-touge  http://127.0.0.1:45203/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
+===== calibrate-fault-location  http://127.0.0.1:45573/calibrate?fault=location
+
+===== calibrate-shaking  http://127.0.0.1:45573/calibrate?sim=touge&looseness=0.2&at=40&hold=1
+
+===== calibrate-early  http://127.0.0.1:45573/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1

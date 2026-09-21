@@ -1061,19 +1061,21 @@ function drawTopHud(canvas: SkCanvas, f: Frame): void {
   // An untrusted run says so ONCE, on the plate at the top of the stage. It used to say it here
   // as well, and again in the footer, and hedge the slip-angle label, and print two lines of
   // uppercase body copy — seven pieces of bad news in the top fifth of the frame.
-  if (!f.noScore) {
+  // …and it hands the total over to the reveal rather than printing it twice on the last frame.
+  if (!f.noScore && f.reveal < 1) {
+    const fade = 1 - f.reveal;
     // The running total is the trail's, which now ends exactly at the session total; once the
     // run is over the screen prints `info.totalPoints`, the trust-gated headline itself, so the
     // final frame and the results screen cannot differ by a rounding, let alone by a chain.
     const total = f.reveal > 0 && r.info.totalPoints !== null ? r.info.totalPoints : p.points;
     const ptsCol = p.phase === 'drifting' ? colors.ember : WHITE;
-    const w = drawStr(canvas, f, f.fonts.value, pts(total), rx, rb + 12, { color: ptsCol, anchor: 'end' });
-    drawStr(canvas, f, f.fonts.label, 'POINTS', rx, rb + 26, { color: MUTED, anchor: 'end', tracking: 2 });
+    const w = drawStr(canvas, f, f.fonts.value, pts(total), rx, rb + 12, { color: ptsCol, anchor: 'end', alpha: fade });
+    drawStr(canvas, f, f.fonts.label, 'POINTS', rx, rb + 26, { color: MUTED, anchor: 'end', tracking: 2, alpha: fade });
     if (p.multiplier > 1.05) {
       const cw = 34;
       const cx = rx - w - cw - 8;
-      canvas.drawRect({ x: cx, y: rb - 12, width: cw, height: 17 }, fillPaint(f, colors.ember));
-      drawStr(canvas, f, f.fonts.label, `×${p.multiplier.toFixed(1)}`, cx + cw / 2, rb + 1, { color: '#000000', anchor: 'middle' });
+      canvas.drawRect({ x: cx, y: rb - 12, width: cw, height: 17 }, fillPaint(f, colors.ember, fade));
+      drawStr(canvas, f, f.fonts.label, `×${p.multiplier.toFixed(1)}`, cx + cw / 2, rb + 1, { color: '#000000', anchor: 'middle', alpha: fade });
     }
   }
 }
@@ -1490,10 +1492,14 @@ export function drawReplayFrame(canvas: SkCanvas, input: SceneInput): void {
     shadeRect(canvas, f, f.res.bottomFade, 0, band.y - 26, lay.w, band.h + 26 + 10, 0.72);
   }
   drawGapNotice(canvas, f);
-  // the final frame belongs to the verdict: no world labels shouting FINISH over the letter
-  if (f.reveal < 1) drawWorldLabels(canvas, f);
+  // Once the grade starts landing, the frame belongs to it: no world labels and no callout
+  // shouting FINISH over the letter (FINISH used to be on this frame three times).
+  const revealOwnsFrame = f.reveal > 0.25;
+  if (!revealOwnsFrame) {
+    drawWorldLabels(canvas, f);
+    drawCallout(canvas, f);
+  }
   drawMinimap(canvas, f);
-  if (f.reveal < 0.35) drawCallout(canvas, f);
   drawTopHud(canvas, f);
   drawBottomHud(canvas, f);
   drawStageNotices(canvas, f);

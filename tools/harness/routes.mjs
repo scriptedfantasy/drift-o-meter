@@ -404,4 +404,14 @@ export const defaultRoutes = [
       { type: 'wait', ms: 2000 },
     ],
   },
+  // ---- drive display, appended ------------------------------------------------------------
+  // BETWEEN slides with the chain still open: 48.5 s, 10 528 points at risk, two slides done.
+  // The middle band is the one that used to go dark here (0.71 % lit on an idle frame), and the
+  // coaching line that used to be 11 px is the thing to read in this shot.
+  { name: 'drive-chain', path: '/drive?sim=harbor&rate=1&at=48.5&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 200 },
+  // The warn tier, via the presentation-only `?integrity=` override: MOUNT SHAKING over a clean
+  // recording. `drive-warn.png` existed with no route behind it, so it had gone stale; it is now
+  // shot again, and it is where the chain bar and the integrity note appear TOGETHER (a note
+  // used to replace the bar, taking AT RISK off the screen exactly when it mattered).
+  { name: 'drive-warn', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect', waitMs: 2800, expectCanvas: true, minEmber: 1000 },
 ];

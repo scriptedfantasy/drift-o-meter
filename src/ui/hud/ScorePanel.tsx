@@ -28,12 +28,11 @@ export interface ScorePanelProps {
 
 function ScorePanelImpl({ signals, snapshot, size = 54, align = 'left', testID }: ScorePanelProps) {
   const right = align === 'right';
-  // When the engine does not stand behind the reading, the digits lose their colour and the
-  // line underneath says exactly what is wrong with them — rather than a confident ember number
-  // the results screen may never agree with.
-  // One function decides the words AND the colour (`integrityView.ts`), so the note can never be
-  // gold: gold is the multiplier and the extreme angle, and one hue cannot mean both "you are a
-  // hero" and "your phone is loose".
+  // When the engine does not stand behind the reading, the digits lose their colour and the line
+  // underneath says exactly what is wrong with them — rather than a confident ember number the
+  // results screen may never agree with. ONE function decides those words AND their colour
+  // (`integrityView.ts`), so the note can never come out gold: gold is the multiplier chip and
+  // the extreme angle, and one hue cannot mean both "you are a hero" and "your phone is loose".
   const integrity = readIntegrity(snapshot);
   const note = integrity.scoreNote;
   const trusted = snapshot.trust > 0;
