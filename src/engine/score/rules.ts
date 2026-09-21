@@ -6,6 +6,7 @@
 import type { StyleCalloutKind, Grade } from '../types';
 import { clamp, radToDeg } from '../types';
 import { DEFAULT_DETECT_OPTIONS, SPIN_ANGLE_DEG, TRANSITION_RULE, type TransitionRule } from '../detect/options';
+import { MAX_IMPLAUSIBLE_FRACTION } from '../integrity/verdict';
 
 /** A piecewise-linear curve: sorted [x, y] knots, flat (clamped) outside the knots. */
 export type Curve = Array<[number, number]>;
@@ -217,8 +218,11 @@ export interface ScoreOptions {
   /** Median corner-to-corner gap (m) → factor on the jitter a steady driver is allowed. */
   gapJitterCurve: Curve;
   /**
-   * A run whose mount was loose / implausible for more than this fraction of its drifting time
-   * does not get a published total or grade (`SessionBreakdown.integrity.scoreTrusted`).
+   * @deprecated Mirrors `MAX_IMPLAUSIBLE_FRACTION` in `integrity/verdict.ts`, which owns it.
+   *
+   * Whether a run is HONEST and what it is WORTH are tuned for different reasons and on
+   * different evidence, so the threshold does not belong among the scoring knobs. Kept only
+   * so the analysis tools that sweep this bag keep compiling.
    */
   integrityMaxImplausibleFraction: number;
 }
@@ -404,7 +408,7 @@ export const DEFAULT_SCORE_OPTIONS: ScoreOptions = {
     [50, 1.35],
     [90, 1.5],
   ],
-  integrityMaxImplausibleFraction: 0.25,
+  integrityMaxImplausibleFraction: MAX_IMPLAUSIBLE_FRACTION,
 };
 
 export function resolveOptions(opts?: Partial<ScoreOptions>): ScoreOptions {

@@ -27,6 +27,20 @@
 import type { SessionIntegrity } from '../types';
 import type { IntegrityState } from './monitor';
 
+/**
+ * How much of a run's sliding may go unbelieved before nothing from it may be published.
+ *
+ * A quarter. It lived in the scorer's option bag as `integrityMaxImplausibleFraction`, which
+ * put the threshold for whether a run is HONEST among the knobs for what it is WORTH — two
+ * questions that get tuned for different reasons and on different evidence. It belongs here.
+ *
+ * The value is a judgement about phones in cars, not about points. A run can lose a few
+ * seconds to a pothole, a gear change that shakes the cradle, or a tunnel taking the GPS, and
+ * still be an honest account of a night's driving. Past a quarter it is not: whatever the
+ * numbers say happened, most of what they are made of is a phone moving in its mount.
+ */
+export const MAX_IMPLAUSIBLE_FRACTION = 0.25;
+
 /** What the monitor concluded about a whole run. A subset of `IntegrityState`, so it accepts one. */
 export interface MonitorVerdict {
   mount: 'rigid' | 'suspect' | 'loose';
@@ -51,8 +65,8 @@ export interface IntegrityInput {
   believedDriftS: number;
   /** The monitor's own end-of-run verdict, or null when no monitor ran. */
   monitor: MonitorVerdict | IntegrityState | null;
-  /** Fraction of observed sliding that may be unbelieved before the run stops publishing. */
-  maxImplausibleFraction: number;
+  /** Defaults to `MAX_IMPLAUSIBLE_FRACTION`. Present so a caller can sweep it in analysis. */
+  maxImplausibleFraction?: number;
 }
 
 /**
@@ -87,7 +101,7 @@ export function sessionIntegrity(input: IntegrityInput): SessionIntegrity {
   const observedDriftS = believedS + suppressedS;
   const implausibleDriftFraction = observedDriftS > 0 ? suppressedS / observedDriftS : 0;
   const m = input.monitor;
-  const trusted = implausibleDriftFraction <= input.maxImplausibleFraction;
+  const trusted = implausibleDriftFraction <= (input.maxImplausibleFraction ?? MAX_IMPLAUSIBLE_FRACTION);
 
   return {
     mount: m?.mount ?? 'rigid',
