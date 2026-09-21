@@ -19,6 +19,7 @@
  *   src/platform/audio.ts|.web   expo-audio / Web Audio
  *   src/platform/haptics.ts|.web expo-haptics / a recorder
  *   tools/audio/render.mjs       the synthesiser that produces assets/audio/*.wav
+ *   tools/audio/trace-grade.mjs  does the grade reveal still sound when the bank is slow?
  */
 export * from './bank';
 export {
