@@ -163,7 +163,14 @@ export const defaultRoutes = [
   { name: 'drive-peak', path: '/drive?sim=harbor&rate=1&at=100.85&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
   // HELD 190 ms after TRANSITION ×2, mid-swing through zero: 40° left, chevron flipped, ×2.75.
   { name: 'drive-transition', path: '/drive?sim=harbor&rate=1&at=85.55&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 80000, regions: [gaugeIsHot(20000)] },
-  // HELD just after a 10,528-point chain banked and the next drift opened with LINK ×3.
+  // HELD 0.46 s after a 10,259-point chain banked — inside the banner's 900 ms rise.
+  //
+  // IT USED TO SAY the next drift opened with LINK ×3, and there is no LINK here. The detector's
+  // own account of these two slides puts them 3.02 s apart, past `chainGapS`; the live scorer had
+  // been measuring 2.93 s off its own late-starting window and keeping the chain at ×4.75. Now
+  // that both paths score a drift over the window the detector published, the chain breaks where
+  // the engine always said it broke, and this frame photographs a bank that ENDS a chain rather
+  // than one that continues. The multiplier reads ×1.00 for that reason.
   { name: 'drive-bank', path: '/drive?sim=harbor&rate=1&at=50.75&hold=1', waitMs: 2800, expectCanvas: true, minEmber: 50000 },
   // A REAL hand-held phone (`looseness=1` goes through the simulator, not through the view):
   // the mount reads loose, so the gauge is drawn muted with no bloom and the score block says

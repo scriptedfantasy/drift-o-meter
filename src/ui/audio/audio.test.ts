@@ -196,7 +196,7 @@ function frameAt(t: number, over: Partial<LiveFrame> = {}): LiveFrame {
     phase: 'idle',
     live: null,
     completed: null,
-    score: { total: 0, delta: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, bankedPoints: 0, lostPoints: 0, counting: true, callouts: [] },
+    score: { total: 0, delta: 0, settled: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, bankedPoints: 0, lostPoints: 0, counting: true, callouts: [] },
     calibration: { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 1, forwardResolved: true, t },
     integrity: { mount: 'rigid', physics: 'ok', gps: 'good', message: '', believable: true },
     lap: { count: 0, progress: 0, completed: null },

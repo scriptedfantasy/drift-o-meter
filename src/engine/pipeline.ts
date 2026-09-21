@@ -140,11 +140,12 @@ export interface LiveFrame {
      * same number `finish()` publishes, and it is reported so a screen can tell a correction from
      * a payment — and so the counting guarantee can be checked instead of approximated.
      *
-     * Optional ONLY so that a frame literal built by hand elsewhere in the tree does not have to
-     * know about it. Every frame this pipeline produces carries it, and a reader may treat a
-     * missing one as 0.
+     * REQUIRED, like every other field on this block, because the house rule is that a producer
+     * which forgets to answer is a compile error rather than a silent zero. It was optional for
+     * one round only because a test elsewhere in the tree builds a score literal by hand and the
+     * agent that added this field could not edit that file; that literal now answers.
      */
-    settled?: number;
+    settled: number;
     /** Callouts fired on this frame. Each carries the points it actually paid — 0 while not counting. */
     callouts: StyleCallout[];
   };
