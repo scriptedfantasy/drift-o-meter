@@ -47,6 +47,7 @@
 import {
   type DriftEvent,
   type DriftPhase,
+  type DriftSummary,
   type GpsSample,
   type Lap,
   type MotionSample,
@@ -845,6 +846,15 @@ export class DriftPipeline implements DriftPipelineApi {
       perDrift: b.perDrift,
       trusted: b.integrity.scoreTrusted,
     };
+    // The measurements, published in their own right rather than only inside the scorer's
+    // per-drift record. The index reads the held angle, the spin count and the slide shape
+    // from here, and those must not depend on anything having been counted.
+    const driftStats: Record<number, DriftSummary> = {};
+    for (const [id, scored] of Object.entries(b.perDrift)) {
+      const stats = (scored as { stats?: DriftSummary }).stats;
+      if (stats) driftStats[Number(id)] = stats;
+    }
+
     const startedAt = this.startedAt || this.opts.startedAt || Date.now();
     const durationS = Number.isFinite(this.firstT) ? fin(this.lastT - this.firstT) : 0;
     const diag = this.diagnostics;
@@ -859,6 +869,7 @@ export class DriftPipeline implements DriftPipelineApi {
       gps: this._gps,
       states,
       drifts: this._drifts,
+      driftStats,
       score,
       track,
       integrity: b.integrity,

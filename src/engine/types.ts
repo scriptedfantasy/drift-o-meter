@@ -190,6 +190,67 @@ export interface DriftEvent {
   sampleEnd: number;
 }
 
+/**
+ * What the run measured about one slide, keyed by `DriftEvent.id` in `Session.driftStats`.
+ *
+ * WHY THIS EXISTS AS ITS OWN THING. These figures used to live inside the scorer's per-drift
+ * record, as `Session.score.perDrift[id].stats`, which is where the session index reads the
+ * biggest angle a driver held, how many slides they spun and the shape of the run. So three
+ * things the garage is built on were reachable only through a structure whose reason for
+ * existing was points — and the garage reads no session bodies at all, so if that path ever
+ * went quiet the held-angle record, the spin count and the slide trace would have gone to
+ * zero without a single test failing. Measurements are not a by-product of scoring them.
+ *
+ * `DriftEvent` is the detector's account of a slide: when it started, how long, the
+ * instantaneous peak. This is the analysis of it, and the two differ where it matters most —
+ * see `spun`.
+ */
+export interface DriftSummary {
+  id: number;
+  startT: number;
+  endT: number;
+  durationS: number;
+  /** Seconds with |beta| at or above the floor that counts as sliding. */
+  sustainedS: number;
+  /** Seconds with |beta| at or above the angle the run calls committed. */
+  timeAtAngleS: number;
+  /** Instantaneous peak |beta| in degrees, 0.1 s smoothed. */
+  peakDeg: number;
+  peakT: number;
+  /**
+   * The biggest angle actually HELD, in degrees.
+   *
+   * This, not `peakDeg`, is what a driver is credited with, and the difference is not small:
+   * across the runs this repo ships the instantaneous peak runs 9 to 16 degrees above the
+   * held figure (64 against 51, 48 against 39, 68 against 53). A screen captioned "held"
+   * that prints `peakDeg` is overstating the driver by a fifth.
+   */
+  heldPeakDeg: number;
+  meanDeg: number;
+  /** RMS jitter of |beta| in degrees around a local quadratic trend, sustained plateau only. */
+  jitterDeg: number;
+  /** Seconds of plateau the jitter was measured on. 0 means the angle never settled at all. */
+  plateauS: number;
+  /** Max |d(beta)/dt| in deg/s over the closing window of the slide. */
+  exitRateDegS: number;
+  meanSpeedKmh: number;
+  entrySpeedKmh: number;
+  transitions: number;
+  /**
+   * Whether this slide ended in a spin — the BROAD rule, and the one everything reads.
+   *
+   * `DriftEvent.spin` is the detector's flag, raised off the drift's peak. This one is also
+   * true when any single sample inside the slide passed the spin angle, which a peak can
+   * miss. The two disagreed once and the replay paid out for slides the results screen had
+   * taken away, so the rule lives in one place and every screen reads the answer rather than
+   * re-deriving it.
+   */
+  spun: boolean;
+  cleanExit: boolean;
+  /** Seconds of this slide the integrity monitor refused to believe. 0 on a clean run. */
+  implausibleS: number;
+}
+
 /** Style callouts the scorer fires, NFS-style, so the HUD can flash them. */
 export type StyleCalloutKind =
   | 'initiation'
@@ -372,6 +433,14 @@ export interface Session {
   /** Estimator output at motion rate. */
   states: SlipState[];
   drifts: DriftEvent[];
+  /**
+   * Per-slide measurements, keyed by `DriftEvent.id`.
+   *
+   * OPTIONAL because sessions stored before this field existed do not have it, and their
+   * figures are still reachable in the old place. Readers go through `sessionStore`'s
+   * accessor, which prefers this and falls back; nothing else should reach for either.
+   */
+  driftStats?: Record<number, DriftSummary>;
   score: SessionScore;
   track: TrackModel | null;
   calibration: MountCalibration;

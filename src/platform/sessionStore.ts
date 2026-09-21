@@ -175,17 +175,30 @@ export function newSessionId(startedAt: number = Date.now()): string {
 }
 
 /**
- * `Session.score.perDrift` is declared as `Record<number, DriftScore>` and is written by the
- * pipeline as `Record<number, ScoredDrift>` — a DriftScore plus the per-drift statistics. Read
- * structurally, so this module needs nothing from the engine's internals, and defensively,
- * because a session stored before those statistics existed simply has none.
+ * Only two fields, because only two are needed here and a wider shape would invite a reader
+ * to reach for a third. Read structurally, so this module needs nothing from the engine's
+ * internals, and defensively, because a session stored before these statistics existed
+ * simply has none.
  */
 interface StoredDriftStats {
   heldPeakDeg?: unknown;
   spun?: unknown;
 }
 
+/**
+ * The per-slide measurements for one drift, from whichever place this session keeps them.
+ *
+ * `Session.driftStats` is the home. Before it existed they were only reachable inside the
+ * scorer's per-drift record, as `score.perDrift[id].stats` — so the three index fields built
+ * on them (`heldPeakDeg`, `spins`, `slides`) depended on a structure whose reason for
+ * existing was points. The fallback is not tidiness: every run already on a phone was stored
+ * that way, and dropping it would zero the held-angle record and the slide trace for a whole
+ * season of somebody's driving, on a screen that never reads a session body and so could
+ * never notice.
+ */
 function statsOf(s: Session, id: number): StoredDriftStats | null {
+  const own = s.driftStats ? (s.driftStats as Record<number, StoredDriftStats>)[id] : undefined;
+  if (own && typeof own === 'object') return own;
   const per = s.score?.perDrift as Record<number, { stats?: StoredDriftStats }> | undefined;
   const scored = per ? per[id] : undefined;
   return scored && typeof scored.stats === 'object' && scored.stats !== null ? scored.stats : null;

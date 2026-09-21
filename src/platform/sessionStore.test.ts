@@ -74,6 +74,47 @@ function sessionWithSpin(): Session {
   return s;
 }
 
+describe('where the per-slide measurements are read from', () => {
+  /**
+   * The held angle, the spin count and the slide trace are the three things the garage is
+   * built on, and the garage reads no session bodies — it reads the index. So if the path to
+   * these measurements ever goes quiet, all three become zero on the home screen and not one
+   * other test notices. These are that notice.
+   */
+  it('prefers the session own driftStats', () => {
+    const s = sessionWithSpin();
+    s.driftStats = { 1: { heldPeakDeg: 61, spun: false }, 2: { heldPeakDeg: 12, spun: true } } as unknown as Session['driftStats'];
+    const e = summarizeSession(s);
+    expect(e.heldPeakDeg).toBe(61);
+    expect(e.spins).toBe(1);
+  });
+
+  it('falls back to the scorer per-drift record for a run stored before driftStats existed', () => {
+    // Every run already on somebody's phone is stored that way. Dropping the fallback would
+    // zero a whole season of their driving.
+    const s = sessionWithSpin();
+    expect(s.driftStats).toBeUndefined();
+    const e = summarizeSession(s);
+    expect(e.heldPeakDeg).toBe(48);
+    expect(e.spins).toBe(1);
+    expect(e.slides).toHaveLength(2);
+  });
+
+  it('takes the HELD angle, never the instantaneous peak', () => {
+    // The spun slide peaks at 96 degrees and holds 91; the clean one peaks at 55 and holds
+    // 48. A row captioned "held" that printed a peak would overstate the driver by a fifth.
+    const e = summarizeSession(sessionWithSpin());
+    expect(e.heldPeakDeg).toBe(48);
+  });
+
+  it('reports no angle at all when neither place has the measurements', () => {
+    const s = sessionWithSpin();
+    s.score.perDrift = {};
+    const e = summarizeSession(s);
+    expect(e.heldPeakDeg).toBe(0);
+  });
+});
+
 describe('session store (memory backend)', () => {
   it('saves, lists newest-first, loads and deletes', async () => {
     const backend = createMemoryBackend();
