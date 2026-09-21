@@ -1117,18 +1117,24 @@ function amplifyBeta(replay: Replay, betaDeg: number): number {
   for (let i = seg.startIndex; i <= seg.endIndex; i++) {
     const b = tr.beta[i] * k;
     tr.beta[i] = b;
+    // β = course − heading: rewriting the slip angle without turning the nose draws a car
+    // travelling straight ahead under a 95° numeral (the same defect the fixtures had).
+    tr.heading[i] = wrapAngle(tr.course[i] - b);
     tr.intensity[i] = clamp((Math.abs(b) - replay.options.intensityLo) / (replay.options.intensityHi - replay.options.intensityLo), 0, 1);
   }
   seg.peakAngle = Math.abs(tr.beta[seg.peakIndex]);
+  seg.samplePeakAngle = seg.peakAngle;
   seg.severity = seg.peakAngle >= SEVERITY_EDGES.spin ? 'spin' : seg.peakAngle >= SEVERITY_EDGES.extreme ? 'extreme' : 'big';
   for (const m of replay.markers) if (m.kind === 'drift-peak' && m.driftId === seg.driftId) {
     m.peakAngle = seg.peakAngle;
     m.severity = seg.severity;
     m.label = `${Math.round(deg(seg.peakAngle))}°`;
   }
+  // This is an angle the driver HELD — nothing here spun — so the beat keeps the held wording
+  // whatever band the synthetic angle lands in. `seg.spin` is the engine's verdict, untouched.
   for (const e of replay.events) if (e.driftId === seg.driftId && (e.kind === 'peak' || e.kind === 'spin')) {
-    e.label = peakCallout(seg.severity, seg.peakAngle); // one rule, owned by the engine
-    e.kind = seg.severity === 'spin' ? 'spin' : 'peak';
+    e.label = peakCallout(seg.spin, seg.peakAngle); // one rule, owned by the engine
+    e.kind = seg.spin ? 'spin' : 'peak';
     e.magnitude = 1;
   }
   replay.info.peakAngle = Math.max(replay.info.peakAngle, seg.peakAngle);

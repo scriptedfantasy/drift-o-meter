@@ -7,24 +7,27 @@
  * or they went looking. That decides the layout: what is wrong and what to do about it are
  * above the fold, and the instrument is beside them rather than instead of them.
  *
- * Three rules it keeps:
+ * Four rules it keeps:
  *   • nothing is claimed before there is evidence for it — see `phaseOf`;
- *   • a loose mount is `IntegrityMonitor`'s own sentence, said once, under the biggest words on
- *     the screen, which name the condition the HUD's own heading names;
- *   • leaving is allowed. The calibration finishes while you drive, so the screen says so
- *     instead of trapping anyone here.
+ *   • a loose or shaking mount is `IntegrityMonitor`'s own sentence, said once, under the
+ *     biggest words on the screen, which name the condition the HUD's own heading names;
+ *   • every word about leaving is a measured claim about what leaving costs — `leaveOf`;
+ *   • the words live in `model.ts`, not here. This file decides where they sit and how loud
+ *     they are, and renders the strings that a test can read.
  *
  * URL (web / the harness): `?at=<s>` warps the simulated recording, `?hold=1` freezes it there,
  * `?mount=flat-console` regenerates it with the phone sitting somewhere else, `?why=` says what
- * sent the driver here, `?fault=` shows one of the four faults, and the usual
+ * sent the driver here, `?fault=` shows one of the five faults, and the usual
  * `?sim=/rate=/seed=/laps=/looseness=/dropouts=` pick the recording. See tools/harness/README.md.
  */
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { openSettings } from 'expo-linking';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppText, Button, colors, gutter, Micro, Small, space, TopBar } from '@/ui';
+import { alpha, AppText, Button, colors, glow, gutter, Micro, Small, space, TopBar } from '@/ui';
 import {
   arrivalOf,
   attitudeWords,
@@ -34,6 +37,7 @@ import {
   EngineStrip,
   headlineOf,
   isFlat,
+  leaveOf,
   Lights,
   lightsOf,
   mountVerdict,
@@ -58,14 +62,16 @@ export default function CalibrateScreen() {
   const phase = phaseOf(reading);
   const head = headlineOf(reading);
   const band = qualityBand(reading);
+  const leave = leaveOf(reading);
   const lights = useMemo(() => lightsOf(reading), [reading]);
   const steps = useMemo(() => stepsOf(reading), [reading]);
   const cautions = useMemo(() => cautionsOf(reading), [reading]);
   const flat = isFlat(reading);
   const arrival = arrivalOf(params.why);
   // The instrument sits BESIDE the readout, not above it: what to do has to be on screen
-  // without scrolling, in both orientations, and a 264 pt dial ate that room.
-  const dialSize = landscape ? 156 : Math.min(Math.round(width * 0.46), 184);
+  // without scrolling, in both orientations, and a 264 pt dial ate that room. It shrank again
+  // when the arrival banner (the normal way in) pushed the call to action off the bottom.
+  const dialSize = landscape ? 112 : Math.min(Math.round(width * 0.31), 132);
 
   const drive = () => router.replace('/drive');
 
@@ -75,30 +81,61 @@ export default function CalibrateScreen() {
 
   // ---- the fault states: the whole reason this screen exists ------------------------------
   if (phase === 'failed' && reading.fault) {
+    const fault = reading.fault;
+    // OPEN SETTINGS meant two different places. The body names one of them, so the button says
+    // which one it is and goes there: the phone's own Settings for a permission or a service,
+    // this app's settings for "there is nothing here to calibrate, use the simulator".
+    const openAction =
+      fault.destination === 'phone-settings'
+        ? () => {
+            // web (the harness) has no Settings app; expo-linking rejects rather than no-ops.
+            openSettings().catch((err: unknown) => console.warn('[calibrate] openSettings', err));
+          }
+        : () => router.push('/settings');
     return (
       <View style={styles.root} testID="screen-calibrate">
         <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-          <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {/* Not a scroll: a fault has one screenful of content, and letting it sit at the top
+              of a scroller left the bottom half of the frame empty and black. */}
+          <View style={styles.faultPage}>
             <TopBar kicker="Mount calibration" right={source} />
-            <View style={styles.fault} testID="calibrate-fault">
-              <Micro color="red">Cannot calibrate</Micro>
-              <AppText variant="title" color="red" style={styles.title} accessibilityRole="header">
-                {reading.fault.title}
+            <View style={styles.faultCentre}>
+              {/* Atmosphere, not an object: a solid box with a box-shadow drew a lit pill
+                  behind the title. A wash that is transparent at both ends has no edge. */}
+              <LinearGradient
+                colors={['transparent', alpha(colors.red, 0.16), 'transparent']}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.bloom}
+                pointerEvents="none"
+              />
+              <View style={styles.kickerRow}>
+                <View style={[styles.slab, { backgroundColor: colors.red }]} />
+                <Micro color="red">Cannot calibrate</Micro>
+              </View>
+              <AppText variant="title" color="red" style={styles.faultTitle} accessibilityRole="header">
+                {fault.title}
               </AppText>
               <Small color={colors.text} style={styles.faultBody}>
-                {reading.fault.body}
+                {fault.body}
+              </Small>
+              <View style={styles.rule} />
+              {/* The old note said "none of this stops you driving — the run records either
+                  way". It does not: /drive opens the same sensors and stops on the same error.
+                  A reassurance that is false is worse than no reassurance. */}
+              <Small style={styles.faultBody} testID="calibrate-fault-consequence">
+                {fault.kind === 'unsupported'
+                  ? 'Driving will stop here too — it opens these same sensors. The simulated source runs a full recording through the real judge in the meantime.'
+                  : 'Driving will stop here too: DRIVE opens these same sensors and ends on this same message. Nothing is recorded until it is fixed.'}
               </Small>
             </View>
             <View style={styles.faultActions}>
-              {reading.fault.retryable ? <Button label="Try again" size="lg" onPress={retry} testID="cta-retry" /> : null}
-              <Button label="Open settings" variant="secondary" onPress={() => router.push('/settings')} testID="cta-settings" />
+              {fault.retryable ? <Button label="Try again" size="lg" onPress={retry} testID="cta-retry" /> : null}
+              <Button label={fault.actionLabel} variant="secondary" onPress={openAction} testID="cta-settings" />
               <Button label="Back to the garage" variant="ghost" onPress={() => router.replace('/')} testID="cta-garage" />
             </View>
-            <Small style={styles.faultNote}>
-              None of this stops you driving. The run records either way — the judge simply holds back a score it cannot
-              stand behind.
-            </Small>
-          </ScrollView>
+          </View>
         </SafeAreaView>
       </View>
     );
@@ -106,38 +143,45 @@ export default function CalibrateScreen() {
 
   const instrument = (
     <View style={styles.instrument}>
-      <MountDialView
-        size={dialSize}
-        // lying flat, the in-plane direction of gravity is noise: hold the glyph level instead
-        // of spinning it, because a flat phone genuinely has no readable roll
-        rollDeg={flat ? 0 : reading.rollDeg}
-        reclineDeg={reading.reclineDeg}
-        quality={reading.quality}
-        threshold={TRUST_QUALITY}
-        sharp={SHARP_QUALITY}
-        tone={band.color}
-        settled={lights[0].state === 'on'}
-        resolved={reading.forwardResolved}
-        loose={mountVerdict(reading) === 'loose'}
-        ready={phase === 'ready'}
-        idle={reading.samples === 0}
-        testID="mount-dial"
-      />
+      <View>
+        {/* the dial earns the only bloom on the screen: it is the live instrument */}
+        <View style={[styles.dialBloom, { backgroundColor: alpha(colors[band.color], reading.samples === 0 ? 0.04 : 0.1) }, glow(colors[band.color], 1.1)]} pointerEvents="none" />
+        <MountDialView
+          size={dialSize}
+          // lying flat, the in-plane direction of gravity is noise: hold the glyph level instead
+          // of spinning it, because a flat phone genuinely has no readable roll
+          rollDeg={flat ? 0 : reading.rollDeg}
+          reclineDeg={reading.reclineDeg}
+          quality={reading.quality}
+          threshold={TRUST_QUALITY}
+          sharp={SHARP_QUALITY}
+          tone={band.color}
+          settled={lights[0].state === 'on'}
+          resolved={reading.forwardResolved}
+          loose={mountVerdict(reading) === 'loose'}
+          ready={phase === 'ready'}
+          idle={reading.samples === 0}
+          testID="mount-dial"
+        />
+      </View>
       {/* The one honest number, and what it has to clear. Beside the glyph, never over it. */}
       <View style={styles.readout}>
         {/* `--` is the absence of a number, not a number: muted and smaller, so it reads as
             nothing-to-report rather than as a bright cyan bar where a figure should be. */}
         <AppText
           variant="hero"
-          color={band.display === '--' ? colors.muted : band.color}
+          color={band.display === '--' ? colors.muted : colors[band.color]}
           numeric
           style={[styles.percent, band.display === '--' && styles.percentEmpty]}
           testID="confidence">
           {band.display}
         </AppText>
-        <Micro color={band.color === 'red' ? 'red' : 'muted'}>Confidence in this mount</Micro>
-        <Micro style={styles.legend} numberOfLines={2}>
-          {Math.round(TRUST_QUALITY * 100)}% the judge&apos;s bar · {Math.round(SHARP_QUALITY * 100)}% no caveats
+        <Micro color={band.color === 'red' ? 'red' : 'muted'} numberOfLines={1}>
+          {/* the landscape rail is 296 pt wide and `CONFIDENCE IN THIS MOUNT` truncated in it */}
+          {landscape ? 'Confidence' : 'Confidence in this mount'}
+        </Micro>
+        <Micro style={styles.legend} numberOfLines={1}>
+          Bar {Math.round(TRUST_QUALITY * 100)}% · no caveats {Math.round(SHARP_QUALITY * 100)}%
         </Micro>
         <Tag label={attitudeWords(reading)} color={colors.cyan} style={styles.attitude} />
       </View>
@@ -146,17 +190,20 @@ export default function CalibrateScreen() {
 
   const verdict = (
     <View style={styles.verdict}>
-      <Micro color={head.color}>{head.kicker}</Micro>
+      <View style={styles.kickerRow}>
+        <View style={[styles.slab, { backgroundColor: colors[head.color] }]} />
+        <Micro color={head.color}>{head.kicker}</Micro>
+      </View>
       <AppText variant="title" color={head.color} numberOfLines={2} style={styles.title} accessibilityRole="header">
         {head.title}
       </AppText>
       {head.because ? (
-        <Small color={phase === 'blocked' ? colors.text : colors.muted} numberOfLines={3} style={styles.because} testID="calibrate-because">
+        <Small color={phase === 'blocked' || phase === 'unsteady' ? colors.text : colors.muted} numberOfLines={3} style={styles.because} testID="calibrate-because">
           {head.because}
         </Small>
       ) : null}
       {phase === 'blocked' ? null : (
-        <Micro numberOfLines={2} style={styles.bandLabel}>
+        <Micro color={band.color === 'gold' ? 'gold' : 'muted'} numberOfLines={2} style={styles.bandLabel} testID="calibrate-band">
           {band.label}
         </Micro>
       )}
@@ -165,17 +212,17 @@ export default function CalibrateScreen() {
 
   const actions = (
     <View style={styles.actions}>
-      {phase === 'ready' ? (
-        <Button label="Done — drive" size={landscape ? 'md' : 'lg'} onPress={drive} testID="cta-drive" />
-      ) : (
-        // `md`, not `lg`: at 30 pt the sentence truncates to "FINISH IT WHILE DRIVI…", and this
-        // is the secondary action anyway — the driver has not finished what they came to do.
-        <Button label="Finish it while driving" size="md" variant="secondary" onPress={drive} testID="cta-drive" />
-      )}
-      <Small numberOfLines={3} style={styles.leaveNote}>
-        {phase === 'ready'
-          ? 'The calibration keeps sharpening during the run — nothing here is final.'
-          : 'You do not have to sit here. The run calibrates itself on the way to the first corner; the judge holds back its score until it has.'}
+      <Button
+        label={leave.label}
+        // `md` unless this is the finished action: at 30 pt a sentence-long label truncates,
+        // and the driver who has not finished should not be handed the biggest button either.
+        size={leave.primary && !landscape ? 'lg' : 'md'}
+        variant={leave.primary ? 'primary' : 'secondary'}
+        onPress={drive}
+        testID="cta-drive"
+      />
+      <Small numberOfLines={landscape ? 2 : 3} style={styles.leaveNote} color={phase === 'blocked' ? colors.text : colors.muted} testID="calibrate-leave-note">
+        {leave.note}
       </Small>
     </View>
   );
@@ -183,7 +230,22 @@ export default function CalibrateScreen() {
   return (
     <View style={styles.root} testID="screen-calibrate">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-        <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} testID="calibrate-scroll">
+        <ScrollView style={styles.flex} contentContainerStyle={[styles.scroll, landscape && styles.scrollLandscape]} showsVerticalScrollIndicator={false} testID="calibrate-scroll">
+          {/* One wash of the phase's own colour behind the instrument, so the frame reads as
+              the same night-street app as the HUD instead of a dark settings form. Inset from
+              the edges: the page corners stay asphalt. */}
+          <LinearGradient
+            // transparent at BOTH ends: a wash that starts at full strength draws its own
+            // rounded edge across the page and reads as a panel nobody asked for.
+            colors={['transparent', alpha(colors[band.color], phase === 'blocked' ? 0.2 : 0.14), 'transparent']}
+            // straight down, not diagonal: a diagonal axis leaves tint on the box's own top
+            // and bottom edges, and those edges draw a line across the page.
+            locations={[0, 0.45, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={[styles.wash, landscape && styles.washLandscape]}
+            pointerEvents="none"
+          />
           {/* No 44 pt slab in either orientation: the kicker names the screen, and the room it
               saves is room for the instructions. */}
           <TopBar kicker="Mount calibration" right={source} />
@@ -192,6 +254,9 @@ export default function CalibrateScreen() {
 
           {landscape ? (
             <View style={styles.row}>
+              {/* The rail carries the instrument and the way out; the column carries what is
+                  wrong and what to do. Both have to end above 393 px of height, which is what
+                  pushed step 02 and all three lights off the bottom before. */}
               <View style={styles.left}>
                 {instrument}
                 {actions}
@@ -225,7 +290,7 @@ export default function CalibrateScreen() {
 function engineRows(r: CalibrationReading): Array<[string, string]> {
   return [
     ['Up axis', r.samples ? `${Math.round(r.upQuality * 100)}%` : '--'],
-    ['Straight-line', `${r.lineEvidenceS.toFixed(1)} s`],
+    ['Line', `${r.lineEvidenceS.toFixed(1)} s`],
     ['Axis fit', `${Math.round(r.lineAnisotropy * 100)}%`],
     ['Fore/aft', r.forwardResolved ? `${r.signScore > 0 ? '+' : ''}${r.signScore.toFixed(2)}` : 'unset'],
     ['Sway', `${Math.round(r.looseScore * 100)}%`],
@@ -239,29 +304,40 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { paddingHorizontal: gutter, paddingBottom: space[10], gap: space[4], width: '100%', maxWidth: 820, alignSelf: 'center' },
+  scroll: { paddingHorizontal: gutter, paddingBottom: space[6], gap: 10, width: '100%', maxWidth: 820, alignSelf: 'center' },
+  scrollLandscape: { gap: space[2] },
+  // Wider than the page on both sides: a gradient that fades vertically still meets its own
+  // left and right edges at full strength, and those edges read as a panel nobody drew.
+  wash: { position: 'absolute', left: -gutter - 24, right: -gutter - 24, top: 92, height: 300 },
+  washLandscape: { top: 68, height: 210 },
 
-  row: { flexDirection: 'row', gap: space[5], alignItems: 'flex-start' },
-  left: { gap: space[3] },
-  right: { flex: 1, minWidth: 0, gap: space[3] },
+  row: { flexDirection: 'row', gap: space[4], alignItems: 'flex-start' },
+  left: { gap: space[2], width: 296 },
+  right: { flex: 1, minWidth: 0, gap: space[2] },
 
   instrument: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
+  dialBloom: { position: 'absolute', left: '14%', right: '14%', top: '14%', bottom: '14%', borderRadius: 999 },
   readout: { flex: 1, minWidth: 0, gap: 0 },
-  percent: { fontSize: 56, lineHeight: 54, letterSpacing: -3, includeFontPadding: false },
-  percentEmpty: { fontSize: 40, lineHeight: 46, opacity: 0.6 },
-  legend: { marginTop: space[2], opacity: 0.75, textTransform: 'none', letterSpacing: 0.3 },
-  attitude: { marginTop: space[2], flexShrink: 1, maxWidth: '100%' },
+  percent: { fontSize: 52, lineHeight: 50, letterSpacing: -2.5, includeFontPadding: false },
+  percentEmpty: { fontSize: 36, lineHeight: 42, opacity: 0.6 },
+  legend: { marginTop: 2, opacity: 0.75, textTransform: 'none', letterSpacing: 0.3 },
+  attitude: { marginTop: space[2], flexShrink: 1, maxWidth: '100%', alignSelf: 'flex-start' },
 
-  verdict: { gap: space[1], alignSelf: 'stretch' },
-  title: { fontSize: 34, lineHeight: 35 },
+  verdict: { gap: 2, alignSelf: 'stretch' },
+  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  slab: { width: 5, height: 14, transform: [{ skewX: '-8deg' }] },
+  title: { fontSize: 33, lineHeight: 34 },
   because: { maxWidth: 460 },
-  bandLabel: { marginTop: space[1] },
+  bandLabel: { marginTop: 2 },
 
   actions: { gap: space[2] },
-  leaveNote: { maxWidth: 420 },
+  leaveNote: { maxWidth: 460 },
 
-  fault: { gap: space[1], marginTop: space[2] },
-  faultBody: { maxWidth: 460 },
-  faultActions: { gap: space[3], marginTop: space[2] },
-  faultNote: { maxWidth: 460, marginTop: space[2] },
+  faultPage: { flex: 1, paddingHorizontal: gutter, width: '100%', maxWidth: 820, alignSelf: 'center' },
+  faultCentre: { flex: 1, justifyContent: 'center', gap: space[2] },
+  bloom: { position: 'absolute', left: -gutter - 24, right: -gutter - 24, top: '6%', height: 270 },
+  faultTitle: { fontSize: 40, lineHeight: 42 },
+  faultBody: { maxWidth: 520 },
+  rule: { height: 1, backgroundColor: colors.line, marginVertical: space[3], maxWidth: 520 },
+  faultActions: { gap: space[3], paddingBottom: space[4] },
 });

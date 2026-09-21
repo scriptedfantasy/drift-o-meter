@@ -122,17 +122,39 @@ export interface ReplaySegment {
   durationS: number;
   /** Per-sample intensity 0..1 for the samples startIndex..endIndex (length endIndex-startIndex+1). */
   intensity: Float32Array;
-  /** Peak |β| (rad), when (replay s) and which trail index. */
+  /**
+   * Peak |β| (rad) as the DETECTOR measured it (`DriftEvent.peakAngle`) — the number the results
+   * screen prints, so the two screens cannot disagree about the same slide. On a noisy mount the
+   * raw trail runs a few degrees above it; that maximum is `samplePeakAngle`, for the colour ramp
+   * only, because it is a rendering detail rather than a claim about the drive.
+   */
   peakAngle: number;
+  /** Largest |β| on the trail inside this drift. Colour/width ramp only — never printed. */
+  samplePeakAngle: number;
   peakT: number;
   peakIndex: number;
-  /** Severity band of the peak. */
+  /** Severity band of `peakAngle`. */
   severity: DriftSeverity;
+  /**
+   * The detector's verdict: this drift ended in a spin (`DriftEvent.spin`), not a controlled
+   * exit. Carried through rather than re-derived from an angle band, because the band is a
+   * rendering threshold and the flag is the engine's assertion — see the doc on `DriftEvent.spin`
+   * in src/engine/types.ts for what happens when a renderer guesses instead.
+   */
+  spin: boolean;
+  /**
+   * True when this drift's points never reached the bank because a spin took the chain
+   * (the scorer's chain rule, replayed here from `DriftEvent.spin` and the drift times).
+   * `points` is then 0 and `grossPoints` is what the slide would have been worth.
+   */
+  lost: boolean;
   /** +1 right-hand drift (β>0) at initiation, −1 left. */
   initialDirection: 1 | -1;
   transitions: number;
-  /** Points awarded for this drift (score total, or the fallback estimate). */
+  /** Points this drift actually BANKED (0 when `lost`), which is what the running total adds. */
   points: number;
+  /** Points the drift earned before the chain rule was applied (equals `points` when kept). */
+  grossPoints: number;
   /** Lap index this drift starts in, or -1. */
   lapIndex: number;
 }
@@ -312,7 +334,13 @@ export interface Replay {
   /** Session-clock seconds corresponding to replay time 0. */
   t0: number;
   durationS: number;
+  /** Padded extent of everything drawable — what the minimap and the culler use. */
   bounds: ReplayBounds;
+  /**
+   * The extent of the ACTION: the driven line plus the track, with no padding. The overview
+   * camera frames this, so a circuit fills the shot instead of floating inside a margin.
+   */
+  content: ReplayBounds;
   trail: ReplayTrail;
   segments: ReplaySegment[];
   smoke: SmokeParticle[];

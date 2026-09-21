@@ -2,20 +2,29 @@
  * The two ways the garage shows a run: the big card for the one you just did, and a row for
  * everything before it.
  *
- * Both carry the same six facts — grade, points, best angle, track, date, duration — and both
- * obey the same rule: a run the engine will not vouch for gets no grade and no boast. Its
- * points are labelled for what they are, the monitor's own sentence is printed underneath, and
- * the card offers the recording instead of the result.
+ * Both are drawn from `SessionIndexEntry` alone — no session body is read to draw either one —
+ * and both obey the same rule: a run the engine will not vouch for gets no grade, no record,
+ * and **no total**. `SessionIntegrity.scoreTrusted`'s contract says a consumer "MUST NOT present
+ * the total… Show `message` instead and offer the run as a recording", so the points slot is a
+ * dash and the slot says how long the recording is. It used to print "POINTS LOGGED 155 — A
+ * FLOOR, NOT A MEASUREMENT" at 52 px, which is exactly the claim the engine refuses to make.
+ *
+ * The card also answers the question a career screen exists to answer: what did the run you
+ * just did do to your own numbers (`lastRunStanding`).
  */
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import type { SessionIndexEntry } from '../../platform';
 import { formatDate, formatDuration, formatScore } from '../format';
 import { AppText, Micro, Small } from '../Text';
 import { alpha, colors, radii, space } from '../theme';
-import { GradeBadge, gradeStateColor, gradeStateOf } from './GradeBadge';
-import type { LastRunDetail } from './lastRun';
+import { GradeBadge } from './GradeBadge';
+import { gradeStateColor, gradeStateOf } from './grade';
+import { angleText, pointsText, rowFootnote, slidesText } from './labels';
+import SlideTraceView from './SlideTraceView';
+import { TRACE_CEILING_DEG } from './trace';
 
 export interface RunProps {
   /** Everything a row shows now lives in the index — no session body is read to draw one. */
@@ -26,8 +35,11 @@ export interface RunProps {
 }
 
 export interface LastRunCardProps extends RunProps {
-  /** The newest run's body, once it has been read. The rest of the card does not wait for it. */
-  detail?: LastRunDetail | null;
+  /**
+   * What this run did to the records on its track — "New record — biggest angle", or how far
+   * off the best it landed. Null when there is nothing true to say.
+   */
+  standing?: string | null;
   /**
    * False when the garage is already showing the monitor's sentence above this card. The same
    * sentence twice in one viewport costs a third of the screen in the app's most urgent state.
@@ -35,26 +47,13 @@ export interface LastRunCardProps extends RunProps {
   showReason?: boolean;
 }
 
-/**
- * The biggest angle a run can claim — and `--` when it cannot claim one.
- *
- * `SessionIndexEntry.peakAngleDeg` already excludes spun drifts, for the same reason the scorer
- * does: the angle a car reaches while spinning is not one the driver held. On top of that, a run
- * the engine threw out reports no angle at all — the raw peak of a hand-held recording came out
- * at 85°, bigger than any angle any trusted run on the board holds, and printing that under the
- * word "best" in muted grey is still printing it.
- */
-function angleText(entry: SessionIndexEntry, untrusted: boolean): string {
-  if (untrusted || !(entry.peakAngleDeg > 0)) return '--';
-  return `${Math.round(entry.peakAngleDeg)}°`;
-}
-
 /** The run a driver most likely came back to look at. Twice the size of everything below it. */
-export function LastRunCard({ entry, detail, onOpen, onDelete, showReason = true, testID }: LastRunCardProps) {
+export function LastRunCard({ entry, standing, onOpen, onDelete, showReason = true, testID }: LastRunCardProps) {
   const state = gradeStateOf(entry.grade, entry.trusted);
   const accent = gradeStateColor(state);
   const untrusted = state.kind === 'void';
-  const pending = state.kind === 'pending';
+  const points = pointsText(entry, state.kind);
+  const slides = slidesText(entry, untrusted);
 
   return (
     <Pressable
@@ -62,7 +61,7 @@ export function LastRunCard({ entry, detail, onOpen, onDelete, showReason = true
       onLongPress={onDelete}
       delayLongPress={420}
       accessibilityRole="button"
-      accessibilityLabel={`${entry.name}, ${untrusted ? 'not scored' : `grade ${entry.grade}`}, ${formatScore(entry.total)} points`}
+      accessibilityLabel={`${entry.name}, ${untrusted ? `not scored, recording ${formatDuration(entry.durationS)}` : `grade ${entry.grade}, ${formatScore(entry.total)} points`}`}
       testID={testID}
       style={({ pressed }) => [styles.card, { borderColor: alpha(accent, 0.55) }, pressed && styles.pressed]}>
       <LinearGradient
@@ -81,37 +80,44 @@ export function LastRunCard({ entry, detail, onOpen, onDelete, showReason = true
       </View>
 
       <View style={styles.cardBody}>
-        <GradeBadge state={state} size={96} />
+        <GradeBadge state={state} size={96} animate />
         <View style={styles.cardScore}>
-          <Micro>{untrusted ? 'Points logged' : 'Points'}</Micro>
+          <Micro>Points</Micro>
           <AppText variant="display" color={untrusted ? colors.muted : colors.ember} numeric numberOfLines={1} style={styles.points}>
-            {pending ? '--' : formatScore(entry.total)}
+            {points.value}
           </AppText>
-          {untrusted ? <Micro color="red">A floor, not a measurement</Micro> : null}
+          {points.note ? <Micro color={untrusted ? 'red' : 'muted'}>{points.note}</Micro> : null}
         </View>
       </View>
+
+      <SlideTraceStrip entry={entry} untrusted={untrusted} />
 
       <AppText variant="subheading" numberOfLines={1} style={styles.trackName}>
         {entry.track ?? entry.name}
       </AppText>
       {untrusted ? <Micro numberOfLines={1}>{formatDate(entry.startedAt)}</Micro> : null}
+      {!untrusted && standing ? (
+        <Micro color={/^new record/i.test(standing) ? 'gold' : 'muted'} numberOfLines={2} style={styles.standing}>
+          {standing}
+        </Micro>
+      ) : null}
 
-      {untrusted && showReason && detail?.message ? (
+      {untrusted && showReason && entry.integrityMessage ? (
         <Small color="red" style={styles.voidNote} numberOfLines={3}>
-          {detail.message}
+          {entry.integrityMessage}
         </Small>
       ) : null}
 
       <View style={styles.cardStats}>
         <CardStat
-          label={untrusted ? 'Angle' : 'Best angle'}
+          label={untrusted ? 'Angle' : 'Held angle'}
           value={angleText(entry, untrusted)}
-          color={untrusted || !entry.peakAngleDeg ? colors.muted : colors.ember}
+          color={untrusted || !entry.heldPeakDeg ? colors.muted : colors.ember}
         />
-        <CardStat label={entry.drifts === 1 ? 'Slide' : 'Slides'} value={String(entry.drifts)} color={colors.text} />
+        <CardStat label={entry.drifts === 1 && entry.spins === 0 ? 'Slide' : 'Slides'} value={slides.value} note={slides.note} color={colors.text} />
         <CardStat
           label={untrusted ? 'Mount' : 'Best chain'}
-          value={untrusted ? (detail?.mount ?? 'loose').toUpperCase() : formatScore(entry.longestChainPoints)}
+          value={untrusted ? entry.mount.toUpperCase() : formatScore(entry.longestChainPoints)}
           color={untrusted ? colors.red : colors.magenta}
         />
       </View>
@@ -123,23 +129,53 @@ export function LastRunCard({ entry, detail, onOpen, onDelete, showReason = true
   );
 }
 
-function CardStat({ label, value, color }: { label: string; value: string; color: string }) {
+/**
+ * The run's own shape, drawn in Skia from the slides the index carries. On a run the monitor
+ * did not believe it is drawn hollow and red and captioned as what it is: a recording.
+ */
+function SlideTraceStrip({ entry, untrusted }: { entry: SessionIndexEntry; untrusted: boolean }) {
+  const [width, setWidth] = useState(0);
+  const onLayout = useCallback((e: LayoutChangeEvent) => setWidth(Math.round(e.nativeEvent.layout.width)), []);
+  const has = entry.slides.length > 0;
+  return (
+    <View style={styles.trace} onLayout={onLayout}>
+      <View style={styles.traceLegend}>
+        <Micro numberOfLines={1}>{untrusted ? 'Recorded sliding' : has ? 'Held angle through the run' : 'Nothing slid'}</Micro>
+        <Micro numberOfLines={1} color={untrusted ? 'red' : 'muted'}>
+          {untrusted ? 'None of it believed' : has ? `${TRACE_CEILING_DEG}° top` : 'Grip all the way'}
+        </Micro>
+      </View>
+      {has && width > 0 ? (
+        <SlideTraceView slides={entry.slides} width={width} believed={!untrusted} testID="last-run-trace" />
+      ) : (
+        <View style={styles.traceEmpty} />
+      )}
+    </View>
+  );
+}
+
+function CardStat({ label, value, note, color }: { label: string; value: string; note?: string | null; color: string }) {
   return (
     <View style={styles.cardStat}>
       <Micro numberOfLines={1}>{label}</Micro>
       <AppText variant="telemetry" color={color} numeric numberOfLines={1} style={styles.cardStatValue}>
         {value}
       </AppText>
+      {note ? (
+        <Micro numberOfLines={1} color="red" style={styles.cardStatNote}>
+          {note}
+        </Micro>
+      ) : null}
     </View>
   );
 }
 
-/** Everything older: one line each, same six facts, a tenth of the ink. */
+/** Everything older: one line each, same facts, a tenth of the ink. */
 export function RunRow({ entry, onOpen, onDelete, testID }: RunProps) {
   const state = gradeStateOf(entry.grade, entry.trusted);
   const accent = gradeStateColor(state);
   const untrusted = state.kind === 'void';
-  const pending = state.kind === 'pending';
+  const points = pointsText(entry, state.kind);
 
   return (
     <Pressable
@@ -147,7 +183,7 @@ export function RunRow({ entry, onOpen, onDelete, testID }: RunProps) {
       onLongPress={onDelete}
       delayLongPress={420}
       accessibilityRole="button"
-      accessibilityLabel={`${entry.name}, ${untrusted ? 'not scored' : `grade ${entry.grade}`}`}
+      accessibilityLabel={`${entry.name}, ${untrusted ? 'not scored, recording only' : `grade ${entry.grade}`}`}
       testID={testID}
       style={({ pressed }) => [styles.row, { borderLeftColor: accent }, pressed && styles.pressed]}>
       <GradeBadge state={state} size={untrusted ? 46 : 44} style={styles.rowBadge} />
@@ -161,10 +197,10 @@ export function RunRow({ entry, onOpen, onDelete, testID }: RunProps) {
       </View>
       <View style={styles.rowRight}>
         <AppText variant="telemetry" color={untrusted ? colors.muted : colors.ember} numeric numberOfLines={1} style={styles.rowPoints}>
-          {pending ? '--' : formatScore(entry.total)}
+          {points.value}
         </AppText>
         <Micro color={untrusted ? 'red' : 'muted'} numberOfLines={1}>
-          {untrusted ? 'logged only' : `${angleText(entry, false)} best`}
+          {rowFootnote(entry, state.kind)}
         </Micro>
       </View>
     </Pressable>
@@ -185,11 +221,16 @@ const styles = StyleSheet.create({
   cardBody: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   cardScore: { flex: 1, alignItems: 'flex-end', gap: 0 },
   points: { fontSize: 52, lineHeight: 52, letterSpacing: -2 },
+  trace: { marginTop: space[1], gap: 2 },
+  traceLegend: { flexDirection: 'row', justifyContent: 'space-between', gap: space[2] },
+  traceEmpty: { height: 58, borderBottomWidth: 1, borderBottomColor: alpha(colors.text, 0.14) },
   trackName: { marginTop: space[1] },
+  standing: { textTransform: 'none', letterSpacing: 0.2 },
   voidNote: { borderLeftWidth: 2, borderLeftColor: colors.red, paddingLeft: space[3], marginTop: space[1] },
   cardStats: { flexDirection: 'row', justifyContent: 'space-between', gap: space[2], marginTop: space[3], borderTopWidth: 1, borderTopColor: colors.line, paddingTop: space[3] },
   cardStat: { gap: 1, minWidth: 0, flex: 1 },
   cardStatValue: { fontSize: 24, lineHeight: 26 },
+  cardStatNote: { textTransform: 'none', letterSpacing: 0.2, opacity: 0.9 },
   cta: { marginTop: space[2] },
 
   row: {

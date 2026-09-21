@@ -6,39 +6,47 @@
  * shows, at row scale. Until the run's verdict has been read off disk the slot is a skeleton:
  * the alternative is guessing, and guessing here means printing an achievement that the engine
  * has already refused.
+ *
+ * The rule itself lives in `grade.ts`, so it can be tested without a renderer.
  */
+import { useEffect } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import type { Grade } from '../../engine/types';
 import { AppText } from '../Text';
-import { alpha, colors, gradeColors, radii, space } from '../theme';
+import { easings } from '../motion';
+import { alpha, colors, gradeColors, motion, radii, space } from '../theme';
+import { gradeStateColor, gradeStateOf, type GradeState } from './grade';
 
-export type GradeState = { kind: 'grade'; grade: Grade } | { kind: 'void' } | { kind: 'pending' };
-
-/**
- * `trusted` comes straight off the index and defaults to FALSE for a row written before the
- * field existed, so an unknown verdict shows the plate rather than a grade. `pending` is kept
- * for a row whose entry has genuinely not arrived yet.
- */
-export function gradeStateOf(grade: Grade, trusted: boolean | undefined): GradeState {
-  if (trusted === undefined) return { kind: 'pending' };
-  return trusted ? { kind: 'grade', grade } : { kind: 'void' };
-}
-
-export function gradeStateColor(state: GradeState): string {
-  if (state.kind === 'grade') return gradeColors[state.grade] ?? colors.muted;
-  return state.kind === 'void' ? colors.red : colors.line;
-}
+export { gradeStateColor, gradeStateOf };
+export type { GradeState };
 
 export interface GradeBadgeProps {
   state: GradeState;
   /** Cap height of the letter in dp. The plate and the skeleton scale with it. */
   size: number;
+  /** Punch the letter in when it first appears. The last-run card asks for it; rows do not. */
+  animate?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-export function GradeBadge({ state, size, style, testID }: GradeBadgeProps) {
+export function GradeBadge({ state, size, animate = false, style, testID }: GradeBadgeProps) {
+  const grade = state.kind === 'grade' ? state.grade : null;
+  const reduced = useReducedMotion();
+  // One shared value, whatever the branch below renders: hooks may not be conditional.
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    if (!animate || reduced || grade === null) {
+      scale.value = 1;
+      return;
+    }
+    // The grade you just earned, arriving: over-large for an instant, then settling.
+    scale.value = 1.34;
+    scale.value = withTiming(1, { duration: motion.duration.slow, easing: easings.overshoot });
+  }, [animate, grade, reduced, scale]);
+  const punch = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   if (state.kind === 'void') {
     const word = Math.max(11, size * 0.26);
     return (
@@ -58,7 +66,7 @@ export function GradeBadge({ state, size, style, testID }: GradeBadgeProps) {
   const color = gradeColors[state.grade] ?? colors.muted;
   // No `numberOfLines`: on web that clips the element, and the letter's glow with it.
   return (
-    <View style={[styles.box, { width: size * 1.06 }, style]} testID={testID}>
+    <Animated.View style={[styles.box, { width: size * 1.06 }, style, punch]} testID={testID}>
       <AppText
         variant="hero"
         color={color}
@@ -68,7 +76,7 @@ export function GradeBadge({ state, size, style, testID }: GradeBadgeProps) {
         ]}>
         {state.grade}
       </AppText>
-    </View>
+    </Animated.View>
   );
 }
 

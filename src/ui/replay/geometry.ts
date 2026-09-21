@@ -16,6 +16,7 @@ import { Skia, type SkPath } from '@shopify/react-native-skia';
 
 import { SEVERITY_EDGES, type Replay, type ReplaySegment } from '../../engine/replay';
 import { clamp } from '../../engine/types';
+import { kerbContours } from './kerbs';
 import { HOT, heatColor, mix } from './palette';
 
 export interface WorldBounds {
@@ -206,9 +207,17 @@ function carShapes(): CarShapes {
   };
 }
 
-/** Build every fixed path in the scene. `dead` marks trail samples with no GPS behind them. */
-export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeometry {
+/**
+ * Build every fixed path in the scene.
+ *
+ * Where the position was dead-reckoned comes from `replay.trail.measured`, which the engine
+ * derives once from the GPS with the engine's own threshold and accuracy floor. This module used
+ * to be handed a second mask built from a second rule in the UI layer; the two disagreed, and
+ * both ended up in the warning list.
+ */
+export function buildSceneGeometry(replay: Replay): SceneGeometry {
   const tr = replay.trail;
+  const measured = tr.measured;
   const owned: SkPath[] = [];
   const keep = <T extends SkPath>(p: T): T => {
     owned.push(p);
@@ -228,32 +237,10 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
   const edges = road ? [ROAD_W / 2 - 0.4, -(ROAD_W / 2 - 0.4)].map((d) => keep(polyline(offsetPolyline(roadPts, d, roadClosed), roadClosed))) : [];
 
   // ---- kerbs at the corners -----------------------------------------------------------
-  const kerbParts: Pt[][] = [];
-  const corners: SceneGeometry['corners'] = [];
-  if (replay.track?.corners?.length && roadPts.length > 2) {
-    const n = roadPts.length;
-    for (const c of replay.track.corners) {
-      corners.push({ x: c.x, y: c.y, radiusM: c.radiusM });
-      let ai = 0;
-      let bestD = Infinity;
-      for (let i = 0; i < n; i++) {
-        const d = (roadPts[i][0] - c.x) ** 2 + (roadPts[i][1] - c.y) ** 2;
-        if (d < bestD) {
-          bestD = d;
-          ai = i;
-        }
-      }
-      const span = Math.max(6, Math.round(Math.min(40, c.radiusM * 0.9)));
-      const seg: Pt[] = [];
-      for (let k = -span; k <= span; k += 2) {
-        const i = roadClosed ? (ai + k + n) % n : clamp(ai + k, 0, n - 1);
-        seg.push(roadPts[i]);
-      }
-      if (seg.length < 3) continue;
-      kerbParts.push(offsetPolyline(seg, c.direction * (ROAD_W / 2 + 0.55), false));
-    }
-  }
-
+  // `kerbContours` owns the geometry (and the folds it has to refuse to draw); this file just
+  // turns the metres into a path. See kerbs.ts for why an offset is not a one-liner.
+  const corners: SceneGeometry['corners'] = (replay.track?.corners ?? []).map((c) => ({ x: c.x, y: c.y, radiusM: c.radiusM }));
+  const kerbParts = replay.track?.corners?.length && roadPts.length > 2 ? kerbContours(roadPts, roadClosed, replay.track.corners) : [];
   const kerbs = kerbParts.length ? keep(contours(kerbParts)) : null;
 
   // ---- the driven line, broken at every drift and every data gap ----------------------
@@ -270,7 +257,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
       run = [];
     };
     for (let i = 0; i < tr.n; i++) {
-      if (tr.segmentOf[i] >= 0 || dead[i] === 1) {
+      if (tr.segmentOf[i] >= 0 || measured[i] === 0) {
         flush(i - 1);
         continue;
       }
@@ -292,7 +279,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
       gap = [];
     };
     for (let i = 0; i < tr.n; i++) {
-      if (dead[i] !== 1) {
+      if (measured[i] !== 0) {
         flushGap(i - 1);
         continue;
       }
@@ -310,7 +297,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
     let part: Pt[] = [];
     let count = 0;
     for (let i = seg.startIndex; i <= seg.endIndex; i++) {
-      if (dead[i] === 1) {
+      if (measured[i] === 0) {
         if (part.length > 1) parts.push(part);
         part = [];
         continue;
@@ -339,7 +326,7 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
         let mag = 0;
         const cp: Pt[] = [];
         for (let i = a; i <= b; i++) {
-          if (dead[i] === 1) continue;
+          if (measured[i] === 0) continue;
           inten += tr.intensity[i];
           mag += Math.abs(tr.beta[i]);
           cp.push([tr.x[i], tr.y[i]]);
@@ -448,7 +435,15 @@ export function buildSceneGeometry(replay: Replay, dead: Uint8Array): SceneGeome
   };
 }
 
-/** Widest |β| the scrubber ribbon is scaled to (never less than the spin edge). */
+/**
+ * Widest |β| the scrubber ribbon is scaled to.
+ *
+ * Absolute (never less than the spin edge) so a given |β| is the same height in every run — that
+ * is what makes two runs comparable at a glance. The exception is a run with NO drift in it:
+ * there is nothing to compare, and a flat empty band tells the driver less than the shape of the
+ * few degrees the car actually carried, so it scales to its own maximum.
+ */
 export function ribbonScale(replay: Replay): number {
+  if (replay.segments.length === 0) return Math.max(0.02, replay.telemetry.maxAngle * 1.25);
   return Math.max(SEVERITY_EDGES.spin, replay.telemetry.maxAngle * 1.05);
 }

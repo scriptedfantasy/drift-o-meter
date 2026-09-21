@@ -56,7 +56,12 @@ export class DeviceSensorSource implements SensorSource {
       throw new SensorSourceError('failed', 'Could not request location permission.', err);
     });
     if (loc.status !== 'granted') {
-      throw new SensorSourceError('permission-denied', 'Location access is required to measure speed and direction of travel. Allow location while using the app.');
+      // NOT 'permission-denied': that code means Motion & Fitness, and the screens route the
+      // two to different switches in Settings.
+      throw new SensorSourceError(
+        'location-permission-denied',
+        'Location access is required to measure speed and direction of travel. Allow location while using the app.',
+      );
     }
     const enabled = await Location.hasServicesEnabledAsync().catch(() => true);
     if (!enabled) throw new SensorSourceError('services-disabled', 'Location Services are switched off. Turn them on in Settings.');

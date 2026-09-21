@@ -86,6 +86,18 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
 
   const rect = useMemo(() => ({ x: cx - r, y: cy - r, width: 2 * r, height: 2 * r }), [cx, cy, r]);
 
+  /**
+   * The ember pool inside the arc, and WHY IT IS NOT CENTRED ON THE PIVOT. The pivot sits at
+   * 0.92 × height, so a glow centred there has only 8 % of the canvas below it to fade out in —
+   * and it did not: the Canvas clipped it at full strength and left a hard horizontal seam right
+   * across the screen. (Row-mean across x = 100…1080 stepped from 17.12 to 10.03 at y = 882, in
+   * all 25 captured frames.) A glow that ends in a straight line reads as a rendering bug.
+   * Raising the pool by 0.45 r and ending it at 0.5 r puts every pixel of it inside the canvas
+   * with room to reach zero, and puts its brightest part where the light belongs: in the bowl,
+   * behind the numeral.
+   */
+  const pool = useMemo(() => ({ cy: cy - r * 0.45, r: r * 0.5 }), [cy, r]);
+
   /** The face, drawn clockwise from the left end; t = 0.5 is straight up (β = 0). */
   const arc = useMemo(() => Skia.PathBuilder.Make().addArc(rect, -90 - HALF_SWEEP, 2 * HALF_SWEEP).detach(), [rect]);
 
@@ -184,14 +196,27 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   ]);
   const letterX = useDerivedValue(() => cx + signals.side.value * chevronOffset - metrics.letterHalf);
   const sideLetter = useDerivedValue(() => (signals.side.value < 0 ? 'L' : 'R'));
+  /**
+   * The L/R indicator says which way the car is sliding, so at 0° it must say NOTHING. `side`
+   * holds its last direction (it only updates past |β| > 3°, so a straight road keeps the last
+   * slide's side, and a run that has never slid shows its initial R) — a grey "»R" on a car
+   * pointing straight ahead is a claim about a slide that is not happening. It fades in with
+   * the angle instead, over the same 3° the signal itself waits for.
+   */
+  const sideOpacity = useDerivedValue(() => 0.95 * Math.max(0, Math.min(1, (Math.abs(signals.betaDeg.value) - 1.5) / 2.5)));
 
   const numeralOrigin = useMemo(() => vec(cx, numeralMidY), [cx, numeralMidY]);
 
   return (
     <Canvas style={{ width, height }} testID={testID}>
-      {/* the bowl: ember light pooling inside the arc */}
-      <Circle cx={cx} cy={cy} r={r * 0.99} opacity={bowlOpacity}>
-        <RadialGradient c={vec(cx, cy)} r={r} colors={[rgba(colors.ember, 0.34), rgba(colors.ember, 0.11), rgba(colors.ember, 0)]} positions={[0, 0.5, 1]} />
+      {/* the bowl: ember light pooling inside the arc, fading to nothing before any edge */}
+      <Circle cx={cx} cy={pool.cy} r={pool.r} opacity={bowlOpacity}>
+        <RadialGradient
+          c={vec(cx, pool.cy)}
+          r={pool.r}
+          colors={[rgba(colors.ember, 0.4), rgba(colors.ember, 0.17), rgba(colors.ember, 0)]}
+          positions={[0, 0.55, 1]}
+        />
       </Circle>
 
       {/* dark track + ticks */}
@@ -217,15 +242,17 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
         <Path path={arc} color={hot} style="stroke" strokeWidth={stroke} strokeCap="butt" start={fillStart} end={fillEnd} />
         <Path path={arc} color={rgba('#FFFFFF', 0.45)} style="stroke" strokeWidth={stroke * 0.2} strokeCap="butt" start={fillStart} end={fillEnd} />
 
-        {/* needle */}
+        {/* The needle, and nothing at the pivot. A hub belongs to a hand that reaches it; this
+            needle deliberately lives in the outer ring only (0.80 r → the arc), so the ember
+            ring with the black centre that used to sit at (cx, cy) was a bearing for a spindle
+            that is not there — drawn, on every frame, floating under the bowl attached to
+            nothing. */}
         <Group origin={vec(cx, cy)} transform={needleTransform}>
           <Path path={needle} color={hot} opacity={0.95}>
             <BlurMask blur={7} style="solid" />
           </Path>
           <Path path={needle} color={rgba('#FFFFFF', 0.9)} />
         </Group>
-        <Circle cx={cx} cy={cy} r={Math.max(4, r * 0.026)} color={colors.bg0} />
-        <Circle cx={cx} cy={cy} r={Math.max(4, r * 0.026)} color={hot} style="stroke" strokeWidth={1.5} />
       </Group>
 
       {/* the hero numeral */}
@@ -238,9 +265,9 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
           </Group>
           <SkText x={blockLeft} y={baselineY} text={numeral} font={font} color={hot} />
           <Group transform={chevronTransform}>
-            <Path path={chevron} color={hot} opacity={0.95} />
+            <Path path={chevron} color={hot} opacity={sideOpacity} />
           </Group>
-          {labelFont ? <SkText x={letterX} y={baselineY} text={sideLetter} font={labelFont} color={hot} opacity={0.95} /> : null}
+          {labelFont ? <SkText x={letterX} y={baselineY} text={sideLetter} font={labelFont} color={hot} opacity={sideOpacity} /> : null}
         </Group>
       ) : null}
     </Canvas>

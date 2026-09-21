@@ -1,0 +1,569 @@
+/**
+ * The feel layer: one place that turns the run's events into sound and haptics.
+ *
+ *   LiveFrame (100 Hz) ──▶ DriftFeel.frame() ──▶ cue() ──▶ SoundPort.play()
+ *                                            └──▶ bed()  ──▶ SoundPort.setBed()
+ *                                            └──▶ HapticPort.impact()
+ *
+ * Pure TypeScript: no React, no React Native, no Expo. It runs in the app, in vitest on Linux
+ * and in `tools/audio/bench.mjs`, which is how the latency numbers in the report were measured.
+ * Everything platform-shaped lives behind the two port interfaces at the bottom of this file.
+ *
+ * ── The 100 Hz contract ───────────────────────────────────────────────────────────────────────
+ * `frame()` runs once per motion sample. On a frame with no event it does a fixed number of
+ * comparisons and ZERO allocations: no arrays, no closures, no object literals, no `Date`, no
+ * settings read, no promise. The settings gate is two booleans on `this`, refreshed by a
+ * subscription outside the hot path, and read at the moment of play so flipping the switch is
+ * instant. The bed is pushed to the port at most 20 times a second and only when a gain has
+ * actually moved. Measured cost: see `tools/audio/bench.mjs`.
+ *
+ * ── Why a mixer at all ────────────────────────────────────────────────────────────────────────
+ * At the peak of a run several events land inside a few hundred ms. Measured on the real
+ * pipeline over a harbour run: up to 3 cue moments inside 300 ms on a clean run and up to 7 on a
+ * hand-held one. Three clips at once is mud, so this owns:
+ *
+ *   1. FAMILIES.  At most one cue per family survives a frame — the highest priority one. The
+ *      events inside a family are the same moment described twice (INITIATION and LINK fire on
+ *      the same frame; so do CHAIN LOST and SPIN).
+ *   2. THE FLICK RULE.  A flick suppresses the entry chirp on the same frame, because a flick IS
+ *      the initiation of the new direction. The detector really does emit EXIT then ENTRY 110 ms
+ *      apart across a transition, and chirping through that is the single ugliest thing the
+ *      naive mapping does.
+ *   3. TWO VOICES.  A third simultaneous clip is mud by definition, so the budget is two, and a
+ *      new cue takes a sounding voice only from something STRICTLY lower priority. Equal
+ *      priority means the voice already speaking keeps the floor.
+ *   4. THE BED DUCKS ITSELF.  While a voice at priority ≥ 60 is sounding, the continuous layer
+ *      drops 5 dB. That is this app ducking its OWN layer — the driver's music is never touched.
+ *   5. THE BELIEF GATE.  Scoring cues are dropped while `LiveFrame.integrity.believable` is
+ *      false — the engine's OWN answer to "is this reading worth showing in colour", which it
+ *      publishes precisely so that no screen re-derives it. On a hand-held recording the
+ *      detector still fires 44 entry edges and the scorer still fires 11 initiation callouts;
+ *      the drive display refuses to bloom for them and the feel layer refuses to speak.
+ *
+ *      NOT `score.counting`, which answers a different question — "is the scorer paying on THIS
+ *      sample" — and is false at every red light and between every pair of slides. A BANKED
+ *      lands about two seconds after a drift ends, so gating it on `counting` would swallow the
+ *      loudest moment in the run.
+ */
+import type { LiveFrame } from '../../engine/pipeline';
+import { radToDeg, type DriftPhase } from '../../engine/types';
+import type { HapticPort, SoundPort } from '../../platform/audioTypes';
+import { now as monotonicNow } from '../../platform/clock';
+import { BED_HIGH, BED_LOW, CALLOUT_SOUND, specFor, voiceLifetimeS, type CueFamily, type HapticShape, type SoundId, type SoundSpec } from './bank';
+
+/**
+ * What the mixer needs from a platform to make a noise. Both ports may be absent — with neither
+ * attached every rule below still runs and still logs its decision, which is how the tests and
+ * the bench exercise the mixer without an audio device.
+ */
+export type { HapticPort, SoundPort } from '../../platform/audioTypes';
+
+/** Why a cue did or did not reach the speaker. The `/sound` lab shows the last 24 of these. */
+export type CueOutcome = 'played' | 'stole' | 'busy' | 'family' | 'flick' | 'debounce' | 'gated' | 'muted' | 'silent' | 'unknown';
+
+export interface CueDecision {
+  id: SoundId;
+  /** Monotonic seconds when the decision was taken. */
+  t: number;
+  outcome: CueOutcome;
+  /** For 'stole', the clip whose voice was taken; for 'busy'/'family', the clip that kept it. */
+  against: SoundId | null;
+  /** Whether a haptic went out with it (false when haptics are off or the event has none). */
+  haptic: HapticShape | null;
+}
+
+export interface FeelStats {
+  frames: number;
+  cues: number;
+  played: number;
+  dropped: number;
+  stolen: number;
+  bedPushes: number;
+  /** Seconds between the frame arriving and `SoundPort.play()` being called, worst case so far. */
+  worstDispatchMs: number;
+  lastDispatchMs: number;
+}
+
+export interface FeelOptions {
+  /** Monotonic seconds. Injected so tests and the bench can drive time by hand. */
+  now?: () => number;
+  /** Simultaneous one-shot voices. Two, because three clips at once is mud. */
+  maxVoices?: number;
+  /** Keep a decision log for the lab. */
+  log?: boolean;
+}
+
+const ACTIVE_PHASES: ReadonlySet<DriftPhase> = new Set<DriftPhase>(['entry', 'drifting', 'transition']);
+
+/** Bed envelope, deliberately the same two constants the drive display uses for the ember glow. */
+const BED_ATTACK_TAU = 0.09;
+const BED_RELEASE_TAU = 0.24;
+/** |β| in degrees at which the bed opens and at which it is fully open — the HUD's glow curve. */
+const BED_FLOOR_DEG = 6;
+const BED_SPAN_DEG = 44;
+/** |β| band across which the cross-fade travels from the dark layer to the bright one. */
+const BED_MIX_FLOOR_DEG = 10;
+const BED_MIX_SPAN_DEG = 38;
+/** Overall bed level. The layers are rendered at −26 dBFS RMS; this is the runtime trim. */
+const BED_LEVEL = 0.85;
+/** How far the bed ducks under a loud cue (−5 dB) and above which priority it does so. */
+const BED_DUCK = 0.56;
+const BED_DUCK_PRIORITY = 60;
+/** The bed is pushed to the port at most this often. */
+const BED_PUSH_INTERVAL_S = 0.05;
+const BED_EPSILON = 0.012;
+
+/**
+ * A frame stream running faster than this multiple of real time is a SCRUB, not a drive, and the
+ * feel layer stays silent through it while still tracking the run's state.
+ *
+ * This is not a theoretical worry. `?at=<s>` warps the simulated recording by pushing minutes of
+ * frames through the pipeline in one synchronous burst before the screen is drawn — which is how
+ * every held HUD frame in the capture harness is produced — and the drive display already guards
+ * its flash, its shake and its haptic against exactly that (`useDriveRun`'s `warping`). Without
+ * this, opening `/drive?at=100` would fire a hundred seconds of drift audio into the first
+ * animation frame.
+ *
+ * Detection is exact rather than heuristic, because of how the two sources timestamp samples:
+ * the device adapter stamps every sample with `clock.now()` AT DELIVERY, so on a phone recording
+ * time and wall time advance together by construction and the ratio is always 1; and `SimPlayer`
+ * keeps the recording's own timestamps and schedules delivery by `rate`, so the ratio IS the
+ * playback rate. The settings screen offers at most 4×, so 6 leaves a clear margin under it and
+ * a vast one under a warp, which arrives at thousands of times real time.
+ */
+const MAX_PLAY_RATE = 6;
+/** Recording seconds per rate measurement. Short enough that a warp is caught almost at once. */
+const RATE_WINDOW_S = 0.2;
+
+interface Voice {
+  id: SoundId;
+  priority: number;
+  /** Monotonic seconds at which this voice frees itself. */
+  endsAt: number;
+}
+
+/** One candidate per family, resolved at the end of the frame. Preallocated: the hot path allocates nothing. */
+interface Slot {
+  id: SoundId | null;
+  priority: number;
+}
+
+const FAMILIES: readonly CueFamily[] = ['entry', 'flick', 'angle', 'accent', 'exit', 'chain', 'lap', 'lapverdict', 'run'];
+
+/**
+ * Family → index into the preallocated slot array. A `Map` would be tidier, but iterating one
+ * allocates an iterator object, and this is walked twice per frame at 100 Hz.
+ */
+const FAMILY_INDEX: Record<CueFamily, number> = { entry: 0, flick: 1, angle: 2, accent: 3, exit: 4, chain: 5, lap: 6, lapverdict: 7, run: 8 };
+
+export class DriftFeel {
+  private sound: SoundPort | null = null;
+  private haptics: HapticPort | null = null;
+  private readonly now: () => number;
+  private readonly maxVoices: number;
+  private readonly keepLog: boolean;
+
+  /** Both settings, read at the moment of play. Never read from storage in the hot path. */
+  private soundOn = true;
+  private hapticsOn = true;
+
+  private readonly voices: Voice[] = [];
+  private readonly lastPlayed = new Map<SoundId, number>();
+  private readonly slots: Slot[] = FAMILIES.map(() => ({ id: null, priority: -1 }));
+
+  /** Frame-to-frame scratch. Never reallocated. */
+  private prevPhase: DriftPhase = 'idle';
+  private believable = false;
+  private bedGain = 0;
+  private bedMix = 0;
+  private bedPushedLow = -1;
+  private bedPushedHigh = -1;
+  private lastBedPush = -Infinity;
+  private lastFrameT = NaN;
+  private lastWallT = NaN;
+  /** Recording seconds per wall second, measured over `RATE_WINDOW_S`. 1 on a phone, always. */
+  private playRate = 1;
+  private winRec = 0;
+  private winWall = 0;
+  private scrubbing = false;
+
+  readonly stats: FeelStats = { frames: 0, cues: 0, played: 0, dropped: 0, stolen: 0, bedPushes: 0, worstDispatchMs: 0, lastDispatchMs: 0 };
+  readonly decisions: CueDecision[] = [];
+
+  constructor(opts: FeelOptions = {}) {
+    this.now = opts.now ?? monotonicNow;
+    this.maxVoices = opts.maxVoices ?? 2;
+    this.keepLog = opts.log ?? true;
+  }
+
+  // ── wiring ────────────────────────────────────────────────────────────────────────────────
+  attach(sound: SoundPort | null, haptics: HapticPort | null): void {
+    this.sound = sound;
+    this.haptics = haptics;
+  }
+
+  /** Called from the settings subscription — never from the hot path. */
+  setSettings(sound: boolean, haptics: boolean): void {
+    this.soundOn = sound;
+    this.hapticsOn = haptics;
+    if (!sound) this.closeBed();
+  }
+
+  get enabled(): { sound: boolean; haptics: boolean } {
+    return { sound: this.soundOn, haptics: this.hapticsOn };
+  }
+
+  /** Forget the run: phase edges, the gate, the bed. Voices are left to expire on their own. */
+  reset(): void {
+    this.prevPhase = 'idle';
+    this.believable = false;
+    this.lastFrameT = NaN;
+    this.lastWallT = NaN;
+    this.playRate = 1;
+    this.winRec = 0;
+    this.winWall = 0;
+    this.scrubbing = false;
+    this.lastPlayed.clear();
+    this.closeBed();
+  }
+
+  /** Close the bed and release every voice. Called when the screen goes away. */
+  release(): void {
+    this.reset();
+    this.voices.length = 0;
+  }
+
+  // ── the 100 Hz path ───────────────────────────────────────────────────────────────────────
+  /**
+   * One live frame. Allocation-free on every frame, including the ones that fire a cue: the
+   * per-family candidate slots and the voice list are preallocated and reused.
+   */
+  frame(f: LiveFrame): void {
+    this.stats.frames++;
+    const t = this.now();
+    const ft = f.t;
+    const dt = Number.isFinite(this.lastFrameT) ? Math.min(0.1, Math.max(0, ft - this.lastFrameT)) : 0.01;
+    this.lastFrameT = ft;
+
+    // Playback rate, measured rather than declared: see MAX_PLAY_RATE.
+    const wallDt = Number.isFinite(this.lastWallT) ? Math.max(0, t - this.lastWallT) : dt;
+    this.lastWallT = t;
+    this.winRec += dt;
+    this.winWall += wallDt;
+    if (this.winRec >= RATE_WINDOW_S) {
+      this.playRate = this.winRec / Math.max(1e-9, this.winWall);
+      this.winRec = 0;
+      this.winWall = 0;
+      this.scrubbing = this.playRate > MAX_PLAY_RATE;
+    }
+
+    this.believable = f.integrity.believable;
+
+    const phase = f.phase;
+    const active = ACTIVE_PHASES.has(phase);
+    const wasActive = ACTIVE_PHASES.has(this.prevPhase);
+    const flick = phase === 'transition' && this.prevPhase !== 'transition';
+
+    // A scrub still moves every piece of state — the phase edges, the gate latch, the bed
+    // envelope — so that the instant the stream returns to real time the feel layer is already
+    // where the run is. It simply does not speak on the way there.
+    if (!this.scrubbing) {
+      // Candidates. Cleared in place; `clearSlots` touches nine preallocated objects.
+      this.clearSlots();
+
+      // The flick takes the phase edge, 410 ms ahead of the callout that names it.
+      if (flick) this.offer('transition', t);
+      // The entry chirp takes the phase edge too. It is offered even on a flick frame and then
+      // dropped by the flick rule in `flushSlots`, rather than never offered, so the decision is
+      // recorded and the lab can show the rule firing instead of an absence.
+      if (active && !wasActive) this.offer('initiation', t);
+
+      const callouts = f.score.callouts;
+      for (let i = 0; i < callouts.length; i++) {
+        const id = CALLOUT_SOUND[callouts[i].kind];
+        if (id !== null) this.offer(id, t);
+      }
+
+      // Both are offered even though they arrive on the same frame: the family rule is what
+      // decides, and it logs the loser, so "the spin outranks the chain it lost" is visible
+      // rather than hidden in an `else`.
+      if (f.completed !== null && f.completed.spin) this.offer('spin', t);
+      if (f.score.lost) this.offer('lost', t);
+      if (f.score.banked) this.offer('banked', t);
+      if (f.lap.completed !== null) this.offer('lap', t);
+
+      this.flushSlots(t, flick);
+    }
+
+    // ── the continuous layer ────────────────────────────────────────────────────────────────
+    const absDeg = Math.abs(radToDeg(f.state.beta));
+    // The same condition the drive display's ember glow uses, from the same field: a slide the
+    // engine does not believe gets no bloom, so it gets no bed either.
+    const open = active && f.integrity.believable;
+    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) : 0;
+    const tau = target > this.bedGain ? BED_ATTACK_TAU : BED_RELEASE_TAU;
+    this.bedGain += (target - this.bedGain) * (1 - Math.exp(-dt / tau));
+    const mixTarget = clamp01((absDeg - BED_MIX_FLOOR_DEG) / BED_MIX_SPAN_DEG);
+    this.bedMix += (mixTarget - this.bedMix) * (1 - Math.exp(-dt / 0.12));
+    this.pushBed(t);
+
+    this.prevPhase = phase;
+  }
+
+  // ── cues ──────────────────────────────────────────────────────────────────────────────────
+  /**
+   * Fire a cue outside the frame stream: the STOP control, the grade reveal, the `/sound` lab.
+   * Same gate, same priority, same voices.
+   */
+  cue(id: SoundId): CueOutcome {
+    const t = this.now();
+    const spec = specFor(id);
+    if (!spec) return this.record(id, t, 'unknown', null, null);
+    // No belief gate here. The gate exists to stop the FRAME STREAM from narrating a run the
+    // engine does not stand behind; a cue that came from a control the driver pressed, from the
+    // results screen, or from the `/sound` lab did not come from the frame stream and has
+    // nothing to be sceptical about.
+    return this.dispatch(spec, t, false);
+  }
+
+  /**
+   * Offer a candidate for its family; the highest-priority offer in a frame is the one that
+   * survives. The loser is logged as 'family' rather than dropped in silence, so the `/sound`
+   * lab and the tests can see the rule fire — CHAIN LOST losing to SPIN is the case that matters.
+   */
+  private offer(id: SoundId, t: number): void {
+    const spec = specFor(id);
+    if (!spec) return;
+    const slot = this.slots[FAMILY_INDEX[spec.family]];
+    if (spec.priority > slot.priority) {
+      if (slot.id !== null) this.record(slot.id, t, 'family', id, null);
+      slot.id = id;
+      slot.priority = spec.priority;
+    } else {
+      this.record(id, t, 'family', slot.id, null);
+    }
+  }
+
+  private clearSlots(): void {
+    for (let i = 0; i < this.slots.length; i++) {
+      this.slots[i].id = null;
+      this.slots[i].priority = -1;
+    }
+  }
+
+  /** Dispatch the surviving candidate of every family, highest priority first. */
+  private flushSlots(t: number, flick: boolean): void {
+    // The flick rule, applied here rather than at the offer site so the lab can show it firing.
+    if (flick) {
+      const entry = this.slots[FAMILY_INDEX.entry];
+      if (entry.id !== null) {
+        this.record(entry.id, t, 'flick', 'transition', null);
+        entry.id = null;
+        entry.priority = -1;
+      }
+    }
+    // Highest priority first, so a spin never loses its voice to a lap ping that shared the frame.
+    for (;;) {
+      let best: Slot | null = null;
+      for (let i = 0; i < this.slots.length; i++) {
+        const slot = this.slots[i];
+        if (slot.id !== null && (best === null || slot.priority > best.priority)) best = slot;
+      }
+      if (best === null || best.id === null) return;
+      const spec = specFor(best.id);
+      best.id = null;
+      best.priority = -1;
+      if (spec) this.dispatch(spec, t, true);
+    }
+  }
+
+  /**
+   * The gate, the debounce, the voice. This is the moment of play, and the settings are read
+   * HERE — one boolean field, so flipping the switch is instant and costs nothing.
+   */
+  private dispatch(spec: SoundSpec, t: number, fromFrame: boolean): CueOutcome {
+    this.stats.cues++;
+
+    if (fromFrame && spec.gated && !this.believable) return this.record(spec.id, t, 'gated', null, null);
+
+    const last = this.lastPlayed.get(spec.id);
+    if (last !== undefined && t - last < spec.minGapS) return this.record(spec.id, t, 'debounce', null, null);
+
+    // The haptic has its own setting and its own budget: it fires even with sound off, and it
+    // is NOT subject to voice stealing, because a phone can only make one buzz at a time anyway
+    // and the OS queues them. It does follow the priority decision, so a stolen cue stays silent
+    // in both channels.
+    const outcome = this.playSound(spec, t);
+    const felt = outcome === 'played' || outcome === 'stole' || outcome === 'silent' || outcome === 'muted' ? this.fireHaptic(spec) : null;
+
+    if (outcome === 'played' || outcome === 'stole' || outcome === 'silent') {
+      this.lastPlayed.set(spec.id, t);
+      this.voices.push({ id: spec.id, priority: spec.priority, endsAt: t + voiceLifetimeS(spec.id) });
+      this.stats.played++;
+    } else if (outcome === 'muted') {
+      // Sound is off, but the haptic went out, so the event still has to debounce — otherwise a
+      // chattering detector machine-guns the phone for a driver who only turned the sound off.
+      this.lastPlayed.set(spec.id, t);
+    } else {
+      this.stats.dropped++;
+    }
+    return this.record(spec.id, t, outcome, this.lastAgainst, felt);
+  }
+
+  private lastAgainst: SoundId | null = null;
+
+  private playSound(spec: SoundSpec, t: number): CueOutcome {
+    this.lastAgainst = null;
+    if (!this.soundOn) return 'muted';
+
+    this.expireVoices(t);
+    if (this.voices.length >= this.maxVoices) {
+      let weakest: Voice | null = null;
+      for (const v of this.voices) if (weakest === null || v.priority < weakest.priority) weakest = v;
+      // Strictly lower: a tie means the voice already speaking keeps the floor, which is what
+      // stops two equally important cues from chopping each other in half.
+      if (weakest === null || weakest.priority >= spec.priority) {
+        this.lastAgainst = weakest ? weakest.id : null;
+        return 'busy';
+      }
+      this.lastAgainst = weakest.id;
+      this.sound?.stop(weakest.id);
+      this.voices.splice(this.voices.indexOf(weakest), 1);
+      this.stats.stolen++;
+      const startedAfterSteal = this.sound ? this.sound.play(spec.id) : false;
+      return startedAfterSteal ? 'stole' : 'silent';
+    }
+
+    const started = this.sound ? this.sound.play(spec.id) : false;
+    return started ? 'played' : 'silent';
+  }
+
+  private fireHaptic(spec: SoundSpec): HapticShape | null {
+    if (!this.hapticsOn || spec.haptic === null) return null;
+    const port = this.haptics;
+    if (!port) return spec.haptic;
+    emit(port, spec.haptic);
+    if (spec.hapticThen) {
+      const then = spec.hapticThen;
+      // The only timer in the module, and it is off the hot path: the grade reveal's second beat.
+      setTimeout(() => {
+        if (this.hapticsOn) emit(port, then.shape);
+      }, then.delayS * 1000);
+    }
+    return spec.haptic;
+  }
+
+  private expireVoices(t: number): void {
+    for (let i = this.voices.length - 1; i >= 0; i--) if (this.voices[i].endsAt <= t) this.voices.splice(i, 1);
+  }
+
+  /** Whether the engine currently stands behind the reading. Set from every frame. */
+  get believes(): boolean {
+    return this.believable;
+  }
+
+  /** Measured playback rate and whether the stream is being scrubbed rather than driven. */
+  get playback(): { rate: number; scrubbing: boolean } {
+    return { rate: this.playRate, scrubbing: this.scrubbing };
+  }
+
+  /** Voices still sounding, for the lab. */
+  activeVoices(): readonly SoundId[] {
+    this.expireVoices(this.now());
+    return this.voices.map((v) => v.id);
+  }
+
+  // ── the bed ───────────────────────────────────────────────────────────────────────────────
+  private pushBed(t: number): void {
+    const closing = this.bedGain < 0.005;
+    // The throttle is skipped while scrubbing: a warp delivers a hundred seconds of frames in
+    // no wall time at all, and a throttled bed would be left holding whatever gain the first
+    // frame of the burst happened to produce rather than the one the run actually ends on.
+    if (!closing && !this.scrubbing && t - this.lastBedPush < BED_PUSH_INTERVAL_S) return;
+
+    let g = closing ? 0 : this.bedGain * BED_LEVEL;
+    if (g > 0 && !this.soundOn) g = 0;
+    if (g > 0) {
+      this.expireVoices(t);
+      for (const v of this.voices) {
+        if (v.priority >= BED_DUCK_PRIORITY) {
+          g *= BED_DUCK;
+          break;
+        }
+      }
+    }
+    // Equal-power cross-fade: a linear pair dips 3 dB in the middle, which reads as the bed
+    // losing its nerve exactly where the angle is most interesting.
+    const x = this.bedMix;
+    const low = g * Math.cos((x * Math.PI) / 2);
+    const high = g * Math.sin((x * Math.PI) / 2);
+    // The epsilon is skipped on the way to zero. Otherwise the last step — from a gain just
+    // under the epsilon down to silence — is never pushed, the port never hears `(0, 0)`, and
+    // the two loops run at a whisper for the rest of the drive. That is a drone.
+    const closed = low === 0 && high === 0;
+    if (!closed && Math.abs(low - this.bedPushedLow) < BED_EPSILON && Math.abs(high - this.bedPushedHigh) < BED_EPSILON) return;
+    if (closed && this.bedPushedLow === 0 && this.bedPushedHigh === 0) return;
+    this.bedPushedLow = low;
+    this.bedPushedHigh = high;
+    this.lastBedPush = t;
+    this.stats.bedPushes++;
+    this.sound?.setBed(low, high);
+  }
+
+  private closeBed(): void {
+    this.bedGain = 0;
+    this.bedMix = 0;
+    if (this.bedPushedLow !== 0 || this.bedPushedHigh !== 0) {
+      this.bedPushedLow = 0;
+      this.bedPushedHigh = 0;
+      this.sound?.setBed(0, 0);
+    }
+  }
+
+  /**
+   * Drive the bed directly, for the `/sound` lab's angle sweep. Takes |β| in degrees and the
+   * elapsed time since the last call, and goes through exactly the same envelope and cross-fade
+   * the run uses — the lab demonstrates the real thing, not a re-implementation of it.
+   */
+  bedFromAngle(absDeg: number, dt: number, open = true): { low: number; high: number; gain: number } {
+    const t = this.now();
+    const target = open ? clamp01((absDeg - BED_FLOOR_DEG) / BED_SPAN_DEG) : 0;
+    const tau = target > this.bedGain ? BED_ATTACK_TAU : BED_RELEASE_TAU;
+    this.bedGain += (target - this.bedGain) * (1 - Math.exp(-Math.max(0, dt) / tau));
+    const mixTarget = clamp01((absDeg - BED_MIX_FLOOR_DEG) / BED_MIX_SPAN_DEG);
+    this.bedMix += (mixTarget - this.bedMix) * (1 - Math.exp(-Math.max(0, dt) / 0.12));
+    this.pushBed(t);
+    return { low: this.bedPushedLow, high: this.bedPushedHigh, gain: this.bedGain };
+  }
+
+  /** The bed's current gains, for the lab's meters. */
+  bedState(): { low: number; high: number; gain: number; mix: number } {
+    return { low: Math.max(0, this.bedPushedLow), high: Math.max(0, this.bedPushedHigh), gain: this.bedGain, mix: this.bedMix };
+  }
+
+  // ── bookkeeping ───────────────────────────────────────────────────────────────────────────
+  private record(id: SoundId, t: number, outcome: CueOutcome, against: SoundId | null, haptic: HapticShape | null): CueOutcome {
+    if (this.keepLog) {
+      this.decisions.push({ id, t, outcome, against, haptic });
+      if (this.decisions.length > 64) this.decisions.splice(0, this.decisions.length - 64);
+    }
+    return outcome;
+  }
+
+  /** Record how long a dispatch took, in ms. The bench and the lab both read these. */
+  noteDispatch(ms: number): void {
+    this.stats.lastDispatchMs = ms;
+    if (ms > this.stats.worstDispatchMs) this.stats.worstDispatchMs = ms;
+  }
+}
+
+function emit(port: HapticPort, shape: HapticShape): void {
+  if (shape === 'success' || shape === 'warning' || shape === 'error') port.notify(shape);
+  else port.impact(shape);
+}
+
+function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+export { BED_HIGH, BED_LOW };

@@ -21,6 +21,11 @@ export function MountNotice({ advice, onPress, testID }: { advice: MountAdvice; 
         <AppText variant="subheading" color={color} numberOfLines={2} style={styles.title}>
           {advice.title}
         </AppText>
+        {advice.quote ? (
+          <Small color={colors.text} numberOfLines={3} style={styles.quote}>
+            {advice.quote}
+          </Small>
+        ) : null}
         <Small color={colors.text} numberOfLines={4}>
           {advice.body}
         </Small>
@@ -37,6 +42,8 @@ const styles = StyleSheet.create({
   bar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
   text: { flex: 1, gap: space[2] },
   title: { fontSize: 18, lineHeight: 21 },
+  // The monitor's own sentence, set apart rather than glued into a template sentence.
+  quote: { borderLeftWidth: 2, borderLeftColor: alpha(colors.text, 0.35), paddingLeft: space[3] },
   action: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: space[3], paddingVertical: 5, marginTop: space[1] },
   pressed: { opacity: 0.7 },
 });

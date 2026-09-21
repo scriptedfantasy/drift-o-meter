@@ -9,11 +9,14 @@ export {
   arrivalOf,
   attitudeWords,
   cautionsOf,
+  faultForError,
   headlineOf,
   IDLE_READING,
   isFlat,
   isSettled,
+  leaveOf,
   lightsOf,
+  mountIsRigid,
   mountVerdict,
   MOUNT_WARMUP_S,
   orientationOf,
@@ -26,7 +29,20 @@ export {
   SHARP_QUALITY,
   TRUST_QUALITY,
 } from './model';
-export type { Arrival, CalibrationFault, CalibrationFaultKind, CalibrationPhase, CalibrationReading, Caution, Headline, Light, QualityBand, Step } from './model';
+export type {
+  Arrival,
+  CalibrationFault,
+  CalibrationFaultKind,
+  CalibrationPhase,
+  CalibrationReading,
+  Caution,
+  FaultDestination,
+  Headline,
+  Leave,
+  Light,
+  QualityBand,
+  Step,
+} from './model';
 export { parseCalibrateParams, DEFAULT_CALIBRATE_PARAMS } from './params';
 export type { CalibrateParams, CalibrateReason } from './params';
 export { useCalibration } from './useCalibration';

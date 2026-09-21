@@ -138,7 +138,7 @@ phone is sitting:
 | `hold=1` | stop there. The frame is then deterministic: same URL, same pixels |
 | `mount=portrait-vent\|landscape-dash\|flat-console` | REGENERATE the recording with the phone sitting that way. Not a presentational override — the simulator really puts the phone on the console, and the screen reads it back out of the gravity vector like any other mount |
 | `why=rejected\|loose\|unresolved\|suspect` | why the driver was sent here. The garage sets it when the last run left evidence, and the screen leads with that instead of a generic invitation |
-| `fault=permission\|unsupported\|services\|failed` | show one of the four faults instead of starting the sensors. Presentation only, exactly like the drive display's `?integrity=`: these four states are the reason the screen exists and are otherwise unreachable without breaking a phone |
+| `fault=permission\|location\|unsupported\|services\|failed` | show one of the four faults instead of starting the sensors. Presentation only, exactly like the drive display's `?integrity=`: these four states are the reason the screen exists and are otherwise unreachable without breaking a phone |
 
 The usual `sim=` / `rate=` / `seed=` / `laps=` / `looseness=` / `dropouts=` still pick the
 recording, which is how the loose-mount state is photographed from a genuinely hand-held drive
@@ -152,8 +152,16 @@ On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below 
 | --- | --- |
 | 0.5 s | gravity seen, up-axis quality 0.50, nothing resolved |
 | 1.5 s | the vertical has settled (up-axis 0.90) |
+| 4 s | the mount cues have filled two windows, so the mount verdict starts to mean something |
 | 5.31 s | the forward axis resolves — `forwardBlockS` is 4 s, then one hard pull is enough |
-| 12 s+ | confidence plateaus at **0.74** |
+| 6.3 s | confidence PEAKS, at 0.740 on this seed, and drifts down from there |
+| 12 s+ | 0.71, easing towards 0.698 by the end of the run |
+
+That peak-then-settle is not a property of seed 1: over the 48-run grid the final confidence is
+below the peak in **48 of 48** (median −0.017, worst −0.114 on harbor / flat-console / seed 5,
+0.618 → 0.504), with the peak between 5.1 s and 8.0 s. Run
+`npx tsx tools/analysis/calibration-sweep.ts trajectory`. This is why the screen's READY footer
+says the number is as sharp as it gets rather than promising it keeps sharpening.
 
 | route | moment |
 | --- | --- |
@@ -164,7 +172,10 @@ On `sim=harbor&seed=1` the real calibrator does this, and the `at` values below 
 | `calibrate-loose` | a real hand-held recording (`looseness=1&dropouts=1`): the monitor's own words |
 | `calibrate-flat` | the phone lying flat on the console, detected from gravity |
 | `calibrate-rejected` | arrived because a run was thrown out — the normal way into this screen |
+| `calibrate-shaking` | `mount === 'suspect'`: everything resolved, 34 % confidence, and the screen says MOUNT SHAKING rather than "Ready to measure" |
+| `calibrate-early` | 2 s into a hand-held recording — inside the 4 s mount warm-up, so no step is ticked and no mount verdict is claimed |
 | `calibrate-fault-permission` | motion access denied |
+| `calibrate-fault-location` | location access denied — a different switch from the one above, so a different fault |
 | `calibrate-fault-unsupported` | no gyroscope on this device |
 | `calibrate-fault-services` | location services off |
 | `calibrate-fault-failed` | the motion stream would not open |
@@ -176,13 +187,33 @@ and passes `?why=`, which is what `garage-flagged` and `calibrate-rejected` phot
 
 **Why the screen's bar is not `docs/DESIGN.md`'s 0.8.** The calibrator's confidence is
 `upQuality × (0.4 + 0.6·min(lineQuality, signQuality))`, and `upQuality` is capped by the
-accelerometer fit — which road vibration limits. On the simulator's default vibration (`1`, "a
-typical dash mount on a track") the ceiling across seeds and mounts is **0.74**; only at
-`vibration: 0` does it reach 0.801. A DONE gate at 0.8 would therefore almost never light up in
-a car. The screen instead uses the bar the ENGINE uses before it will believe a slide —
+accelerometer fit — which road vibration limits.
+
+This paragraph used to say "the ceiling across seeds and mounts is **0.74**; only at
+`vibration: 0` does it reach 0.801", and that was wrong, from one seed. `docs/DESIGN.md` carries
+a correction block about exactly this claim and it did not reach here or
+`src/ui/calibrate/model.ts`. Re-derived over 2 tracks × 3 mounts × 8 seeds with
+`npx tsx tools/analysis/calibration-sweep.ts ceiling`, at the simulator's **default** vibration:
+
+| | peak confidence |
+| --- | --- |
+| range | 0.618 – 0.864 |
+| median | 0.750 |
+| ≥ 0.75 | 24 / 48 |
+| ≥ 0.80 | 9 / 48 |
+
+and across vibration 0/1/2/3 (192 runs, `… calibration-sweep.ts vibration`) the peak reaches
+0.75 in 86 of them and 0.869 at best. There is no ceiling at 0.74 or anywhere else; there is a
+spread that moves with the seed, and seed 1 — the harness default — happens to sit near its
+bottom. A gate at 0.8 would still be wrong, but because it lights on 9 runs in 48, not because
+it is unreachable.
+
+So the screen uses the bar the ENGINE uses before it will believe a slide —
 `IntegrityMonitor`'s `calibrationOk`: `quality >= minCalibrationQuality` (0.3) with the forward
 axis resolved — and marks 0.75 as the second, softer tick, because that is where the results
-screen stops qualifying a score for its mount. Both ticks are drawn on the dial.
+screen stops qualifying a score for its mount. Both ticks are drawn on the dial. `qualityBand`
+reads `calibrationOk` itself rather than comparing against 0.3 again, so the band and the
+headline cannot disagree about the same reading.
 
 **Nothing is claimed before there is evidence.** `IntegrityMonitor` starts life with
 `calibrationOk` true, because a monitor that has seen nothing must not veto a run. That is the

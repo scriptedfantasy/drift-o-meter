@@ -12,7 +12,7 @@
  *    ("CHAIN LOST −N"), resets the multiplier to 1 and ends the drift.
  */
 import type { DriftEvent, DriftPhase, Lap, SlipState, StyleCallout } from '../types';
-import { DriftAccumulator } from './accumulator';
+import { countsForPoints, DriftAccumulator } from './accumulator';
 import { buildDriftScore, scoreDrift, type ScoredDrift } from './drift';
 import { calloutLabel, resolveOptions, type ScoreOptions } from './rules';
 
@@ -53,6 +53,16 @@ export interface LiveTick {
   driftId: number | null;
   /** Drifts in the current chain. */
   chainDrifts: number;
+  /**
+   * THE GATE THIS TICK RAN UNDER (`countsForPoints`): true when an instant of drifting would
+   * earn something right now, false while the integrity monitor does not believe the slide or
+   * the estimator's state is invalid. It is not an inference about the scorer — it is the flag
+   * the scorer itself used, so `counting === false` guarantees this tick paid nothing.
+   *
+   * It is false on a perfectly healthy run whenever nothing is being paid for anyway (parked,
+   * crawling, between slides): "not counting" means "would not pay", not "something is wrong".
+   */
+  counting: boolean;
 }
 
 interface CompletedDrift {
@@ -164,6 +174,7 @@ export class LiveScorer {
       rate: 0,
       driftId: null,
       chainDrifts: 0,
+      counting: countsForPoints(s, plausible),
     };
     this.remember(s);
     if (this.pending) {
@@ -234,6 +245,12 @@ export class LiveScorer {
    * Optional: tell the scorer a lap closed (from the track model) so CLEAN LAP can fire
    * live: ≥ cleanLapMinDrifts drifts ENDED inside the lap and none spun. Points bank
    * immediately (a clean lap cannot be lost). Returns the callout or null.
+   *
+   * THE ONE PAYING PATH THAT IS NOT PER-SAMPLE, so it carries its own form of the same gate: a
+   * lap whose slides earned nothing earns nothing for being tidy either. Without it a hand-held
+   * run — every frame of which says `counting: false` — still banked 300 × the multiplier every
+   * time it came past the start line. `scoreSession` applies the identical test offline, so the
+   * live total and the re-scored one stay equal.
    */
   onLapCompleted(lap: Lap): StyleCallout | null {
     const o = this.o;
@@ -241,6 +258,7 @@ export class LiveScorer {
     if (inLap.length < o.cleanLapMinDrifts || inLap.some((d) => d.spun)) return null;
     const last = inLap[inLap.length - 1];
     const sd = this.completed.get(last.id);
+    if (!sd || !(sd.total > 0)) return null;
     // the same multiplier rule as every other callout, and the same one `scoreSession` applies
     // offline (the lap's last drift's end multiplier), so live and replay agree to the point
     const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, sd ? sd.multiplierEnd : 1) : 1);

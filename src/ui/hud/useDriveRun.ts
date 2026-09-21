@@ -87,6 +87,12 @@ export interface HudSnapshot {
   peakDeg: number;
   /** Seconds the drift in progress has been running (0 when idle). */
   driftDurationS: number;
+  /**
+   * Biggest |β| of the RUN so far, in degrees. A running max of the same value the gauge shows,
+   * kept here so the middle of the screen has something true to say between slides instead of
+   * going empty (measured: 0.71 % of that band was lit on a captured idle frame).
+   */
+  runPeakDeg: number;
   elapsedS: number;
   lapCount: number;
   lapProgress: number;
@@ -100,10 +106,13 @@ export interface HudSnapshot {
   /** 0..1: how much of the reading the engine stands behind (see `HudSignals.trust`). */
   trust: number;
   /**
-   * The SCORER's own statement that points are accruing on this frame (`LiveFrame.score.counting`).
-   * Never inferred from `integrity`: through a GPS dropout the engine dead-reckons β and keeps
-   * paying, and a HUD that guessed from `gps: 'none'` told the driver their points had stopped
-   * while the results screen banked them.
+   * The gate the SCORER ran under on this frame (`LiveFrame.score.counting`): false means it
+   * paid nothing, guaranteed, not inferred. Never guessed from `integrity` — through a GPS
+   * dropout the engine dead-reckons β and keeps paying, and a HUD that guessed from
+   * `gps: 'none'` told the driver their points had stopped while the results screen banked them.
+   *
+   * Not the same question as `trust`: a car waiting at a red light is not counting and is
+   * perfectly believable. `integrity.believable` is the one the grey-out reads.
    */
   counting: boolean;
   /** Trail points committed so far (bumps the mini-map's memo). */
@@ -143,6 +152,8 @@ export interface DriveRun {
   params: HudParams;
   /** Retry after a failed start or a failed save. */
   retry(): void;
+  /** Throw the run away and start a new one without leaving the display. */
+  restart(): void;
   /** Leave without saving (used by the save-failed verdict and the discarded-run notice). */
   leave(): void;
   stop(): void;
@@ -150,7 +161,7 @@ export interface DriveRun {
 
 const IDLE_SNAPSHOT: HudSnapshot = {
   phase: 'idle',
-  integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS' },
+  integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS', believable: false },
   speedKmh: 0,
   totalPoints: 0,
   multiplier: 1,
@@ -159,6 +170,7 @@ const IDLE_SNAPSHOT: HudSnapshot = {
   transitions: 0,
   peakDeg: 0,
   driftDurationS: 0,
+  runPeakDeg: 0,
   elapsedS: 0,
   lapCount: 0,
   lapProgress: NaN,
@@ -233,7 +245,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     t0: NaN,
     tLast: NaN,
     prevPhase: 'idle' as DriftPhase,
-    prevChain: 0,
     intensity: 0,
     lastTrailT: -Infinity,
     eventKey: 1,
@@ -241,6 +252,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     warping: false,
     maxSpeed: 0,
     peakDeg: 0,
+    runPeakDeg: 0,
     driftId: -1,
     gpsEverGood: false,
     trust: 0,
@@ -273,16 +285,16 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       const abs = Math.abs(betaDeg);
       const active = ACTIVE_PHASES.has(f.phase);
 
-      // Trust: what the engine is willing to stand behind. A loose mount, impossible physics or
-      // no fix means the scorer is not paying for this slide, so the gauge must not celebrate it.
+      // Trust: what the engine is willing to stand behind. THE ENGINE'S OWN VERDICT — the HUD
+      // used to re-derive it (`mount === 'loose' || physics === 'implausible' || !valid`) and so
+      // kept a second copy that disagreed with `score.counting` by construction; two verdicts
+      // for one question is how a scorer paying for slides it did not believe stayed hidden.
+      // 0.65 is not a second opinion but a degree: the engine believes the reading and says the
+      // input is degraded (shaking mount, weak fix, β dead-reckoned through a dropout).
       const integrity = params.integrity ?? f.integrity;
       if (integrity.gps === 'good') h.gpsEverGood = true;
-      // 0 when the engine has nothing to stand behind (loose mount, impossible physics, or the
-      // estimator itself dropping `valid`), 0.65 when it is working from a degraded input — a
-      // shaking mount, a weak fix, or β dead-reckoned through a dropout — and 1 otherwise.
-      const broken = integrity.mount === 'loose' || integrity.physics === 'implausible' || !f.state.valid;
       const degraded = integrity.mount === 'suspect' || integrity.gps === 'poor' || integrity.gps === 'none';
-      h.trust = broken ? 0 : degraded ? 0.65 : 1;
+      h.trust = !integrity.believable ? 0 : degraded ? 0.65 : 1;
 
       // Running peak of the drift in progress (the detector publishes its own only after entry).
       if (f.live) {
@@ -291,6 +303,9 @@ export function useDriveRun(signals: HudSignals): DriveRun {
           h.peakDeg = 0;
         }
         if (abs > h.peakDeg) h.peakDeg = abs;
+        // the run's own best, and only from a slide the engine believes: a hand-held phone
+        // must not leave a 68° trophy on the screen
+        if (abs > h.runPeakDeg && integrity.believable) h.runPeakDeg = abs;
       } else {
         h.driftId = -1;
         h.peakDeg = 0;
@@ -372,9 +387,13 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         const next = f.score.callouts.map((c) => ({ key: h.eventKey++, label: c.label, points: c.points, tone: toneFor(c.kind), t: f.t }));
         pushEvents(next, f.t);
       }
-      if (f.score.banked) setBanner({ key: h.eventKey++, kind: 'banked', points: Math.round(h.prevChain), t: f.t });
-      else if (f.score.lost) setBanner({ key: h.eventKey++, kind: 'lost', points: Math.round(h.prevChain), t: f.t });
-      h.prevChain = f.score.chainPoints;
+      // The ENGINE's own figures (`LiveTick.bankedPoints` / `lostPoints`), not the previous
+      // frame's chain total re-read a frame late: the two agree only because a bank can fire
+      // only on an idle frame, which is a property of today's chain rules, not a guarantee.
+      // A banner for nothing is not shown at all — a run the scorer never paid for has no
+      // points to bank and none to lose, and "CHAIN LOST −965" over a score of 0 is a lie.
+      if (f.score.banked && f.score.bankedPoints >= 1) setBanner({ key: h.eventKey++, kind: 'banked', points: Math.round(f.score.bankedPoints), t: f.t });
+      else if (f.score.lost && f.score.lostPoints >= 1) setBanner({ key: h.eventKey++, kind: 'lost', points: Math.round(f.score.lostPoints), t: f.t });
 
       // ── mini-map trail ─────────────────────────────────────────────────────────────
       if (f.state.valid && f.t - h.lastTrailT >= TRAIL_INTERVAL_S) {
@@ -474,7 +493,6 @@ export function useDriveRun(signals: HudSignals): DriveRun {
           t0: NaN,
           tLast: NaN,
           prevPhase: 'idle',
-          prevChain: 0,
           intensity: 0,
           lastTrailT: -Infinity,
           eventKey: hot.current.eventKey,
@@ -482,6 +500,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
           warping: false,
           maxSpeed: 0,
           peakDeg: 0,
+          runPeakDeg: 0,
           driftId: -1,
           gpsEverGood: false,
           trust: 0,
@@ -542,6 +561,19 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     start();
   }, [finishAndSave, start]);
 
+  /**
+   * Start a fresh run on this screen. DRIVE AGAIN after a discarded run is the four-step flow
+   * (docs/DESIGN.md): the driver is already on the drive display with the phone mounted, and
+   * sending them to the garage to press DRIVE is a detour out of step 3 and back into step 2.
+   */
+  const restart = useCallback(() => {
+    sessionRef.current = null;
+    stoppingRef.current = false;
+    startedRef.current = false;
+    setError(null);
+    start();
+  }, [start]);
+
   const leave = useCallback(() => {
     router.replace('/');
   }, [router]);
@@ -585,6 +617,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
         transitions: f.live?.transitions ?? 0,
         peakDeg: h.peakDeg,
         driftDurationS: f.live?.durationS ?? 0,
+        runPeakDeg: h.runPeakDeg,
         elapsedS: f.t - t0,
         lapCount: f.lap.count,
         lapProgress: f.lap.progress,
@@ -627,6 +660,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
     params,
     stop,
     retry,
+    restart,
     leave,
   };
 }

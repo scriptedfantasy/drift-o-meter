@@ -211,6 +211,7 @@ export default function ReplayScreen() {
         chip={player.chip}
         reduceMotion={reduceMotion}
         controlsVisible={!hidden}
+        warningsOpen={warnOpen}
         testID="replay-canvas"
       />
       <Pressable

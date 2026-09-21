@@ -7,45 +7,23 @@
  * the numbers on this screen are the numbers a run will be judged by — not a preview of them.
  *
  * There is no start button and no gesture: the calibrator finds the vertical from gravity and
- * the forward axis from the car accelerating, so the screen simply starts listening. Leaving it
- * is allowed and costs nothing — `/drive` builds its own calibrator and carries on from
- * scratch with the same recording or the same sensors.
+ * the forward axis from the car accelerating, so the screen simply starts listening. Leaving is
+ * allowed — `/drive` builds its own calibrator and carries on from scratch — but what it COSTS
+ * depends on the phase, and `leaveOf` in `model.ts` owns that sentence, measured per phase.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { IntegrityMonitor } from '../../engine/integrity';
 import { MountCalibrator } from '../../engine/mount';
 import type { GpsSample, MotionSample } from '../../engine/types';
-import {
-  currentSearch,
-  describeSensorError,
-  selectSensorSource,
-  SensorSourceError,
-  type SensorSource,
-  type SourceSelection,
-} from '../../platform';
+import { currentSearch, selectSensorSource, type SensorSource, type SourceSelection } from '../../platform';
 import { simulateRun } from '../../sim';
 import { SimPlayer } from '../hud/simPlayer';
-import { FAULTS, IDLE_READING, orientationOf, type CalibrationFault, type CalibrationReading } from './model';
+import { FAULTS, faultForError, IDLE_READING, orientationOf, type CalibrationReading } from './model';
 import { parseCalibrateParams, type CalibrateParams } from './params';
 
 /** UI refresh rate. Words, not motion — the glyph does not need 60 Hz to read as live. */
 const PUBLISH_HZ = 12;
-
-function faultFor(err: unknown): CalibrationFault {
-  const code = err instanceof SensorSourceError ? err.code : null;
-  switch (code) {
-    case 'permission-denied':
-      return FAULTS.permission;
-    case 'unsupported':
-      return FAULTS.unsupported;
-    case 'services-disabled':
-      return FAULTS.services;
-    default:
-      // the real reason, when there is one, beats the generic sentence
-      return { ...FAULTS.failed, body: describeSensorError(err) };
-  }
-}
 
 export interface Calibration {
   reading: CalibrationReading;
@@ -66,7 +44,7 @@ export function useCalibration(): Calibration {
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   useEffect(() => {
-    // `?fault=` shows one of the four faults without touching the sensors. Presentation only:
+    // `?fault=` shows one of the five faults without touching the sensors. Presentation only:
     // the states this screen exists for are otherwise unreachable outside a broken phone.
     if (params.fault) {
       setReading({ ...IDLE_READING, status: 'error', fault: FAULTS[params.fault] });
@@ -182,7 +160,7 @@ export function useCalibration(): Calibration {
       } catch (err) {
         if (!alive) return;
         console.warn('[calibrate] source failed to start', err);
-        setReading({ ...IDLE_READING, status: 'error', fault: faultFor(err), sourceKind: selection?.kind ?? null, sourceLabel: selection?.label ?? null });
+        setReading({ ...IDLE_READING, status: 'error', fault: faultForError(err), sourceKind: selection?.kind ?? null, sourceLabel: selection?.label ?? null });
       }
     })();
 

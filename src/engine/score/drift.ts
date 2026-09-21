@@ -150,7 +150,14 @@ export function scoreDrift(
   // drift is the closest a single duration can come.
   //
   // HOW CLOSE, and to WHAT — the bound on the total is not the bound on a component:
-  //   total        within 1 % on a trusted run; UNDER-states a rejected one (the safe way).
+  //   total        within 1.3 % of the live total while under ~5 s of a run was suppressed, and
+  //                8.5 % on the worst case measured (harbor seed 1, looseness 0.2: 18.6 s
+  //                suppressed across two long slides) — measured over 2 tracks × 3 seeds ×
+  //                looseness 0/0.1/0.2. It is WIDER than it used to be on purpose: the live pass
+  //                now refuses a CALLOUT that fires in an instant the monitor did not believe,
+  //                and a single duration cannot say which of a drift's callouts those were, so
+  //                the fallback pays their expected value (bonus × believed fraction) instead.
+  //                A wholly-refused run re-scores to exactly 0, not to a rounding remainder.
   //   angle,       EXACT. Both are measured off the recorded trace (held peak, jitter, plateau),
   //   consistency  which is kept for every sample whether it was believed or not, so the mask
   //                cannot move them at all.
@@ -164,7 +171,12 @@ export function scoreDrift(
   //                fired fewer time-based callouts than a re-score does. Those runs publish
   //                nothing. On a trusted run it does not move.
   if (!plausible && e.suppressedS > 0 && e.durationS > 0) {
-    const believed = clamp((e.durationS - e.suppressedS) / e.durationS, 0, 1);
+    // A drift whose believed remainder is shorter than a single sample gap was not partly
+    // believed, it was refused: `suppressedS` is rounded to the millisecond and measured BETWEEN
+    // samples, so a wholly-suppressed slide lands a few ms short of its own duration, and
+    // scaling by that remainder paid a few points for a run the engine had already refused.
+    const remainderS = e.durationS - e.suppressedS;
+    const believed = remainderS <= o.maxDtS ? 0 : clamp(remainderS / e.durationS, 0, 1);
     stats.implausibleS = Math.min(e.suppressedS, stats.durationS);
     stats.durationS = Math.max(0, stats.durationS - stats.implausibleS);
     // EVERY accumulated duration, not just the total one. `timeAtAngleS` and `durationS` are a

@@ -184,15 +184,20 @@ function text(png, str, x, y, rgb, scale = 1) {
   return cx;
 }
 
+/** dBFS -> 0..1, with -60 dBFS at the centre line and 0 dBFS at the edge. */
+function dbNorm(db) {
+  return Math.max(0, Math.min(1, 1 + db / 60));
+}
+
 function drawSheet(rows, outPath) {
   const W = 1040;
-  const ROW_H = 86;
+  const ROW_H = 88;
   const PAD = 16;
   const H = PAD * 2 + rows.length * ROW_H + 40;
   const png = new PNG({ width: W, height: H });
   rect(png, 0, 0, W, H, BG);
   text(png, 'DRIFT-O-METER SOUND BANK', PAD, PAD, [0xf2, 0xf0, 0xeb], 2);
-  text(png, `${rows.length} CLIPS  ${SAMPLE_RATE / 1000}KHZ 16BIT MONO`, PAD + 330, PAD + 4, TONE_RGB.muted, 1);
+  text(png, `${rows.length} CLIPS  ${SAMPLE_RATE / 1000}KHZ 16BIT MONO  VERTICAL SCALE DBFS: EDGE 0  DOTS -6 -20 -40  CENTRE -60`, PAD + 330, PAD + 4, TONE_RGB.muted, 1);
 
   rows.forEach((r, k) => {
     const y = PAD + 34 + k * ROW_H;
@@ -204,13 +209,23 @@ function drawSheet(rows, outPath) {
     const stats = `${r.durationS.toFixed(3)}S  PEAK ${r.peakDb.toFixed(1)}  RMS ${r.rmsDb.toFixed(1)}  CREST ${r.crestDb.toFixed(1)}  CENTROID ${Math.round(r.centroidHz)}HZ  DC ${(r.dc * 1000).toFixed(3)}E-3  CLIP ${r.clipped}`;
     text(png, stats, PAD + 12, y + 30, TONE_RGB.muted, 1);
 
-    // the waveform: min/max per column, ±1 full height
+    // The waveform, on a dBFS vertical scale: 0 dBFS at the edge, -60 dBFS on the centre line.
+    // Linear amplitude is useless on a contact sheet that spans a 25 dB ladder — a -27.9 dBFS
+    // clip is 4 % of full scale and draws as a hairline. On this scale the shape of the envelope
+    // AND the clip's place in the ladder are both readable, the way a mastering meter shows them.
     const wx = PAD + 12;
-    const wy = y + 46;
+    const wy = y + 44;
     const ww = W - PAD * 2 - 24;
-    const wh = 26;
+    const wh = 30;
     const mid = wy + wh / 2;
     rect(png, wx, Math.round(mid), ww, 1, LINE);
+    for (const g of [-6, -20, -40]) {
+      const off = Math.round((wh / 2) * dbNorm(g));
+      for (let i = 0; i < ww; i += 6) {
+        px(png, wx + i, Math.round(mid - off), LINE, 0.8);
+        px(png, wx + i, Math.round(mid + off), LINE, 0.8);
+      }
+    }
     const per = r.samples.length / ww;
     for (let c = 0; c < ww; c++) {
       const a = Math.floor(c * per);
@@ -222,8 +237,8 @@ function drawSheet(rows, outPath) {
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }
-      const top = Math.round(mid - (hi * wh) / 2);
-      const bot = Math.round(mid - (lo * wh) / 2);
+      const top = Math.round(mid - (wh / 2) * dbNorm(dB(hi)));
+      const bot = Math.round(mid + (wh / 2) * dbNorm(dB(-lo)));
       for (let j = top; j <= bot; j++) px(png, wx + c, j, tone, 0.9);
     }
   });

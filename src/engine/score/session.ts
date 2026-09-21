@@ -405,6 +405,10 @@ export function scoreSession(
       if (inLap.length >= o.cleanLapMinDrifts && !inLap.some((d) => d.spun)) {
         cleanLaps++;
         const last = inLap[inLap.length - 1];
+        // The same test `LiveScorer.onLapCompleted` applies: a lap whose slides the integrity
+        // monitor refused to believe earned nothing, and tidiness does not pay where sliding
+        // did not. (`cleanLaps` still counts the lap — it is a statement about spins.)
+        if (!(last.total > 0)) continue;
         const pts = o.calloutPoints['clean-lap'] * (o.calloutsUseMultiplier ? Math.max(1, last.stats.multiplierEnd) : 1);
         last.callouts.push({ t: lap.endT, kind: 'clean-lap', label: calloutLabel('clean-lap'), points: pts });
         last.bonus += pts;

@@ -16,7 +16,7 @@
  *     ride in `Session.meta.fixtureQuery`, which the garage reads when a row is opened.
  *
  * `saveSession` re-summarises through `summarizeSession`, so every seeded run lands in the
- * index with `trusted`, `peakAngleDeg` and `longestChainPoints` filled in.
+ * index with `trusted`, `heldPeakDeg`, `spins`, the mount verdict and the slide trace filled in.
  */
 import type { Session } from '../../engine/types';
 import { clearSessions, listSessions, saveSession } from '../../platform';
@@ -70,9 +70,16 @@ export const DEMO_SETS: Record<string, DemoRun[]> = {
 
 export const DEMO_NAMES = Object.keys(DEMO_SETS);
 
-/** Everything a stored session needs except the several megabytes of raw samples. */
+/**
+ * Everything a stored session needs except the several megabytes of raw samples.
+ *
+ * ONE state sample survives. It is the run's clock origin, and `summarizeSession` normalises
+ * the slide trace against it — so a trimmed demo run and a full recording summarise to exactly
+ * the same shape. Dropping it would have made the shipped screenshots the only ones drawn from
+ * a different origin than a real run's, which is the kind of divergence that hides bugs.
+ */
 function trim(session: Session): Session {
-  return { ...session, motion: [], gps: [], states: [], truth: undefined };
+  return { ...session, motion: [], gps: [], states: session.states.length > 0 ? [session.states[0]] : [], truth: undefined };
 }
 
 /**
@@ -162,7 +169,13 @@ export function resolveDemoRequest(value: string | undefined | null): { kind: 'c
 export async function demoSetPresent(set: string): Promise<boolean> {
   const runs = DEMO_SETS[set];
   if (!runs) return false;
-  const stored = await listSessions();
+  // A damaged index throws rather than reading as empty; re-seeding repairs it, so say no.
+  let stored;
+  try {
+    stored = await listSessions();
+  } catch {
+    return false;
+  }
   if (stored.length !== runs.length) return false;
   const ids = new Set(stored.map((e) => e.id));
   return runs.every((r) => ids.has(`fixture-${r.fixture}`));

@@ -20,7 +20,17 @@ export interface SensorSource {
   stop(): void;
 }
 
-export type SensorErrorCode = 'unsupported' | 'permission-denied' | 'unavailable' | 'services-disabled' | 'failed';
+/**
+ * Why a source would not start.
+ *
+ * The two permissions are separate codes because they send the driver to two different
+ * switches: `permission-denied` is Motion & Fitness, `location-permission-denied` is Location.
+ * One code for both meant a denied LOCATION permission surfaced on the calibration screen as
+ * "Motion access is off / Turn on Motion & Fitness" — the driver told to fix the thing that
+ * already works. `unavailable` is a device with no usable motion sensors, which is not
+ * retryable and must not be reported as one.
+ */
+export type SensorErrorCode = 'unsupported' | 'permission-denied' | 'location-permission-denied' | 'unavailable' | 'services-disabled' | 'failed';
 
 export class SensorSourceError extends Error {
   readonly code: SensorErrorCode;

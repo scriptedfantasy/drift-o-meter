@@ -33,14 +33,16 @@ export const DEFAULT_HUD_PARAMS: HudParams = { at: NaN, hold: false, autoRun: fa
 
 const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
 
+// `believable` follows the same rule the engine applies (`DriftPipeline.readIntegrity`): a loose
+// mount or impossible physics means nothing derived from the reading may be shown in colour.
 const INTEGRITY_PRESETS: Record<string, LiveFrame['integrity']> = {
   // The wording is the IntegrityMonitor's own, so the override shows what a real loose mount says.
-  loose: { mount: 'loose', physics: 'ok', gps: 'good', message: 'Phone looks hand-held — clip it into a rigid mount to score drifts' },
-  suspect: { mount: 'suspect', physics: 'ok', gps: 'good', message: 'Mount is shaking — angles may read high' },
-  'gps-poor': { mount: 'rigid', physics: 'ok', gps: 'poor', message: 'Weak GPS — drive into the open' },
-  'gps-none': { mount: 'rigid', physics: 'ok', gps: 'none', message: 'No GPS fix — scoring is paused' },
-  physics: { mount: 'rigid', physics: 'implausible', gps: 'good', message: 'Readings are not physically possible' },
-  ok: { mount: 'rigid', physics: 'ok', gps: 'good', message: 'Tracking' },
+  loose: { mount: 'loose', physics: 'ok', gps: 'good', message: 'Phone looks hand-held — clip it into a rigid mount to score drifts', believable: false },
+  suspect: { mount: 'suspect', physics: 'ok', gps: 'good', message: 'Mount is shaking — angles may read high', believable: true },
+  'gps-poor': { mount: 'rigid', physics: 'ok', gps: 'poor', message: 'Weak GPS — drive into the open', believable: true },
+  'gps-none': { mount: 'rigid', physics: 'ok', gps: 'none', message: 'No GPS fix — scoring is paused', believable: true },
+  physics: { mount: 'rigid', physics: 'implausible', gps: 'good', message: 'Readings are not physically possible', believable: false },
+  ok: { mount: 'rigid', physics: 'ok', gps: 'good', message: 'Tracking', believable: true },
 };
 
 function toParams(input: string | URLSearchParams | null | undefined): URLSearchParams {

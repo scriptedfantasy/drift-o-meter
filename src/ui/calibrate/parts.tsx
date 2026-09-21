@@ -41,7 +41,13 @@ export function Lights({ lights, compact = false, style }: { lights: readonly Li
   );
 }
 
-/** The two things a driver actually has to do, with the reason in one clause. */
+/**
+ * The two things a driver actually has to do, with the reason in one clause.
+ *
+ * A step that is neither done nor doable yet keeps its title and loses its reason: the driver
+ * cannot act on it, and those two lines were part of what pushed the call to action off the
+ * bottom of the frame on the commonest route into this screen (`?why=rejected`).
+ */
 export function Steps({ steps, compact = false, style }: { steps: readonly Step[]; compact?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.steps, style]} testID="calibrate-steps">
@@ -60,7 +66,7 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
               <AppText variant="bodyStrong" color={done ? colors.muted : colors.text} style={done ? styles.stepDone : undefined}>
                 {s.title}
               </AppText>
-              <Small numberOfLines={2}>{s.because}</Small>
+              {s.state === 'todo' ? null : <Small numberOfLines={2}>{s.because}</Small>}
               {active && s.progress > 0.02 && s.progress < 1 ? (
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${Math.round(s.progress * 100)}%` }]} />
@@ -105,7 +111,13 @@ export function Cautions({ cautions }: { cautions: readonly Caution[] }) {
   );
 }
 
-/** What the engine sees, for anyone who wants to check the app's working. */
+/**
+ * What the engine sees, for anyone who wants to check the app's working.
+ *
+ * A fixed four-up grid, not content-width cells: `STRAIGHT-LINE` was wide enough to push the
+ * eight values onto three rows, and the third row sat below the fold on the route the README
+ * calls the normal way into this screen.
+ */
 export function EngineStrip({ rows, testID }: { rows: Array<[string, string]>; testID?: string }) {
   return (
     <View style={styles.strip} testID={testID}>
@@ -124,15 +136,15 @@ export function EngineStrip({ rows, testID }: { rows: Array<[string, string]>; t
 const styles = StyleSheet.create({
   lights: { flexDirection: 'row', gap: space[2] },
   light: { flex: 1, borderWidth: 1, borderRadius: radii.md, backgroundColor: colors.bg1, paddingHorizontal: space[3], paddingVertical: space[2], gap: 2, minWidth: 0 },
-  lightCompact: { paddingVertical: space[1] },
-  lightHead: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  lightCompact: { paddingVertical: space[1], paddingHorizontal: space[2] },
+  lightHead: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 7, height: 7, borderRadius: 4 },
   lightDetail: { fontSize: 14, lineHeight: 17 },
   lightDetailCompact: { fontSize: 13, lineHeight: 16 },
 
   steps: { backgroundColor: colors.bg1, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.line, paddingHorizontal: space[4] },
-  step: { flexDirection: 'row', gap: space[3], paddingVertical: space[4] },
-  stepCompact: { paddingVertical: space[3] },
+  step: { flexDirection: 'row', gap: space[3], paddingVertical: 10 },
+  stepCompact: { paddingVertical: 4 },
   stepBorder: { borderTopWidth: 1, borderTopColor: colors.line },
   stepMark: { width: 32, alignItems: 'center' },
   stepNo: { fontStyle: 'italic', fontSize: 24, lineHeight: 26 },
@@ -141,13 +153,13 @@ const styles = StyleSheet.create({
   progressTrack: { height: 4, borderRadius: 2, backgroundColor: colors.bg2, overflow: 'hidden', marginTop: space[1] },
   progressFill: { height: '100%', backgroundColor: colors.ember, borderRadius: 2 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[3] },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, paddingHorizontal: space[3], paddingVertical: space[2] },
   bannerBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
   bannerText: { flex: 1, gap: 2 },
   bannerTitle: { fontSize: 18, lineHeight: 21 },
   cautions: { gap: space[2] },
 
-  strip: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3], borderTopWidth: 1, borderTopColor: colors.line, paddingTop: space[3] },
-  stripCell: { minWidth: 76, gap: 1 },
-  stripValue: { fontSize: 15, lineHeight: 18 },
+  strip: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space[2], columnGap: space[2], borderTopWidth: 1, borderTopColor: colors.line, paddingTop: space[2] },
+  stripCell: { width: '23%', minWidth: 0, gap: 0 },
+  stripValue: { fontSize: 14, lineHeight: 17 },
 });

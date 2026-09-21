@@ -28,10 +28,14 @@ export interface MountDialProps {
   quality: number;
   /** Where the judge's bar sits on that arc, 0..1. */
   threshold: number;
-  /** A second, softer mark: above it the results screen stops qualifying the score. */
-  sharp?: number;
+  /**
+   * A second, softer mark: above it the results screen stops qualifying the score. REQUIRED —
+   * it used to default to 0.75 here, which made this file a third copy of a threshold that
+   * three screens already disagreed about. One owner (`SHARP_QUALITY` in `model.ts`), passed in.
+   */
+  sharp: number;
   /** Arc colour, taken from the same band the words use so the two never disagree. */
-  tone?: 'ember' | 'green' | 'red' | 'cyan';
+  tone?: 'ember' | 'green' | 'red' | 'cyan' | 'gold';
   /** The vertical has settled — the horizon locks and brightens. */
   settled?: boolean;
   /** The forward axis is resolved: the dial gains its fore/aft axis. */
@@ -56,7 +60,7 @@ export default function MountDial({
   reclineDeg,
   quality,
   threshold,
-  sharp = 0.75,
+  sharp,
   tone = 'ember',
   settled = false,
   resolved = false,

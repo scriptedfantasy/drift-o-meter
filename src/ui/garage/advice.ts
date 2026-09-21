@@ -7,11 +7,16 @@
  * worse off for it, so the garage never stands there inviting them to calibrate.
  *
  * It speaks only when the LAST RUN left real evidence that something was wrong, and then it says
- * what was wrong rather than offering a chore. Where the integrity monitor already has a sentence
- * for the condition, that sentence is used verbatim.
+ * what was wrong rather than offering a chore. Where the integrity monitor already has a
+ * sentence for the condition, that sentence is `quote`d verbatim on its own line — glueing it
+ * into a template produced "100% of this run's sliding could not be trusted — Phone looks
+ * hand-held — clip it into a rigid mount to score drifts. Nothing from that drive was scored.",
+ * two em-dash clauses and a capital P mid-sentence.
+ *
+ * Everything here comes from the session INDEX. It used to need the newest run's body, which
+ * cost 5.48 MB and 25.5 ms of `JSON.parse` on mount for 70 bytes of text.
  */
 import type { SessionIndexEntry } from '../../platform';
-import type { LastRunDetail } from './lastRun';
 
 export type MountConcern = 'rejected' | 'loose' | 'unresolved' | 'suspect';
 
@@ -20,6 +25,8 @@ export interface MountAdvice {
   level: 'bad' | 'warn';
   /** A specific sentence about what happened, not a standing invitation. */
   title: string;
+  /** The integrity monitor's own words, when it has words for this. Its own line, never glued. */
+  quote: string | null;
   body: string;
   action: string;
 }
@@ -30,48 +37,49 @@ export interface MountAdvice {
  */
 const UNCALIBRATED = 0.4;
 
-export function mountAdvice(entry: SessionIndexEntry | null, detail: LastRunDetail | null): MountAdvice | null {
+export function mountAdvice(entry: SessionIndexEntry | null): MountAdvice | null {
   if (!entry) return null;
 
-  // The index alone settles this one, so the notice appears without waiting for a body read.
   if (!entry.trusted) {
     return {
       concern: 'rejected',
       level: 'bad',
       title: 'Your last run was thrown out',
-      // the monitor's own words for the condition, never new copy for the same thing
-      body: `${detail?.message || 'Too much of the run could not be believed'}. Nothing from that drive was scored.`,
+      quote: entry.integrityMessage || null,
+      body: 'Nothing from that drive was scored. It is still here as a recording you can watch.',
       action: 'Check the mount',
     };
   }
 
-  if (!detail) return null;
-
-  if (detail.mount === 'loose') {
+  if (entry.mount === 'loose') {
     return {
       concern: 'loose',
       level: 'bad',
       title: 'The phone was moving in its mount',
+      quote: null,
       body: 'It was scored, but movement in the cradle reads as slip the car never made, so last run’s angles are worth less than they look.',
       action: 'Check the mount',
     };
   }
 
-  if (detail.calibrationQuality < UNCALIBRATED) {
+  // Negative means the entry predates the field: unknown, so nothing is claimed about it.
+  if (entry.calibrationQuality >= 0 && entry.calibrationQuality < UNCALIBRATED) {
     return {
       concern: 'unresolved',
       level: 'warn',
       title: 'Last run never worked out which way the car points',
-      body: `Calibration settled at ${Math.round(detail.calibrationQuality * 100)}%. Without that, a slide and a lane change look alike — one hard pull in a straight line fixes it.`,
+      quote: null,
+      body: `Calibration settled at ${Math.round(entry.calibrationQuality * 100)}%. Without that, a slide and a lane change look alike — one hard pull in a straight line fixes it.`,
       action: 'Check the mount',
     };
   }
 
-  if (detail.mount === 'suspect') {
+  if (entry.mount === 'suspect') {
     return {
       concern: 'suspect',
       level: 'warn',
       title: 'Last run’s mount looked unsteady',
+      quote: null,
       body: 'Nothing was invalid, but a couple of degrees of every angle may have been cradle rattle rather than the car.',
       action: 'Check the mount',
     };

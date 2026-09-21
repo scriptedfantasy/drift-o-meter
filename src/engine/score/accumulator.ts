@@ -88,6 +88,26 @@ export interface StepResult {
 /** Shared, never-written empty callout list: a quiet 100 Hz sample allocates nothing. */
 const NO_CALLOUTS: StyleCallout[] = [];
 
+/**
+ * THE gate. One expression decides whether an instant of drifting earns anything, and
+ * everything that pays — base points, callout bonuses, the end-of-drift callouts — asks it.
+ * `LiveTick.counting` (and therefore `LiveFrame.score.counting`) reports this same value, so a
+ * display reading it learns what the scorer DID, not what it was told.
+ *
+ * It was two expressions before: the accumulator zeroed `dt` on `!plausible` while `fire()`
+ * paid the full callout bonus anyway, and the pipeline computed the frame's `counting` on its
+ * own. A hand-held run was shown "EXTREME ANGLE +375" and "CHAIN LOST −965" on the same frame
+ * as "NOT SCORING", and `finish()` published 1 605 points it had already said it did not
+ * believe.
+ *
+ * `valid` belongs in here with `plausible`: past the estimator's course timeout the slip angle
+ * stops tracking, and the detector holds a drift open for up to `invalidHoldS` after that — a
+ * second in which the old code kept paying while the frame already said `counting: false`.
+ */
+export function countsForPoints(s: SlipState, plausible: boolean): boolean {
+  return plausible && s.valid;
+}
+
 const DEG2RAD = Math.PI / 180;
 
 /** Trailing time-window moving average over a typed-array ring. */
@@ -269,6 +289,8 @@ export class DriftAccumulator {
   private ctxSpin: boolean | undefined;
   private tc: TransitionCounter | null = null;
   private paidTransitions = 0;
+  /** `countsForPoints` for the sample being processed — what `fire()` pays at. */
+  private counting = true;
   /** Reused across steps: `step()` must not allocate on a quiet sample. */
   private res: StepResult = { points: 0, bonus: 0, callouts: NO_CALLOUTS, rate: 0 };
 
@@ -292,11 +314,18 @@ export class DriftAccumulator {
     return this.o.transitionRule;
   }
 
-  private fire(kind: StyleCalloutKind, t: number, n = 1): void {
+  /**
+   * Fire a callout. `counting` is the gate for the instant it fires at (`countsForPoints`), and
+   * a callout fired at an instant that earns nothing is worth EXACTLY NOTHING — the drama still
+   * lands on the HUD (the driver did flick the car), but the chip carries no `+N` and nothing
+   * reaches the bank. Before this, a slide the monitor refused to believe still paid its
+   * callouts: 4 925 points on a hand-held harbor run whose every frame said `counting: false`.
+   */
+  private fire(kind: StyleCalloutKind, t: number, n = 1, counting = this.counting): void {
     const o = this.o;
     // every callout is worth the multiplier the driver has EARNED: chaining compounds instead of
     // paying a flat participation fee, and a callout can no longer out-earn the drift it sits in
-    const points = o.calloutPoints[kind] * (o.calloutsUseMultiplier ? this.multiplier : 1);
+    const points = counting ? o.calloutPoints[kind] * (o.calloutsUseMultiplier ? this.multiplier : 1) : 0;
     const c: StyleCallout = { t, kind, label: calloutLabel(kind, n), points };
     this.callouts.push(c);
     this.bonus += points;
@@ -314,7 +343,9 @@ export class DriftAccumulator {
   /**
    * One sample. `plausible` is the integrity monitor's verdict for this instant: while it is
    * false the slide is not believed (phone loose in its mount, impossible physics, no GPS…)
-   * and NO points accrue — exactly what the detector does with `valid:false` samples.
+   * and NO points accrue — not base points, and not callout bonuses either. The gate is
+   * `countsForPoints`, which also refuses a sample the estimator has marked invalid, and
+   * `counting` carries it to `fire()` so the two can never disagree again.
    */
   step(s: SlipState, plausible = true): StepResult {
     const o = this.o;
@@ -324,16 +355,19 @@ export class DriftAccumulator {
     res.rate = 0;
     if (res.callouts !== NO_CALLOUTS) res.callouts = NO_CALLOUTS;
     if (this.finished || this.spun) return res;
+    const counting = countsForPoints(s, plausible);
+    this.counting = counting;
     const t = s.t;
     const first = this.lastT === null;
     let dt = first ? 0 : t - (this.lastT as number);
     if (dt < 0) dt = 0;
     if (dt > o.maxDtS) dt = 0; // a gap: no points for time we did not observe
     this.lastT = t;
-    if (!plausible) {
-      this.implausibleS += dt;
-      dt = 0; // the integrity monitor does not believe this instant: it earns nothing
-    }
+    // `implausibleS` is the INTEGRITY MONITOR's count, which is what `DriftEvent.suppressedS`
+    // publishes and what a re-score from storage scales by — an invalid-but-believed sample is
+    // a lost GPS lock, not a phone moving in its mount, and must not be reported as one.
+    if (!plausible) this.implausibleS += dt;
+    if (!counting) dt = 0; // this instant is not believed: it earns nothing
 
     const rawDeg = radToDeg(s.beta);
     this.rawTrace.push(rawDeg);
@@ -382,7 +416,7 @@ export class DriftAccumulator {
     const pts = rate * this.multiplier * dt;
     this.points += pts;
     res.points = pts;
-    res.rate = plausible ? rate * this.multiplier : 0;
+    res.rate = counting ? rate * this.multiplier : 0;
     this.lastRate = res.rate;
 
     // ---- time bookkeeping --------------------------------------------------------------

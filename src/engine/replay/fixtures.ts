@@ -266,7 +266,9 @@ function scoreDrift(d: DriftEvent, truth: TruthSample[], opt: FixtureOptions): D
   let bonus = 0;
   if (d.transitions > 0) {
     const pts = 250 * d.transitions;
-    callouts.push({ t: d.startT + d.durationS * 0.5, kind: 'transition', label: `TRANSITION x${d.transitions}`, points: pts });
+    // U+00D7, matching `calloutLabel` in the scorer and the multiplier chip: the replay used to
+    // print an ASCII x on the callout and a × on the chip above it in the same frame
+    callouts.push({ t: d.startT + d.durationS * 0.5, kind: 'transition', label: `TRANSITION \u00d7${d.transitions}`, points: pts });
     bonus += pts;
   }
   if (d.peakAngle > degToRad(40)) {

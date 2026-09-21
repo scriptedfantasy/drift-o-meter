@@ -73,5 +73,10 @@ export function eventColor(kind: ReplayEventKind): string {
   }
 }
 
-/** The three type tiers the replay uses — nothing in between (DESIGN.md). */
-export const TYPE = { hero: 56, value: 34, label: 13, callout: 34, clock: 12 } as const;
+/**
+ * The type tiers the replay uses — nothing in between (DESIGN.md).
+ * `slam` is the grade on the final frame: the verdict is the biggest thing on that frame, the
+ * way the results screen's reveal is the biggest thing on its own. `body` is the one place this
+ * screen sets a SENTENCE rather than a label, in Barlow instead of Barlow Condensed.
+ */
+export const TYPE = { hero: 56, slam: 132, value: 34, label: 13, body: 14, callout: 34, clock: 12 } as const;

@@ -54,4 +54,18 @@ export const backend: SessionBackend = {
       throw new StorageError('io', 'That run could not be deleted — it is still on this phone.', err, `deleteBody "${id}"`);
     }
   },
+
+  /**
+   * The ids of the stored recordings, from the file names alone — no file is opened or parsed.
+   * This is what a damaged run list is rebuilt from.
+   */
+  async listBodyIds() {
+    const dir = sessionsDir();
+    if (!dir.exists) return [];
+    return dir
+      .list()
+      .map((e) => e.name)
+      .filter((n): n is string => typeof n === 'string' && n.endsWith('.json'))
+      .map((n) => n.slice(0, -'.json'.length));
+  },
 };

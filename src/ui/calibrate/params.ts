@@ -22,7 +22,7 @@ import type { CalibrationFaultKind } from './model';
 export type CalibrateReason = 'rejected' | 'loose' | 'unresolved' | 'suspect';
 
 const REASONS: readonly CalibrateReason[] = ['rejected', 'loose', 'unresolved', 'suspect'];
-const FAULT_KINDS: readonly CalibrationFaultKind[] = ['permission', 'unsupported', 'services', 'failed'];
+const FAULT_KINDS: readonly CalibrationFaultKind[] = ['permission', 'location', 'unsupported', 'services', 'failed'];
 
 export interface CalibrateParams {
   /** Recording seconds to warp to before drawing anything. NaN = play from the start. */

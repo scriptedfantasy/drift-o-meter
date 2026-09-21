@@ -25,6 +25,8 @@ import {
   type Replay,
 } from './index';
 import { sessionFromSimulation } from './fixtures';
+import { peakCallout, lostToSpin, IDENTITY_TOLERANCE } from './build';
+import { FIXTURES, buildFixtureSession } from '../../ui/results/fixture';
 
 let run: SimulatedRun;
 let session: Session;
@@ -257,6 +259,10 @@ describe('buildReplay', () => {
     expect(i70).toBeGreaterThan(i45 + 0.1);
   });
 
+  // NOTE: this session's `score.total` is BY CONSTRUCTION the sum of its per-drift totals and it
+  // contains no spin, so it cannot express a lost chain. The fixture-wide version of this test —
+  // "the replay and the results screen count the same run" at the bottom of this file — is the
+  // one that can fail; keep both.
   it('cumulative score ends at the session total and never decreases', () => {
     const sc = replay.trail.score;
     for (let i = 1; i < sc.length; i++) expect(sc[i]).toBeGreaterThanOrEqual(sc[i - 1] - 1e-6);
@@ -328,23 +334,38 @@ describe('buildReplay', () => {
     for (const m of replay.markers) expect(m.priority).toBeGreaterThan(0);
   });
 
-  it('names the spin band and carries its magnitude', () => {
-    // ROUND-4 FINDING 3: 70° and 93° both read "ON THE EDGE".
-    const spins = replay.events.filter((e) => e.kind === 'spin');
-    const peaks = replay.events.filter((e) => e.kind === 'peak');
-    for (const e of peaks) expect(e.label).toBe('BIG ANGLE');
-    for (const e of spins) {
-      expect(e.label).toMatch(/^SAVED IT \d+°$/);
-      expect(e.priority).toBeGreaterThan(peaks[0]?.priority ?? 0);
+  it('the spin beat comes from DriftEvent.spin, not from an angle band', () => {
+    // ROUND-6 FINDING 2: the beat was chosen by the |β| ≥ 65° band, so a drift the engine had
+    // marked as a spin got "SAVED IT 118°" and a 68° angle the driver HELD got the spin's word
+    // and its red. `d.spin` was read nowhere in build.ts. This test is written around the flag,
+    // over a session that actually contains one, because the old one asserted SAVED IT for
+    // every spin beat of a session that has no spins at all and could therefore never fail.
+    const spun = sessionFromSimulation(run);
+    const big = [...spun.drifts].sort((a, b) => b.peakAngle - a.peakAngle)[0];
+    const held = [...spun.drifts].sort((a, b) => b.peakAngle - a.peakAngle)[1];
+    big.spin = true;
+    held.spin = false;
+    const r = buildReplay(spun);
+    const beat = (id: number, kind: 'spin' | 'peak') => r.events.find((e) => e.driftId === id && e.kind === kind);
+    const spinBeat = beat(big.id, 'spin')!;
+    expect(spinBeat).toBeDefined();
+    expect(spinBeat.label).toBe(`LOST IT ${Math.round(radToDeg(big.peakAngle))}°`);
+    expect(beat(big.id, 'peak')).toBeUndefined();
+    // the held angle keeps its own wording and never borrows the spin's
+    expect(beat(held.id, 'spin')).toBeUndefined();
+    const heldBeat = beat(held.id, 'peak');
+    if (heldBeat) {
+      expect(heldBeat.label).not.toMatch(/LOST IT/);
+      expect(spinBeat.priority).toBeGreaterThan(heldBeat.priority);
     }
-    // two different spins must not read the same
-    const labels = new Set<string>();
-    for (const deg of [70, 93]) {
-      const seg = { ...replay.segments[0], peakAngle: degToRad(deg), severity: severityOf(degToRad(deg)) };
-      expect(seg.severity).toBe('spin');
-      labels.add(`SAVED IT ${Math.round(deg)}°`);
-    }
-    expect(labels.size).toBe(2);
+    // the words themselves: SAVED IT is an angle past the spin edge that was HELD
+    expect(peakCallout(true, degToRad(118))).toBe('LOST IT 118°');
+    expect(peakCallout(false, degToRad(70))).toBe('SAVED IT 70°');
+    expect(peakCallout(false, degToRad(93))).toBe('SAVED IT 93°');
+    expect(peakCallout(false, degToRad(50))).toBe('BIG ANGLE');
+    // and the segment carries the engine's verdict for anything else that has to draw it
+    expect(r.segments.find((g) => g.driftId === big.id)!.spin).toBe(true);
+    expect(r.segments.find((g) => g.driftId === held.id)!.spin).toBe(false);
   });
 
   it('events drive the motion language: slam 1.8 → 1.0, shake decays, priority wins', () => {
@@ -810,17 +831,28 @@ describe('camera', () => {
     expect(b.rotation).toBeCloseTo(a.rotation, 9);
   });
 
-  it('overview fits the bounds with padding and no rotation', () => {
+  it('overview frames the ACTION, fills the frame, and does not rotate', () => {
+    // ROUND-6 FINDING 12: the shot was fitted to `bounds`, which carries 15 m (or 5 %) of
+    // padding on every side for culling — so the circuit floated inside a margin, filling
+    // barely half the frame. It is fitted to `content` (the trail and the track, unpadded)
+    // with only the camera's own 4 %.
     const cam = new ReplayCamera('overview', vp);
     const s = cam.update(replay, 10, dt);
     expect(s.rotation).toBe(0);
-    const b = replay.bounds;
+    const b = replay.content;
     for (const c of [worldToScreen(s, b.minX, b.minY), worldToScreen(s, b.maxX, b.maxY), worldToScreen(s, b.minX, b.maxY), worldToScreen(s, b.maxX, b.minY)]) {
       expect(c.x).toBeGreaterThanOrEqual(-1e-6);
       expect(c.x).toBeLessThanOrEqual(vp.w + 1e-6);
       expect(c.y).toBeGreaterThanOrEqual(-1e-6);
       expect(c.y).toBeLessThanOrEqual(vp.h + 1e-6);
     }
+    // and it really fills it: the binding axis covers at least 90 % of the viewport
+    const fillX = ((b.maxX - b.minX) * s.zoom) / vp.w;
+    const fillY = ((b.maxY - b.minY) * s.zoom) / vp.h;
+    expect(Math.max(fillX, fillY)).toBeGreaterThan(0.9);
+    // the padded bounds are strictly larger, so fitting them would have shown a smaller circuit
+    const padded = replay.bounds;
+    expect(padded.maxX - padded.minX).toBeGreaterThan(b.maxX - b.minX);
   });
 
   it('chase framing: speed-adaptive span, travel direction up, look-ahead bounded', () => {
@@ -1007,5 +1039,100 @@ describe('camera', () => {
     expect(c.y).toBeCloseTo(422, 9);
     const up = worldToScreen({ ...cam, rotation: 0 }, cam.cx, cam.cy + 10);
     expect(up.y).toBeCloseTo(422 - 65, 9);
+  });
+});
+
+/**
+ * THE FIXTURES, ALL OF THEM.
+ *
+ * The suite used to prove its most important property — "the replay's running score ends at the
+ * session total" — against one simulated harbour run whose total is by construction the sum of
+ * its per-drift scores, with no spin in it. That session cannot express a lost chain, so the
+ * test could not fail while the replay printed 27 468 points against the results screen's 18 486.
+ *
+ * These run over every scenario the app ships, built the way the screens build them
+ * (`buildFixtureSession`, real scorer, real pipeline for four of them), and they assert
+ * RELATIONSHIPS rather than numbers, so a retune of the scorer moves them without breaking them.
+ */
+describe('the replay and the results screen count the same run', () => {
+  const names = Object.keys(FIXTURES);
+  const built = new Map<string, { session: Session; replay: Replay }>();
+
+  beforeAll(() => {
+    for (const name of names) {
+      const s = buildFixtureSession(FIXTURES[name]);
+      built.set(name, { session: s, replay: buildReplay(s) });
+    }
+  }, 120_000);
+
+  it.each(names)('%s: the running total ends at the session total and never decreases', (name) => {
+    const { session, replay: r } = built.get(name)!;
+    const sc = r.trail.score;
+    for (let i = 1; i < sc.length; i++) expect(sc[i]).toBeGreaterThanOrEqual(sc[i - 1] - 1e-6);
+    expect(Math.round(sc[sc.length - 1])).toBe(session.score.total);
+    // and what the screen is allowed to print agrees with it, or is withheld
+    if (r.info.trusted) expect(r.info.totalPoints).toBe(session.score.total);
+    else expect(r.info.totalPoints).toBeNull();
+  });
+
+  it.each(names)('%s: every scored slide exists on the replay too', (name) => {
+    const { session, replay: r } = built.get(name)!;
+    expect(r.segments.length).toBe(session.drifts.length);
+    expect(r.info.driftCount).toBe(session.drifts.length);
+    for (const d of session.drifts) {
+      const seg = r.segments.find((g) => g.driftId === d.id);
+      expect(seg, `drift ${d.id} (${d.startT.toFixed(1)}–${d.endT.toFixed(1)} s) has no segment`).toBeDefined();
+      expect(seg!.spin).toBe(d.spin === true);
+      // the printed peak is the DETECTOR's, which is the number the results screen prints
+      expect(radToDeg(seg!.peakAngle)).toBeCloseTo(radToDeg(d.peakAngle), 6);
+      expect(seg!.samplePeakAngle).toBeGreaterThanOrEqual(seg!.peakAngle - 1e-9);
+    }
+    if (session.drifts.length > 0) {
+      const peak = Math.max(...session.drifts.map((d) => d.peakAngle));
+      expect(radToDeg(r.info.peakAngle)).toBeCloseTo(radToDeg(peak), 6);
+    }
+  });
+
+  it.each(names)('%s: a lost chain adds nothing, and says so', (name) => {
+    const { session, replay: r } = built.get(name)!;
+    const lost = lostToSpin(session.drifts);
+    for (const seg of r.segments) {
+      expect(seg.lost).toBe(lost.has(seg.driftId));
+      if (!seg.lost) continue;
+      expect(seg.points).toBe(0);
+      expect(seg.grossPoints).toBeGreaterThanOrEqual(0);
+      const exit = r.events.find((e) => e.kind === 'exit' && e.driftId === seg.driftId)!;
+      expect(exit.points).toBe(0);
+      expect(exit.label).not.toMatch(/^\+/);
+      expect(exit.label).toMatch(seg.spin ? /^CHAIN LOST −/ : /^AT RISK \+/);
+      // nothing accrues across a drift whose chain was lost
+      expect(r.trail.score[seg.endIndex]).toBeCloseTo(r.trail.score[seg.startIndex], 6);
+    }
+    // the total of everything that DID bank is the session total
+    const banked = r.segments.filter((g) => !g.lost).reduce((a, g) => a + g.points, 0);
+    expect(Math.round(banked)).toBe(session.score.total);
+  });
+
+  it.each(names)('%s: β = course − heading holds, sample by sample', (name) => {
+    const { session, replay: r } = built.get(name)!;
+    const worstOf = (b: number, c: number, h: number) => Math.abs(wrapAngle(b - (c - h)));
+    let states = 0;
+    for (const st of session.states) states = Math.max(states, worstOf(st.beta, st.course, st.heading));
+    let trail = 0;
+    for (let k = 0; k < r.trail.n; k++) trail = Math.max(trail, worstOf(r.trail.beta[k], r.trail.course[k], r.trail.heading[k]));
+    // the SESSION has to be a possible car before the builder ever sees it…
+    expect(radToDeg(states)).toBeLessThan(0.01);
+    // …and the trail it draws has to stay one
+    expect(trail).toBeLessThan(IDENTITY_TOLERANCE);
+    expect(r.warnings.join(' ')).not.toMatch(/disagrees with the heading/);
+  });
+
+  it.each(names)('%s: the run is drawn to the end of it', (name) => {
+    const { session, replay: r } = built.get(name)!;
+    for (const d of session.drifts) {
+      expect(d.startT - r.t0).toBeGreaterThanOrEqual(-1e-6);
+      expect(d.endT - r.t0).toBeLessThanOrEqual(r.durationS + 1e-6);
+    }
+    expect(r.warnings.join(' ')).not.toMatch(/fell outside the replay window/);
   });
 });

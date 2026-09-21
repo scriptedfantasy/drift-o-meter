@@ -3,12 +3,20 @@
  * is climbing the whole time the driver is sideways. Three rules keep it legible mid-roll:
  *
  *  1. Only the units column spins continuously. Every column above it parks on its digit and
- *    turns over in the last 4 % of the decade below, the way a mechanical drum does — so a
- *    five-digit score has at most one column in motion at any instant, never five.
- *  2. Each window is masked by a short vertical fade at the top and bottom, so a glyph leaving
- *    the window dissolves instead of being sliced off. A partial digit then reads as motion,
- *    not as a broken character. Leading zeros are hidden, not dimmed, and the thousands comma
- *    is part of the layout, so the score reads like the figures printed beside it.
+ *    turns over only while the column BELOW it is crossing 9 → 0, the way a mechanical drum
+ *    does — so a five-digit score has at most one column in motion at any instant, never five,
+ *    and at rest the figure on screen is exactly `Math.round(value)`. The arithmetic (and what
+ *    it fixes) is in `odometerColumns.ts`, where a sweep test can reach it.
+ *  2. A window can be given a short vertical fade at top and bottom (`background`), so a glyph
+ *    leaving it dissolves instead of being sliced off. THE FADE IS PAINTED IN A COLOUR, so it is
+ *    only honest over a FLAT surface: on the drive display the odometer sits in the left gutter,
+ *    inside the ember edge bloom, and a bg0 fade punched a visible plate through it — background
+ *    rgb(31,17,15) at x = 80 in `drive-peak.png`, rgb(9,9,13) inside the mask bands, a 22/255
+ *    step in a ~290 × 55 pt rectangle. So it is opt-in: pass `background` only when the surface
+ *    behind the digits really is that one colour. Unmasked, the window's own clip does the job,
+ *    and after rule 1 the only glyph that can ever be caught by it is the units drum in motion.
+ *    Leading zeros are hidden, not dimmed, and the thousands comma is part of the layout, so the
+ *    score reads like the figures printed beside it.
  *  3. The value it renders is filtered at SAMPLE rate by the sample callback, not by an
  *    animation: re-aiming a tween a hundred times a second leaves each one a few milliseconds
  *    to run, and the digits end up trailing the real score by thousands of points. See
@@ -21,6 +29,7 @@ import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle, type SharedVa
 
 import { AppText } from '../Text';
 import { alpha, colors, fontFamilies } from '../theme';
+import { columnOffset, columnsUsed } from './odometerColumns';
 
 export interface OdometerProps {
   /** Live value (points). */
@@ -29,14 +38,18 @@ export interface OdometerProps {
   columns?: number;
   size: number;
   color?: string;
-  /** Background the mask fades into (the surface the odometer sits on). */
-  background?: string;
+  /**
+   * The FLAT colour immediately behind the digits, if there is one. It paints the top/bottom
+   * fade masks, so passing a colour that is not what is actually behind them draws a plate of
+   * it. Leave it out over anything lit, textured or gradient — the window still clips.
+   */
+  background?: string | null;
   testID?: string;
 }
 
 const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
-function OdometerImpl({ value, columns = 6, size, color = colors.ember, background = colors.bg0, testID }: OdometerProps) {
+function OdometerImpl({ value, columns = 6, size, color = colors.ember, background = null, testID }: OdometerProps) {
   // `value` is already smoothed at sample rate (see `HudSignals.totalDisplay`), so the columns
   // are a pure function of it: no animation scheduler between the score and the digits.
   const display = value;
@@ -48,10 +61,7 @@ function OdometerImpl({ value, columns = 6, size, color = colors.ember, backgrou
   // value from the UI thread, so it grows on the frame the score crosses a decade.
   const [used, setUsed] = useState(1);
   useAnimatedReaction(
-    () => {
-      const v = Math.max(1, Math.abs(value.value));
-      return Math.min(columns, Math.floor(Math.log10(v)) + 1);
-    },
+    () => columnsUsed(value.value, columns),
     (next, prev) => {
       if (next !== prev) runOnJS(setUsed)(next);
     },
@@ -99,21 +109,16 @@ function Column({
   colW: number;
   size: number;
   color: string;
-  background: string;
+  background: string | null;
 }) {
   const pow = Math.pow(10, place);
-  const strip = useAnimatedStyle(() => {
-    const v = Math.max(0, display.value);
-    const q = v / pow;
-    const p = pow === 1 ? q % 10 : (Math.floor(q) % 10) + Math.max(0, (q % 1) - 0.96) / 0.04;
-    return { transform: [{ translateY: -p * rowH }] };
-  });
+  const strip = useAnimatedStyle(() => ({ transform: [{ translateY: -columnOffset(display.value, place) * rowH }] }));
   // Leading zeros are hidden outright rather than dimmed: at 16 % they measured 1.3:1 against
   // the background, which reads as a smudge next to a digit rather than as a zero.
   const fade = useAnimatedStyle(() => ({ opacity: Math.max(0, display.value) >= pow || pow === 1 ? 1 : 0 }));
   const maskH = Math.max(5, Math.round(rowH * 0.16));
   const solid = background;
-  const clear = alpha(background, 0);
+  const clear = background === null ? null : alpha(background, 0);
 
   // Two nested views on purpose: the OUTER one is animated (so a hidden leading zero takes its
   // masks with it instead of leaving a dark block on the background) and the INNER one is plain,
@@ -129,8 +134,12 @@ function Column({
             </AppText>
           ))}
         </Animated.View>
-        <LinearGradient colors={[solid, clear]} style={[styles.mask, { top: 0, height: maskH }]} pointerEvents="none" />
-        <LinearGradient colors={[clear, solid]} style={[styles.mask, { bottom: 0, height: maskH }]} pointerEvents="none" />
+        {solid !== null && clear !== null ? (
+          <>
+            <LinearGradient colors={[solid, clear]} style={[styles.mask, { top: 0, height: maskH }]} pointerEvents="none" />
+            <LinearGradient colors={[clear, solid]} style={[styles.mask, { bottom: 0, height: maskH }]} pointerEvents="none" />
+          </>
+        ) : null}
       </View>
     </Animated.View>
   );

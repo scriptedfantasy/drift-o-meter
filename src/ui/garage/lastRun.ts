@@ -1,32 +1,24 @@
 /**
- * The few things about a run that the session INDEX still does not carry.
+ * The one thing about a run that the session INDEX cannot hold, and the only reason the garage
+ * ever opens a session body: the query that reproduces a DEMO run on the results screen.
  *
- * It used to be five, and the garage parsed every session body on mount to get them: 5.75 MB of
- * JSON per run where 87 KB was needed, ~31 ms of parsing each, so twenty stored runs meant
- * 115 MB parsed on the UI thread every time the screen opened. `SessionIndexEntry` now carries
- * `trusted`, `peakAngleDeg` and `longestChainPoints`, so **the list reads nothing at all** —
- * grade, points, best angle, track, date, duration and the NOT SCORED state all come from the
- * index.
+ * It used to be five things, and the garage parsed a body on MOUNT to get them. The measured
+ * cost of that on a real untrimmed session was 5.48 MB and 25.5 ms of `JSON.parse` — on a
+ * phone's JS thread, every time the home screen opened — for `{mount, message,
+ * calibrationQuality}`, which serialise to 70 bytes. The demo bodies are trimmed to 87 KB, so
+ * the shipped screenshots never paid it and nobody noticed. All three now live in
+ * `SessionIndexEntry` beside `trusted`, `heldPeakDeg` and `longestChainPoints`, and
+ * **the home screen reads no session body at all**.
  *
- * What is left needs a body, and needs it for one run at a time:
- *   • the integrity monitor's own SENTENCE about what went wrong, which the garage's mount
- *     notice prints verbatim rather than inventing copy for the same condition;
- *   • the mount verdict and the calibration confidence behind that notice;
- *   • for a demo run, the query that reproduces it on the results screen.
- *
- * So exactly one body is read on mount — the newest run's, off the render path — and one more
- * when a row is actually opened. Both memoised for the process.
+ * What is left happens on a TAP, on one run, memoised for the process: a stored `fixture-<name>`
+ * id is rebuilt from the simulator by the results screen, so any seed override has to travel
+ * with it (`Session.meta.fixtureQuery`). A real recording loads by id and needs nothing.
  */
 import type { Session } from '../../engine/types';
 import { loadSession } from '../../platform';
 
 export interface LastRunDetail {
   id: string;
-  mount: 'rigid' | 'suspect' | 'loose';
-  /** `IntegrityMonitor`'s own sentence. Empty when the engine had no objection. */
-  message: string;
-  /** 0..1 from `Session.calibration`. */
-  calibrationQuality: number;
   /**
    * For a stored demo run, the query that reproduces it on the results screen
    * (`fixture=touge&seed=5`). Empty for a real recording, which loads by id.
@@ -35,20 +27,8 @@ export interface LastRunDetail {
 }
 
 export function detailOf(session: Session): LastRunDetail {
-  const integrity = session.integrity;
   const meta = session.meta ?? {};
-  return {
-    id: session.id,
-    mount: integrity?.mount ?? 'rigid',
-    message: integrity?.scoreTrusted === false ? (integrity.message ?? '') : '',
-    calibrationQuality: session.calibration?.quality ?? 0,
-    fixtureQuery: typeof meta.fixtureQuery === 'string' ? meta.fixtureQuery : '',
-  };
-}
-
-/** Nothing could be read: claim nothing, and say why in the one field that shows. */
-export function unreadableDetail(id: string): LastRunDetail {
-  return { id, mount: 'rigid', message: 'The recording could not be read', calibrationQuality: 0, fixtureQuery: '' };
+  return { id: session.id, fixtureQuery: typeof meta.fixtureQuery === 'string' ? meta.fixtureQuery : '' };
 }
 
 const cache = new Map<string, LastRunDetail>();
@@ -62,16 +42,20 @@ export function forgetDetails(id?: string): void {
   else cache.delete(id);
 }
 
-/** Read one run's detail, memoised for the life of the process. */
+/**
+ * Read one run's detail, memoised for the life of the process. Called when a row is OPENED,
+ * never while drawing the list. A body that cannot be read still opens the run: the results
+ * screen loads by id and reports its own failure, which is where that sentence belongs.
+ */
 export async function readDetail(id: string): Promise<LastRunDetail> {
   const hit = cache.get(id);
   if (hit) return hit;
-  let detail: LastRunDetail;
+  let detail: LastRunDetail = { id, fixtureQuery: '' };
   try {
     const session = await loadSession(id);
-    detail = session ? detailOf(session) : unreadableDetail(id);
+    if (session) detail = detailOf(session);
   } catch {
-    detail = unreadableDetail(id);
+    // leave the query empty; the results screen says what went wrong
   }
   cache.set(id, detail);
   return detail;

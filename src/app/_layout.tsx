@@ -61,6 +61,7 @@ export default function RootLayout() {
           <Stack.Screen name="results/[id]" />
           <Stack.Screen name="replay/[id]" />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="sound" />
           <Stack.Screen name="+not-found" />
         </Stack>
       </ThemeProvider>

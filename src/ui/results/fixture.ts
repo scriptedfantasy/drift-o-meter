@@ -12,7 +12,7 @@
 import { DriftPipeline } from '../../engine/pipeline';
 import { scoreSession } from '../../engine/score';
 import { sessionFromSimulation } from '../../engine/replay/fixtures';
-import { clamp, degToRad, radToDeg, type Session, type SlipState } from '../../engine/types';
+import { clamp, degToRad, radToDeg, wrapAngle, type Session, type SlipState } from '../../engine/types';
 import { simulateRun, type TrackId } from '../../sim';
 
 export interface FixtureSpec {
@@ -162,8 +162,15 @@ function smoothstep(x: number): number {
 }
 
 /**
- * After β has been rewritten, put the yaw rate back on the kinematic identity
- * β̇ ≈ a_y / v − r, so the trace stays a possible car rather than a drawing of one.
+ * After β has been rewritten, put the rest of the state back on the physics.
+ *
+ * TWO identities, and the second one was missed for a whole round: the kinematic one
+ * (β̇ ≈ a_y / v − r, which fixes the yaw rate) and the DEFINITION of a slip angle,
+ * β = course − heading (src/engine/types.ts). The path is what it is — the car went where the
+ * positions say, so `course` is not ours to edit — which means a rewritten β turns the NOSE.
+ * Leaving `heading` alone produced a car drawn pointing straight down the road underneath a
+ * 118° numeral, with the slip arc collapsed to a blob: the replay contradicted itself in the
+ * same frame, and no test or renderer checked the identity the contract states.
  */
 function recomputeYaw(states: SlipState[], from: number, to: number): void {
   for (let i = from; i <= to; i++) {
@@ -172,7 +179,11 @@ function recomputeYaw(states: SlipState[], from: number, to: number): void {
     const next = states[Math.min(to, i + 1)];
     const dt = next.t - prev.t;
     const betaDot = dt > 1e-6 ? (next.beta - prev.beta) / dt : 0;
-    states[i] = { ...s, yawRate: s.speed > 1 ? s.ay / s.speed - betaDot : s.yawRate };
+    states[i] = {
+      ...s,
+      heading: wrapAngle(s.course - s.beta),
+      yawRate: s.speed > 1 ? s.ay / s.speed - betaDot : s.yawRate,
+    };
   }
 }
 
@@ -191,7 +202,11 @@ function gripLap(session: Session): void {
   }
   recomputeYaw(session.states, 0, session.states.length - 1);
   if (session.truth) {
-    session.truth = session.truth.map((t, i) => ({ ...t, beta: session.states[i]?.beta ?? 0, drifting: false }));
+    // truth carries the same identity: beta and heading move together, the course does not
+    session.truth = session.truth.map((t, i) => {
+      const beta = session.states[i]?.beta ?? 0;
+      return { ...t, beta, heading: wrapAngle(t.course - beta), drifting: false };
+    });
   }
   session.drifts = [];
 }

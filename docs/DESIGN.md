@@ -102,6 +102,15 @@ correct conclusion resting on a wrong measurement is luck rather than engineerin
 claim about what the engine "cannot" do must be measured across seeds before it is written
 down here.
 
+AND THE WARNING DID NOT TRAVEL. The 0.74 stayed in `src/ui/calibrate/model.ts` and in
+`tools/harness/README.md` for another two rounds, where it was still the stated justification
+for the screen's design — a correction is only as good as the files it reaches. Both are now
+fixed, and the measurement is a committed, re-runnable tool rather than a number in a comment:
+`npx tsx tools/analysis/calibration-sweep.ts`. Over 2 tracks × 3 mounts × 8 seeds at default
+vibration it reports peak confidence 0.618–0.864, median 0.750, ≥ 0.75 in 24 of 48 — a wider
+spread than the 24-combination run above, in both directions, which is what more seeds does.
+Anything written here about calibrator behaviour should cite that command and its grid.
+
 ### Garage (`/`)
 DRIVE call-to-action (dominant), last session grade, personal bests per track, sessions
 list (grade, points, best angle, date), settings entry. On web the simulated source is

@@ -56,3 +56,4 @@ artifacts/*.json
 artifacts/*/shots/
 artifacts/*/video/
 artifacts/*/dist/
+artifacts/*-dist/

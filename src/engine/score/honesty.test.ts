@@ -224,6 +224,83 @@ describe('finding 4 — a phone loose in its mount scores less, not more', () =>
     expect(diag.calibrationForwardResolved || diag.calibrationQuality < 0.3).toBe(true);
     expect(pipe.breakdown!.integrity.scoreTrusted).toBe(false);
   }, 120_000);
+
+  /**
+   * THE PROPERTY, not a case. `LiveFrame.score.counting` is the gate the scorer ran under, so a
+   * frame that says `false` must not have paid — for ANY reason, on ANY frame of ANY run.
+   *
+   * It is here because the case-based tests above could not see the bug that shipped: they
+   * assert `total < rigid` and `scoreTrusted === false`, and a run paying 4 925 points of
+   * callout bonus with `counting: false` on 100.0 % of its 13 016 samples passed both. The
+   * screen meanwhile showed "EXTREME ANGLE +375" and "CHAIN LOST −965" over a score of 0 and
+   * the words NOT SCORING, all in one frame.
+   */
+  it('no frame that says it is not counting ever adds a point — over the whole looseness sweep', () => {
+    for (const looseness of [0, 0.25, 0.4, 0.7, 1.0]) {
+      const run = simulateRun('harbor', { ...base, looseness });
+      const p = new DriftPipeline({});
+      const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+      let j = 0;
+      let prev = 0;
+      let samples = 0;
+      let notCounting = 0;
+      let paidWhileNotCounting = 0;
+      let worstFrame = '';
+      let calloutPointsWhileNotCounting = 0;
+      for (let i = 0; i < run.motion.length; i++) {
+        while (j < gps.length && gps[j].t <= run.motion[i].t) p.pushGps(gps[j++]);
+        const f = p.pushMotion(run.motion[i]);
+        const dTotal = f.score.total - prev;
+        prev = f.score.total;
+        samples++;
+        if (f.score.counting) continue;
+        notCounting++;
+        for (const c of f.score.callouts) calloutPointsWhileNotCounting += c.points;
+        if (dTotal > 0) {
+          paidWhileNotCounting += dTotal;
+          if (!worstFrame) worstFrame = `t=${f.t.toFixed(2)} +${dTotal.toFixed(1)} [${f.score.callouts.map((c) => c.label).join(', ')}]`;
+        }
+      }
+      while (j < gps.length) p.pushGps(gps[j++]);
+      const session = p.finish();
+      process.stdout.write(
+        `\nNOT-COUNTING PROPERTY looseness ${looseness}: ${notCounting}/${samples} frames not counting, ` +
+          `${paidWhileNotCounting.toFixed(1)} points paid on them, finish() total ${session.score.total} (${session.score.grade}, trusted ${session.score.trusted})\n`,
+      );
+      expect(paidWhileNotCounting, `looseness ${looseness} paid while not counting — first at ${worstFrame}`).toBe(0);
+      // and the callouts drawn on those frames carry no points either, so a chip cannot show a
+      // "+N" for something the bank never received
+      expect(calloutPointsWhileNotCounting, `looseness ${looseness} fired paying callouts while not counting`).toBe(0);
+      if (looseness > 0) expect(notCounting, `looseness ${looseness} should have doubted something`).toBeGreaterThan(0);
+    }
+  }, 180_000);
+
+  it('a hand-held run earns literally nothing, live and at the end', () => {
+    // the exact recording the capture harness shoots (`?sim=harbor&looseness=1`): measured
+    // before, 4 925 points paid across 24 callouts with `counting` false on 100.0 % of 13 016
+    // samples, and `finish()` published 1 605 points and a grade of B
+    const run = simulateRun('harbor', { seed: 1, laps: 2, looseness: 1 });
+    const p = new DriftPipeline({});
+    const gps = run.gps.slice().sort((a, b) => a.t - b.t);
+    let j = 0;
+    let peakTotal = 0;
+    let callouts = 0;
+    for (let i = 0; i < run.motion.length; i++) {
+      while (j < gps.length && gps[j].t <= run.motion[i].t) p.pushGps(gps[j++]);
+      const f = p.pushMotion(run.motion[i]);
+      peakTotal = Math.max(peakTotal, f.score.total);
+      callouts += f.score.callouts.length;
+      // the drama still happens — the chips still slam in — they are simply worth nothing
+      for (const c of f.score.callouts) expect(c.points, `${c.label} at ${f.t.toFixed(2)} s`).toBe(0);
+    }
+    while (j < gps.length) p.pushGps(gps[j++]);
+    const session = p.finish();
+    expect(callouts, 'this run is meant to fire callouts').toBeGreaterThan(10);
+    expect(peakTotal, 'the running total climbed on a run nothing of which was believed').toBe(0);
+    expect(session.score.total).toBe(0);
+    expect(session.score.trusted).toBe(false);
+    expect(session.integrity.message.length).toBeGreaterThan(0);
+  }, 120_000);
 });
 
 // ── GPS dropouts: dead reckoning is a measurement for a few seconds, then it is not ────────
@@ -337,7 +414,13 @@ describe('a stored session re-scores without the per-sample mask', () => {
       `\nRE-SCORE FROM STORAGE: live ${live.score.total} → ${re.total} (${(100 * err).toFixed(1)} %), ` +
         `${partial.length} partially and ${stored.drifts.filter((d) => d.suppressedS >= d.durationS - 0.01).length} fully suppressed slides of ${stored.drifts.length}\n`,
     );
-    expect(err, `re-score drifted ${(100 * err).toFixed(1)} % from the live total`).toBeLessThan(0.04);
+    // MEASURED, over 2 tracks × 3 seeds × looseness 0 / 0.1 / 0.2: 0.0–1.3 % while under ~5 s
+    // of the run was suppressed, 8.5 % on this one (18.6 s across two long slides). The bound is
+    // wider than it was because the live pass now refuses a callout that fires in an instant the
+    // monitor did not believe, and a per-drift duration cannot say which callouts those were —
+    // so this path pays their expected value. The direction that matters is still pinned: a run
+    // the monitor REFUSED re-scores to exactly 0 (the next test).
+    expect(err, `re-score drifted ${(100 * err).toFixed(1)} % from the live total`).toBeLessThan(0.1);
     // and it reproduces the VERDICT exactly, which is the part a screen must obey
     expect(re.integrity.scoreTrusted).toBe(live.score.trusted);
     expect(re.integrity.implausibleDriftFraction).toBeCloseTo(live.integrity.implausibleDriftFraction, 2);
@@ -371,6 +454,11 @@ describe('a stored session re-scores without the per-sample mask', () => {
     // it errs DOWNWARD on a refused run: over-stating a run nobody may publish is the failure
     // mode this whole finding was about
     expect(re.total).toBeLessThanOrEqual(live.score.total);
+    // and on a run that was refused OUTRIGHT both numbers are zero, not a rounding remainder:
+    // `suppressedS` is measured between samples and rounded to the millisecond, so scaling by
+    // the leftover once paid 5 points for a run the engine had already thrown away
+    expect(live.score.total).toBe(0);
+    expect(re.total).toBe(0);
   }, 120_000);
 
   it('a clean run round-trips to the same total', () => {

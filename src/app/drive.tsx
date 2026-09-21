@@ -132,7 +132,7 @@ export default function DriveScreen() {
       </Animated.View>
 
       {run.status === 'error' && run.error ? <ErrorOverlay error={run.error} onRetry={run.retry} onLeave={run.leave} /> : null}
-      {run.status === 'discarded' ? <DiscardedOverlay onLeave={run.leave} /> : null}
+      {run.status === 'discarded' ? <DiscardedOverlay onDriveAgain={run.restart} onLeave={run.leave} /> : null}
       {run.status === 'saving' ? <SavingOverlay /> : null}
     </View>
   );
@@ -184,8 +184,14 @@ function ErrorOverlay({ error, onRetry, onLeave }: { error: RunError; onRetry: (
   );
 }
 
-/** A run that never got above walking pace: say so, rather than returning to an empty garage. */
-function DiscardedOverlay({ onLeave }: { onLeave: () => void }) {
+/**
+ * A run that never got above walking pace: say so, rather than returning to an empty garage.
+ *
+ * The primary action is DRIVE AGAIN, and it restarts here. The driver is standing in step 3 of
+ * the four-step flow with the phone already mounted; sending them to the garage to press DRIVE
+ * is a detour back into step 2 for a run that was never anything but a false start.
+ */
+function DiscardedOverlay({ onDriveAgain, onLeave }: { onDriveAgain: () => void; onLeave: () => void }) {
   return (
     <View style={styles.overlay} testID="hud-discarded">
       <Panel style={styles.errorCard}>
@@ -194,7 +200,8 @@ function DiscardedOverlay({ onLeave }: { onLeave: () => void }) {
           That run never got above walking pace and found no drifts, so it was not saved. Drive it like you stole it, then press STOP.
         </Body>
         <View style={styles.errorButtons}>
-          <Button label="Garage" size="md" onPress={onLeave} testID="cta-garage" />
+          <Button label="Drive again" size="md" onPress={onDriveAgain} testID="cta-drive-again" />
+          <Button label="Garage" variant="secondary" size="md" onPress={onLeave} testID="cta-garage" />
         </View>
       </Panel>
     </View>
@@ -227,7 +234,11 @@ const styles = StyleSheet.create({
 
   stage: { alignSelf: 'stretch', justifyContent: 'flex-start', gap: space[2] },
   stageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
-  stageCallouts: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start' },
+  // `overflow: 'hidden'` for the same reason the landscape column has it: a callout SLAMS in at
+  // 1.8× from its left edge, so a 250 pt chip is 450 pt wide for the first frames of the 320 ms
+  // and lands on top of the mini-map — measured, "MANJI +990" and "TRANSITION ×3 +405" drawn
+  // across the ember trail with the "+405" illegible. Clipped, the drama stays in its column.
+  stageCallouts: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'hidden' },
   scoreBlock: { alignSelf: 'stretch', gap: space[1] },
   bleed: { marginHorizontal: -gutter },
 

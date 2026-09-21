@@ -243,7 +243,9 @@ const styles = StyleSheet.create({
     marginTop: space[1],
     padding: space[3],
     borderRadius: radii.md,
-    backgroundColor: alpha(colors.bg1, 0.94),
+    // OPAQUE. At 94 % a magenta TRANSITION callout and the green ghost label read straight
+    // through the sentences explaining what is wrong with the recording.
+    backgroundColor: colors.bg1,
     borderWidth: 1,
     borderColor: alpha(colors.red, 0.5),
     gap: space[1],

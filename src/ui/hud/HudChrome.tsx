@@ -18,8 +18,14 @@ import Animated, { useAnimatedStyle, useDerivedValue, useReducedMotion, withRepe
 import { AppText, Micro } from '../Text';
 import { formatDuration } from '../format';
 import { alpha, colors, fontFamilies, radii, space } from '../theme';
+import { readIntegrity } from './integrityView';
 import type { HudSignals } from './signals';
 import type { HudSnapshot } from './useDriveRun';
+
+// `readIntegrity` moved to `integrityView.ts` so a test can reach it without React Native; it
+// is re-exported here because this is where a reader of the HUD chrome expects to find it.
+export { readIntegrity, CALIBRATION_GRACE_S } from './integrityView';
+export type { IntegrityTier, IntegrityView } from './integrityView';
 
 const TRANSPARENT = 'rgba(255,90,31,0)';
 
@@ -60,12 +66,17 @@ export const StatusStrip = memo(function StatusStrip({ snapshot, sourceLabel, li
         <AppText numeric style={styles.clock}>
           {formatDuration(snapshot.elapsedS)}
         </AppText>
-        <View style={styles.lap}>
-          <Micro>Lap</Micro>
-          <AppText numeric style={styles.lapValue}>
-            {snapshot.lapCount + 1}
-          </AppText>
-        </View>
+        {/* LAP is shown only once the track model has closed one. A point-to-point road never
+            closes, `lap.count` stays 0 for the whole run, and "LAP 1" on it is a circuit the
+            driver is not on. `lapProgress` is finite only when a closed reference lap exists. */}
+        {snapshot.lapCount > 0 || snapshot.lapProgress > 0 ? (
+          <View style={styles.lap}>
+            <Micro>Lap</Micro>
+            <AppText numeric style={styles.lapValue}>
+              {snapshot.lapCount + 1}
+            </AppText>
+          </View>
+        ) : null}
       </View>
       <View style={styles.stripRight}>
         {live ? (
@@ -98,22 +109,37 @@ function Pill({ label, color, filled = false }: { label: string; color: string; 
  * The live drift strip: what the slide in progress has earned so far — peak angle, how long it
  * has been held, how many times it has been flicked. It sits under the gauge, where the callout
  * stack lands, so the middle of the screen always says something instead of going black between
- * callouts. All three values step slowly enough for the 10 Hz snapshot.
+ * callouts. All values step slowly enough for the 10 Hz snapshot.
+ *
+ * BETWEEN SLIDES IT KEEPS SAYING SOMETHING, because between slides is the normal state: callouts
+ * hold for 3.2 s and a measured idle frame lit 0.71 % of this band against 45.6 % with three
+ * callouts up. So the strip falls back to the RUN — how many slides, and the best angle of them —
+ * and the one line of coaching underneath is set at a size a driver can read at arm's length
+ * rather than at 11 px, which made the most urgent sentence on the screen the smallest text on it.
  */
 export const DriftStrip = memo(function DriftStrip({ snapshot, testID }: { snapshot: HudSnapshot; testID?: string }) {
   const live = snapshot.phase !== 'idle' && snapshot.phase !== 'exit';
   const chained = snapshot.chainActive && snapshot.chainPoints > 0;
+  // An untrusted reading gets untrusted numbers: same values, no colour claiming they are good.
+  const trusted = snapshot.trust > 0;
   if (!live) {
     return (
-      <View style={styles.stripRow} testID={testID}>
-        <AppText variant="micro" color={chained ? colors.ember : colors.muted} style={styles.hint}>
-          {chained ? 'CHAIN OPEN — GET BACK SIDEWAYS TO KEEP IT' : 'WAITING FOR A SLIDE'}
+      <View style={styles.stripStack} testID={testID}>
+        <View style={styles.stripRow}>
+          <StripCell label="Slides" value={String(snapshot.driftCount)} tone={snapshot.driftCount > 0 ? colors.text : colors.muted} />
+          <StripCell
+            label="Best"
+            value={snapshot.runPeakDeg >= 1 ? `${Math.round(snapshot.runPeakDeg)}°` : '—'}
+            tone={snapshot.runPeakDeg >= 1 ? colors.gold : colors.muted}
+            last
+          />
+        </View>
+        <AppText color={chained ? colors.ember : colors.muted} style={styles.hint} numberOfLines={1} adjustsFontSizeToFit>
+          {chained ? 'CHAIN OPEN — GET BACK SIDEWAYS' : 'WAITING FOR A SLIDE'}
         </AppText>
       </View>
     );
   }
-  // An untrusted reading gets untrusted numbers: same values, no colour claiming they are good.
-  const trusted = snapshot.trust > 0;
   return (
     <View style={styles.stripRow} testID={testID}>
       <StripCell label="Peak" value={`${Math.round(snapshot.peakDeg)}°`} tone={trusted ? colors.gold : colors.muted} />
@@ -132,62 +158,6 @@ function StripCell({ label, value, tone, last }: { label: string; value: string;
       </AppText>
     </View>
   );
-}
-
-/**
- * What integrity is saying, and how loudly. ONE function decides both, because deriving the
- * tone from one field and the headline from another is how every run used to open with a red
- * alarm titled MOUNT SHAKING while the actual condition was "no GPS lock yet".
- *
- * Until the calibrator has resolved which way the car points, no mount verdict means anything —
- * the monitor is describing its own startup, so the HUD says that, calmly, in cyan.
- */
-export type IntegrityTier = 'ok' | 'calibrating' | 'warn' | 'severe';
-
-export interface IntegrityView {
-  tier: IntegrityTier;
-  heading: string;
-  message: string;
-  /**
-   * What the score block should admit, or null when the numbers can be taken at face value.
-   * Deliberately specific: with no fix the scorer really is not counting, while with a loose
-   * mount it IS counting points off a reading nobody should stand behind. Saying "not scoring"
-   * in both cases would be wrong in one of them.
-   */
-  scoreNote: string | null;
-}
-
-/** How long the calibrator is allowed to be "still working it out" before that is a fault. */
-const CALIBRATION_GRACE_S = 8;
-
-export function readIntegrity(snapshot: HudSnapshot): IntegrityView {
-  const { mount, gps, physics, message } = snapshot.integrity;
-  const settling = !snapshot.forwardResolved && snapshot.elapsedS < CALIBRATION_GRACE_S;
-  // "Not scoring" is the SCORER's word (`LiveFrame.score.counting`), never this component's
-  // guess. Through a GPS dropout the engine dead-reckons β and keeps paying; a note inferred
-  // from `gps: 'none'` claimed the opposite, and the results screen then banked those points.
-  const counting = snapshot.counting;
-  const stopped = (reason: string) => `${reason} — NOT SCORING`;
-
-  if (mount === 'loose') {
-    return { tier: 'severe', heading: 'LOOSE MOUNT', message, scoreNote: counting ? 'MOUNT LOOSE — THESE POINTS MAY NOT STAND' : stopped('MOUNT LOOSE') };
-  }
-  if (physics === 'implausible') {
-    return { tier: 'severe', heading: 'IMPLAUSIBLE READINGS', message, scoreNote: counting ? 'READINGS ARE NOT PHYSICALLY POSSIBLE' : stopped('IMPLAUSIBLE READINGS') };
-  }
-  if (gps === 'none' && snapshot.gpsEverGood) {
-    return { tier: 'severe', heading: 'GPS LOST', message, scoreNote: counting ? 'NO FIX — DEAD-RECKONED FROM THE GYRO' : stopped('NO FIX') };
-  }
-  // The first seconds of every run: no fix yet and the forward axis still unknown. That is the
-  // monitor describing its own startup, not an alarm, and it gets said calmly.
-  if (settling) return { tier: 'calibrating', heading: 'FINDING FORWARD', message, scoreNote: counting ? null : 'WAITING FOR THE FIRST FIX' };
-  if (gps === 'none') return { tier: 'warn', heading: 'WAITING FOR GPS', message, scoreNote: counting ? 'NO FIX YET — DEAD-RECKONED' : 'WAITING FOR THE FIRST FIX' };
-  if (gps === 'poor') return { tier: 'warn', heading: 'WEAK GPS', message, scoreNote: counting ? null : stopped('WEAK GPS') };
-  if (mount === 'suspect') return { tier: 'warn', heading: 'MOUNT SHAKING', message, scoreNote: counting ? null : stopped('MOUNT SHAKING') };
-  if (!snapshot.forwardResolved) return { tier: 'warn', heading: 'FINDING FORWARD', message, scoreNote: counting ? null : null };
-  // Everything reads fine and the scorer is simply not paying — parked, crawling, between
-  // slides. That is not a fault and the HUD does not nag about it.
-  return { tier: 'ok', heading: '', message, scoreNote: null };
 }
 
 /**
@@ -245,11 +215,14 @@ const styles = StyleSheet.create({
   pill: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: space[2], paddingVertical: 2 },
   pillText: { fontSize: 11, lineHeight: 14 },
 
+  stripStack: { alignSelf: 'stretch', gap: space[1] },
   stripRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: space[3] },
   cell: { flexDirection: 'row', alignItems: 'baseline', gap: space[2], paddingRight: space[3] },
   cellBorder: { borderRightWidth: 1, borderRightColor: colors.line },
   cellValue: { fontFamily: fontFamilies.display.boldItalic, fontSize: 20, lineHeight: 22 },
-  hint: { letterSpacing: 1.4 },
+  // 17 px, not the 11 px micro: this is the only coaching line on the display, and it appears
+  // exactly when the driver has something to do about it.
+  hint: { fontFamily: fontFamilies.display.bold, fontSize: 17, lineHeight: 20, letterSpacing: 1.2 },
 
   banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, padding: space[2], paddingRight: space[3] },
   bannerBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },

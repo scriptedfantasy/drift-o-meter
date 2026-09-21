@@ -13,7 +13,7 @@ import { alpha, colors, radii, space } from '../theme';
 const SLOTS = [
   { label: 'Best grade', hint: 'S is the ceiling' },
   { label: 'Most points', hint: 'Angle × speed × chain' },
-  { label: 'Biggest angle', hint: 'Held, not caught' },
+  { label: 'Biggest angle', hint: 'Held and driven out of' },
   { label: 'Longest chain', hint: 'Bank it before you exit' },
 ];
 
@@ -25,8 +25,9 @@ export function EmptyGarage({ testID }: { testID?: string }) {
         NOTHING{'\n'}TO BEAT{'\n'}YET
       </AppText>
       <Body color="muted" style={styles.body}>
-        Clip the phone to something rigid, calibrate on the way to the first corner, and go. Whatever you manage tonight
-        becomes the number to beat — and every run after it lands on this page with a grade and a replay.
+        Clip the phone to something rigid and go. It works out which way the car points on the way to the first corner
+        by itself, so there is nothing to set up. Whatever you manage tonight becomes the number to beat — and every run
+        after it lands on this page with a grade and a replay.
       </Body>
       <View style={styles.grid}>
         {SLOTS.map((s) => (

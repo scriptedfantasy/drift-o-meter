@@ -17,11 +17,17 @@ export interface DriveSlabProps {
   onPress(): void;
   /** One dark line inside the slab: what the next screen is about to do. */
   caption: string;
+  /**
+   * Put the caption on the word's own line, right-aligned. For a slab wider than the word:
+   * in landscape the stacked layout left ~55 % of the slab empty orange, which reads as an
+   * unfinished button rather than as a slab.
+   */
+  inline?: boolean;
   label?: string;
   testID?: string;
 }
 
-export function DriveSlab({ onPress, caption, label = 'Drive', testID }: DriveSlabProps) {
+export function DriveSlab({ onPress, caption, inline = false, label = 'Drive', testID }: DriveSlabProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -35,11 +41,18 @@ export function DriveSlab({ onPress, caption, label = 'Drive', testID }: DriveSl
           <AppText variant="hero" color={colors.bg0} numberOfLines={1} style={styles.word}>
             {label.toUpperCase()}
           </AppText>
+          {inline ? (
+            <AppText variant="micro" color={alpha(colors.bg0, 0.78)} numberOfLines={2} style={[styles.caption, styles.captionInline]}>
+              {caption}
+            </AppText>
+          ) : null}
           <Chevrons />
         </View>
-        <AppText variant="micro" color={alpha(colors.bg0, 0.78)} numberOfLines={1} style={styles.caption}>
-          {caption}
-        </AppText>
+        {inline ? null : (
+          <AppText variant="micro" color={alpha(colors.bg0, 0.78)} numberOfLines={1} style={styles.caption}>
+            {caption}
+          </AppText>
+        )}
       </View>
     </Pressable>
   );
@@ -72,5 +85,6 @@ const styles = StyleSheet.create({
   word: { fontSize: 68, lineHeight: 70, letterSpacing: -2 },
   chevrons: { marginRight: -space[1] },
   caption: { marginTop: -space[1], letterSpacing: 1.6 },
+  captionInline: { flex: 1, marginTop: 0, textAlign: 'right', paddingRight: space[3] },
   pressed: { opacity: 0.88, transform: [{ skewX: SKEW }, { scale: 0.99 }] },
 });

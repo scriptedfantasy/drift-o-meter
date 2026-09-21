@@ -44,6 +44,9 @@ const BC_800 = require('@expo-google-fonts/barlow-condensed/800ExtraBold/BarlowC
 const BC_800_ITALIC = require('@expo-google-fonts/barlow-condensed/800ExtraBold_Italic/BarlowCondensed_800ExtraBold_Italic.ttf');
 const BC_700 = require('@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf');
 const ORBITRON_700 = require('@expo-google-fonts/orbitron/700Bold/Orbitron_700Bold.ttf');
+// Barlow, not Barlow Condensed: the one sentence on this screen that is a SENTENCE — the reason
+// a run was not scored — is body copy, and body copy set in condensed caps reads as an alarm.
+const BARLOW_500 = require('@expo-google-fonts/barlow/500Medium/Barlow_500Medium.ttf');
 
 export interface ReplayCanvasProps {
   replay: Replay;
@@ -56,10 +59,18 @@ export interface ReplayCanvasProps {
   reduceMotion: boolean;
   /** The transport is on screen (the canvas puts a scrim behind it). */
   controlsVisible: boolean;
+  /** The warnings plate is expanded over the stage, so the canvas keeps that area clear. */
+  warningsOpen: boolean;
   testID?: string;
 }
 
-function makeFonts(bc800: SkTypeface | null, bcItalic: SkTypeface | null, bc700: SkTypeface | null, orbitron: SkTypeface | null): { fonts: SceneFonts; dispose(): void } {
+function makeFonts(
+  bc800: SkTypeface | null,
+  bcItalic: SkTypeface | null,
+  bc700: SkTypeface | null,
+  orbitron: SkTypeface | null,
+  barlow: SkTypeface | null,
+): { fonts: SceneFonts; dispose(): void } {
   const made: SkFont[] = [];
   const font = (tf: SkTypeface | null, size: number): SkFont | null => {
     if (!tf) return null;
@@ -76,6 +87,8 @@ function makeFonts(bc800: SkTypeface | null, bcItalic: SkTypeface | null, bc700:
     value: font(bcItalic, TYPE.value),
     label: font(bc700, TYPE.label),
     clock: font(orbitron, TYPE.clock),
+    body: font(barlow, TYPE.body),
+    slam: font(bc800, TYPE.slam),
   };
   return {
     fonts,
@@ -101,21 +114,22 @@ function actionRect(layout: ReplayLayout, mode: CameraMode) {
   return mode === 'overview' ? layout.stage : layout.action;
 }
 
-export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, controlsVisible, testID }: ReplayCanvasProps) {
+export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDriftId, chip, reduceMotion, controlsVisible, warningsOpen, testID }: ReplayCanvasProps) {
   const res = useMemo(() => createSceneResources(), []);
-  const geo = useMemo(() => buildSceneGeometry(replay, view.dead), [replay, view.dead]);
+  const geo = useMemo(() => buildSceneGeometry(replay), [replay]);
   const tfHero = useTypeface(BC_800);
   const tfItalic = useTypeface(BC_800_ITALIC);
   const tfLabel = useTypeface(BC_700);
   const tfClock = useTypeface(ORBITRON_700);
-  const fontBook = useMemo(() => makeFonts(tfHero, tfItalic, tfLabel, tfClock), [tfHero, tfItalic, tfLabel, tfClock]);
+  const tfBody = useTypeface(BARLOW_500);
+  const fontBook = useMemo(() => makeFonts(tfHero, tfItalic, tfLabel, tfClock, tfBody), [tfHero, tfItalic, tfLabel, tfClock, tfBody]);
   const camera = useMemo(() => new ReplayCamera(mode, actionRect(layout, mode)), [replay]); // eslint-disable-line react-hooks/exhaustive-deps
   const empty = useMemo(() => createPicture(() => {}, { x: 0, y: 0, width: 1, height: 1 }), []);
   const picture = useSharedValue<SkPicture>(empty);
 
   // Everything the loop reads, refreshed on every render so the loop itself never restarts.
-  const stateRef = useRef({ replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, fonts: fontBook.fonts });
-  stateRef.current = { replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, fonts: fontBook.fonts };
+  const stateRef = useRef({ replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, warningsOpen, fonts: fontBook.fonts });
+  stateRef.current = { replay, view, geo, layout, mode, focusDriftId, chip, reduceMotion, controlsVisible, warningsOpen, fonts: fontBook.fonts };
   /** Wall-clock ms until which the frame must keep being redrawn even when paused. */
   const dirtyUntil = useRef(0);
   const markDirty = (ms = 400) => {
@@ -138,7 +152,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
   }, [camera, layout, mode]);
   useEffect(() => {
     markDirty(600);
-  }, [fontBook, geo, view, focusDriftId, controlsVisible]);
+  }, [fontBook, geo, view, focusDriftId, controlsVisible, warningsOpen]);
 
   useEffect(() => {
     let raf = 0;
@@ -233,7 +247,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
       if (chipNow && sv.playing.value !== 1 && sv.scrubbing.value !== 1) chipNow.until = Math.max(chipNow.until, Date.now() + 200);
       const chipAlpha = chipNow ? clamp((chipNow.until - Date.now()) / 400, 0, 1) : 0;
       const moving = sv.playing.value === 1 || scrubbing || cutFade > 0 || chipAlpha > 0 || now < dirtyUntil.current;
-      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.controlsVisible ? 1 : 0}`;
+      const inputs = `${s.fonts.hero ? 1 : 0}${s.fonts.label ? 1 : 0}${s.fonts.value ? 1 : 0}${s.fonts.clock ? 1 : 0}${s.fonts.body ? 1 : 0}|${camera.getMode()}|${s.layout.w}x${s.layout.h}|${s.focusDriftId}|${s.view.replay.durationS}|${s.geo.segments.length}|${s.controlsVisible ? 1 : 0}${s.warningsOpen ? 1 : 0}`;
       if (!moving && t === lastDrawnT && inputs === lastInputs) return;
       lastDrawnT = t;
       lastInputs = inputs;
@@ -261,7 +275,7 @@ export default function ReplayCanvas({ replay, view, layout, sv, mode, focusDrif
               scrubbing,
               focusDriftId: s.focusDriftId,
               highlight: chipNow && chipAlpha > 0 ? { index: chipNow.index, total: chipNow.total, label: chipNow.label, alpha: chipAlpha } : null,
-              warningsOpen: false,
+              warningsOpen: s.warningsOpen,
               controlsVisible: s.controlsVisible,
               reduceMotion: s.reduceMotion,
             },

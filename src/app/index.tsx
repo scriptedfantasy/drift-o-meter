@@ -7,16 +7,20 @@
  * the simulated-source bay lives at the BOTTOM, off the path.
  *
  * Under DRIVE, in descending order of how likely a driver is to want it, sits the run they just
- * did (a card twice the size of anything else), the records they are trying to beat, and then
- * the rest of the nights, one line each. Swipe a run sideways or hold it to throw it away; the
- * app asks before it does.
+ * did (a card twice the size of anything else, which says what that run did to their records),
+ * the records themselves, and then the rest of the nights, one line each under the night they
+ * were driven. Swipe a run sideways or hold it to throw it away; the app asks before it does.
  *
  * Calibration appears here in exactly one case: the last run left evidence that the mount was
  * wrong. Then the garage says what was wrong (`mountAdvice`) and offers the screen that fixes
  * it. Otherwise the link is tucked away in the footer with settings.
  *
  * A run the engine refused to score is never dressed up as an achievement here — no grade
- * letter, no record, the monitor's own sentence instead (see `SessionIntegrity.scoreTrusted`).
+ * letter, no record, no total, the monitor's own sentence instead (see
+ * `SessionIntegrity.scoreTrusted`).
+ *
+ * Nothing on this screen reads a session body. Every number, verdict and sentence comes from
+ * `SessionIndexEntry`; a body is parsed only when a demo row is TAPPED.
  *
  * URL (web / the harness):
  *   /?demo=night     fill the list with six real, deterministic runs across two tracks
@@ -28,7 +32,7 @@
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -40,7 +44,7 @@ import {
   type SimParams,
   type SessionIndexEntry,
 } from '@/platform';
-import { colors, formatDate, formatDuration, gutter, Micro, Small, space, Wordmark } from '@/ui';
+import { colors, formatDate, formatDuration, gutter, Micro, space, Wordmark } from '@/ui';
 import {
   BestsBoard,
   ConfirmDialog,
@@ -56,6 +60,8 @@ import {
   useGarage,
   type BestRecord,
 } from '@/ui/garage';
+import { FaultNotice } from '@/ui/garage/FaultNotice';
+import { groupByNight } from '@/ui/garage/groups';
 import { SectionHead, Tag } from '@/ui/results';
 
 function first(v: string | string[] | undefined): string | undefined {
@@ -70,6 +76,12 @@ function queryParams(query: string): Record<string, string> {
   return out;
 }
 
+/**
+ * Past this the screen is not a phone held upright: landscape in a cradle, or a tablet. DRIVE
+ * then sits beside the last run instead of stretching into 55 % empty orange.
+ */
+const WIDE_PX = 700;
+
 export default function GarageScreen() {
   const router = useRouter();
   const params = useLocalSearchParams() as Record<string, string | string[] | undefined>;
@@ -78,6 +90,8 @@ export default function GarageScreen() {
   const demo = first(params.demo) ?? new URLSearchParams(currentSearch() ?? '').get('demo') ?? undefined;
   const garage = useGarage(demo);
   const { settings, update } = useSettings();
+  const { width } = useWindowDimensions();
+  const wide = width >= WIDE_PX;
 
   // Which source the next run will use, and — on web — the knobs a demo can turn.
   const plan = useMemo(() => planSource(Platform.OS, currentSearch(), settings), [settings]);
@@ -116,7 +130,7 @@ export default function GarageScreen() {
   }, [garage, pending]);
 
   /**
-   * Opening a run is the only place a body is read for a row, and only for a demo run: a stored
+   * Opening a run is the only place a body is read at all, and only for a demo run: a stored
    * `fixture-<name>` id is rebuilt from the simulator by the results screen, so any seed
    * override has to travel with it (`Session.meta.fixtureQuery`). A real recording loads by id
    * and needs nothing. One parse, on a tap, memoised.
@@ -137,7 +151,8 @@ export default function GarageScreen() {
 
   const hasRuns = garage.entries.length > 0;
   // The one thing that earns a calibration prompt: the last run said something was wrong.
-  const advice = useMemo(() => mountAdvice(garage.last, garage.lastDetail), [garage.last, garage.lastDetail]);
+  const advice = useMemo(() => mountAdvice(garage.last), [garage.last]);
+  const nights = useMemo(() => groupByNight(garage.earlier), [garage.earlier]);
   const openCalibrate = useCallback(
     (why?: string) => {
       const q = [simQuery.slice(1), why ? `why=${why}` : ''].filter(Boolean).join('&');
@@ -146,10 +161,77 @@ export default function GarageScreen() {
     [router, simQuery],
   );
 
+  const cta = (
+    <>
+      <DriveSlab
+        onPress={() => router.push(`/drive${simQuery}`)}
+        caption={captionFor(sourceLabel, simParams !== null)}
+        inline={wide}
+        testID="cta-drive"
+      />
+      <View style={styles.underCta}>
+        <Micro numberOfLines={1} style={styles.ctaNote}>
+          Starts recording at once
+        </Micro>
+        <Tag label={sourceLabel} color={simParams ? colors.cyan : colors.green} filled />
+      </View>
+      {advice ? (
+        <View style={styles.notice}>
+          <MountNotice advice={advice} onPress={() => openCalibrate(advice.concern)} testID="mount-notice" />
+        </View>
+      ) : null}
+      {garage.fault ? (
+        <View style={styles.notice}>
+          <FaultNotice fault={garage.fault} busy={garage.rebuilding} onAct={() => void garage.rebuild()} />
+        </View>
+      ) : null}
+      {garage.seeding ? (
+        <View style={styles.seeding} testID="garage-seeding">
+          <Micro color="cyan">
+            Building demo runs · {garage.seeding.done} / {garage.seeding.total}
+          </Micro>
+          <Micro style={styles.seedingNote}>Each one is simulated and then scored by the real engine, so the grades below are earned.</Micro>
+        </View>
+      ) : null}
+    </>
+  );
+
+  // An unreadable list is not an empty garage, and the screen must not say both at once: the
+  // notice above already says what is wrong and offers the repair, so nothing claims "NOTHING TO
+  // BEAT YET" over a disk that still has the recordings on it.
+  const unreadable = garage.fault?.kind === 'unreadable-index';
+  const lastRun = !hasRuns ? (
+    <>
+      <SectionHead title="The garage" right={unreadable ? 'Unreadable' : garage.loading ? 'Reading' : 'Empty'} />
+      {unreadable ? null : garage.loading ? <View style={styles.skeletonCard} testID="garage-loading" /> : <EmptyGarage testID="garage-empty" />}
+    </>
+  ) : (
+    <>
+      <SectionHead title="Last run" right={garage.entries.length === 1 ? '1 stored' : `${garage.entries.length} stored`} />
+      {garage.last ? (
+        <SwipeToDelete onDelete={() => setPending(garage.last)} enabled={pending === null} testID="last-run-swipe">
+          <LastRunCard
+            entry={garage.last}
+            standing={garage.standing?.line ?? null}
+            // the notice above already carries the monitor's sentence, once
+            showReason={advice === null}
+            onOpen={() => openRun(garage.last!)}
+            onDelete={() => setPending(garage.last)}
+            testID="last-run"
+          />
+        </SwipeToDelete>
+      ) : null}
+    </>
+  );
+
   return (
     <View style={styles.root} testID="screen-garage">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-        <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} testID="garage-scroll">
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.scroll, wide && styles.scrollWide]}
+          showsVerticalScrollIndicator={false}
+          testID="garage-scroll">
           <View style={styles.header}>
             <Wordmark />
             <Pressable
@@ -163,78 +245,53 @@ export default function GarageScreen() {
             </Pressable>
           </View>
 
-          <DriveSlab onPress={() => router.push(`/drive${simQuery}`)} caption={captionFor(sourceLabel, simParams !== null)} testID="cta-drive" />
-
-          <View style={styles.underCta}>
-            <Micro numberOfLines={1} style={styles.ctaNote}>
-              Starts recording at once
-            </Micro>
-            <Tag label={sourceLabel} color={simParams ? colors.cyan : colors.green} filled />
-          </View>
-
-          {advice ? (
-            <View style={styles.notice}>
-              <MountNotice advice={advice} onPress={() => openCalibrate(advice.concern)} testID="mount-notice" />
+          {wide ? (
+            <View style={styles.top}>
+              <View style={styles.topLeft}>{cta}</View>
+              <View style={styles.topRight}>{lastRun}</View>
             </View>
-          ) : null}
-
-          {garage.error ? (
-            <View style={styles.errorBox}>
-              <Small color="red">{garage.error}</Small>
-            </View>
-          ) : null}
-
-          {garage.seeding ? (
-            <View style={styles.seeding} testID="garage-seeding">
-              <Micro color="cyan">
-                Building demo runs · {garage.seeding.done} / {garage.seeding.total}
-              </Micro>
-              <Small>Each one is simulated and then scored by the real engine, so the grades below are earned.</Small>
-            </View>
-          ) : null}
-
-          {!hasRuns ? (
-            <>
-              <SectionHead title="The garage" right={garage.loading ? 'Reading' : 'Empty'} />
-              {garage.loading ? <View style={styles.skeletonCard} testID="garage-loading" /> : <EmptyGarage testID="garage-empty" />}
-            </>
           ) : (
             <>
-              <SectionHead title="Last run" right={garage.entries.length === 1 ? '1 stored' : `${garage.entries.length} stored`} />
-              {garage.last ? (
-                <SwipeToDelete onDelete={() => setPending(garage.last)} enabled={pending === null} testID="last-run-swipe">
-                  <LastRunCard
-                    entry={garage.last}
-                    detail={garage.lastDetail}
-                    // the notice above already carries the monitor's sentence, once
-                    showReason={advice === null}
-                    onOpen={() => openRun(garage.last!)}
-                    onDelete={() => setPending(garage.last)}
-                    testID="last-run"
-                  />
-                </SwipeToDelete>
-              ) : null}
+              {cta}
+              {lastRun}
+            </>
+          )}
 
+          {hasRuns ? (
+            <>
               <SectionHead title="Personal bests" accent={colors.gold} right={garage.bests.length === 1 ? '1 track' : `${garage.bests.length} tracks`} />
-              <BestsBoard bests={garage.bests} onOpen={openRecord} />
+              <BestsBoard bests={garage.bests} lastId={garage.last?.id ?? null} onOpen={openRecord} wide={wide} />
 
               {garage.earlier.length > 0 ? (
                 <SectionHead title="Earlier" accent={colors.cyan} right={garage.earlier.length === 1 ? '1 run' : `${garage.earlier.length} runs`} />
               ) : null}
               {garage.earlier.length === 0 ? (
-                <Small style={styles.onlyRun}>That is the only run in here. The next one goes above it.</Small>
+                <Micro style={styles.onlyRun}>That is the only run in here. The next one goes above it.</Micro>
               ) : (
-                <View style={styles.list}>
-                  {garage.earlier.map((e) => (
-                    <SwipeToDelete key={e.id} onDelete={() => setPending(e)} enabled={pending === null}>
-                      <RunRow entry={e} onOpen={() => openRun(e)} onDelete={() => setPending(e)} testID={`run-${e.id}`} />
-                    </SwipeToDelete>
-                  ))}
-                </View>
+                nights.map((night) => (
+                  <View key={night.key} style={styles.night}>
+                    <View style={styles.nightHead}>
+                      <Micro color="cyan" numberOfLines={1}>
+                        {night.label}
+                      </Micro>
+                      <View style={styles.nightRule} />
+                      {/* The section head already carries the total; repeat it only when the
+                          nights actually divide it up. */}
+                      {nights.length > 1 ? <Micro numberOfLines={1}>{night.runs.length === 1 ? '1 run' : `${night.runs.length} runs`}</Micro> : null}
+                    </View>
+                    <View style={[styles.list, wide && styles.listWide]}>
+                      {night.runs.map((e) => (
+                        <SwipeToDelete key={e.id} onDelete={() => setPending(e)} enabled={pending === null} style={wide ? styles.rowHalf : undefined}>
+                          <RunRow entry={e} onOpen={() => openRun(e)} onDelete={() => setPending(e)} testID={`run-${e.id}`} />
+                        </SwipeToDelete>
+                      ))}
+                    </View>
+                  </View>
+                ))
               )}
               <Micro style={styles.swipeHint}>Swipe a run left, or hold it, to delete</Micro>
             </>
-          )}
+          ) : null}
 
           {simParams ? (
             <>
@@ -245,10 +302,21 @@ export default function GarageScreen() {
 
           {/* Tucked away, where an errand belongs: the app calibrates itself while driving. */}
           <View style={styles.footer}>
-            <Pressable onPress={() => openCalibrate()} accessibilityRole="button" testID="nav-calibrate" style={({ pressed }) => pressed && styles.pressed}>
+            <Pressable
+              onPress={() => openCalibrate()}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Check the mount"
+              testID="nav-calibrate"
+              style={({ pressed }) => [styles.footLink, pressed && styles.pressed]}>
               <Micro color="muted">Check the mount</Micro>
             </Pressable>
-            <Pressable onPress={() => router.push('/settings')} accessibilityRole="button" style={({ pressed }) => pressed && styles.pressed}>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              style={({ pressed }) => [styles.footLink, styles.footLinkEnd, pressed && styles.pressed]}>
               <Micro color="muted">Settings</Micro>
             </Pressable>
           </View>
@@ -280,8 +348,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   scroll: { paddingHorizontal: gutter, paddingBottom: space[16], width: '100%', maxWidth: 660, alignSelf: 'center' },
+  scrollWide: { maxWidth: 1040 },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: space[3], paddingBottom: space[8] },
   settings: { paddingVertical: space[1], paddingHorizontal: space[2], borderWidth: 1, borderColor: colors.line, borderRadius: 4 },
+  top: { flexDirection: 'row', alignItems: 'flex-start', gap: space[6] },
+  topLeft: { flex: 1.05, minWidth: 0 },
+  topRight: { flex: 1, minWidth: 0 },
   underCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], marginTop: space[4] },
   ctaNote: { flexShrink: 1 },
   notice: { marginTop: space[4] },
@@ -292,13 +364,22 @@ const styles = StyleSheet.create({
     marginTop: space[10],
     borderTopWidth: 1,
     borderTopColor: colors.line,
-    paddingTop: space[4],
+    paddingTop: space[2],
   },
-  errorBox: { marginTop: space[4], borderLeftWidth: 3, borderLeftColor: colors.red, paddingLeft: space[3] },
+  // 44 dp is the floor for anything a driver reaches for at arm's length in a moving car; this
+  // was 110 × 14 with no hitSlop, on the one control someone uses when something feels wrong.
+  footLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space[1] },
+  footLinkEnd: { alignItems: 'flex-end' },
   seeding: { marginTop: space[5], gap: 2, borderLeftWidth: 3, borderLeftColor: colors.cyan, paddingLeft: space[3] },
+  seedingNote: { textTransform: 'none', letterSpacing: 0.2 },
   skeletonCard: { height: 180, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg1, opacity: 0.6 },
+  night: { marginTop: space[3] },
+  nightHead: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingBottom: space[2] },
+  nightRule: { flex: 1, height: 1, backgroundColor: colors.line },
   list: { gap: space[2] },
-  onlyRun: { paddingVertical: space[2] },
+  listWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  rowHalf: { flexBasis: '48.5%', flexGrow: 1, minWidth: 280 },
+  onlyRun: { paddingVertical: space[2], textTransform: 'none', letterSpacing: 0.2 },
   swipeHint: { marginTop: space[3], opacity: 0.7 },
   pressed: { opacity: 0.65 },
 });

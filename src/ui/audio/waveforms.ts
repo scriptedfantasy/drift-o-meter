@@ -13,6 +13,8 @@ export interface ClipMeasurement {
   /** Loudness tier the renderer levelled this clip to (see tools/audio/render.mjs). */
   tier: 'A' | 'B' | 'C' | 'D' | 'L';
   durationS: number;
+  /** Last instant above -40 dB relative to the clip's own peak: the voice's real lifetime. */
+  activeS: number;
   /** dBFS. */
   peakDb: number;
   rmsDb: number;
@@ -27,6 +29,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'initiation': {
     tier: 'D',
     durationS: 0.26,
+    activeS: 0.241,
     peakDb: -13.9,
     rmsDb: -27.9,
     centroidHz: 844,
@@ -36,6 +39,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'transition': {
     tier: 'B',
     durationS: 0.34,
+    activeS: 0.227,
     peakDb: -6,
     rmsDb: -20.8,
     centroidHz: 4240,
@@ -45,6 +49,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'manji': {
     tier: 'B',
     durationS: 0.5,
+    activeS: 0.405,
     peakDb: -6,
     rmsDb: -21,
     centroidHz: 3712,
@@ -54,6 +59,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'extreme': {
     tier: 'B',
     durationS: 0.64,
+    activeS: 0.516,
     peakDb: -7.1,
     rmsDb: -20.5,
     centroidHz: 2743,
@@ -63,6 +69,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'long': {
     tier: 'C',
     durationS: 0.46,
+    activeS: 0.455,
     peakDb: -9.1,
     rmsDb: -24.1,
     centroidHz: 780,
@@ -72,6 +79,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'smooth': {
     tier: 'C',
     durationS: 0.42,
+    activeS: 0.415,
     peakDb: -12.9,
     rmsDb: -24,
     centroidHz: 1138,
@@ -81,6 +89,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'exit': {
     tier: 'B',
     durationS: 0.56,
+    activeS: 0.52,
     peakDb: -9,
     rmsDb: -20.5,
     centroidHz: 1246,
@@ -90,6 +99,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'speed': {
     tier: 'C',
     durationS: 0.42,
+    activeS: 0.413,
     peakDb: -9.6,
     rmsDb: -24,
     centroidHz: 5157,
@@ -99,6 +109,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'link': {
     tier: 'C',
     durationS: 0.44,
+    activeS: 0.341,
     peakDb: -9,
     rmsDb: -24.1,
     centroidHz: 2009,
@@ -108,6 +119,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'lap': {
     tier: 'C',
     durationS: 0.36,
+    activeS: 0.301,
     peakDb: -10.9,
     rmsDb: -24,
     centroidHz: 3766,
@@ -117,6 +129,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'cleanlap': {
     tier: 'B',
     durationS: 0.8,
+    activeS: 0.78,
     peakDb: -7.5,
     rmsDb: -20.5,
     centroidHz: 865,
@@ -126,6 +139,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'banked': {
     tier: 'A',
     durationS: 0.9,
+    activeS: 0.86,
     peakDb: -3.1,
     rmsDb: -17.1,
     centroidHz: 3471,
@@ -135,6 +149,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'lost': {
     tier: 'B',
     durationS: 0.74,
+    activeS: 0.601,
     peakDb: -6,
     rmsDb: -20.7,
     centroidHz: 1483,
@@ -144,6 +159,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'spin': {
     tier: 'A',
     durationS: 0.95,
+    activeS: 0.926,
     peakDb: -4.9,
     rmsDb: -17.4,
     centroidHz: 2852,
@@ -153,6 +169,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'stop': {
     tier: 'C',
     durationS: 0.52,
+    activeS: 0.405,
     peakDb: -9.8,
     rmsDb: -24.2,
     centroidHz: 2509,
@@ -162,6 +179,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'grade': {
     tier: 'A',
     durationS: 1.65,
+    activeS: 1.42,
     peakDb: -3,
     rmsDb: -17.1,
     centroidHz: 3504,
@@ -171,6 +189,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'bed-low': {
     tier: 'L',
     durationS: 1.6,
+    activeS: 1.6,
     peakDb: -15.9,
     rmsDb: -26,
     centroidHz: 461,
@@ -180,6 +199,7 @@ export const CLIP_MEASUREMENTS: Record<string, ClipMeasurement> = {
   'bed-high': {
     tier: 'L',
     durationS: 1.6,
+    activeS: 1.6,
     peakDb: -12.5,
     rmsDb: -26,
     centroidHz: 2724,

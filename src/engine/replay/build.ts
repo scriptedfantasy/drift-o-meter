@@ -1,4 +1,5 @@
-import { clamp, degToRad, wrapAngle, type DriftEvent, type Session, type SlipState, type StyleCallout } from '../types';
+import { DEFAULT_SCORE_OPTIONS } from '../score/rules';
+import { clamp, degToRad, radToDeg, wrapAngle, type DriftEvent, type Session, type SlipState, type StyleCallout } from '../types';
 import type {
   DriftSeverity,
   Replay,
@@ -45,13 +46,61 @@ export const SEVERITY_EDGES = {
 } as const;
 
 /**
- * The callout for a drift's peak. The spin band gets its own word AND its magnitude, so a 70°
- * save and a 93° one never read the same. One rule, used by the builder and by any tool that
- * rewrites a peak.
+ * The callout for a drift's peak.
+ *
+ * `spun` is `DriftEvent.spin` — the DETECTOR's verdict — never an angle band. The band used to
+ * stand in for it, which put "SAVED IT 118°" on a drift the engine had marked as a spin, and
+ * "BIG ANGLE" in gold on one that genuinely spun. An angle is what the car reached; whether the
+ * driver held it is a different fact, and only the engine knows it.
+ *
+ * SAVED IT is therefore reserved for an angle past the spin edge that the driver DID hold, which
+ * is the one moment in a run that deserves the phrase.
  */
-export function peakCallout(severity: DriftSeverity, peakAngle: number): string {
-  if (severity !== 'spin') return 'BIG ANGLE';
-  return `SAVED IT ${Math.round((Math.abs(peakAngle) * 180) / Math.PI)}\u00b0`;
+export function peakCallout(spun: boolean, peakAngle: number): string {
+  const deg = Math.round(Math.abs(peakAngle) * (180 / Math.PI));
+  if (spun) return `LOST IT ${deg}°`;
+  if (Math.abs(peakAngle) >= SEVERITY_EDGES.spin) return `SAVED IT ${deg}°`;
+  return 'BIG ANGLE';
+}
+
+/**
+ * Which drifts never banked their points, by the SCORER's chain rule (`replayChains` in
+ * src/engine/score/session.ts) replayed over the drift times and `DriftEvent.spin`:
+ *
+ *  - a drift that starts within `chainGapS` of the previous exit is in the same chain;
+ *  - `bankDelayS` after an exit the chain's points are banked and can no longer be taken;
+ *  - a spin discards every un-banked point of its chain ("CHAIN LOST -N").
+ *
+ * The replay needs this because `session.score.perDrift[id].total` is what a drift EARNED, and a
+ * lost chain earned points the session total does not contain. Summing them raw gave the replay
+ * a running score 49 % above the results screen on the `spin` fixture and 9.7x on `sloppy`.
+ *
+ * The thresholds are the scorer's own (`DEFAULT_SCORE_OPTIONS`), not copies, and the fixture-wide
+ * test that `trail.score[n-1] === session.score.total` is what proves this replay of the rule
+ * still agrees with the scorer that owns it.
+ */
+export function lostToSpin(drifts: DriftEvent[], chainGapS = DEFAULT_SCORE_OPTIONS.chainGapS, bankDelayS = DEFAULT_SCORE_OPTIONS.bankDelayS): Set<number> {
+  const sorted = drifts.slice().sort((a, b) => a.startT - b.startT || a.id - b.id);
+  const lost = new Set<number>();
+  let unbanked: number[] = [];
+  let lastEndT = -Infinity;
+  let lastSpun = false;
+  let open = false;
+  for (const e of sorted) {
+    const gap = e.startT - lastEndT;
+    const chained = open && !lastSpun && gap <= chainGapS;
+    if (!chained || gap >= bankDelayS) unbanked = [];
+    unbanked.push(e.id);
+    open = true;
+    if (e.spin === true) {
+      for (const id of unbanked) lost.add(id);
+      unbanked = [];
+      lastSpun = true;
+      open = false;
+    } else lastSpun = false;
+    lastEndT = e.endT;
+  }
+  return lost;
 }
 
 /** |β| → drama band. Absolute, so it means the same in every session. */
@@ -75,6 +124,13 @@ export function intensityOf(beta: number, opts: ReplayOptions): number {
 }
 
 const fin = (v: number, fallback = 0): number => (Number.isFinite(v) ? v : fallback);
+
+/**
+ * How far β may drift from `course − heading` before the trail is rebuilt from the identity.
+ * Half a degree: far above the noise of interpolating three angles, far below anything a driver
+ * or a critic could see on screen.
+ */
+export const IDENTITY_TOLERANCE = degToRad(0.5);
 
 interface SourceSample {
   t: number;
@@ -199,6 +255,20 @@ function buildTrail(src: SourceSample[], t0: number, durationS: number, opts: Re
   }
   if (badPos > 0) warnings.push(badPos === n ? 'no usable positions in this session (SIGNAL LOST)' : `${badPos} trail samples had no usable position`);
   if (badScalar > 0) warnings.push(`${badScalar} trail samples were affected by a non-finite speed/angle input and were held steady`);
+  // β = course − heading is the engine's DEFINITION of a slip angle (src/engine/types.ts), and
+  // three arrays copied independently can quietly stop obeying it — a fixture that rewrote β
+  // without touching heading drew a car pointing straight down the road under a 118° numeral,
+  // and nothing downstream noticed for a whole round. The nose is what gets redrawn, because
+  // the position (and therefore the course) is measured and β is the estimator's output.
+  let worst = 0;
+  for (let k = 0; k < n; k++) {
+    const e = Math.abs(wrapAngle(beta[k] - (course[k] - heading[k])));
+    if (e > worst) worst = e;
+  }
+  if (worst > IDENTITY_TOLERANCE) {
+    warnings.push(`the slip angle disagrees with the heading by up to ${radToDeg(worst).toFixed(1)}° — the car is drawn from course − β`);
+    for (let k = 0; k < n; k++) heading[k] = wrapAngle(course[k] - beta[k]);
+  }
   const dist = new Float64Array(n);
   for (let k = 1; k < n; k++) dist[k] = dist[k - 1] + (0.5 * (speed[k - 1] + speed[k])) / hz;
   return {
@@ -262,7 +332,7 @@ function markMeasured(session: Session, t0: number, trail: ReplayTrail, duration
   }
   if (windows.length) {
     const lost = windows.reduce((acc, w) => acc + (w.endT - w.startT), 0);
-    warnings.push(`${windows.length} GPS dropout${windows.length === 1 ? '' : 's'} totalling ${lost.toFixed(1)} s were dead-reckoned`);
+    warnings.push(`${windows.length} GPS dropout${windows.length === 1 ? ' totalling' : 's totalling'} ${lost.toFixed(1)} s ${windows.length === 1 ? 'was' : 'were'} dead-reckoned`);
   }
   return windows;
 }
@@ -308,18 +378,39 @@ function buildLaps(session: Session, t0: number, trail: ReplayTrail, durationS: 
   return laps;
 }
 
-function driftPoints(session: Session, d: DriftEvent, trail: ReplayTrail, startIndex: number, endIndex: number, opts: ReplayOptions): { total: number; callouts: StyleCallout[] } {
+/**
+ * What a drift is worth on the replay's running total: what it BANKED, not what it earned.
+ *
+ * `gross` is the scorer's per-drift total (or a fallback estimate for a session that was never
+ * scored). `total` is 0 when the chain rule says a later spin took it, which is what keeps the
+ * replay's running score equal to the session total the results screen prints.
+ */
+function driftPoints(
+  session: Session,
+  d: DriftEvent,
+  trail: ReplayTrail,
+  startIndex: number,
+  endIndex: number,
+  opts: ReplayOptions,
+  lost: boolean,
+): { total: number; gross: number; callouts: StyleCallout[] } {
   const ds = session.score?.perDrift?.[d.id];
-  if (ds && Number.isFinite(ds.total) && ds.total > 0) return { total: ds.total, callouts: ds.callouts ?? [] };
-  let pts = 0;
-  for (let k = startIndex; k <= endIndex; k++) {
-    pts += (opts.fallbackPointsPerS * clamp(Math.abs(trail.beta[k]) / degToRad(30), 0, 1.5)) / trail.hz;
-  }
-  return { total: Math.round(pts), callouts: [] };
+  const gross =
+    ds && Number.isFinite(ds.total) && ds.total > 0
+      ? ds.total
+      : (() => {
+          let pts = 0;
+          for (let k = startIndex; k <= endIndex; k++) {
+            pts += (opts.fallbackPointsPerS * clamp(Math.abs(trail.beta[k]) / degToRad(30), 0, 1.5)) / trail.hz;
+          }
+          return Math.round(pts);
+        })();
+  return { total: lost ? 0 : gross, gross, callouts: lost ? [] : (ds?.callouts ?? []) };
 }
 
-function buildSegments(session: Session, t0: number, trail: ReplayTrail, durationS: number, opts: ReplayOptions): ReplaySegment[] {
+function buildSegments(session: Session, t0: number, trail: ReplayTrail, durationS: number, opts: ReplayOptions, warnings: string[]): ReplaySegment[] {
   const drifts = [...(session.drifts ?? [])].filter((d) => Number.isFinite(d.startT) && Number.isFinite(d.endT)).sort((a, b) => a.startT - b.startT);
+  const lost = lostToSpin(drifts);
   const segments: ReplaySegment[] = [];
   for (const d of drifts) {
     const startT = clamp(d.startT - t0, 0, durationS);
@@ -348,9 +439,14 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
         lastStrong = sg;
       }
     }
-    const { total } = driftPoints(session, d, trail, startIndex, endIndex, opts);
+    const isLost = lost.has(d.id);
+    const { total, gross } = driftPoints(session, d, trail, startIndex, endIndex, opts, isLost);
     const peakT = Number.isFinite(d.peakAngleT) && d.peakAngleT >= d.startT && d.peakAngleT <= d.endT ? d.peakAngleT - t0 : trail.t[peakIndex];
-    const peakAngle = Math.max(peak, Number.isFinite(d.peakAngle) ? d.peakAngle : 0);
+    // The DETECTOR's peak is the one that gets printed, because it is the one the results screen
+    // prints; the trail maximum runs up to a few degrees higher on a noisy mount and is kept only
+    // for the colour ramp. They used to be maxed together, which put "BEST 80°" on the replay
+    // against "PEAK ANGLE 75.9°" on the results screen for the same slide.
+    const peakAngle = Number.isFinite(d.peakAngle) && d.peakAngle > 0 ? d.peakAngle : peak;
     segments.push({
       driftId: d.id,
       startIndex,
@@ -360,15 +456,24 @@ function buildSegments(session: Session, t0: number, trail: ReplayTrail, duratio
       durationS: endT - startT,
       intensity,
       peakAngle,
+      samplePeakAngle: Math.max(peak, peakAngle),
       peakT,
       peakIndex,
       severity: severityOf(peakAngle),
+      spin: d.spin === true,
+      lost: isLost,
       initialDirection: firstSign !== 0 ? firstSign : d.initialDirection === -1 ? -1 : 1,
       transitions: Math.max(transitions, d.transitions | 0),
       points: total,
+      grossPoints: gross,
       lapIndex: trail.lapOf[startIndex],
     });
   }
+  // Every scored slide has to exist on both screens. A drift clipped away by the active window
+  // used to leave the replay saying "8 DRIFTS" where the results screen listed 9.
+  const kept = new Set(segments.map((g) => g.driftId));
+  const dropped = drifts.filter((d) => !kept.has(d.id));
+  if (dropped.length > 0) warnings.push(`${dropped.length} drift${dropped.length === 1 ? '' : 's'} fell outside the replay window and are not drawn`);
   return segments;
 }
 
@@ -380,7 +485,9 @@ function fillScore(session: Session, t0: number, trail: ReplayTrail, segments: R
   const inc = new Float64Array(trail.n);
   for (const seg of segments) {
     const ds = session.score?.perDrift?.[seg.driftId];
-    const callouts = ds?.callouts ?? [];
+    // A lost chain adds nothing — not its base, not its callout bonuses. The multiplier ramp
+    // below still runs, because the driver really did have it while the slide was alive.
+    const callouts = seg.lost ? [] : (ds?.callouts ?? []);
     const mult = ds && Number.isFinite(ds.multiplier) && ds.multiplier > 0 ? ds.multiplier : 1 + 0.5 * seg.transitions;
     let bonus = 0;
     for (const c of callouts) if (Number.isFinite(c.points) && c.points > 0) bonus += c.points;
@@ -539,12 +646,21 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
           }
         }
         n++;
-        push({ kind: 'transition', t: tz, ...poseFields(trail, tz), label: n > 1 ? `TRANSITION x${n}` : 'TRANSITION', driftId: seg.driftId });
+        // U+00D7, the same character the multiplier chip and the scorer's own labels use
+        push({ kind: 'transition', t: tz, ...poseFields(trail, tz), label: n > 1 ? `TRANSITION \u00d7${n}` : 'TRANSITION', driftId: seg.driftId });
       }
       lastStrong = sg;
       lastStrongIdx = k;
     }
-    push({ kind: 'drift-end', t: seg.endT, ...poseFields(trail, seg.endT), label: `+${formatPoints(seg.points)}`, driftId: seg.driftId, points: seg.points });
+    push({
+      kind: 'drift-end',
+      t: seg.endT,
+      ...poseFields(trail, seg.endT),
+      // a drift whose chain was lost never banked these: it is marked as taken away, not awarded
+      label: seg.lost ? `\u2212${formatPoints(seg.grossPoints)}` : `+${formatPoints(seg.points)}`,
+      driftId: seg.driftId,
+      points: seg.points,
+    });
   }
   for (const lap of laps) {
     push({ kind: 'lap', t: lap.startT, ...poseFields(trail, lap.startT), label: `LAP ${lap.index + 1}`, lapIndex: lap.index });
@@ -561,29 +677,53 @@ function buildMarkers(trail: ReplayTrail, segments: ReplaySegment[], laps: Repla
  */
 function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: ReplayLap[], markers: ReplayMarker[]): ReplayEvent[] {
   const events: ReplayEvent[] = [];
-  const maxPoints = Math.max(1, ...segments.map((s) => s.points));
+  const endOfRun = trail.t[trail.n - 1];
+  const maxPoints = Math.max(1, ...segments.map((s) => s.grossPoints));
+  // a lost chain's total, banked against the spin that ended it, so the beat can name the number
+  const chainLoss = new Map<number, number>();
+  let pending = 0;
   for (const seg of segments) {
-    const mag = clamp(seg.peakAngle / SEVERITY_EDGES.spin, 0.2, 1);
+    if (!seg.lost) {
+      pending = 0;
+      continue;
+    }
+    pending += seg.grossPoints;
+    if (seg.spin) {
+      chainLoss.set(seg.driftId, pending);
+      pending = 0;
+    }
+  }
+  for (const seg of segments) {
+    const mag = clamp(seg.samplePeakAngle / SEVERITY_EDGES.spin, 0.2, 1);
     events.push({ kind: 'entry', t: seg.startT, holdS: 0.6, magnitude: 0.45 * mag, priority: 20, label: '', driftId: seg.driftId, lapIndex: seg.lapIndex });
-    if (seg.severity === 'extreme' || seg.severity === 'spin') {
+    // The kind comes from the engine's own verdict. A spun drift ALWAYS gets its beat, whatever
+    // band its angle landed in, and a held angle never borrows the spin's word or its colour.
+    if (seg.spin || seg.severity === 'extreme' || seg.severity === 'spin') {
       events.push({
-        kind: seg.severity === 'spin' ? 'spin' : 'peak',
+        kind: seg.spin ? 'spin' : 'peak',
         t: seg.peakT,
         holdS: 1.1,
-        magnitude: mag,
-        priority: seg.severity === 'spin' ? 90 : 60,
-        label: peakCallout(seg.severity, seg.peakAngle),
+        magnitude: seg.spin ? 1 : mag,
+        priority: seg.spin ? 90 : 60,
+        label: peakCallout(seg.spin, seg.peakAngle),
         driftId: seg.driftId,
         lapIndex: seg.lapIndex,
       });
     }
+    const loss = chainLoss.get(seg.driftId) ?? 0;
+    // The exit of a spin is the chain going up in smoke, and it is the biggest number on screen
+    // at that moment — so it is reported the way the live HUD reports it, a beat AFTER the spin
+    // itself (`LiveScorer` fires CHAIN LOST on the tick after the drift ends) rather than on top
+    // of it. A drift the spin will later take exits with its points still AT RISK: they are
+    // never added to the running total, so its exit must not read as an award either.
+    const lostLabel = seg.spin ? `CHAIN LOST \u2212${formatPoints(loss || seg.grossPoints)}` : `AT RISK +${formatPoints(seg.grossPoints)}`;
     events.push({
       kind: 'exit',
-      t: seg.endT,
+      t: seg.lost && seg.spin ? Math.min(seg.endT + 0.35, endOfRun) : seg.endT,
       holdS: 1.3,
-      magnitude: clamp(seg.points / maxPoints, 0.25, 1),
-      priority: 50,
-      label: `+${formatPoints(seg.points)}`,
+      magnitude: seg.lost ? (seg.spin ? 1 : 0.35) : clamp(seg.grossPoints / maxPoints, 0.25, 1),
+      priority: seg.lost && seg.spin ? 92 : 50,
+      label: seg.lost ? lostLabel : `+${formatPoints(seg.points)}`,
       points: seg.points,
       driftId: seg.driftId,
       lapIndex: seg.lapIndex,
@@ -605,7 +745,7 @@ function buildEvents(trail: ReplayTrail, segments: ReplaySegment[], laps: Replay
 function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[], lead: number): ReplayHighlight[] {
   const out: ReplayHighlight[] = [];
   for (const seg of segments) {
-    const kind: ReplayHighlight['kind'] = seg.transitions >= 2 ? 'chain' : seg.severity === 'extreme' || seg.severity === 'spin' ? 'peak' : 'transition';
+    const kind: ReplayHighlight['kind'] = seg.transitions >= 2 ? 'chain' : seg.spin || seg.severity === 'extreme' || seg.severity === 'spin' ? 'peak' : 'transition';
     const inT = Math.max(0, seg.startT - 1);
     out.push({
       t: seg.peakT,
@@ -613,10 +753,15 @@ function buildHighlights(trail: ReplayTrail, segments: ReplaySegment[], lead: nu
       cueT: Math.max(inT, seg.peakT - lead),
       inT,
       outT: Math.min(trail.t[trail.n - 1], seg.endT + 1.2),
-      label: seg.transitions >= 2 ? `${seg.transitions}-LINK CHAIN` : `${Math.round((seg.peakAngle * 180) / Math.PI)}° · ${formatPoints(seg.points)} PTS`,
+      label: seg.spin
+        ? `${Math.round((seg.peakAngle * 180) / Math.PI)}° · SPUN`
+        : seg.transitions >= 2
+          ? `${seg.transitions}-LINK CHAIN`
+          : `${Math.round((seg.peakAngle * 180) / Math.PI)}° · ${formatPoints(seg.points)} PTS`,
       kind,
       driftId: seg.driftId,
-      points: seg.points,
+      // a spin is worth watching and worth nothing: rank it by what it was worth before it went
+      points: seg.grossPoints,
       peakAngle: seg.peakAngle,
     });
   }
@@ -715,7 +860,7 @@ function buildTelemetry(trail: ReplayTrail, durationS: number, opts: ReplayOptio
   return { n, hz, t, speed, angle, beta, points, drifting, maxSpeed, maxAngle, maxPoints: points[n - 1] };
 }
 
-function buildBounds(trail: ReplayTrail, track: Replay['track'], opts: ReplayOptions): ReplayBounds {
+function buildBounds(trail: ReplayTrail, track: Replay['track'], opts: ReplayOptions, pad = true): ReplayBounds {
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -732,8 +877,8 @@ function buildBounds(trail: ReplayTrail, track: Replay['track'], opts: ReplayOpt
   if (!Number.isFinite(minX)) {
     minX = maxX = minY = maxY = 0;
   }
-  const pad = Math.max(opts.paddingM, 0.05 * Math.max(maxX - minX, maxY - minY));
-  return { minX: minX - pad, maxX: maxX + pad, minY: minY - pad, maxY: maxY + pad };
+  const m = pad ? Math.max(opts.paddingM, 0.05 * Math.max(maxX - minX, maxY - minY)) : 0;
+  return { minX: minX - m, maxX: maxX + m, minY: minY - m, maxY: maxY + m };
 }
 
 /**
@@ -748,12 +893,21 @@ function activeWindow(session: Session, src: SourceSample[], opts: ReplayOptions
   let j = src.length - 1;
   while (j > i && !moving(src[j])) j--;
   if (i >= j) return { start: src[0].t, end: src[src.length - 1].t };
-  const start = Math.max(src[0].t, src[i].t - opts.deadAirS);
+  let start = Math.max(src[0].t, src[i].t - opts.deadAirS);
   let end = Math.min(src[src.length - 1].t, src[j].t + opts.deadAirS);
   const laps = session.track?.laps ?? [];
   if (session.track?.closed && laps.length > 0) {
     const finish = Math.max(...laps.map((l) => (Number.isFinite(l.endT) ? l.endT : -Infinity)));
     if (Number.isFinite(finish) && finish > start + 5) end = Math.min(end, finish + 2.5);
+  }
+  // ...but never at the cost of a scored slide. The chequered flag is not the end of the
+  // recording: a drift that runs past it (or begins before the car was judged to be moving) is
+  // still on the results screen, and a window that cuts it makes the two screens count
+  // different runs. The FINISH beat stays at the flag; the replay simply keeps rolling.
+  const drifts = (session.drifts ?? []).filter((d) => Number.isFinite(d.startT) && Number.isFinite(d.endT));
+  for (const d of drifts) {
+    if (d.startT < start) start = Math.max(src[0].t, d.startT - 0.5);
+    if (d.endT > end) end = Math.min(src[src.length - 1].t, d.endT + opts.deadAirS);
   }
   return { start, end };
 }
@@ -778,6 +932,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
       t0: 0,
       durationS: 0.05,
       bounds: buildBounds(trail, null, opts),
+      content: buildBounds(trail, null, opts, false),
       trail,
       segments: [],
       smoke: [],
@@ -800,7 +955,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
   const trail = buildTrail(src, t0, durationS, opts, warnings);
   const gapWindows = markMeasured(session, t0, trail, durationS, opts, warnings);
   const laps = buildLaps(session, t0, trail, durationS);
-  const segments = buildSegments(session, t0, trail, durationS, opts);
+  const segments = buildSegments(session, t0, trail, durationS, opts, warnings);
   fillScore(session, t0, trail, segments);
   const smoke = buildSmoke(trail, opts);
   const markers = buildMarkers(trail, segments, laps, opts);
@@ -819,6 +974,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
         }
       : null;
   const bounds = buildBounds(trail, track, opts);
+  const content = buildBounds(trail, track, opts, false);
   let peakAngle = 0;
   for (const s of segments) if (s.peakAngle > peakAngle) peakAngle = s.peakAngle;
   // The session headline describes the RUN, not its single biggest spike: one 71° save used to
@@ -838,6 +994,7 @@ export function buildReplay(session: Session, partial: Partial<ReplayOptions> = 
     t0,
     durationS,
     bounds,
+    content,
     trail,
     segments,
     smoke,

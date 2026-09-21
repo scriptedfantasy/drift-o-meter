@@ -490,6 +490,20 @@ const CLIPS = {
   },
 };
 
+/**
+ * How long the clip is actually AUDIBLE: the last instant above -40 dB relative to its own peak.
+ *
+ * The mixer uses this, not the file length, to decide when a voice is free again. An exponential
+ * decay never truly reaches zero, so `extreme` is a 0.64 s file whose last 0.29 s is inaudible —
+ * treating the file length as the voice's lifetime would hold a voice hostage for a third of a
+ * second of silence and drop cues that should have played.
+ */
+function activeDuration(buf) {
+  const floor = peakOf(buf) * 0.01;
+  for (let i = buf.length - 1; i >= 0; i--) if (Math.abs(buf[i]) > floor) return (i + 1) / SAMPLE_RATE;
+  return buf.length / SAMPLE_RATE;
+}
+
 /** Cross-fade a loop's tail into its head so the seam is inaudible. */
 function seamless(buf, loopS, fadeS = 0.12) {
   const n = secondsToSamples(loopS);
@@ -560,6 +574,7 @@ function main() {
       loop: !!def.loop,
       durationS: Math.round((buf.length / SAMPLE_RATE) * 1000) / 1000,
       bytes: wav.length,
+      activeS: Math.round(activeDuration(buf) * 1000) / 1000,
       peakDb: Math.round(dB(peakOf(buf)) * 10) / 10,
       rmsDb: Math.round(dB(rmsOf(buf)) * 10) / 10,
       dc: Math.round(dcOf(buf) * 1e6) / 1e6,
@@ -601,6 +616,8 @@ function writeTypescript(rows, totalBytes) {
   lines.push('  /** Loudness tier the renderer levelled this clip to (see tools/audio/render.mjs). */');
   lines.push("  tier: 'A' | 'B' | 'C' | 'D' | 'L';");
   lines.push('  durationS: number;');
+  lines.push('  /** Last instant above -40 dB relative to the clip\'s own peak: the voice\'s real lifetime. */');
+  lines.push('  activeS: number;');
   lines.push('  /** dBFS. */');
   lines.push('  peakDb: number;');
   lines.push('  rmsDb: number;');
@@ -616,6 +633,7 @@ function writeTypescript(rows, totalBytes) {
     lines.push(`  '${r.id}': {`);
     lines.push(`    tier: '${r.tier}',`);
     lines.push(`    durationS: ${r.durationS},`);
+    lines.push(`    activeS: ${r.activeS},`);
     lines.push(`    peakDb: ${r.peakDb},`);
     lines.push(`    rmsDb: ${r.rmsDb},`);
     lines.push(`    centroidHz: ${r.centroidHz},`);

@@ -298,7 +298,10 @@ export class ReplayCamera {
   private targetFor(replay: Replay, t: number): CameraTarget {
     const { w, h } = this.viewport;
     if (this.mode === 'overview') {
-      const b = replay.bounds;
+      // `content`, not `bounds`: the padded bounds carry 15 m (or 5 % of the extent) of margin on
+      // every side for culling and the mini-map, and framing the shot with it left the circuit
+      // filling barely half the frame with dead black around it.
+      const b = replay.content;
       const ex = Math.max(1, (b.maxX - b.minX) * (1 + 2 * CAMERA_TUNING.overviewPad));
       const ey = Math.max(1, (b.maxY - b.minY) * (1 + 2 * CAMERA_TUNING.overviewPad));
       const cx = 0.5 * (b.minX + b.maxX);

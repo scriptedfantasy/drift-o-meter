@@ -7,7 +7,7 @@
  * who never discovers the swipe — and for a driver wearing gloves.
  */
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
@@ -24,10 +24,12 @@ export interface SwipeToDeleteProps {
   /** Disabled while a confirmation is already open. */
   enabled?: boolean;
   label?: string;
+  /** Layout for the wrapper, so a row can sit in a two-column list without losing the gesture. */
+  style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-export function SwipeToDelete({ children, onDelete, enabled = true, label = 'Delete', testID }: SwipeToDeleteProps) {
+export function SwipeToDelete({ children, onDelete, enabled = true, label = 'Delete', style, testID }: SwipeToDeleteProps) {
   const dx = useSharedValue(0);
 
   const pan = Gesture.Pan()
@@ -50,7 +52,7 @@ export function SwipeToDelete({ children, onDelete, enabled = true, label = 'Del
   const reveal = useAnimatedStyle(() => ({ opacity: Math.min(1, -dx.value / COMMIT) }));
 
   return (
-    <View style={styles.wrap} testID={testID}>
+    <View style={[styles.wrap, style]} testID={testID}>
       <Animated.View style={[styles.behind, reveal]} pointerEvents="none">
         <AppText variant="subheading" color="red" style={styles.behindLabel}>
           {label}

@@ -90,20 +90,33 @@ export interface LiveFrame {
     chainActive: boolean;
     banked: boolean;
     lost: boolean;
+    /** Points that banked on this frame (0 unless `banked`), and points a spin discarded (0 unless `lost`). */
+    bankedPoints: number;
+    lostPoints: number;
     /**
-     * Whether an instant of drifting WOULD earn points right now — the scorer's own verdict,
-     * not an inference from it. False while the integrity monitor does not believe the slide
+     * THE GATE THE SCORER RAN THIS SAMPLE UNDER — `LiveTick.counting`, straight through, not a
+     * second derivation of it. False while the integrity monitor does not believe the slide
      * (loose mount, impossible physics, uncalibrated, too slow) or while the estimator's state
      * is invalid (no usable GPS course — past `courseTimeoutS` the slip angle stops tracking).
+     *
+     * IT GUARANTEES SOMETHING, and that is the whole point of it: on a frame with
+     * `counting: false` the scorer paid nothing, so `score.total` cannot have gone UP and the
+     * frame's callouts are all worth 0. `honesty.test.ts` asserts exactly that over the whole
+     * looseness sweep. It used to be `plausible && state.valid` computed HERE — what the
+     * scorer was told, not what it did — and the scorer meanwhile paid 4 925 points of callout
+     * bonus on a run every frame of which said `counting: false`.
      *
      * A display that wants to say "NOT SCORING" must read THIS, never guess from `integrity`:
      * a HUD that inferred it from `gps: 'none'` announced "NO FIX — NOT SCORING" through
      * dropouts in which the engine was scoring normally, and correctly so — see
      * docs/ARCHITECTURE.md § "What only a phone can settle". Pair it with
      * `integrity.message` for the reason to show.
+     *
+     * It is NOT a fault light: it is false whenever nothing would be paid for anyway (parked,
+     * crawling, between slides). What the engine will not stand behind is `integrity.believable`.
      */
     counting: boolean;
-    /** Callouts fired on this frame. */
+    /** Callouts fired on this frame. Each carries the points it actually paid — 0 while not counting. */
     callouts: StyleCallout[];
   };
   calibration: MountCalibration;
@@ -112,6 +125,19 @@ export interface LiveFrame {
     physics: 'ok' | 'implausible';
     gps: 'good' | 'poor' | 'none';
     message: string;
+    /**
+     * Whether anything derived from this instant may be BELIEVED — the phone is in its mount,
+     * the readings are physically possible and the estimator's state is valid.
+     *
+     * Two different questions, and a display needs both: `score.counting` answers "is the
+     * scorer paying right now", which is false at every red light; this answers "is the
+     * reading worth showing in colour", which is false only when something is actually wrong.
+     * It lives here so no screen re-derives it — a HUD that kept its own copy (`mount ===
+     * 'loose' || physics === 'implausible' || !valid`) disagreed with the engine by
+     * construction, and that disagreement is what hid a scorer paying for slides it did not
+     * believe.
+     */
+    believable: boolean;
   };
   lap: { count: number; progress: number; completed: Lap | null };
 }
@@ -483,7 +509,7 @@ export class DriftPipeline implements DriftPipelineApi {
     const calHz = opts.calibrationHz ?? 20;
     this.calIntervalS = calHz > 0 && Number.isFinite(calHz) ? 1 / calHz : 0;
     this.cal = this.calibrator.calibration;
-    this.integritySnapshot = { mount: 'rigid', physics: 'ok', gps: 'none', message: '' };
+    this.integritySnapshot = { mount: 'rigid', physics: 'ok', gps: 'none', message: '', believable: true };
     this.integritySnapshot = this.readIntegrity();
   }
 
@@ -599,7 +625,7 @@ export class DriftPipeline implements DriftPipelineApi {
     }
 
     // ---- 8. the frame the app renders
-    const integrity = this.readIntegrity();
+    const integrity = this.readIntegrity(state.valid);
     const frame: LiveFrame = {
       t,
       state,
@@ -625,7 +651,11 @@ export class DriftPipeline implements DriftPipelineApi {
         chainActive: tick.chainDrifts > 0,
         banked: tick.banked,
         lost: tick.lost,
-        counting: plausible && state.valid,
+        bankedPoints: fin(tick.bankedPoints),
+        lostPoints: fin(tick.lostPoints),
+        // the scorer's own gate, straight through: the frame cannot claim to be counting while
+        // the scorer refused to pay, nor the other way round
+        counting: tick.counting,
         callouts,
       },
       calibration: this.cal,
@@ -972,13 +1002,18 @@ export class DriftPipeline implements DriftPipelineApi {
   }
 
   /** Integrity verdict for the frame; the literal is reused while nothing changes. */
-  private readIntegrity(): LiveFrame['integrity'] {
+  private readIntegrity(valid = true): LiveFrame['integrity'] {
     const s = this.integrity.state;
+    // ONE place decides whether the reading may be believed (see `LiveFrame.integrity.believable`).
+    // It deliberately omits the speed and fix-freshness gates that `driftPlausible` also applies:
+    // a car stopped at a red light is not a fault, and a screen that greyed out for one would be
+    // lying in the other direction.
+    const believable = s.mount !== 'loose' && s.physics === 'ok' && valid;
     const prev = this.integritySnapshot;
-    if (prev && prev.mount === s.mount && prev.physics === s.physics && prev.gps === s.gps && prev.message === s.message) {
+    if (prev && prev.mount === s.mount && prev.physics === s.physics && prev.gps === s.gps && prev.message === s.message && prev.believable === believable) {
       return prev;
     }
-    const next = { mount: s.mount, physics: s.physics, gps: s.gps, message: s.message };
+    const next = { mount: s.mount, physics: s.physics, gps: s.gps, message: s.message, believable };
     this.integritySnapshot = next;
     return next;
   }
@@ -1046,9 +1081,22 @@ export function idleLiveFrame(t = 0): LiveFrame {
     phase: 'idle',
     live: null,
     completed: null,
-    score: { total: 0, delta: 0, multiplier: 1, chainPoints: 0, chainActive: false, banked: false, lost: false, counting: false, callouts: EMPTY_CALLOUTS },
+    score: {
+      total: 0,
+      delta: 0,
+      multiplier: 1,
+      chainPoints: 0,
+      chainActive: false,
+      banked: false,
+      lost: false,
+      bankedPoints: 0,
+      lostPoints: 0,
+      counting: false,
+      callouts: EMPTY_CALLOUTS,
+    },
     calibration: { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], quality: 0, forwardResolved: false, t: 0 },
-    integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS' },
+    // nothing has arrived yet, so there is nothing to disbelieve: the state is simply not valid
+    integrity: { mount: 'rigid', physics: 'ok', gps: 'none', message: 'Waiting for GPS', believable: false },
     lap: { count: 0, progress: 0, completed: null },
   };
 }

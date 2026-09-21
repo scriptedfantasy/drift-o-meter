@@ -96,18 +96,26 @@ export function ScoreBanner({ banner, size = 30, align = 'left' }: ScoreBannerPr
 
 function Banner({ banner, size, align }: { banner: HudBanner; size: number; align: 'left' | 'right' }) {
   const rise = useSharedValue(0);
-  const [shown, setShown] = useState(0);
+  const [shown, setShown] = useState(banner.points);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const banked = banner.kind === 'banked';
   const tone = banked ? colors.green : colors.red;
+  // Reduce-motion keeps the banner and its figure — that is the information — and drops both
+  // things that move: the 900 ms rise and the 14-step ticker, which is an animation made of
+  // re-renders rather than of a transform and so slips past an animation-level opt-out.
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     rise.value = 0;
-    rise.value = withTiming(1, { duration: motion.duration.cinematic, easing: easings.out });
-  }, [rise]);
+    rise.value = withTiming(1, { duration: reduced ? motion.duration.fast : motion.duration.cinematic, easing: easings.out });
+  }, [rise, reduced]);
 
   // The points TICK UP over 420 ms: 14 renders of one text node, not a jump cut.
   useEffect(() => {
+    if (reduced) {
+      setShown(banner.points);
+      return;
+    }
     const steps = 14;
     let i = 0;
     setShown(0);
@@ -119,11 +127,11 @@ function Banner({ banner, size, align }: { banner: HudBanner; size: number; alig
     return () => {
       if (timer.current) clearInterval(timer.current);
     };
-  }, [banner.points]);
+  }, [banner.points, reduced]);
 
   const style = useAnimatedStyle(() => ({
     opacity: Math.min(1, rise.value * 4),
-    transform: [{ translateY: (1 - rise.value) * 26 }],
+    transform: [{ translateY: reduced ? 0 : (1 - rise.value) * 26 }],
   }));
 
   return (

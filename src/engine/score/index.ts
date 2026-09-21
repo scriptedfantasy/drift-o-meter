@@ -31,9 +31,12 @@
  *   screen reported a clean exit.
  *
  * INTEGRITY    — while the integrity monitor's `driftPlausible` is false (phone loose in its
- *   mount, impossible physics, no GPS, too slow) the drift earns NOTHING, exactly as the
- *   detector ignores `valid:false` samples. `SessionBreakdown.integrity` reports how much of
- *   the run was suppressed and refuses to vouch for the total when it was material.
+ *   mount, impossible physics, no GPS, too slow), or the estimator has marked the state
+ *   invalid, the drift earns NOTHING: no base points AND no callout bonuses. One expression
+ *   decides it (`countsForPoints`), every paying path asks that expression, and `LiveTick`
+ *   reports the answer as `counting`, so a HUD can never show a `+N` for a point the scorer
+ *   refused to pay. `SessionBreakdown.integrity` reports how much of the run was suppressed
+ *   and refuses to vouch for the total when it was material.
  *
  * CHAIN        — consecutive drifts ≤ 3 s apart share the multiplier and count towards LINK.
  *   Points are AT RISK until 2 s after a clean exit, then "BANKED +N" (LiveTick.banked).
@@ -117,7 +120,7 @@ export {
 export type { ScoreOptions, Curve, TrackFactor } from './rules';
 export { SPIN_ANGLE_DEG, TRANSITION_RULE, TransitionCounter } from '../detect/options';
 export type { TransitionRule } from '../detect/options';
-export { DriftAccumulator } from './accumulator';
+export { DriftAccumulator, countsForPoints } from './accumulator';
 import { TRANSITION_RULE, TransitionCounter, type TransitionRule } from '../detect/options';
 
 export interface CountTransitionsOptions {

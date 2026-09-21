@@ -1,8 +1,24 @@
 
-===== home  http://127.0.0.1:43611/
+===== replay  http://127.0.0.1:45203/replay/demo?cam=chase&t=94.9
 
-===== drive-peak  http://127.0.0.1:43611/drive?sim=harbor&rate=1&at=100.85&hold=1
+===== replay-overview  http://127.0.0.1:45203/replay/demo?cam=overview&t=60&play=0&ui=0
 
-===== drive-bank  http://127.0.0.1:43611/drive?sim=harbor&rate=1&at=50.75&hold=1
+===== replay-chase  http://127.0.0.1:45203/replay/demo?cam=chase&t=95.9&play=0&ui=1
 
-===== results-best  http://127.0.0.1:43611/results/fixture-hero?reveal=off
+===== replay-cinematic  http://127.0.0.1:45203/replay/demo?cam=cinematic&t=39.14&play=0&ui=0
+
+===== replay-ghost  http://127.0.0.1:45203/replay/x?fixture=rough&cam=chase&t=18&play=0&ui=0
+
+===== replay-highlight  http://127.0.0.1:45203/replay/demo?hl=1&play=0&cam=chase&ui=1
+
+===== replay-scrub  http://127.0.0.1:45203/replay/demo?cam=chase&scrub=0.36&ui=1
+
+===== replay-untrusted  http://127.0.0.1:45203/replay/fixture-handheld?cam=chase&t=17&play=0&ui=0
+
+===== replay-warnings  http://127.0.0.1:45203/replay/x?fixture=rough&gaps=6&cam=overview&t=62&play=0&ui=0
+
+===== replay-warnings-open  http://127.0.0.1:45203/replay/x?fixture=rough&gaps=6&cam=chase&t=56&play=0&ui=1
+
+===== replay-end  http://127.0.0.1:45203/replay/demo?cam=overview&t=999&play=0&ui=0
+
+===== replay-touge  http://127.0.0.1:45203/replay/x?fixture=touge&cam=cinematic&t=69.2&play=0&ui=0
