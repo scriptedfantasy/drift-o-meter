@@ -75,6 +75,26 @@ recordings knows what to look for rather than re-tuning on a hunch.
   `looseScore` and `calibrationQuality` together against a run you have watched.
   Known residual: at simulator looseness ≤ 0.2 the sway inflates the measured angle by roughly
   15–18 % and nothing flags it.
+
+  AND IT WAS BIGGER THAN IT LOOKED, because a bug was hiding it in both directions. The mount
+  calibrator rotated the FIRST SAMPLE OF EVERY RUN with a body-up axis it had not built yet, so
+  the very first vehicle-frame sample carried about 12 m/s² of acceleration that never happened
+  (measured `az = −7.285`, `ax = −9.416` at t=0 against a phone-frame reading of 0.059). The
+  0.3 Hz high-pass rang on that single sample for about half a second, into a 2 s exponential RMS
+  that held it for roughly 4.6 — which was the ENTIRE false `suspect` on a bolted-down phone, and
+  which the calibration screen had been papering over with a 4 s warm-up guard of its own.
+  Two numbers on this list moved when it was fixed, and both are now honest rather than lucky:
+    - At looseness 0.15 the sway cues cross `suspect` in **2 of 8** runs, not 6 of 8. The old six
+      were the startup artefact latching the label through hysteresis (`suspectExit` 0.18 against
+      a steady score of 0.24–0.32). What is left is this residual, no longer masked.
+    - A genuinely loose mount is now called **later** — 1.75–6.45 s at looseness 0.5, where it
+      used to be 0.7 s — because the cue is no longer pre-charged by the artefact. It still reads
+      `loose` for 93–99 % of the run. **This is a real cost, disclosed rather than tuned away: a
+      driver with a bad mount gets told a few seconds further into their first corner.** If that
+      matters on a real road, the fix is a faster cue, not a return to being right by accident.
+  The lesson generalises past this entry. A UI guard sized to hide a symptom will outlive the
+  symptom and hide the next one too; the 4 s warm-up existed for exactly as long as nobody asked
+  why the first four seconds were wrong.
 * **Forward-axis resolution time.** The mount calibrator resolves *which way the car points*
   from longitudinal acceleration, and how long that takes was measured against a simulated
   drift circuit that offers braking and throttle at a particular rate. A real street, or a
