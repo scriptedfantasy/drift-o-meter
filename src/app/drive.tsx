@@ -1,14 +1,23 @@
 /**
- * The live drive display — one gauge and one control.
+ * The live drive display — two instruments and one control.
  *
  * WHY THERE IS NOTHING ELSE HERE. This screen used to carry a status strip, an integrity banner,
  * a peak/held/flicks strip, a callout stack, a speed and lateral-g row, a score odometer with a
  * multiplier chip and a chain bar, and a live mini-map. All of it was real and most of it was
  * good, and none of it survives the thing it was built for: a driver at 60 km/h has no time to
- * read a screen. One visual they can take in at a glance is worth more than nine they cannot.
+ * read a screen. Two visuals they can take in at a glance are worth more than nine they cannot.
  *
- * So the angle gauge owns the frame — it already carries the hero numeral and the left/right
- * chevron inside its own bowl — and STOP is docked where a hand can find it without looking.
+ * THE ANGLE GAUGE OWNS THE FRAME — it carries the hero numeral and the direction chevron inside
+ * its own bowl — and the g-meter sits under it: a friction circle with the acceleration vector
+ * as a dot, right for a right-hand push, up for throttle, down for brake. They are the two
+ * questions a slide is made of, and they are asked in different shapes so a glance can tell them
+ * apart: an arc that sweeps, and a dot that wanders. STOP is docked where a hand finds it
+ * without looking.
+ *
+ * NEITHER OF THEM HAS A WORD ON IT. The gauge's numeral is the one figure that is scored, so it
+ * earns its place; the g-meter's magnitude is already the dot's distance from the centre, so a
+ * number beside it would be that fact drawn twice — the same reason the gauge's "R" came off
+ * from beside a chevron already pointing right.
  *
  * NOTHING WAS TURNED OFF BEHIND IT. `useDriveRun` still pushes ~100 samples a second through the
  * whole engine, the scorer still scores, the integrity monitor still judges, the session is still
@@ -35,6 +44,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Body, Button, colors, fontFamilies, formatDuration, gradeColors, gutter, Micro, Panel, radii, space } from '@/ui';
 import { useDriftFeel } from '@/ui/audio';
 import AngleGaugeView from '@/ui/hud/AngleGaugeView';
+import GMeterView from '@/ui/hud/GMeterView';
 import { EdgeBloom } from '@/ui/hud/HudChrome';
 import { useHudSignals } from '@/ui/hud/signals';
 import { useDriveRun, type RunError, type RunVerdict } from '@/ui/hud/useDriveRun';
@@ -55,24 +65,37 @@ export default function DriveScreen() {
   // The display is live from the moment the screen opens: there is no pre-run state to render.
   const live = run.status !== 'error';
 
-  // The gauge's box is the arc's bounding box — a wide, shallow bowl of h ≈ 0.56 × w — and with
-  // nothing else competing for the frame it simply takes the widest box that fits. Portrait runs
-  // it full-bleed; landscape is capped by the height the arc needs rather than by the width.
-  const gaugeW = landscape ? Math.min(width - gutter * 2, (height - STOP_DOCK_H) * 1.5) : width;
+  // The gauge's box is the arc's bounding box — a wide, shallow bowl of h ≈ 0.56 × w. Portrait
+  // runs it full-bleed; landscape is capped by the height the arc needs rather than by the width,
+  // and by the room the g-meter takes out of the frame beside it.
+  const gaugeW = landscape ? Math.min(width - gutter * 2 - GM_LANDSCAPE, (height - STOP_DOCK_H) * 1.5) : width;
   const gauge = { w: gaugeW, h: gaugeW * 0.56 };
+  // The g-meter is square and deliberately the smaller of the two: the angle is what is being
+  // judged and the g is the texture under it, so a glance that lands in the wrong place should
+  // land on the gauge. Half the gauge's width portrait, and the fixed landscape column.
+  const gm = landscape ? GM_LANDSCAPE : Math.min(gaugeW * 0.52, height * 0.24);
+  // Tucked up into the gauge's own empty bottom. The arc is a shallow bowl in a wide canvas: the
+  // pivot sits at 0.92 of the canvas height and the arc's ends are at ±78°, so the lowest thing
+  // drawn is at about 0.74 of it and the last quarter is transparent but for the pool glow. Left
+  // to stack naturally the two instruments sat a finger's width apart with nothing in between,
+  // which is a gap the eye has to cross. Pulled up, they read as one instrument cluster.
+  const gmLift = landscape ? 0 : -Math.round(gauge.h * 0.2);
 
   return (
     <View style={styles.root} testID="screen-drive">
       <EdgeBloom signals={signals} />
       <Animated.View style={[styles.fill, shake]}>
         <SafeAreaView style={styles.fill} edges={['top', 'bottom', 'left', 'right']}>
-          {/* Centred, because with one thing on the screen the middle is where an eye returns
-              to. The box exists so a harness check can name the gauge: on web the Skia canvas
-              does not forward its own testID to the DOM, and a ceiling like "at most N ember
-              pixels inside the gauge" has to be measured on the element. */}
-          <View style={styles.stage}>
+          {/* Centred as a pair, so the eye returns to one place and finds both. Each box exists
+              so a harness check can NAME the instrument: on web the Skia canvas does not forward
+              its own testID to the DOM, and a ceiling like "at most N ember pixels inside the
+              gauge" has to be measured on the element rather than on the frame. */}
+          <View style={[styles.stage, landscape && styles.stageLandscape]}>
             <View testID="hud-gauge-box">
               <AngleGaugeView width={gauge.w} height={gauge.h} signals={signals} testID="hud-gauge" />
+            </View>
+            <View testID="hud-g-box" style={{ marginTop: gmLift }}>
+              <GMeterView width={gm} height={gm} signals={signals} testID="hud-g" />
             </View>
           </View>
 
@@ -204,16 +227,22 @@ function SavingOverlay() {
 
 /** Height reserved for the docked STOP control. */
 const STOP_DOCK_H = 54;
+/** The g-meter's side in landscape, where it is a fixed column beside the gauge rather than a
+    fraction of it: the landscape gauge is already height-limited, so scaling the g-meter off its
+    width would shrink the instrument the frame has the most room for. */
+const GM_LANDSCAPE = 186;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg0 },
   fill: { flex: 1 },
-  // One thing on the screen, so it sits in the middle: with nothing else competing there is no
-  // reading order to establish, and the centre is where an eye returns to when it comes back from
-  // the road. The gauge is a shallow bowl (h = 0.56 w) whose own bottom quarter is transparent,
-  // so centring the BOX puts the arc itself a little high in the frame, which is where it wants
-  // to be — the numeral lands nearer eye level and the dead strip falls towards the STOP dock.
+  // Two things on the screen, centred as one block: there is no reading order to establish
+  // between them — a glance takes both or takes the gauge — and the centre is where an eye
+  // returns to when it comes back from the road. The gauge is a shallow bowl (h = 0.56 w) whose
+  // own bottom quarter is transparent, so the g-meter tucks up into that empty strip and the
+  // pair reads as one instrument rather than two stacked panels. Portrait stacks them; landscape
+  // sets them side by side, because a landscape frame has width to spare and no height at all.
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  stageLandscape: { flexDirection: 'row', gap: space[3] },
   stopDock: { position: 'absolute', left: gutter, right: gutter, bottom: space[3] },
   // Landscape puts STOP in the right half, clear of the gauge that now spans the frame.
   stopDockLandscape: { left: '52%', right: gutter, bottom: space[2] },

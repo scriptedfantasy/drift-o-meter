@@ -15,7 +15,7 @@ import { alpha, colors, fontFamilies, space } from '../theme';
 import type { HudSignals } from './signals';
 
 /**
- * Lateral acceleration that pins the ball to the end of its track, in g.
+ * LATERAL acceleration that pins the ball to the end of its track, in g.
  *
  * MEASURED, not chosen: over 12 runs (2 tracks × 3 seeds × 2 aggressions, 91 877 drifting
  * samples) |a_y| while the car is sideways has a median of 0.34 g, p90 0.64 and p99 0.77. At
@@ -23,8 +23,13 @@ import type { HudSignals } from './signals';
  * track — and in 5 of 8 live frames it was inside a ball-width of centre, which is a meter that
  * does not visibly move. At 0.8 g the median travels 42 %, p90 reaches 80 %, and only 0.6 % of
  * drifting samples pin it, so the top of the scale still means something.
+ *
+ * NOT THE SAME NUMBER AS `GMeter.FULL_SCALE_G` (1.0), and deliberately not named the same thing.
+ * That one is the full scale of |(a_x, a_y)| — the whole vector, which is larger than either
+ * axis alone: the same sweep puts the magnitude's median at 0.471 g against this 0.34. Two
+ * measurements of two quantities, not two answers to one question.
  */
-const FULL_SCALE_G = 0.8;
+const LATERAL_FULL_SCALE_G = 0.8;
 
 export interface TelemetryRowProps {
   signals: HudSignals;
@@ -55,14 +60,14 @@ function TelemetryRowImpl({ signals, speedKmh, units, vertical = false, size = 6
 function GBall({ signals, width }: { signals: HudSignals; width: number }) {
   const half = width / 2 - 9;
   const ball = useAnimatedStyle(() => {
-    const g = Math.max(-1, Math.min(1, -signals.ayG.value / FULL_SCALE_G));
+    const g = Math.max(-1, Math.min(1, -signals.ayG.value / LATERAL_FULL_SCALE_G));
     const heat = Math.min(1, Math.abs(g));
     return {
       transform: [{ translateX: g * half }, { scale: 1 + 0.35 * heat }],
       backgroundColor: heat > 0.66 ? colors.ember : colors.cyan,
     };
   });
-  const halo = useAnimatedStyle(() => ({ opacity: 0.12 + 0.5 * Math.min(1, Math.abs(signals.ayG.value) / FULL_SCALE_G) }));
+  const halo = useAnimatedStyle(() => ({ opacity: 0.12 + 0.5 * Math.min(1, Math.abs(signals.ayG.value) / LATERAL_FULL_SCALE_G) }));
 
   return (
     <View style={styles.gWrap}>

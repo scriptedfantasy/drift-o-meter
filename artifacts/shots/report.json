@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T12:23:14.027Z",
+  "startedAt": "2026-09-21T12:59:18.694Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -1278,13 +1278,13 @@
     {
       "name": "drive-open",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open.png",
       "video": null,
-      "ms": 4173,
+      "ms": 4544,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1296,7 +1296,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1332,22 +1332,42 @@
         "redPixels": 14396,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.0999,
+        "nonBgFraction": 0.1139,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
             },
             "pixels": 0,
             "max": 120,
@@ -1356,18 +1376,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-start",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 4199,
+      "ms": 4287,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1379,7 +1399,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1415,22 +1435,42 @@
         "redPixels": 14396,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.0999,
+        "nonBgFraction": 0.1139,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
             },
             "pixels": 0,
             "max": 120,
@@ -1439,18 +1479,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 7026,
+      "ms": 6935,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1462,7 +1502,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1493,47 +1533,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 173768,
-        "goldPixels": 1240,
-        "redPixels": 16052,
+        "emberPixels": 152436,
+        "goldPixels": 1236,
+        "redPixels": 15924,
         "cyanPixels": 0,
-        "textPixels": 1896,
-        "nonBgFraction": 0.475,
+        "textPixels": 1704,
+        "nonBgFraction": 0.4961,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
-            "pixels": 169268,
+            "pixels": 139872,
             "min": 60000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 11964,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 4934,
+      "ms": 5181,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1545,7 +1605,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1576,47 +1636,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 104940,
+        "emberPixels": 112340,
         "goldPixels": 2600,
         "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 1684,
-        "nonBgFraction": 0.4973,
+        "textPixels": 2064,
+        "nonBgFraction": 0.5295,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
             "pixels": 44352,
             "min": 20000,
             "ok": true,
             "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 7420,
+            "min": 2000,
+            "ok": true,
+            "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-transition",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 4850,
+      "ms": 5133,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1628,7 +1708,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1659,47 +1739,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 169340,
+        "emberPixels": 177192,
         "goldPixels": 0,
         "redPixels": 15524,
         "cyanPixels": 0,
-        "textPixels": 1680,
-        "nonBgFraction": 0.4769,
+        "textPixels": 2080,
+        "nonBgFraction": 0.5108,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
-            "pixels": 164840,
+            "pixels": 163572,
             "min": 60000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 9112,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-bank",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank.png",
       "video": null,
-      "ms": 4747,
+      "ms": 5068,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1711,7 +1811,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1742,47 +1842,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 81736,
+        "emberPixels": 90204,
         "goldPixels": 232,
         "redPixels": 14412,
         "cyanPixels": 0,
-        "textPixels": 1584,
-        "nonBgFraction": 0.1828,
+        "textPixels": 1976,
+        "nonBgFraction": 0.2174,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
-            "pixels": 81580,
+            "pixels": 80312,
             "min": 40000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 9736,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-loose",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose.png",
       "video": null,
-      "ms": 4411,
+      "ms": 4777,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1794,7 +1914,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1829,23 +1949,43 @@
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 1932,
-        "nonBgFraction": 0.134,
+        "textPixels": 2336,
+        "nonBgFraction": 0.1479,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
             },
             "pixels": 0,
             "max": 120,
@@ -1854,18 +1994,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-lost",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost.png",
       "video": null,
-      "ms": 4514,
+      "ms": 4550,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1877,7 +2017,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1912,23 +2052,43 @@
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 1892,
-        "nonBgFraction": 0.1346,
+        "textPixels": 2300,
+        "nonBgFraction": 0.1483,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
             },
             "pixels": 0,
             "max": 120,
@@ -1937,18 +2097,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-gps",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps.png",
       "video": null,
-      "ms": 4602,
+      "ms": 4887,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1960,7 +2120,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -1991,47 +2151,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 91248,
+        "emberPixels": 94844,
         "goldPixels": 1504,
         "redPixels": 14456,
         "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.3574,
+        "textPixels": 364,
+        "nonBgFraction": 0.3868,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
-            "pixels": 91080,
+            "pixels": 88776,
             "min": 40000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 5904,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-discarded",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded.png",
       "video": null,
-      "ms": 5333,
+      "ms": 5346,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -2043,7 +2223,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -2079,21 +2259,21 @@
         "redPixels": 14076,
         "cyanPixels": 0,
         "textPixels": 32376,
-        "nonBgFraction": 0.2804,
+        "nonBgFraction": 0.3062,
         "regions": []
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-savefail",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail.png",
       "video": null,
-      "ms": 6511,
+      "ms": 6655,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -2105,7 +2285,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -2136,15 +2316,15 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 68576,
-        "goldPixels": 0,
+        "emberPixels": 69228,
+        "goldPixels": 44,
         "redPixels": 49876,
         "cyanPixels": 8768,
         "textPixels": 3132,
-        "nonBgFraction": 0.6144,
+        "nonBgFraction": 0.6345,
         "regions": []
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "results-reveal",
@@ -5378,13 +5558,13 @@
     {
       "name": "drive-chain",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain.png",
       "video": null,
-      "ms": 4668,
+      "ms": 4631,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5396,7 +5576,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -5427,47 +5607,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 53840,
+        "emberPixels": 72888,
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 1612,
-        "nonBgFraction": 0.1297,
+        "textPixels": 2008,
+        "nonBgFraction": 0.1718,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
             "pixels": 53696,
             "min": 25000,
             "ok": true,
             "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 19060,
+            "min": 2000,
+            "ok": true,
+            "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:33295/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 5065,
+      "ms": 5064,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5479,7 +5679,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -5510,37 +5710,57 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 18116,
+        "emberPixels": 23468,
         "goldPixels": 2652,
         "redPixels": 14540,
         "cyanPixels": 0,
-        "textPixels": 1668,
-        "nonBgFraction": 0.4569,
+        "textPixels": 2028,
+        "nonBgFraction": 0.4847,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
             },
             "pixels": 17716,
             "max": 38000,
             "min": 6000,
             "ok": true,
             "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
+            },
+            "pixels": 5356,
+            "min": 2000,
+            "ok": true,
+            "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:23:19.167Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "settings-feedback",
@@ -7157,13 +7377,13 @@
     {
       "name": "drive-savefail-untrusted",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted.png",
       "video": null,
-      "ms": 6257,
+      "ms": 6202,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7175,7 +7395,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -7214,18 +7434,18 @@
         "nonBgFraction": 0.4135,
         "regions": []
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "drive-loose-peak",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:44751/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:32887/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak.png",
       "video": null,
-      "ms": 4692,
+      "ms": 4641,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7237,7 +7457,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -7272,23 +7492,43 @@
         "goldPixels": 0,
         "redPixels": 14396,
         "cyanPixels": 0,
-        "textPixels": 1912,
-        "nonBgFraction": 0.1343,
+        "textPixels": 2320,
+        "nonBgFraction": 0.1478,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0,
-              "y": 0.3608370011737089,
+              "y": 0.2667385563380282,
               "w": 1,
               "h": 0.27830765845070427
             },
             "box": {
               "x0": 0,
-              "y0": 922,
+              "y0": 682,
               "x1": 1179,
-              "y1": 1634
+              "y1": 1393
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.22998091603053433,
+              "y": 0.4734030223004695,
+              "w": 0.5399984096692112,
+              "h": 0.25985842136150233
+            },
+            "box": {
+              "x0": 271,
+              "y0": 1210,
+              "x1": 908,
+              "y1": 1874
             },
             "pixels": 0,
             "max": 120,
@@ -7317,7 +7557,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:21:09.630Z"
+      "shotAt": "2026-09-21T12:59:17.887Z"
     },
     {
       "name": "sound-banked",
@@ -9124,13 +9364,13 @@
     {
       "name": "drive-open-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open-landscape.png",
       "video": null,
-      "ms": 4219,
+      "ms": 4297,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9142,7 +9382,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9178,22 +9418,42 @@
         "redPixels": 14528,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.1294,
+        "nonBgFraction": 0.1408,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
             },
             "pixels": 0,
             "max": 120,
@@ -9202,18 +9462,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-start-landscape",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start-landscape.png",
       "video": null,
-      "ms": 4224,
+      "ms": 4291,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9225,7 +9485,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9261,22 +9521,42 @@
         "redPixels": 14528,
         "cyanPixels": 0,
         "textPixels": 0,
-        "nonBgFraction": 0.1294,
+        "nonBgFraction": 0.1408,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
             },
             "pixels": 0,
             "max": 120,
@@ -9285,18 +9565,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-landscape",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-landscape.png",
       "video": null,
-      "ms": 7384,
+      "ms": 6537,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9308,7 +9588,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9339,47 +9619,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 252496,
-        "goldPixels": 2736,
-        "redPixels": 16904,
+        "emberPixels": 268988,
+        "goldPixels": 2716,
+        "redPixels": 17108,
         "cyanPixels": 0,
-        "textPixels": 1996,
-        "nonBgFraction": 0.6496,
+        "textPixels": 3256,
+        "nonBgFraction": 0.6758,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
-            "pixels": 250660,
+            "pixels": 257476,
             "min": 60000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 10676,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-peak-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak-landscape.png",
       "video": null,
-      "ms": 4912,
+      "ms": 5256,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9391,7 +9691,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9422,47 +9722,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 147392,
-        "goldPixels": 4400,
+        "emberPixels": 153772,
+        "goldPixels": 4336,
         "redPixels": 14708,
         "cyanPixels": 0,
-        "textPixels": 2776,
-        "nonBgFraction": 0.6941,
+        "textPixels": 3092,
+        "nonBgFraction": 0.7198,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
-            "pixels": 77300,
+            "pixels": 76632,
             "min": 20000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 6180,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-transition-landscape",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition-landscape.png",
       "video": null,
-      "ms": 4834,
+      "ms": 5289,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9474,7 +9794,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9505,47 +9825,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 280512,
+        "emberPixels": 285604,
         "goldPixels": 0,
-        "redPixels": 16648,
+        "redPixels": 16652,
         "cyanPixels": 0,
-        "textPixels": 2760,
-        "nonBgFraction": 0.6648,
+        "textPixels": 3080,
+        "nonBgFraction": 0.6921,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
-            "pixels": 276856,
+            "pixels": 274756,
             "min": 60000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 7420,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-bank-landscape",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank-landscape.png",
       "video": null,
-      "ms": 4743,
+      "ms": 5166,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9557,7 +9897,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9588,47 +9928,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 136496,
-        "goldPixels": 400,
+        "emberPixels": 142432,
+        "goldPixels": 404,
         "redPixels": 14568,
         "cyanPixels": 0,
-        "textPixels": 2844,
-        "nonBgFraction": 0.2688,
+        "textPixels": 3164,
+        "nonBgFraction": 0.2966,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
-            "pixels": 136300,
+            "pixels": 134200,
             "min": 40000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 8044,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-loose-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-landscape.png",
       "video": null,
-      "ms": 4524,
+      "ms": 4499,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9640,7 +10000,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9675,23 +10035,43 @@
         "goldPixels": 0,
         "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 3240,
-        "nonBgFraction": 0.1801,
+        "textPixels": 3508,
+        "nonBgFraction": 0.1908,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
             },
             "pixels": 0,
             "max": 120,
@@ -9700,18 +10080,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-lost-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost-landscape.png",
       "video": null,
-      "ms": 4468,
+      "ms": 4719,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9723,7 +10103,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9758,23 +10138,43 @@
         "goldPixels": 0,
         "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 3180,
-        "nonBgFraction": 0.1798,
+        "textPixels": 3528,
+        "nonBgFraction": 0.1903,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
             },
             "pixels": 0,
             "max": 120,
@@ -9783,18 +10183,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-gps-landscape",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps-landscape.png",
       "video": null,
-      "ms": 4685,
+      "ms": 5016,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9806,7 +10206,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9837,47 +10237,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 158448,
-        "goldPixels": 3024,
+        "emberPixels": 159704,
+        "goldPixels": 3032,
         "redPixels": 14620,
         "cyanPixels": 0,
-        "textPixels": 0,
-        "nonBgFraction": 0.51,
+        "textPixels": 320,
+        "nonBgFraction": 0.5334,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
-            "pixels": 158280,
+            "pixels": 154720,
             "min": 40000,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 4796,
+            "min": 2000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-discarded-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded-landscape.png",
       "video": null,
-      "ms": 5345,
+      "ms": 5420,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9889,7 +10309,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9925,21 +10345,21 @@
         "redPixels": 14188,
         "cyanPixels": 0,
         "textPixels": 32432,
-        "nonBgFraction": 0.3345,
+        "nonBgFraction": 0.3486,
         "regions": []
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-savefail-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-landscape.png",
       "video": null,
-      "ms": 6565,
+      "ms": 6720,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9951,7 +10371,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -9982,15 +10402,15 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 69240,
+        "emberPixels": 73500,
         "goldPixels": 0,
         "redPixels": 49216,
         "cyanPixels": 8768,
         "textPixels": 3132,
-        "nonBgFraction": 0.7376,
+        "nonBgFraction": 0.7559,
         "regions": []
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "results-reveal-landscape",
@@ -13218,13 +13638,13 @@
     {
       "name": "drive-chain-landscape",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain-landscape.png",
       "video": null,
-      "ms": 4692,
+      "ms": 4846,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -13236,7 +13656,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -13267,47 +13687,67 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 91772,
+        "emberPixels": 107684,
         "goldPixels": 0,
         "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 3088,
-        "nonBgFraction": 0.1704,
+        "textPixels": 3408,
+        "nonBgFraction": 0.205,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
             "pixels": 91492,
             "min": 25000,
             "ok": true,
             "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 15840,
+            "min": 2000,
+            "ok": true,
+            "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-warn-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:34457/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn-landscape.png",
       "video": null,
-      "ms": 5276,
+      "ms": 5301,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -13319,7 +13759,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -13350,26 +13790,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 31920,
+        "emberPixels": 36440,
         "goldPixels": 4052,
         "redPixels": 14700,
         "cyanPixels": 0,
-        "textPixels": 2736,
-        "nonBgFraction": 0.6458,
+        "textPixels": 3060,
+        "nonBgFraction": 0.668,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
             },
             "pixels": 31392,
@@ -13377,10 +13817,30 @@
             "min": 6000,
             "ok": true,
             "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
+            },
+            "pixels": 4380,
+            "min": 2000,
+            "ok": true,
+            "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T12:23:13.215Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "settings-feedback-landscape",
@@ -14996,13 +15456,13 @@
     {
       "name": "drive-savefail-untrusted-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted-landscape.png",
       "video": null,
-      "ms": 6422,
+      "ms": 6338,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -15014,7 +15474,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -15050,21 +15510,21 @@
         "redPixels": 51496,
         "cyanPixels": 0,
         "textPixels": 3132,
-        "nonBgFraction": 0.4713,
+        "nonBgFraction": 0.4859,
         "regions": []
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "drive-loose-peak-landscape",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:38235/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:33061/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak-landscape.png",
       "video": null,
-      "ms": 4941,
+      "ms": 4701,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -15076,7 +15536,7 @@
         "otherTextNodes": 0
       },
       "skia": {
-        "canvases": 1,
+        "canvases": 2,
         "webgl": true,
         "canvasKit": true
       },
@@ -15111,23 +15571,43 @@
         "goldPixels": 0,
         "redPixels": 14528,
         "cyanPixels": 0,
-        "textPixels": 3196,
-        "nonBgFraction": 0.18,
+        "textPixels": 3536,
+        "nonBgFraction": 0.1905,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
-              "x": 0.19158450704225352,
+              "x": 0.07538732394366197,
               "y": 0.12772264631043256,
               "w": 0.616830985915493,
               "h": 0.7445547073791349
             },
             "box": {
-              "x0": 490,
+              "x0": 193,
               "y0": 151,
-              "x1": 2066,
+              "x1": 1769,
               "y1": 1028
+            },
+            "pixels": 0,
+            "max": 120,
+            "ok": true,
+            "wanted": ""
+          },
+          {
+            "name": "g",
+            "colour": "ember",
+            "rect": {
+              "x": 0.6863028169014085,
+              "y": 0.2533587786259542,
+              "w": 0.23830985915492955,
+              "h": 0.49328244274809163
+            },
+            "box": {
+              "x0": 1754,
+              "y0": 299,
+              "x1": 2363,
+              "y1": 880
             },
             "pixels": 0,
             "max": 120,
@@ -15156,7 +15636,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T12:22:37.261Z"
+      "shotAt": "2026-09-21T13:00:37.184Z"
     },
     {
       "name": "sound-banked-landscape",
@@ -15697,10 +16177,24 @@
       "shotAt": "2026-09-21T07:54:17.472Z"
     }
   ],
-  "finishedAt": "2026-09-21T12:23:19.167Z",
+  "finishedAt": "2026-09-21T13:00:37.184Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "drive-warn"
+    "drive-open-landscape",
+    "drive-start-landscape",
+    "drive-landscape",
+    "drive-peak-landscape",
+    "drive-transition-landscape",
+    "drive-bank-landscape",
+    "drive-loose-landscape",
+    "drive-lost-landscape",
+    "drive-gps-landscape",
+    "drive-discarded-landscape",
+    "drive-savefail-landscape",
+    "drive-chain-landscape",
+    "drive-warn-landscape",
+    "drive-savefail-untrusted-landscape",
+    "drive-loose-peak-landscape"
   ]
 }

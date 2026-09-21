@@ -333,6 +333,7 @@ export function useDriveRun(signals: HudSignals): DriveRun {
       signals.trust.value = h.trust;
       signals.speedKmh.value = f.state.speed * 3.6;
       signals.ayG.value = f.state.ay / G;
+      signals.axG.value = f.state.ax / G;
       signals.active.value = active ? 1 : 0;
       signals.total.value = f.score.total;
       // The odometer's own value. The rule — chase, and park only once the engine has stopped

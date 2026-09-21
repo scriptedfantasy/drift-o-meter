@@ -30,7 +30,6 @@ const MAX_BETA = 70;
 const DEG = Math.PI / 180;
 
 const NUMERAL_FONT = require('@expo-google-fonts/barlow-condensed/800ExtraBold_Italic/BarlowCondensed_800ExtraBold_Italic.ttf');
-const LABEL_FONT = require('@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf');
 
 export interface AngleGaugeProps {
   width: number;
@@ -52,14 +51,13 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
   const baselineY = numeralMidY + numeralSize * 0.35;
 
   const font = useFont(NUMERAL_FONT, numeralSize);
-  const labelFont = useFont(LABEL_FONT, Math.max(12, Math.round(numeralSize * 0.26)));
 
   /**
-   * Measured once per font: a digit's advance, the degree sign's advance, the side letter's half
-   * width. `getTextWidth` (not `measureText`, which CanvasKit's RN-Web shim does not implement)
-   * gives the ADVANCE, which is what a layout needs; Barlow Condensed's digits are tabular, so
-   * one measurement covers all ten. The worklets below only multiply these numbers, so the hero
-   * numeral is laid out on the UI thread without touching the font again.
+   * Measured once per font: a digit's advance and the degree sign's advance. `getTextWidth` (not
+   * `measureText`, which CanvasKit's RN-Web shim does not implement) gives the ADVANCE, which is
+   * what a layout needs; Barlow Condensed's digits are tabular, so one measurement covers all
+   * ten. The worklets below only multiply these numbers, so the hero numeral is laid out on the
+   * UI thread without touching the font again.
    *
    * The degree sign is part of the numeral STRING rather than a second text node: placing it by
    * advance left it visibly detached after a narrow glyph like "1". Skia sets it where the
@@ -77,11 +75,10 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
     };
     const advance = width(font, '0', numeralSize * 0.5);
     const deg = width(font, '\u00B0', numeralSize * 0.3);
-    const letterHalf = width(labelFont, 'R', numeralSize * 0.12) / 2;
-    return { advance, deg, letterHalf };
-  }, [font, labelFont, numeralSize]);
+    return { advance, deg };
+  }, [font, numeralSize]);
 
-  /** Distance from the centre to the L/R chevron, wide enough to clear a two-digit numeral. */
+  /** Distance from the centre to the direction chevron, wide enough to clear a two-digit numeral. */
   const chevronOffset = metrics.advance + metrics.deg * 0.5 + numeralSize * 0.14;
 
   const rect = useMemo(() => ({ x: cx - r, y: cy - r, width: 2 * r, height: 2 * r }), [cx, cy, r]);
@@ -194,14 +191,17 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
     { translateY: numeralMidY },
     { scaleX: signals.side.value },
   ]);
-  const letterX = useDerivedValue(() => cx + signals.side.value * chevronOffset - metrics.letterHalf);
-  const sideLetter = useDerivedValue(() => (signals.side.value < 0 ? 'L' : 'R'));
   /**
-   * The L/R indicator says which way the car is sliding, so at 0° it must say NOTHING. `side`
-   * holds its last direction (it only updates past |β| > 3°, so a straight road keeps the last
-   * slide's side, and a run that has never slid shows its initial R) — a grey "»R" on a car
-   * pointing straight ahead is a claim about a slide that is not happening. It fades in with
-   * the angle instead, over the same 3° the signal itself waits for.
+   * The chevron says which way the car is sliding, so at 0° it must say NOTHING. `side` holds its
+   * last direction (it only updates past |β| > 3°, so a straight road keeps the last slide's side,
+   * and a run that has never slid keeps its initial right) — a grey chevron on a car pointing
+   * straight ahead is a claim about a slide that is not happening. It fades in with the angle
+   * instead, over the same 3° the signal itself waits for.
+   *
+   * IT USED TO BE "»R", chevrons plus a letter. The letter was the chevrons again in words: an
+   * arrow pointing right and an R beside it are one fact drawn twice, and on a screen a driver
+   * reads for a fraction of a second the second copy costs more than it says. The chevrons stay
+   * because they are read as direction without being read as language.
    */
   const sideOpacity = useDerivedValue(() => 0.95 * Math.max(0, Math.min(1, (Math.abs(signals.betaDeg.value) - 1.5) / 2.5)));
 
@@ -267,7 +267,6 @@ export default function AngleGauge({ width, height, signals, testID }: AngleGaug
           <Group transform={chevronTransform}>
             <Path path={chevron} color={hot} opacity={sideOpacity} />
           </Group>
-          {labelFont ? <SkText x={letterX} y={baselineY} text={sideLetter} font={labelFont} color={hot} opacity={sideOpacity} /> : null}
         </Group>
       ) : null}
     </Canvas>

@@ -23,6 +23,7 @@ import { nextDisplayTotal, TAU_S } from './odometerValue';
 import { readIntegrity, CALIBRATION_GRACE_S } from './integrityView';
 import { createTrail, fitTrail, pushTrail, resetTrail } from './trail';
 import { DEFAULT_HUD_PARAMS, parseHudParams } from './hudParams';
+import { gHeading, gToFace } from './gVector';
 import type { HudSnapshot } from './useDriveRun';
 
 // ── the odometer ───────────────────────────────────────────────────────────────────────────
@@ -483,5 +484,98 @@ describe('hud params', () => {
       expect(p!.believable, key).toBe(p!.mount !== 'loose' && p!.physics === 'ok');
     }
     expect(parseHudParams('?integrity=nonsense').integrity).toBeNull();
+  });
+});
+
+// ── the g-meter's face ─────────────────────────────────────────────────────────────────────
+
+describe('g-meter geometry', () => {
+  const FS = 1.0;
+  /** Where the vector's tip actually lands on screen, from the two things the renderer uses:
+      the heading it rotates a straight-up line by, and the fraction of the radius it trims to.
+      If these ever disagree with `gToFace`, the dot and the line it grows from point different
+      ways — which is a defect no unit test on either one alone can see. */
+  function tipFromRenderer(ayG: number, axG: number) {
+    const th = gHeading(ayG, axG);
+    const m = gToFace(ayG, axG, FS).mag;
+    return { x: Math.sin(th) * m, y: -Math.cos(th) * m };
+  }
+
+  it('puts a right-hand push right, throttle up and braking down', () => {
+    // ay is + to the LEFT, so a RIGHT-hand acceleration is ay < 0. ax is + forward.
+    const at = (ayG: number, axG: number) => {
+      const f = gToFace(ayG, axG, FS);
+      return { x: f.x + 0, y: f.y + 0 }; // + 0 folds \u2212 0 to 0, which toMatchObject distinguishes
+    };
+    expect(at(-0.5, 0)).toEqual({ x: 0.5, y: 0 });
+    expect(at(0.5, 0)).toEqual({ x: -0.5, y: 0 });
+    // screen y grows down, so throttle (ax > 0) is negative y
+    expect(at(0, 0.5)).toEqual({ x: 0, y: -0.5 });
+    expect(at(0, -0.5)).toEqual({ x: 0, y: 0.5 });
+  });
+
+  it('agrees with the heading the renderer spins the line by, all the way round the face', () => {
+    for (let deg = 0; deg < 360; deg += 5) {
+      const a = (deg * Math.PI) / 180;
+      // an acceleration of 0.6 g at every heading, in ENGINE axes
+      const ayG = 0.6 * Math.cos(a);
+      const axG = 0.6 * Math.sin(a);
+      const face = gToFace(ayG, axG, FS);
+      const tip = tipFromRenderer(ayG, axG);
+      expect(tip.x, `x at ${deg}\u00b0`).toBeCloseTo(face.x, 10);
+      expect(tip.y, `y at ${deg}\u00b0`).toBeCloseTo(face.y, 10);
+    }
+  });
+
+  it('scales to full scale, so the same g reads at the same radius on both instruments\u2019 sweeps', () => {
+    expect(gToFace(-0.4, 0, 0.8).mag).toBeCloseTo(0.5, 12);
+    expect(gToFace(-0.4, 0, 1.0).mag).toBeCloseTo(0.4, 12);
+  });
+
+  it('pins a reading past the rim ON the rim, keeping its heading rather than its axes', () => {
+    // 1.5 g of pure braking: length clamps to 1, direction stays straight down
+    const brake = gToFace(0, -1.5, FS);
+    expect(brake.mag).toBe(1);
+    expect(brake.x).toBeCloseTo(0, 12);
+    expect(brake.y).toBeCloseTo(1, 12);
+
+    // 1.2 g braking + 0.9 g to the right (1.5 g total) must NOT come back as a 45\u00b0 diagonal,
+    // which is what clamping each axis to 1 would produce
+    const both = gToFace(-0.9, -1.2, FS);
+    expect(both.mag).toBe(1);
+    expect(both.x).toBeCloseTo(0.6, 12);
+    expect(both.y).toBeCloseTo(0.8, 12);
+    expect(Math.atan2(both.y, both.x)).toBeCloseTo(Math.atan2(1.2, 0.9), 12);
+  });
+
+  it('parks at the centre on a non-finite sample instead of drawing somewhere undefined', () => {
+    for (const bad of [NaN, Infinity, -Infinity]) {
+      expect(gToFace(bad, 0.3, FS)).toEqual({ x: 0, y: 0, mag: 0 });
+      expect(gToFace(0.3, bad, FS)).toEqual({ x: 0, y: 0, mag: 0 });
+      expect(gHeading(bad, 0.3)).toBe(0);
+    }
+    expect(gToFace(0.3, 0.3, 0)).toEqual({ x: 0, y: 0, mag: 0 });
+  });
+
+  it('never leaves the face, over a real run', () => {
+    // the property the renderer depends on: |(x, y)| \u2264 1 for every sample the pipeline emits,
+    // so the dot can never be drawn outside the bezel
+    const run = simulateRun('harbor', { seed: 1, laps: 2 });
+    const p = new DriftPipeline();
+    let gi = 0;
+    let n = 0;
+    let maxMag = 0;
+    for (const m of run.motion) {
+      while (gi < run.gps.length && run.gps[gi].t <= m.t) p.pushGps(run.gps[gi++]);
+      const f = p.pushMotion(m);
+      const face = gToFace(f.state.ay / 9.80665, f.state.ax / 9.80665, FS);
+      expect(Math.hypot(face.x, face.y)).toBeLessThanOrEqual(1 + 1e-12);
+      maxMag = Math.max(maxMag, face.mag);
+      n++;
+    }
+    expect(n).toBeGreaterThan(10000);
+    // and the scale is not so generous that the vector never moves: this run really does reach
+    // the rim, which is what FULL_SCALE_G = 1.0 was measured to do
+    expect(maxMag).toBeGreaterThan(0.9);
   });
 });

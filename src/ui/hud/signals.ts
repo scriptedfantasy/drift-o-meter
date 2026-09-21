@@ -23,6 +23,8 @@ export interface HudSignals {
   speedKmh: SharedValue<number>;
   /** Lateral acceleration in g (+ = left). */
   ayG: SharedValue<number>;
+  /** Longitudinal acceleration in g (+ = accelerating forward). */
+  axG: SharedValue<number>;
   /** 0..1 drift intensity: drives the glow, the edge bloom and the arc colour. */
   intensity: SharedValue<number>;
   /** 0..1, 1 while the detector reports a drift (entry/drifting/transition). */
@@ -71,6 +73,7 @@ export function useHudSignals(): HudSignals {
   const peakDeg = useSharedValue(0);
   const speedKmh = useSharedValue(0);
   const ayG = useSharedValue(0);
+  const axG = useSharedValue(0);
   const intensity = useSharedValue(0);
   const active = useSharedValue(0);
   const total = useSharedValue(0);
@@ -96,6 +99,7 @@ export function useHudSignals(): HudSignals {
       peakDeg,
       speedKmh,
       ayG,
+      axG,
       intensity,
       active,
       total,
@@ -120,6 +124,7 @@ export function useHudSignals(): HudSignals {
       peakDeg,
       speedKmh,
       ayG,
+      axG,
       intensity,
       active,
       total,
@@ -148,6 +153,7 @@ export function resetSignals(s: HudSignals): void {
   s.peakDeg.value = 0;
   s.speedKmh.value = 0;
   s.ayG.value = 0;
+  s.axG.value = 0;
   s.intensity.value = 0;
   s.active.value = 0;
   s.total.value = 0;
