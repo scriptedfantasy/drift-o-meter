@@ -102,6 +102,21 @@ export const ANGLE_STOPS: ReadonlyArray<{ deg: number; color: string }> = [
   { deg: 70, color: colors.red },
 ];
 
+/**
+ * Full scale, in degrees: the top of the dial's sweep and the top of any angle axis.
+ *
+ * Read off `ANGLE_STOPS` rather than typed, so the number and the colour at that number
+ * cannot drift apart. Every display that plots an angle uses this, which is the point —
+ * the garage's run trace used to top out at 60 because that was the last knot of the
+ * scorer's angle curve, so the same 64-degree hold drew full-height in the garage and
+ * nine-tenths of the way round the dial.
+ *
+ * It is a DISPLAY ceiling, deliberately below the engine's `SPIN_ANGLE_DEG` of 75: past
+ * this the needle is already in the red and the question has stopped being how far and
+ * started being whether the car comes back.
+ */
+export const MAX_ANGLE_DEG = ANGLE_STOPS[ANGLE_STOPS.length - 1].deg;
+
 function hexToRgb(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 }
