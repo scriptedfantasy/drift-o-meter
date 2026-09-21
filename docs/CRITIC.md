@@ -79,7 +79,22 @@ that the reported fix exists. Check for them explicitly.
     than the copy asks. So: find the frame where a claim is actually shown, and re-measure from
     there. A sound number attached to the wrong instant is still a screen telling a driver
     something untrue.
-14. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
+14. **A property swept only at the extremes is not the property.** The honesty suite sweeps
+    looseness `[0, 0.25, 0.4, 0.7, 1.0]` to prove no points are paid on a frame the monitor
+    refuses. The leak it was written for lives at 0.1, 0.15 and 0.2 — and the grid brackets it by
+    construction, because below about 0.1 nothing is doubted and at 0.25 and above everything is,
+    so the guard that failed in between is never reached. Every value the test uses is clean and
+    every value it skips is not. When a property is asserted over a parameter, ask where that
+    parameter makes the system AMBIGUOUS, and sweep there: the all-or-nothing ends are the two
+    places a partial-credit bug cannot appear.
+15. **A floor cannot certify an absence.** The `drive-loose` route asserts `minEmber: 100` under a
+    comment saying the gauge must be drawn muted because "the HUD must not celebrate an angle the
+    scorer has already thrown away". It measures 30,591 — most of it the red warning banner and
+    the red STOP, because the pixel classifier counts `#FF3B3B` as ember — and a different moment
+    of the same kind of run draws 63,983 ember pixels *inside the gauge* on a run worth zero
+    points, which would pass any floor in the file. A minimum proves something drew; only a
+    maximum, measured in the region the claim is about, proves something did not.
+16. **Read the tests for whether they encode the bug.** A suite that passes while the defect is
     on screen is itself a finding: `replay.test.ts` asserted the label `SAVED IT` for every spin,
     and the cumulative-score test ran only against a session whose total was by construction the
     sum of its parts, so neither could ever fail. Name those tests in your findings.
