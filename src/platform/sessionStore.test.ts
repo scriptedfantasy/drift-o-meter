@@ -181,7 +181,7 @@ describe('session store (memory backend)', () => {
     expect(isValidSessionId('a/b')).toBe(false);
     const s = summarizeSession(fakeSession('z', 7, 42, 'B'));
     expect(s).toEqual({
-      id: 'z', name: 'Run z', startedAt: 7, durationS: 120, total: 42, grade: 'B', drifts: 0, track: 'Harbor',
+      id: 'z', name: 'Run z', driverId: null, startedAt: 7, durationS: 120, total: 42, grade: 'B', drifts: 0, track: 'Harbor',
       trusted: true, heldPeakDeg: 0, longestChainPoints: 0, spins: 0, slides: [], mount: 'rigid',
       calibrationQuality: 0, calibrationForwardResolved: false, integrityMessage: '',
     });

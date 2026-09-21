@@ -31,6 +31,19 @@ export type SlideMark = [startFrac: number, endFrac: number, heldDeg: number, sp
 export interface SessionIndexEntry {
   id: string;
   name: string;
+  /**
+   * Who drove it, or null for nobody.
+   *
+   * In the INDEX, not only in the body, because the garage groups and ranks by driver and
+   * the garage reads no session bodies at all — that is the property the rest of this
+   * interface exists to hold, and a leaderboard that had to open twenty runs to find out
+   * whose they were would break it on the screen that matters most.
+   *
+   * A null here is a run nobody claimed, and a non-null id whose driver has since been
+   * forgotten is the same thing: `driverById` answers null for both, so one code path
+   * covers them.
+   */
+  driverId: string | null;
   /** Wall-clock start, ms since epoch. */
   startedAt: number;
   durationS: number;
@@ -246,6 +259,7 @@ export function summarizeSession(s: Session): SessionIndexEntry {
   return {
     id: s.id,
     name: s.name,
+    driverId: typeof s.driverId === 'string' && s.driverId.length > 0 ? s.driverId : null,
     startedAt: s.startedAt,
     durationS: s.durationS,
     total: s.score?.total ?? 0,

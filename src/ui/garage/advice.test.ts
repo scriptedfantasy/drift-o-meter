@@ -34,6 +34,7 @@ function entry(over: Partial<SessionIndexEntry> = {}): SessionIndexEntry {
   return {
     id: 'r1',
     name: 'Run r1',
+    driverId: null,
     startedAt: 1_000,
     durationS: 120,
     total: 10_000,

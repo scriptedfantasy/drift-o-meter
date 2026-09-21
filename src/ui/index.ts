@@ -4,6 +4,7 @@
  * (see `skia/GlowRingView.web.tsx`).
  */
 export * from './theme';
+export * from './parts';
 export * from './fonts';
 export * from './motion';
 export * from './Text';

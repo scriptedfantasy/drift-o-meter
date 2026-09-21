@@ -348,6 +348,20 @@ export interface Session {
   version: 1;
   id: string;
   name: string;
+  /**
+   * Who drove it, as an id from the phone's own roster, or null for nobody.
+   *
+   * OPTIONAL, unlike `spin` and `trusted` next door, and for the opposite reason to theirs.
+   * Those are required because a producer that forgets one leaves two screens disagreeing
+   * about the same run. Here an absent field and a null field say the same thing — nobody
+   * said who was driving — so there is nothing for a screen to get wrong, and every run
+   * recorded before the roster existed is honestly described by leaving it out.
+   *
+   * It is an id and never a name: renaming a driver must not orphan their season, and
+   * `driverById` answers null for an id whose driver has since been forgotten, which is
+   * exactly the unassigned case again.
+   */
+  driverId?: string | null;
   /** Wall-clock start, ms since epoch. */
   startedAt: number;
   /** Seconds. */

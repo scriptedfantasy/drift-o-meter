@@ -7,6 +7,7 @@ function at(id: string, iso: string): SessionIndexEntry {
   return {
     id,
     name: id,
+    driverId: null,
     startedAt: new Date(iso).getTime(),
     durationS: 60,
     total: 1,

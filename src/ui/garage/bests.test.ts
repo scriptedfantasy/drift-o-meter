@@ -15,6 +15,7 @@ import { bestGradeOf, lastRunStanding, personalBests, trackKeyOf, UNTRACKED } fr
 function entry(over: Partial<SessionIndexEntry> & { id: string }): SessionIndexEntry {
   return {
     name: `Run ${over.id}`,
+    driverId: null,
     startedAt: 1_000,
     durationS: 120,
     total: 10_000,

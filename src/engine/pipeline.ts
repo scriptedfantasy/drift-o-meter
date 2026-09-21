@@ -203,6 +203,8 @@ export interface DriftPipelineOptions {
   /** Session identity used by `finish()` (deterministic runs pass both). */
   id?: string;
   name?: string;
+  /** Who is driving, from the phone's roster. Null or absent when nobody said. */
+  driverId?: string | null;
   /** Wall-clock start in ms since epoch; defaults to `Date.now()` at the first sample. */
   startedAt?: number;
 }
@@ -850,6 +852,7 @@ export class DriftPipeline implements DriftPipelineApi {
       version: 1,
       id: this.opts.id ?? `session-${startedAt.toString(36)}`,
       name: this.opts.name ?? 'Session',
+      driverId: this.opts.driverId ?? null,
       startedAt,
       durationS,
       motion: this.motionStore.toArray(),
