@@ -30,14 +30,14 @@
 
 ===== sound-bank  http://127.0.0.1:43783/sound
 
-===== sound-slide  http://127.0.0.1:43783/sound
-
+===== sound-slide  http://127.0.0.1:36023/sound
 ===== sound-muted  http://127.0.0.1:43783/sound
 
 ===== settings-feedback  http://127.0.0.1:43783/settings
 
-===== sound-felt  http://127.0.0.1:43783/sound
+===== sound-felt  http://127.0.0.1:42371/sound
 
-===== sound-fault  http://127.0.0.1:43783/sound
-
+===== sound-fault  http://127.0.0.1:42371/sound
 ===== sound-grades  http://127.0.0.1:43783/sound
+
+

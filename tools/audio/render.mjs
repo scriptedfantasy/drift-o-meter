@@ -600,9 +600,10 @@ const CLIPS = {
  * How long the clip is actually AUDIBLE: the last instant above -40 dB relative to its own peak.
  *
  * The mixer uses this, not the file length, to decide when a voice is free again. An exponential
- * decay never truly reaches zero, so `extreme` is a 0.64 s file whose last 0.29 s is inaudible —
- * treating the file length as the voice's lifetime would hold a voice hostage for a third of a
- * second of silence and drop cues that should have played.
+ * decay never truly reaches zero, so `extreme` is a 0.640 s file that is audible for 0.516 of
+ * them — treating the file length as the voice's lifetime would hold a voice hostage for 124 ms
+ * of silence and drop cues that should have played. (This comment said 0.29 s, which was never
+ * true of any render this file has produced; the number in `bank.ts` was the right one.)
  */
 function activeDuration(buf) {
   const floor = peakOf(buf) * 0.01;

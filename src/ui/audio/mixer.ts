@@ -137,12 +137,20 @@ export function trustIn(integrity: LiveFrame['integrity']): number {
   return degraded ? 0.65 : 1;
 }
 
-/** Bed envelope, deliberately the same two constants the drive display uses for the ember glow. */
-const BED_ATTACK_TAU = 0.09;
-const BED_RELEASE_TAU = 0.24;
+/**
+ * Bed envelope, deliberately the same two constants the drive display uses for the ember glow.
+ *
+ * EXPORTED, because the `/sound` lab draws the curve and describes it in words. It used to type
+ * "90 ms up, 240 ms down … shuts completely below 6°" into its own prose and re-implement
+ * `6 + gain * 44` in a helper, which is the same defect as any other threshold copied into a
+ * second file: it reads as a measurement and it would go stale the first time this envelope was
+ * tuned.
+ */
+export const BED_ATTACK_TAU = 0.09;
+export const BED_RELEASE_TAU = 0.24;
 /** |β| in degrees at which the bed opens and at which it is fully open — the HUD's glow curve. */
-const BED_FLOOR_DEG = 6;
-const BED_SPAN_DEG = 44;
+export const BED_FLOOR_DEG = 6;
+export const BED_SPAN_DEG = 44;
 /** |β| band across which the cross-fade travels from the dark layer to the bright one. */
 const BED_MIX_FLOOR_DEG = 10;
 const BED_MIX_SPAN_DEG = 38;

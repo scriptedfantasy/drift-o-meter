@@ -21,7 +21,20 @@
  *   tools/audio/render.mjs       the synthesiser that produces assets/audio/*.wav
  */
 export * from './bank';
-export { DriftFeel, trustIn, type CueDecision, type CueOutcome, type FeelOptions, type FeelStats, type HapticPort, type SoundPort } from './mixer';
+export {
+  BED_ATTACK_TAU,
+  BED_FLOOR_DEG,
+  BED_RELEASE_TAU,
+  BED_SPAN_DEG,
+  DriftFeel,
+  trustIn,
+  type CueDecision,
+  type CueOutcome,
+  type FeelOptions,
+  type FeelStats,
+  type HapticPort,
+  type SoundPort,
+} from './mixer';
 export { driftFeel, feelCue, feelFrame, feelReset, useDriftFeel, type FeelStatus } from './useDriftFeel';
 export { CLIP_MEASUREMENTS, TIER_TARGETS, type ClipMeasurement } from './waveforms';
 export { SOUND_SEQUENCES, type SoundSequence } from './sequences';

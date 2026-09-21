@@ -26,7 +26,22 @@ import Svg, { Rect } from 'react-native-svg';
 import { useSettings } from '@/platform';
 import { AppText, alpha, colors, gutter, Micro, Panel, Segmented, Small, space, TopBar } from '@/ui';
 import { toneColor } from '@/ui/callouts';
-import { CLIP_MEASUREMENTS, DriftFeel, feelCue, SOUND_BANK, SOUND_SEQUENCES, TIER_TARGETS, useDriftFeel, type CueDecision, type SoundId, type SoundSpec } from '@/ui/audio';
+import {
+  BED_ATTACK_TAU,
+  BED_FLOOR_DEG,
+  BED_RELEASE_TAU,
+  BED_SPAN_DEG,
+  CLIP_MEASUREMENTS,
+  DriftFeel,
+  feelCue,
+  SOUND_BANK,
+  SOUND_SEQUENCES,
+  TIER_TARGETS,
+  useDriftFeel,
+  type CueDecision,
+  type SoundId,
+  type SoundSpec,
+} from '@/ui/audio';
 
 const ANGLES = [0, 12, 25, 40, 55];
 
@@ -221,8 +236,8 @@ export default function SoundLabScreen() {
               The slide
             </AppText>
             <Small>
-              Two loops cross-faded by |β| — dark tyre scrub at small angles, a brighter one with a squeal in it at big ones. It opens and closes on the drive display&apos;s own glow envelope (90 ms up, 240 ms
-              down) and shuts completely below 6°, so it can never become a drone.
+              Two loops cross-faded by |β| — dark tyre scrub at small angles, a brighter one with a squeal in it at big ones. It opens and closes on the drive display&apos;s own glow envelope ({Math.round(BED_ATTACK_TAU * 1000)} ms up,{' '}
+              {Math.round(BED_RELEASE_TAU * 1000)} ms down) and shuts completely below {BED_FLOOR_DEG}°, so it can never become a drone.
             </Small>
             <View style={styles.bedHead}>
               <AppText variant="display" numeric color="ember" style={styles.bedAngle}>
@@ -366,7 +381,7 @@ function sweepAngle(elapsedS: number): number {
 
 /** Invert the bed's own curve so the sweep can show the angle it is actually tracking. */
 function bedAngleFromGain(gain: number): number {
-  return gain <= 0 ? 0 : 6 + gain * 44;
+  return gain <= 0 ? 0 : BED_FLOOR_DEG + gain * BED_SPAN_DEG;
 }
 
 function ClipRow({ spec, onPlay }: { spec: SoundSpec; onPlay: () => void }) {

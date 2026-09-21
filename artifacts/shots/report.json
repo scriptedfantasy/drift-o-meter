@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T01:46:42.282Z",
+  "startedAt": "2026-09-21T01:54:03.326Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -977,13 +977,13 @@
     {
       "name": "sound-slide",
       "path": "/sound",
-      "url": "http://127.0.0.1:43783/sound",
+      "url": "http://127.0.0.1:36023/sound",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/sound-slide.png",
       "video": null,
-      "ms": 5900,
+      "ms": 6152,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1030,12 +1030,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 27056,
+        "emberPixels": 26964,
         "cyanPixels": 0,
         "textPixels": 30364,
         "nonBgFraction": 0.872
       },
-      "shotAt": "2026-09-21T01:47:24.053Z"
+      "shotAt": "2026-09-21T01:52:37.331Z"
     },
     {
       "name": "sound-muted",
@@ -1166,13 +1166,13 @@
     {
       "name": "sound-felt",
       "path": "/sound",
-      "url": "http://127.0.0.1:43783/sound",
+      "url": "http://127.0.0.1:42371/sound",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/sound-felt.png",
       "video": null,
-      "ms": 4750,
+      "ms": 4547,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1224,18 +1224,18 @@
         "textPixels": 0,
         "nonBgFraction": 0.872
       },
-      "shotAt": "2026-09-21T01:47:24.053Z"
+      "shotAt": "2026-09-21T01:54:12.399Z"
     },
     {
       "name": "sound-fault",
       "path": "/sound",
-      "url": "http://127.0.0.1:43783/sound",
+      "url": "http://127.0.0.1:42371/sound",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/sound-fault.png",
       "video": null,
-      "ms": 4607,
+      "ms": 4439,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1282,12 +1282,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 52920,
+        "emberPixels": 54060,
         "cyanPixels": 19348,
         "textPixels": 0,
         "nonBgFraction": 0.8717
       },
-      "shotAt": "2026-09-21T01:47:24.053Z"
+      "shotAt": "2026-09-21T01:54:12.399Z"
     },
     {
       "name": "sound-grades",
@@ -1353,18 +1353,11 @@
       "shotAt": "2026-09-21T01:47:24.053Z"
     }
   ],
-  "finishedAt": "2026-09-21T01:47:24.053Z",
+  "finishedAt": "2026-09-21T01:54:12.399Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "sound",
-    "sound-played",
-    "sound-bank",
-    "sound-slide",
-    "sound-muted",
-    "settings-feedback",
     "sound-felt",
-    "sound-fault",
-    "sound-grades"
+    "sound-fault"
   ]
 }
