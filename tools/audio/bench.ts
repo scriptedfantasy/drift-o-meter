@@ -19,14 +19,22 @@
  *     out beside it, with the absolute time they happened at and the gaps between their cues.
  *
  * `emit=1` runs the same search over a declared grid of runs and writes
- * `src/ui/audio/sequences.ts`, which is what the lab reads. That file is generated for one
- * reason: the lab used to state "lap 2 at 100.08 s", "47.75 s" and "65.60 s: CHAIN LOST and SPIN
- * fire on the SAME frame" and cite this command for them, and none of the three was true of this
- * command's output — the flick triplet is at 30.40 s and 88.47 s, the exit→bank→link at 36.14 s,
- * and harbour seed 1 contains no spin at all. The relative offsets were right; the provenance was
- * invented. A screen asserting a measurement that did not happen is the failure this project has
- * been sent back for more than once, so the numbers now come out of the search and the file
- * records the exact command that reproduces each one.
+ * `src/ui/audio/sequences.ts`, which is what the lab reads.
+ *
+ * WHY THAT FILE IS GENERATED, and a correction. The `/sound` lab used to state three timings in
+ * prose and cite this command for them. One of the three was invented: "65.60 s: CHAIN LOST and
+ * SPIN fire on the SAME frame" on `harbor 1 2`, a run that contains no spin at all (this bench
+ * prints "never fired on this run: … lost, spin …" for it). The other two are REAL — re-derived
+ * through this pipeline, harbour seed 1 plays transition/manji/extreme at 100.08/100.49/100.83 s
+ * and exit/banked/link at 47.75/49.76/50.63 s, exactly as the lab said.
+ *
+ * They were unverifiable all the same, and this file is why: the run log kept only the last 64
+ * decisions and then printed them as "+X s" from the first one it still HELD, so the offsets a
+ * reader saw were measured from a shifted origin — 11.61 s late on that run, which turns 42.01
+ * into 30.40, 100.08 into 88.47 and 47.75 into 36.14. Anyone checking the screen against this
+ * command got three numbers that looked wrong and were not. Both halves are fixed: the log is
+ * unbounded here, the times printed are absolute, and the lab's numbers come out of the search
+ * with the command that reproduces each one beside them.
  *
  * Nothing here is mocked except the two ports: the pipeline, the scorer, the detector, the bank
  * and the mixer are the ones the app ships.

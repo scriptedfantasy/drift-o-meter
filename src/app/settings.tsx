@@ -133,6 +133,13 @@ export default function SettingsScreen() {
                 color={colors.magenta}
                 testID="setting-sound"
               />
+              {/* The other switch, the one this screen does not own. `src/platform/audio.ts`
+                  sets `playsInSilentMode: false` — a deliberate non-default, since expo-audio
+                  declares `@default true` — because a phone flicked to silent is a driver saying
+                  "not now". That is right, and it means SOUND · ON is not the whole story on
+                  most iPhones, which live on silent. Saying so here is cheaper than a driver
+                  deciding the feature is broken. */}
+              <Micro>Off when the phone is on silent, too — this app never talks over the ringer switch. Haptics still carry the run.</Micro>
             </Field>
             {/* A switch is a stronger claim than a label, so this screen has to be able to make
                 good on it without a drive: the lab plays every clip in the bank and shows what

@@ -31,9 +31,11 @@ import { useDriveRun, type RunError } from '@/ui/hud/useDriveRun';
 export default function DriveScreen() {
   const signals = useHudSignals();
   const run = useDriveRun(signals);
-  // Sound and haptics for the run: loads the bank and configures the audio session at mount,
-  // releases both with the screen. The cues themselves are dispatched from `useDriveRun`'s
-  // sample callback, one call per frame.
+  // Sound and haptics for the run. It builds the bank the first time any screen asks and does
+  // NOT release it when this screen goes: the STOP clip is fired by `useDriveRun.stop()` a few
+  // milliseconds before `router.replace` unmounts this tree, and a port released here used to
+  // close the AudioContext 215 ms into that 520 ms clip. The cues themselves are dispatched from
+  // `useDriveRun`'s sample callback, one call per frame.
   useDriftFeel();
   const { settings } = useSettings();
   const { width, height } = useWindowDimensions();

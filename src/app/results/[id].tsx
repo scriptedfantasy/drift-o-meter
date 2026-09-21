@@ -62,8 +62,10 @@ function flatten(params: Record<string, string | string[] | undefined>): Record<
 }
 
 export default function ResultsScreen() {
-  // Loads the sound bank and configures the audio session for this screen. Without a port mounted
-  // here the grade cue is a no-op, because `feelCue` has nowhere to play.
+  // Makes sure the feel layer is built, and subscribes to its status. It does NOT build a port
+  // of its own: the port is a module singleton that outlives every screen, so arriving here from
+  // `/drive` costs no decode and the grade cue is ready the instant the letter lands. (It used
+  // to rebuild all 18 clips on arrival and only just beat the reveal.)
   useDriftFeel();
   const raw = useLocalSearchParams() as Record<string, string | string[] | undefined>;
   const params = useMemo(() => flatten(raw), [raw]);
