@@ -58,7 +58,7 @@ const BASE: Omit<FixtureSpec, 'name' | 'blurb'> = {
 };
 
 /**
- * The scenarios the harness shoots. The grade each one yields is whatever the scorer says today,
+ * The scenarios the harness shoots. What each one measures is whatever the engine says today,
  * not what the fixture wishes for.
  *
  * The showcase scenarios run `source: 'pipeline'` on purpose. Ground truth replays the same lap
@@ -73,14 +73,14 @@ export const FIXTURES: Record<string, FixtureSpec> = {
   good: { ...BASE, name: 'good', source: 'pipeline', seed: 7, aggression: 0.9, consistency: 0.8, blurb: 'Quick lap' },
   /** The bad night: no angle, no repeatability, and the rear let go three times. */
   sloppy: { ...BASE, name: 'sloppy', seed: 1, aggression: 0, consistency: 0, spins: 3, blurb: 'Bad night · lost it twice' },
-  /** The chain-ending spin: the biggest slide goes past the spin threshold and takes its chain. */
-  spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spins: 1, blurb: 'Spun it · chain lost' },
+  /** The spin: the biggest slide goes past the spin threshold, so it counts for nothing. */
+  spin: { ...BASE, name: 'spin', seed: 4, aggression: 1.1, consistency: 0.75, spins: 1, blurb: 'Spun it · came back sideways' },
   /** Nothing slid: a clean lap with no drift events at all. */
   clean: { ...BASE, name: 'clean', seed: 2, aggression: 0.2, consistency: 0.9, noDrifts: true, blurb: 'Clean lap · no slides' },
-  /** Bad data: phone loose in the cradle, GPS dropping out — scored, but with warnings. */
+  /** Bad data: phone loose in the cradle, GPS dropping out — believed, but with warnings. */
   rough: { ...BASE, name: 'rough', source: 'pipeline', seed: 6, aggression: 0.9, consistency: 0.55, looseness: 0.2, blurb: 'Unsteady mount · poor GPS' },
   /** Worse: the phone was in someone's hand. The engine refuses to publish a score at all. */
-  handheld: { ...BASE, name: 'handheld', source: 'pipeline', seed: 4, aggression: 0.9, consistency: 0.7, looseness: 1, blurb: 'Hand-held · not scored' },
+  handheld: { ...BASE, name: 'handheld', source: 'pipeline', seed: 4, aggression: 0.9, consistency: 0.7, looseness: 1, blurb: 'Hand-held · nothing believed' },
   /** Point-to-point mountain road: no laps, so the lap table is correctly absent. */
   touge: { ...BASE, name: 'touge', track: 'touge', seed: 3, laps: 1, aggression: 1, consistency: 0.85, blurb: 'Touge run · one way' },
 };
@@ -214,8 +214,9 @@ function gripLap(session: Session): void {
 /**
  * Push one slide past the spin threshold, in the state trace itself rather than by setting a
  * flag: |β| ramps past 85° through the back half of the drift, the yaw rate follows from the
- * kinematic identity r = a_y/v − β̇, and the car scrubs speed like a real spin. The scorer then
- * finds the spin with its own rule and takes the chain's un-banked points away.
+ * kinematic identity r = a_y/v − β̇, and the car scrubs speed like a real spin. The published
+ * spin verdict then finds it with the broad rule, which is wider than the detector's peak-based
+ * flag, so every screen agrees the slide counts for nothing.
  */
 function injectSpin(session: Session, skip: Set<number>): void {
   const candidates = session.drifts.filter((d) => !skip.has(d.id));

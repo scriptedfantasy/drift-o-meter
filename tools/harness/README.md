@@ -33,13 +33,13 @@ Flags: `--no-build`, `--video`, `--landscape`, `--routes <file.json|.mjs>`, `--o
   from `failedAll` (the whole aggregate) and lists `shotThisRun`, so neither can be read as the
   other. Each route carries `shotAt`, so a stale entry is visible rather than implied. Per route, the fonts that loaded, how many text nodes render in
   Barlow Condensed / Barlow / anything else, `<canvas>` count, WebGL + CanvasKit availability,
-  pixel statistics (corner colours, ember / cyan / text pixel counts, non-background fraction)
+  pixel statistics (corner colours, green / hot / red / blue / text pixel counts, non-background fraction)
 - `artifacts/video/<name>.webm` with `--video`
 
 The run **exits 1** when any route has a page error, `console.error`, failed request, HTTP error,
 no Barlow face loaded, no Barlow Condensed text, a page background that is not `#07090D` (corner
 pixels more than 24/255 off; a faint glow tint only warns), a missing
-`<canvas>` where `expectCanvas` is set, or fewer ember pixels than `minEmber`.
+`<canvas>` where `expectCanvas` is set, or a region check that missed its floor or ceiling.
 
 ## Route files
 
@@ -51,10 +51,9 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
   path: '/drive?sim=harbor&rate=1',       // URL path + query
   waitMs: 2600,                           // settle time after load + fonts (default 800)
   expectCanvas: true,                     // fail unless a <canvas> (Skia) is present
-  minEmber: 2000,                         // fail unless this many ember-coloured pixels are visible
   regions: [                              // "at most / at least N pixels of colour C inside R"
-    { name: 'gauge', colour: 'ember', testId: 'hud-gauge-box', padFrac: 0.01, max: 120 },
-    { name: 'stage', colour: 'ember', rect: { x: 0, y: 0.1, w: 1, h: 0.5 }, min: 400 },
+    { name: 'dial', colour: 'green', testId: 'hud-dial-box', padFrac: 0.01, max: 120 },
+    { name: 'stage', colour: 'green', rect: { x: 0, y: 0.1, w: 1, h: 0.5 }, min: 400 },
   ],
   fullPage: false,
   actions: [                              // optional, run before the screenshot
@@ -74,30 +73,31 @@ A route file is JSON or an ES module exporting an array (`default` or `routes`).
 
 ### Colours, and why a floor cannot certify an absence
 
-`minEmber` proves something drew. It cannot prove something did NOT draw, and several routes
-exist precisely to show that a screen stays quiet — a hand-held run, a slide the scorer paid
-nothing for, a lap with nothing in it. Those need a ceiling, and the ceiling has to be measured
-in the part of the screen the claim is about: a loose-run peak frame drew 63,983 ember pixels
-*inside the gauge* on a run worth zero points, and passed every floor in this file.
+A frame-wide FLOOR proves something drew. It cannot prove something did NOT draw, and several
+routes needed exactly that. `minEmber` was the last of them and is gone: a loose-run peak frame
+drew 63,983 ember pixels on a run worth nothing and would have passed any floor in the file. A
+ceiling is the only shape of check that can certify an absence, and it has to be measured in the
+part of the screen the claim is about.
 
-So a route may carry `regions`. Each entry names one colour and one rectangle and gives a `max`,
-a `min`, or both; a violation fails the route and the message quotes the count and the box.
+* `colour` — `green`, `hot`, `red`, `blue`, `text`, `muted`. These are HUE bands with a
+  saturation and a brightness floor, not RGB boxes, because a box loose enough to hold one
+  palette colour holds its neighbours too: the original `isEmber` counted every red pixel and
+  every antialiased gold pip, so `drive-loose`'s "30,591 ember pixels" were mostly the two red
+  banners it was meant to prove absent.
 
-* `colour` — `ember`, `gold`, `red`, `magenta`, `cyan`, `green`, `text`, `muted`. These are HUE
-  BANDS with a saturation and a brightness floor (`tools/harness/pixels.mjs`), not RGB boxes.
-  The old `isEmber` was a box, and it counted the red `#FF3B3B` warning banner and every
-  antialiased gold pip as ember — so `drive-loose`'s "30,591 ember pixels" were mostly the two
-  elements that are supposed to be loud. Re-derive any threshold you inherit from before that.
-  **And after the repaint, re-derive the COLOUR too.** `green` now means the palette's
-  `#8AF606`/`#C4FF2E` (62–105°); it used to mean a `#3DFF9A` that no longer exists, 50° away.
-  `ember`, `gold` and `magenta` name hues nothing in the app draws any more, and `cyan`'s band
-  stops at 205° while the palette's blue is at 218° — a check naming one of those on a repainted
-  screen measures a colour that is not there and passes vacuously.
-* `testId` — the element the region is about. Preferred over `rect`, because the harness measures
-  the element and the check therefore means the same thing portrait, landscape and at any
-  `--scale`. `padFrac` grows the box by that fraction of the viewport, to take in a glow that
-  spills past the element's own bounds.
-* `rect` — `{ x, y, w, h }` in FRACTIONS of the image, when there is no element to name.
+  `ember`, `gold`, `magenta` and `cyan` are deleted, and the reason they had to go rather than
+  simply fall out of use is worth keeping. `ANGLE_STOPS` runs `#C4FF2E` to `#FF2E43` between 55
+  and 70 degrees, and that stretch sweeps hue 77 down through 42, 33, 25, 8 to 354 — straight
+  through the old gold band (36-56) and the old ember band (8-32). `replay-spin` reported 9,660
+  "ember" pixels that were the top of the dial's own ramp. A name for a colour nothing paints is
+  vacuous; a name that quietly matches a colour something DOES paint is worse, because a ceiling
+  on it fails on any frame with a big angle and a floor passes by measuring the wrong thing.
+  `hot` replaces them and names what is actually there: the ramp's shoulder, 8-62 degrees, the
+  gap `green` and `red` leave between them.
+
+  One limit to know: `#8AF606` (85 degrees) and `#C4FF2E` (77 degrees) are eight degrees apart
+  and antialiasing smears them, so `green` covers both and "green but not greenHot" is not
+  checkable with a hue band.
 
 Chromium renders DOM text with subpixel antialiasing, which leaves a few hundred warm fringe
 pixels along glyph edges anywhere on the screen. Set a ceiling above that noise floor; a Skia
@@ -444,7 +444,7 @@ exist. `results-best` went too, for a different reason: BEST DRIFT sits at y = 3
 393 × 852 frame, which is on screen at rest, so a route that scrolled to find it was
 photographing `results` a second time. `results-foot` replaces it and is the bottom of the page.
 
-**No `minEmber` on any of these routes.** `isEmber` is the hue band 8–32°; the review's accent is
+**No frame-wide floor on any of these routes.** `isEmber` was the hue band 8–32°; the review's accent is
 the mark's green at 87°, which `isGreen` covers after the repaint and `isEmber` cannot. A floor
 against a colour that cannot appear fails for the wrong reason. `results` measures
 `{ colour: 'green', testId: 'best-drift', min: 2000 }` instead — the region measured 3,876 green

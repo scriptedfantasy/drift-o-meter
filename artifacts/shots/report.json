@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T21:14:39.829Z",
+  "startedAt": "2026-09-21T21:26:06.324Z",
   "viewport": {
-    "width": 852,
-    "height": 393
+    "width": 393,
+    "height": 852
   },
   "scale": 3,
-  "landscape": true,
+  "landscape": false,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -77,13 +77,13 @@
     {
       "name": "garage",
       "path": "/?demo=night",
-      "url": "http://127.0.0.1:36055/?demo=night",
+      "url": "http://127.0.0.1:35539/?demo=night",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/garage.png",
       "video": null,
-      "ms": 9839,
+      "ms": 9888,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -129,16 +129,15 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 356,
-        "goldPixels": 64,
+        "greenPixels": 272464,
         "redPixels": 1896,
-        "cyanPixels": 200,
         "bluePixels": 13572,
+        "hotPixels": 572,
         "textPixels": 43200,
         "nonBgFraction": 0.4589,
         "regions": []
       },
-      "shotAt": "2026-09-21T20:09:25.455Z"
+      "shotAt": "2026-09-21T21:26:32.468Z"
     },
     {
       "name": "garage-bests",
@@ -1603,13 +1602,13 @@
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:41005/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:35539/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 4696,
+      "ms": 4796,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1651,11 +1650,10 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 196,
-        "goldPixels": 8,
+        "greenPixels": 332484,
         "redPixels": 15132,
-        "cyanPixels": 0,
         "bluePixels": 0,
+        "hotPixels": 212,
         "textPixels": 2568,
         "nonBgFraction": 0.6559,
         "regions": [
@@ -1682,7 +1680,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T20:01:07.050Z"
+      "shotAt": "2026-09-21T21:26:32.468Z"
     },
     {
       "name": "drive-transition",
@@ -2501,13 +2499,13 @@
     {
       "name": "results",
       "path": "/results/fixture-hero",
-      "url": "http://127.0.0.1:41005/results/fixture-hero",
+      "url": "http://127.0.0.1:35539/results/fixture-hero",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/results.png",
       "video": null,
-      "ms": 3493,
+      "ms": 3478,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -2553,11 +2551,10 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 9524,
-        "goldPixels": 2204,
+        "greenPixels": 72668,
         "redPixels": 0,
-        "cyanPixels": 0,
         "bluePixels": 6316,
+        "hotPixels": 11756,
         "textPixels": 23364,
         "nonBgFraction": 0.6125,
         "regions": [
@@ -2584,7 +2581,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T20:01:07.050Z"
+      "shotAt": "2026-09-21T21:26:32.468Z"
     },
     {
       "name": "results-sloppy",
@@ -6472,7 +6469,7 @@
     {
       "name": "replay-spin",
       "path": "/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
-      "url": "http://127.0.0.1:39251/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
+      "url": "http://127.0.0.1:35539/replay/fixture-spin?cam=chase&t=97.55&play=0&ui=0",
       "ok": true,
       "errors": [],
       "warnings": [
@@ -6480,7 +6477,7 @@
       ],
       "screenshot": "artifacts/shots/replay-spin.png",
       "video": null,
-      "ms": 7910,
+      "ms": 7921,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6522,13 +6519,12 @@
         },
         "cornersOnBg": false,
         "cornersNearBg": true,
-        "emberPixels": 9660,
-        "goldPixels": 228,
-        "redPixels": 6824,
-        "cyanPixels": 0,
-        "bluePixels": 47056,
-        "textPixels": 52704,
-        "nonBgFraction": 0.7932,
+        "greenPixels": 28516,
+        "redPixels": 6804,
+        "bluePixels": 47100,
+        "hotPixels": 10156,
+        "textPixels": 52628,
+        "nonBgFraction": 0.7933,
         "regions": [
           {
             "name": "frame",
@@ -6545,14 +6541,14 @@
               "x1": 1179,
               "y1": 2556
             },
-            "pixels": 6824,
+            "pixels": 6804,
             "min": 140,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T21:14:39.225Z"
+      "shotAt": "2026-09-21T21:26:32.468Z"
     },
     {
       "name": "replay-chain-lost",
@@ -16855,37 +16851,13 @@
       "shotAt": "2026-09-21T21:19:02.722Z"
     }
   ],
-  "finishedAt": "2026-09-21T21:19:02.722Z",
+  "finishedAt": "2026-09-21T21:26:32.468Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "replay-landscape",
-    "replay-motion-landscape",
-    "replay-cut-landscape",
-    "replay-shake-landscape",
-    "replay-overview-landscape",
-    "replay-chase-landscape",
-    "replay-cinematic-landscape",
-    "replay-ghost-landscape",
-    "replay-highlight-landscape",
-    "replay-scrub-landscape",
-    "replay-untrusted-landscape",
-    "replay-warnings-landscape",
-    "replay-warnings-open-landscape",
-    "replay-end-landscape",
-    "replay-from-results-landscape",
-    "replay-touge-landscape",
-    "replay-spin-landscape",
-    "replay-spin-end-landscape",
-    "replay-held-landscape",
-    "replay-zero-paid-landscape",
-    "replay-zero-chip-landscape",
-    "replay-untrusted-slid-landscape",
-    "replay-clean-band-landscape",
-    "replay-zero-highlight-landscape",
-    "replay-untrusted-leak-landscape",
-    "replay-untrusted-overview-landscape",
-    "replay-clean-world-landscape",
-    "replay-sloppy-band-landscape"
+    "garage",
+    "drive-peak",
+    "results",
+    "replay-spin"
   ]
 }

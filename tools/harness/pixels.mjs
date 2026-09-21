@@ -21,16 +21,28 @@
  * is still ember and a half-dissolved gold pip is still gold.
  *
  * ── AFTER THE REPAINT ─────────────────────────────────────────────────────────────────────
- * The palette these bands were cut for is being replaced: green, red, blue and a grey, all
- * measured off the car and the artwork. `isGreen` and `isRed` are the two that carry the new
- * colours (87°/77° and 354°, which `isRed`'s 353° wrap already covered). `isEmber`, `isGold`
- * and `isMagenta` still name hues from the old palette and stay only for the routes that have
- * not been rewritten yet — a check naming one of those on a repainted screen is measuring a
- * colour nothing draws. `isCyan` is the same and worse, because there IS a new colour it looks
- * like it should mean: the palette's blue is 218°, and this band ends at 205°.
+ * The palette those bands were cut for is gone: green, red, blue and a grey, all measured off
+ * the car and the artwork. `isEmber`, `isGold`, `isMagenta` and `isCyan` went with it, and the
+ * reason they had to GO rather than simply fall out of use is the more interesting half.
  *
- * Every other palette colour has its own predicate on the same footing, so a check can name the
- * colour it means rather than borrowing one that happens to overlap.
+ * A name for a colour nothing paints is vacuous — a ceiling on it passes by measuring nothing.
+ * That much was already true. But `ANGLE_STOPS` runs `#C4FF2E` to `#FF2E43` between 55 and 70
+ * degrees, and that stretch sweeps hue 76.9 -> 61.8 -> 42.3 -> 33.4 -> 24.8 -> 8.3 -> 354.0.
+ * It passes straight THROUGH the old gold band (36-56) and the old ember band (8-32). Measured
+ * on the shipped build, `replay-spin` reported 9 660 "ember" pixels and `replay-spin-end`
+ * 13 868 "ember" and 1 180 "gold" — every one of them the top of the dial's own ramp. So the
+ * dead names had stopped being vacuous and become ambiguous, which is worse: a ceiling written
+ * with either would fail on any frame carrying a big angle, and a floor would pass by measuring
+ * something it was never about. A name that quietly means a different thing than it says is
+ * the one kind of check that makes a suite less trustworthy than no check.
+ *
+ * `isHot` replaces them, and names what is actually there: the shoulder of the ramp, where an
+ * angle has left green and not yet reached the red zone.
+ *
+ * ONE THING THIS CLASSIFIER CANNOT DO. `#8AF606` (85 degrees) and `#C4FF2E` (77 degrees) are
+ * eight degrees apart and antialiasing smears them together, so `isGreen` covers both and
+ * "green but not greenHot" is not checkable. A check that needs to tell the ramp's floor from
+ * its highlight needs a different instrument than a hue band.
  *
  * ── REGIONS AND CEILINGS ──────────────────────────────────────────────────────────────────
  * A FLOOR CANNOT CERTIFY AN ABSENCE. `minEmber` proves something drew; a route whose whole point
@@ -94,26 +106,14 @@ function band(loHue, hiHue, minS = 0.45, minV = 0.3) {
 }
 
 /** `#FF5A1F` and its glow — drift-active and the score. 13–16° at full strength. */
-export const isEmber = band(8, 32);
 /** `#FFC53D` — grade S, the multiplier chip, the held-peak ghost tick. 42–44°. */
-export const isGold = band(36, 56);
 /** `#FF3B3B` — danger: the LOOSE MOUNT banner, the STOP control. 0° (± a little). */
 export const isRed = (r, g, b) => {
   const h = hueOf(r, g, b);
   return band(0, 7)(r, g, b) || (h >= 353 && band(0, 360)(r, g, b));
 };
 /** `#FF2D95` — transitions and callouts. ~330°. */
-export const isMagenta = band(310, 345);
 /** `#29E3FF` — telemetry and speed. ~187°. */
-/**
- * @deprecated Names a hue the app no longer paints. Use `blue`.
- *
- * 170-205 was `#29E3FF`. The palette's blue is `#6C9BEA` at hue 218, outside the band, so any
- * check naming `cyan` on a repainted screen passes by measuring nothing — the most dangerous
- * kind of green tick. Kept only until the last route naming it is gone.
- */
-export const isCyan = band(170, 205, 0.4, 0.35);
-
 /**
  * The car at rest: speed, structure, the cold facts nobody is judged on.
  *
@@ -126,6 +126,17 @@ export const isCyan = band(170, 205, 0.4, 0.35);
  * what `minV` is for.
  */
 export const isBlue = band(205, 232, 0.3, 0.42);
+
+/**
+ * The ramp's hot shoulder: an angle past green and not yet into the red zone.
+ *
+ * 8 to 62 degrees of hue, which is exactly the gap `isGreen` (62-105) and `isRed` (wrapping at
+ * 353) leave between them, so the three together cover the whole arc `ANGLE_STOPS` sweeps and
+ * no part of a lit dial belongs to no name. This is the band the deleted `isEmber` and `isGold`
+ * were counting by accident; it exists so a route can say "a clean lap paints none of the upper
+ * ramp" and have that mean what it says.
+ */
+export const isHot = band(8, 62);
 /**
  * `#8AF606` and `#C4FF2E` — THE LIVE INSTRUMENT. 87° and 77° at full strength.
  *
@@ -160,12 +171,9 @@ export const isMuted = (r, g, b) => {
 
 /** Every predicate a route may name, by the name it names it with. */
 export const COLOURS = {
-  ember: isEmber,
-  gold: isGold,
   red: isRed,
-  magenta: isMagenta,
-  cyan: isCyan,
   blue: isBlue,
+  hot: isHot,
   green: isGreen,
   text: isText,
   muted: isMuted,
@@ -226,11 +234,10 @@ export function analyzePng(buffer, { bg = '#070D18', sampleStep = 2, regions = [
   const cornersOnBg = Object.values(corners).every((c) => near(c, bgRgb, 6));
   const cornersNearBg = Object.values(corners).every((c) => near(c, bgRgb, 24));
 
-  let ember = 0;
-  let gold = 0;
+  let green = 0;
   let red = 0;
-  let cyan = 0;
   let blue = 0;
+  let hot = 0;
   let text = 0;
   let nonBg = 0;
   let total = 0;
@@ -242,11 +249,10 @@ export function analyzePng(buffer, { bg = '#070D18', sampleStep = 2, regions = [
       // NOT an if/else chain any more: the predicates are disjoint by construction (hue bands),
       // so each count is the count of that colour rather than "that colour, minus whatever an
       // earlier branch happened to take first".
-      if (isEmber(p.r, p.g, p.b)) ember++;
-      if (isGold(p.r, p.g, p.b)) gold++;
+      if (isGreen(p.r, p.g, p.b)) green++;
       if (isRed(p.r, p.g, p.b)) red++;
-      if (isCyan(p.r, p.g, p.b)) cyan++;
       if (isBlue(p.r, p.g, p.b)) blue++;
+      if (isHot(p.r, p.g, p.b)) hot++;
       if (isText(p.r, p.g, p.b)) text++;
     }
   }
@@ -258,11 +264,10 @@ export function analyzePng(buffer, { bg = '#070D18', sampleStep = 2, regions = [
     corners,
     cornersOnBg,
     cornersNearBg,
-    emberPixels: ember * scale,
-    goldPixels: gold * scale,
+    greenPixels: green * scale,
     redPixels: red * scale,
-    cyanPixels: cyan * scale,
     bluePixels: blue * scale,
+    hotPixels: hot * scale,
     textPixels: text * scale,
     nonBgFraction: Number((nonBg / total).toFixed(4)),
     regions: regionCounts,

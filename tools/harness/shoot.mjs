@@ -459,7 +459,11 @@ async function main() {
         if (result.fonts.otherTextNodes > 0) result.warnings.push(`${result.fonts.otherTextNodes} text nodes use a non-Barlow font`);
       }
       if (route.expectCanvas && result.skia.canvases === 0) result.errors.push('skia: expected a <canvas>, found none');
-      if (route.minEmber && result.pixels.emberPixels < route.minEmber) result.errors.push(`pixels: only ${result.pixels.emberPixels} ember pixels (< ${route.minEmber}); the ring did not render`);
+      // `minEmber` used to live here: a frame-wide floor on a hue the app no longer paints.
+      // It is gone with the predicate, and the reason it is not simply renamed is that a
+      // frame-wide floor was never the right shape of check — it proves SOMETHING drew, not
+      // that the thing the route is about drew. Region checks say where, and say it in
+      // fractions so one rectangle means the same thing in both orientations.
       // Region checks: "at most / at least N pixels of colour C inside rectangle R". A ceiling is
       // the only shape of check that can certify an ABSENCE — see the header of pixels.mjs.
       for (const r of result.pixels.regions ?? []) {
@@ -513,7 +517,7 @@ async function main() {
     const px = result.pixels ?? {};
     const sk = result.skia ?? {};
     console.log(
-      `[shoot] ${result.ok ? 'OK  ' : 'FAIL'} ${name.padEnd(20)} ${String(result.ms).padStart(5)} ms  fonts:${(f.families ?? []).filter((x) => /Barlow/.test(x)).length}/9 display:${f.displayTextNodes ?? '-'} body:${f.bodyTextNodes ?? '-'} other:${f.otherTextNodes ?? '-'}  canvas:${sk.canvases ?? '-'} webgl:${sk.webgl ?? '-'}  ember:${px.emberPixels ?? '-'} gold:${px.goldPixels ?? '-'} red:${px.redPixels ?? '-'} cyan:${px.cyanPixels ?? '-'} nonBg:${px.nonBgFraction ?? '-'} corners:${px.cornersOnBg ?? '-'}${(px.regions ?? []).map((r) => `  ${r.name}[${r.colour}]:${r.pixels}`).join('')}`,
+      `[shoot] ${result.ok ? 'OK  ' : 'FAIL'} ${name.padEnd(20)} ${String(result.ms).padStart(5)} ms  fonts:${(f.families ?? []).filter((x) => /Barlow/.test(x)).length}/9 display:${f.displayTextNodes ?? '-'} body:${f.bodyTextNodes ?? '-'} other:${f.otherTextNodes ?? '-'}  canvas:${sk.canvases ?? '-'} webgl:${sk.webgl ?? '-'}  green:${px.greenPixels ?? '-'} hot:${px.hotPixels ?? '-'} red:${px.redPixels ?? '-'} blue:${px.bluePixels ?? '-'} nonBg:${px.nonBgFraction ?? '-'} corners:${px.cornersOnBg ?? '-'}${(px.regions ?? []).map((r) => `  ${r.name}[${r.colour}]:${r.pixels}`).join('')}`,
     );
     for (const e of result.errors) console.log(`         - ${e}`);
   }
