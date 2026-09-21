@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-09-21T04:32:03.059Z",
+  "startedAt": "2026-09-21T04:34:31.181Z",
   "viewport": {
-    "width": 393,
-    "height": 852
+    "width": 852,
+    "height": 393
   },
   "scale": 3,
-  "landscape": false,
+  "landscape": true,
   "chromium": "141.0.7390.37",
   "routes": [
     {
@@ -6881,13 +6881,13 @@
     {
       "name": "drive-open",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open.png",
       "video": null,
-      "ms": 5357,
+      "ms": 4273,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -6938,7 +6938,7 @@
         "redPixels": 14396,
         "cyanPixels": 24240,
         "textPixels": 3548,
-        "nonBgFraction": 0.1444,
+        "nonBgFraction": 0.1478,
         "regions": [
           {
             "name": "gauge",
@@ -6962,18 +6962,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-start",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start.png",
       "video": null,
-      "ms": 6983,
+      "ms": 4742,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7024,7 +7024,7 @@
         "redPixels": 14396,
         "cyanPixels": 21784,
         "textPixels": 2568,
-        "nonBgFraction": 0.1424,
+        "nonBgFraction": 0.1458,
         "regions": [
           {
             "name": "gauge",
@@ -7048,18 +7048,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive.png",
       "video": null,
-      "ms": 10103,
+      "ms": 10588,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7105,12 +7105,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 219632,
-        "goldPixels": 20440,
-        "redPixels": 16360,
-        "cyanPixels": 21748,
-        "textPixels": 6664,
-        "nonBgFraction": 0.5415,
+        "emberPixels": 216224,
+        "goldPixels": 20964,
+        "redPixels": 15908,
+        "cyanPixels": 22740,
+        "textPixels": 5572,
+        "nonBgFraction": 0.5105,
         "regions": [
           {
             "name": "gauge",
@@ -7127,25 +7127,25 @@
               "x1": 1179,
               "y1": 818
             },
-            "pixels": 159324,
+            "pixels": 147616,
             "min": 20000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-peak",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak.png",
       "video": null,
-      "ms": 6426,
+      "ms": 6771,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7191,12 +7191,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 192948,
+        "emberPixels": 193036,
         "goldPixels": 22092,
-        "redPixels": 14600,
-        "cyanPixels": 19800,
+        "redPixels": 14632,
+        "cyanPixels": 19804,
         "textPixels": 6008,
-        "nonBgFraction": 0.5698,
+        "nonBgFraction": 0.5722,
         "regions": [
           {
             "name": "gauge",
@@ -7220,18 +7220,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-transition",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition.png",
       "video": null,
-      "ms": 7038,
+      "ms": 5974,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7277,12 +7277,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 230392,
+        "emberPixels": 230524,
         "goldPixels": 3896,
-        "redPixels": 15488,
+        "redPixels": 15516,
         "cyanPixels": 23320,
         "textPixels": 5996,
-        "nonBgFraction": 0.5332,
+        "nonBgFraction": 0.5357,
         "regions": [
           {
             "name": "gauge",
@@ -7306,18 +7306,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-bank",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank.png",
       "video": null,
-      "ms": 7485,
+      "ms": 5742,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7363,26 +7363,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 143672,
+        "emberPixels": 143848,
         "goldPixels": 3784,
-        "redPixels": 14404,
+        "redPixels": 14448,
         "cyanPixels": 24016,
         "textPixels": 5864,
-        "nonBgFraction": 0.3028,
+        "nonBgFraction": 0.3052,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-loose",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose.png",
       "video": null,
-      "ms": 6129,
+      "ms": 5545,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7433,7 +7433,7 @@
         "redPixels": 50560,
         "cyanPixels": 21668,
         "textPixels": 4460,
-        "nonBgFraction": 0.2992,
+        "nonBgFraction": 0.3014,
         "regions": [
           {
             "name": "gauge",
@@ -7457,18 +7457,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-lost",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost.png",
       "video": null,
-      "ms": 5948,
+      "ms": 5108,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7519,7 +7519,7 @@
         "redPixels": 50560,
         "cyanPixels": 21192,
         "textPixels": 4780,
-        "nonBgFraction": 0.3167,
+        "nonBgFraction": 0.3188,
         "regions": [
           {
             "name": "gauge",
@@ -7543,18 +7543,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-gps",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps.png",
       "video": null,
-      "ms": 6243,
+      "ms": 5318,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7564,7 +7564,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
+        "displayTextNodes": 95,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -7600,26 +7600,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 128852,
+        "emberPixels": 128936,
         "goldPixels": 4720,
-        "redPixels": 31524,
-        "cyanPixels": 19808,
+        "redPixels": 31544,
+        "cyanPixels": 19812,
         "textPixels": 10768,
-        "nonBgFraction": 0.4778,
+        "nonBgFraction": 0.4803,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-discarded",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded.png",
       "video": null,
-      "ms": 6721,
+      "ms": 6279,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7670,21 +7670,21 @@
         "redPixels": 14076,
         "cyanPixels": 23444,
         "textPixels": 32376,
-        "nonBgFraction": 0.3604,
+        "nonBgFraction": 0.3607,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-savefail",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail.png",
       "video": null,
-      "ms": 8537,
+      "ms": 7364,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7738,18 +7738,18 @@
         "nonBgFraction": 0.7423,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-chain",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain.png",
       "video": null,
-      "ms": 6618,
+      "ms": 5844,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7760,7 +7760,7 @@
           "Barlow_500Medium"
         ],
         "displayTextNodes": 93,
-        "bodyTextNodes": 28,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7795,26 +7795,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 133200,
-        "goldPixels": 3668,
-        "redPixels": 14396,
-        "cyanPixels": 18256,
-        "textPixels": 4992,
-        "nonBgFraction": 0.2191,
+        "emberPixels": 133440,
+        "goldPixels": 6280,
+        "redPixels": 14408,
+        "cyanPixels": 18252,
+        "textPixels": 6132,
+        "nonBgFraction": 0.223,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-warn",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn.png",
       "video": null,
-      "ms": 6469,
+      "ms": 5555,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7824,8 +7824,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 99,
-        "bodyTextNodes": 31,
+        "displayTextNodes": 98,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7860,26 +7860,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 89704,
+        "emberPixels": 89852,
         "goldPixels": 22148,
-        "redPixels": 14540,
-        "cyanPixels": 19776,
+        "redPixels": 14556,
+        "cyanPixels": 19788,
         "textPixels": 16200,
-        "nonBgFraction": 0.5608,
+        "nonBgFraction": 0.5626,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-savefail-untrusted",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted.png",
       "video": null,
-      "ms": 7220,
+      "ms": 6698,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7933,18 +7933,18 @@
         "nonBgFraction": 0.4759,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "drive-loose-peak",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:36335/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:41253/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak.png",
       "video": null,
-      "ms": 5842,
+      "ms": 5577,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7995,7 +7995,7 @@
         "redPixels": 14396,
         "cyanPixels": 19752,
         "textPixels": 12880,
-        "nonBgFraction": 0.2447,
+        "nonBgFraction": 0.2462,
         "regions": [
           {
             "name": "gauge",
@@ -8039,7 +8039,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:29:41.247Z"
+      "shotAt": "2026-09-21T04:34:30.341Z"
     },
     {
       "name": "sound-banked",
@@ -8450,13 +8450,13 @@
     {
       "name": "drive-open-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-open-landscape.png",
       "video": null,
-      "ms": 4992,
+      "ms": 5167,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8502,27 +8502,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 2448,
+        "emberPixels": 2468,
         "goldPixels": 0,
         "redPixels": 14528,
         "cyanPixels": 21024,
         "textPixels": 3536,
-        "nonBgFraction": 0.1443,
+        "nonBgFraction": 0.1478,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0.00485475352112676,
-              "y": 0.16115935114503815,
+              "y": 0.14334764631043256,
               "w": 0.5155802523474178,
               "h": 0.6216618956743003
             },
             "box": {
               "x0": 12,
-              "y0": 190,
+              "y0": 169,
               "x1": 1330,
-              "y1": 923
+              "y1": 902
             },
             "pixels": 0,
             "max": 120,
@@ -8531,18 +8531,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-start-landscape",
       "path": "/drive?sim=harbor&rate=1&at=2.2&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=2.2&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=2.2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-start-landscape.png",
       "video": null,
-      "ms": 4860,
+      "ms": 5102,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8588,27 +8588,27 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 2268,
+        "emberPixels": 2288,
         "goldPixels": 0,
         "redPixels": 14528,
         "cyanPixels": 19800,
         "textPixels": 2568,
-        "nonBgFraction": 0.1428,
+        "nonBgFraction": 0.1463,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0.00485475352112676,
-              "y": 0.16115935114503815,
+              "y": 0.14334764631043256,
               "w": 0.5155802523474178,
               "h": 0.6216618956743003
             },
             "box": {
               "x0": 12,
-              "y0": 190,
+              "y0": 169,
               "x1": 1330,
-              "y1": 923
+              "y1": 902
             },
             "pixels": 0,
             "max": 120,
@@ -8617,18 +8617,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-landscape",
       "path": "/drive?sim=harbor&rate=1&at=39.2",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=39.2",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=39.2",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-landscape.png",
       "video": null,
-      "ms": 9359,
+      "ms": 10623,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8638,8 +8638,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 91,
-        "bodyTextNodes": 29,
+        "displayTextNodes": 93,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
@@ -8674,47 +8674,47 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 203108,
-        "goldPixels": 18064,
-        "redPixels": 16612,
-        "cyanPixels": 15188,
-        "textPixels": 6504,
-        "nonBgFraction": 0.6334,
+        "emberPixels": 192940,
+        "goldPixels": 18264,
+        "redPixels": 16176,
+        "cyanPixels": 15652,
+        "textPixels": 7116,
+        "nonBgFraction": 0.6128,
         "regions": [
           {
             "name": "gauge",
             "colour": "ember",
             "rect": {
               "x": 0.00485475352112676,
-              "y": 0.19169370229007632,
+              "y": 0.14334764631043256,
               "w": 0.5155802523474178,
               "h": 0.6216618956743003
             },
             "box": {
               "x0": 12,
-              "y0": 226,
+              "y0": 169,
               "x1": 1330,
-              "y1": 959
+              "y1": 902
             },
-            "pixels": 162828,
+            "pixels": 151720,
             "min": 20000,
             "ok": true,
             "wanted": ""
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-peak-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-peak-landscape.png",
       "video": null,
-      "ms": 5470,
+      "ms": 7393,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8760,12 +8760,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 168064,
+        "emberPixels": 168084,
         "goldPixels": 19596,
-        "redPixels": 14836,
+        "redPixels": 14840,
         "cyanPixels": 13880,
         "textPixels": 6184,
-        "nonBgFraction": 0.689,
+        "nonBgFraction": 0.6901,
         "regions": [
           {
             "name": "gauge",
@@ -8789,18 +8789,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-transition-landscape",
       "path": "/drive?sim=harbor&rate=1&at=85.55&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=85.55&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=85.55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-transition-landscape.png",
       "video": null,
-      "ms": 4571,
+      "ms": 6862,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8846,12 +8846,12 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 232752,
+        "emberPixels": 232776,
         "goldPixels": 3876,
-        "redPixels": 16524,
+        "redPixels": 16540,
         "cyanPixels": 16516,
         "textPixels": 6212,
-        "nonBgFraction": 0.6424,
+        "nonBgFraction": 0.6436,
         "regions": [
           {
             "name": "gauge",
@@ -8875,18 +8875,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-bank-landscape",
       "path": "/drive?sim=harbor&rate=1&at=50.75&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=50.75&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=50.75&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-bank-landscape.png",
       "video": null,
-      "ms": 5594,
+      "ms": 6982,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8932,26 +8932,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 136856,
+        "emberPixels": 136936,
         "goldPixels": 3836,
-        "redPixels": 14696,
+        "redPixels": 14712,
         "cyanPixels": 16440,
         "textPixels": 6188,
-        "nonBgFraction": 0.3131,
+        "nonBgFraction": 0.3153,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-loose-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&looseness=1&rate=1&at=21.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-landscape.png",
       "video": null,
-      "ms": 5462,
+      "ms": 6203,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -8961,7 +8961,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 93,
+        "displayTextNodes": 92,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -9002,7 +9002,7 @@
         "redPixels": 51052,
         "cyanPixels": 15632,
         "textPixels": 4728,
-        "nonBgFraction": 0.2875,
+        "nonBgFraction": 0.2895,
         "regions": [
           {
             "name": "gauge",
@@ -9026,18 +9026,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-lost-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&looseness=1&rate=1&at=21.95&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-lost-landscape.png",
       "video": null,
-      "ms": 5410,
+      "ms": 5941,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9047,7 +9047,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 93,
+        "displayTextNodes": 92,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -9088,7 +9088,7 @@
         "redPixels": 51052,
         "cyanPixels": 15216,
         "textPixels": 5000,
-        "nonBgFraction": 0.2883,
+        "nonBgFraction": 0.2902,
         "regions": [
           {
             "name": "gauge",
@@ -9112,18 +9112,18 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-gps-landscape",
       "path": "/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&dropouts=1&rate=1&at=24.6&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-gps-landscape.png",
       "video": null,
-      "ms": 5259,
+      "ms": 6414,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9169,26 +9169,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 135204,
+        "emberPixels": 135244,
         "goldPixels": 5088,
-        "redPixels": 32220,
-        "cyanPixels": 14024,
+        "redPixels": 32240,
+        "cyanPixels": 14028,
         "textPixels": 9236,
-        "nonBgFraction": 0.5297,
+        "nonBgFraction": 0.5318,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-discarded-landscape",
       "path": "/drive?sim=harbor&rate=1&at=0.3&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=0.3&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=0.3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-discarded-landscape.png",
       "video": null,
-      "ms": 5520,
+      "ms": 6181,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9239,21 +9239,21 @@
         "redPixels": 14188,
         "cyanPixels": 12756,
         "textPixels": 32432,
-        "nonBgFraction": 0.3713,
+        "nonBgFraction": 0.3764,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-savefail-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-landscape.png",
       "video": null,
-      "ms": 7885,
+      "ms": 8513,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9263,7 +9263,7 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 94,
+        "displayTextNodes": 98,
         "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
@@ -9307,18 +9307,18 @@
         "nonBgFraction": 0.7954,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-chain-landscape",
       "path": "/drive?sim=harbor&rate=1&at=48.5&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=48.5&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=48.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-chain-landscape.png",
       "video": null,
-      "ms": 5774,
+      "ms": 6352,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9364,26 +9364,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 119820,
-        "goldPixels": 3656,
-        "redPixels": 14708,
+        "emberPixels": 119936,
+        "goldPixels": 6208,
+        "redPixels": 14724,
         "cyanPixels": 12756,
-        "textPixels": 5296,
-        "nonBgFraction": 0.2026,
+        "textPixels": 6404,
+        "nonBgFraction": 0.2062,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-warn-landscape",
       "path": "/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&rate=1&at=100.85&hold=1&integrity=suspect",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-warn-landscape.png",
       "video": null,
-      "ms": 4831,
+      "ms": 5543,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9393,8 +9393,8 @@
           "Barlow_400Regular",
           "Barlow_500Medium"
         ],
-        "displayTextNodes": 95,
-        "bodyTextNodes": 31,
+        "displayTextNodes": 94,
+        "bodyTextNodes": 30,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9429,26 +9429,26 @@
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 71172,
+        "emberPixels": 71184,
         "goldPixels": 19388,
-        "redPixels": 14872,
+        "redPixels": 14884,
         "cyanPixels": 13924,
         "textPixels": 16320,
-        "nonBgFraction": 0.6355,
+        "nonBgFraction": 0.6368,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-savefail-untrusted-landscape",
       "path": "/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&looseness=1&rate=1&at=100.85&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-savefail-untrusted-landscape.png",
       "video": null,
-      "ms": 6212,
+      "ms": 7857,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9502,18 +9502,18 @@
         "nonBgFraction": 0.5124,
         "regions": []
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "drive-loose-peak-landscape",
       "path": "/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
-      "url": "http://127.0.0.1:44023/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
+      "url": "http://127.0.0.1:34511/drive?sim=harbor&looseness=0.3&rate=1&at=100.78&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/drive-loose-peak-landscape.png",
       "video": null,
-      "ms": 5915,
+      "ms": 6288,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9564,7 +9564,7 @@
         "redPixels": 14528,
         "cyanPixels": 14108,
         "textPixels": 13112,
-        "nonBgFraction": 0.2088,
+        "nonBgFraction": 0.2108,
         "regions": [
           {
             "name": "gauge",
@@ -9608,7 +9608,7 @@
           }
         ]
       },
-      "shotAt": "2026-09-21T04:31:09.425Z"
+      "shotAt": "2026-09-21T04:36:12.768Z"
     },
     {
       "name": "replay-untrusted-leak-landscape",
@@ -11004,27 +11004,1082 @@
         "regions": []
       },
       "shotAt": "2026-09-21T04:33:13.226Z"
+    },
+    {
+      "name": "calibrate-nothing-landscape",
+      "path": "/calibrate?sim=harbor&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-nothing-landscape.png",
+      "video": null,
+      "ms": 6116,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 142948,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 40720,
+        "textPixels": 17492,
+        "nonBgFraction": 0.5567,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-landscape",
+      "path": "/calibrate?sim=harbor&at=0.5&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&at=0.5&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-landscape.png",
+      "video": null,
+      "ms": 4716,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 142948,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 63468,
+        "textPixels": 17492,
+        "nonBgFraction": 0.557,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-level-landscape",
+      "path": "/calibrate?sim=harbor&at=3&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&at=3&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-level-landscape.png",
+      "video": null,
+      "ms": 4124,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 167444,
+        "goldPixels": 0,
+        "redPixels": 0,
+        "cyanPixels": 37688,
+        "textPixels": 13772,
+        "nonBgFraction": 0.557,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-ready-landscape",
+      "path": "/calibrate?sim=harbor&at=12&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&at=12&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-ready-landscape.png",
+      "video": null,
+      "ms": 4259,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 51,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 217232,
+        "goldPixels": 4,
+        "redPixels": 0,
+        "cyanPixels": 12636,
+        "textPixels": 3644,
+        "nonBgFraction": 0.5354,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-loose-landscape",
+      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-loose-landscape.png",
+      "video": null,
+      "ms": 4455,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 51,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 5668,
+        "goldPixels": 0,
+        "redPixels": 45072,
+        "cyanPixels": 25244,
+        "textPixels": 42648,
+        "nonBgFraction": 0.5471,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-flat-landscape",
+      "path": "/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-flat-landscape.png",
+      "video": null,
+      "ms": 4162,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 53,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 207908,
+        "goldPixels": 25164,
+        "redPixels": 0,
+        "cyanPixels": 9476,
+        "textPixels": 17680,
+        "nonBgFraction": 0.6757,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-rejected-landscape",
+      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-rejected-landscape.png",
+      "video": null,
+      "ms": 4326,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 5668,
+        "goldPixels": 0,
+        "redPixels": 136284,
+        "cyanPixels": 25180,
+        "textPixels": 46836,
+        "nonBgFraction": 0.6671,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-fault-permission-landscape",
+      "path": "/calibrate?fault=permission",
+      "url": "http://127.0.0.1:44519/calibrate?fault=permission",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-fault-permission-landscape.png",
+      "video": null,
+      "ms": 2475,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 20,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 207284,
+        "goldPixels": 0,
+        "redPixels": 59232,
+        "cyanPixels": 0,
+        "textPixels": 34976,
+        "nonBgFraction": 0.4947,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-fault-unsupported-landscape",
+      "path": "/calibrate?fault=unsupported",
+      "url": "http://127.0.0.1:44519/calibrate?fault=unsupported",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-fault-unsupported-landscape.png",
+      "video": null,
+      "ms": 2537,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 19,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 194776,
+        "goldPixels": 0,
+        "redPixels": 76976,
+        "cyanPixels": 0,
+        "textPixels": 22792,
+        "nonBgFraction": 0.4888,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-fault-services-landscape",
+      "path": "/calibrate?fault=services",
+      "url": "http://127.0.0.1:44519/calibrate?fault=services",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-fault-services-landscape.png",
+      "video": null,
+      "ms": 2596,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 20,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 207284,
+        "goldPixels": 0,
+        "redPixels": 71984,
+        "cyanPixels": 0,
+        "textPixels": 33392,
+        "nonBgFraction": 0.4947,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-fault-failed-landscape",
+      "path": "/calibrate?fault=failed",
+      "url": "http://127.0.0.1:44519/calibrate?fault=failed",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-fault-failed-landscape.png",
+      "video": null,
+      "ms": 2692,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 20,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 205508,
+        "goldPixels": 0,
+        "redPixels": 70084,
+        "cyanPixels": 0,
+        "textPixels": 23264,
+        "nonBgFraction": 0.5046,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-fault-location-landscape",
+      "path": "/calibrate?fault=location",
+      "url": "http://127.0.0.1:44519/calibrate?fault=location",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-fault-location-landscape.png",
+      "video": null,
+      "ms": 2508,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 20,
+        "bodyTextNodes": 22,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 0,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 207284,
+        "goldPixels": 0,
+        "redPixels": 63284,
+        "cyanPixels": 0,
+        "textPixels": 32632,
+        "nonBgFraction": 0.4947,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-shaking-landscape",
+      "path": "/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-shaking-landscape.png",
+      "video": null,
+      "ms": 4360,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 5668,
+        "goldPixels": 63576,
+        "redPixels": 0,
+        "cyanPixels": 14088,
+        "textPixels": 21676,
+        "nonBgFraction": 0.545,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-early-landscape",
+      "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-early-landscape.png",
+      "video": null,
+      "ms": 4597,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 21,
+        "bodyTextNodes": 51,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 5668,
+        "goldPixels": 0,
+        "redPixels": 47460,
+        "cyanPixels": 25136,
+        "textPixels": 42648,
+        "nonBgFraction": 0.5469,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-cradle-banner-landscape",
+      "path": "/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-cradle-banner-landscape.png",
+      "video": null,
+      "ms": 4527,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 53,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 167556,
+        "goldPixels": 61404,
+        "redPixels": 0,
+        "cyanPixels": 17128,
+        "textPixels": 15608,
+        "nonBgFraction": 0.683,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
+    },
+    {
+      "name": "calibrate-gps-landscape",
+      "path": "/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1",
+      "url": "http://127.0.0.1:44519/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "screenshot": "artifacts/shots/calibrate-gps-landscape.png",
+      "video": null,
+      "ms": 4210,
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          "BarlowCondensed_600SemiBold",
+          "BarlowCondensed_700Bold",
+          "BarlowCondensed_800ExtraBold_Italic",
+          "Barlow_400Regular",
+          "Barlow_500Medium",
+          "Barlow_600SemiBold"
+        ],
+        "displayTextNodes": 22,
+        "bodyTextNodes": 52,
+        "otherTextNodes": 0
+      },
+      "skia": {
+        "canvases": 1,
+        "webgl": true,
+        "canvasKit": true
+      },
+      "pixels": {
+        "width": 2556,
+        "height": 1179,
+        "corners": {
+          "topLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "topRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomLeft": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          },
+          "bottomRight": {
+            "r": 7,
+            "g": 9,
+            "b": 13
+          }
+        },
+        "cornersOnBg": true,
+        "cornersNearBg": true,
+        "emberPixels": 204264,
+        "goldPixels": 20368,
+        "redPixels": 0,
+        "cyanPixels": 15308,
+        "textPixels": 9100,
+        "nonBgFraction": 0.6582,
+        "regions": []
+      },
+      "shotAt": "2026-09-21T04:34:16.899Z"
     }
   ],
-  "finishedAt": "2026-09-21T04:33:13.226Z",
+  "finishedAt": "2026-09-21T04:36:12.768Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "calibrate-nothing",
-    "calibrate",
-    "calibrate-level",
-    "calibrate-ready",
-    "calibrate-loose",
-    "calibrate-flat",
-    "calibrate-rejected",
-    "calibrate-fault-permission",
-    "calibrate-fault-unsupported",
-    "calibrate-fault-services",
-    "calibrate-fault-failed",
-    "calibrate-fault-location",
-    "calibrate-shaking",
-    "calibrate-early",
-    "calibrate-cradle-banner",
-    "calibrate-gps"
+    "drive-open-landscape",
+    "drive-start-landscape",
+    "drive-landscape",
+    "drive-peak-landscape",
+    "drive-transition-landscape",
+    "drive-bank-landscape",
+    "drive-loose-landscape",
+    "drive-lost-landscape",
+    "drive-gps-landscape",
+    "drive-discarded-landscape",
+    "drive-savefail-landscape",
+    "drive-chain-landscape",
+    "drive-warn-landscape",
+    "drive-savefail-untrusted-landscape",
+    "drive-loose-peak-landscape"
   ]
 }

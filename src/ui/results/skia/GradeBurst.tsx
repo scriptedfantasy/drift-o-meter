@@ -122,8 +122,11 @@ export default function GradeBurst({ size, height, color, progress, particles = 
 
   return (
     <Canvas style={{ width: w, height: h }} testID={testID}>
+      {/* A mask filter costs its KERNEL as well as its area, and this one is the widest draw in
+          the scene: `size * 0.06` is a 40 px sigma over a 664 dp disc. 18 reads the same at
+          arm's length and is the single biggest saving in the burst. */}
       <Circle cx={c} cy={cy} r={flashRadius} color={rgba('#FFFFFF', 1)} opacity={flashOpacity}>
-        <BlurMask blur={size * 0.06} style="normal" />
+        <BlurMask blur={Math.min(18, size * 0.06)} style="normal" />
       </Circle>
 
       <Circle cx={c} cy={cy} r={ring1R} color={color} style="stroke" strokeWidth={ring1W} opacity={ring1O}>
