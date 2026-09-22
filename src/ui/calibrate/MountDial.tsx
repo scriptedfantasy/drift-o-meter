@@ -34,8 +34,12 @@ export interface MountDialProps {
    * three screens already disagreed about. One owner (`SHARP_QUALITY` in `model.ts`), passed in.
    */
   sharp: number;
-  /** Arc colour, taken from the same band the words use so the two never disagree. */
-  tone?: 'ember' | 'green' | 'red' | 'cyan' | 'gold';
+  /**
+   * Arc colour, taken from the same band the words use so the two never disagree. A `theme.ts`
+   * token: `blue` while the engine is still working, `green` past its bar, `greenHot` a
+   * caution, `red` a stop.
+   */
+  tone?: 'blue' | 'green' | 'greenHot' | 'red';
   /** The vertical has settled — the horizon locks and brightens. */
   settled?: boolean;
   /** The forward axis is resolved: the dial gains its fore/aft axis. */
@@ -61,7 +65,7 @@ export default function MountDial({
   quality,
   threshold,
   sharp,
-  tone = 'ember',
+  tone = 'blue',
   settled = false,
   resolved = false,
   loose = false,

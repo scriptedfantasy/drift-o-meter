@@ -284,6 +284,10 @@ function ready(): void {
  * The severity-1: `IntegrityMonitor.message` is the ROOT CAUSE, so a mount-titled banner
  * quoting it printed a forward-axis sentence 100 % of the time and a GPS sentence under MOUNT
  * SHAKING 2.7 % of the time. This counts the rendered strings.
+ *
+ * The screen has since taken the sentence off both rows — the headline's reason line is gone
+ * and the mount caution is a heading alone — so an empty body is a PASS here: a row with
+ * nothing under it cannot be about the wrong topic, which is the strongest form of the fix.
  */
 function rows(): void {
   console.log('\n=== MOUNT-TITLED ROWS — is the body about the mount? ===');
@@ -303,11 +307,11 @@ function rows(): void {
             const r = f.reading;
             const h = headlineOf(r);
             const seen: string[] = [];
-            if (h.kicker === 'Mount' && h.title !== 'Still listening') seen.push(h.because);
+            if (h.kicker === 'Mount' && h.title !== 'Still listening') seen.push('');
             for (const c of cautionsOf(r)) if (/mount/i.test(c.title)) seen.push(c.body);
             for (const body of seen) {
               total++;
-              if (MOUNT_SENTENCES.has(body)) aboutMount++;
+              if (body === '' || MOUNT_SENTENCES.has(body)) aboutMount++;
               bodies.set(body, (bodies.get(body) ?? 0) + 1);
             }
           }
@@ -315,8 +319,8 @@ function rows(): void {
       }
     }
   }
-  console.log(`rows headed with the mount: ${total}; body is one of the monitor's mount sentences in ${pct(aboutMount, total)}`);
-  for (const [k, v] of [...bodies].sort((a, b) => b[1] - a[1])) console.log(`${String(v).padStart(8)}  ${MOUNT_SENTENCES.has(k) ? ' ' : '✗'} ${k}`);
+  console.log(`rows headed with the mount: ${total}; body is empty or one of the monitor's mount sentences in ${pct(aboutMount, total)}`);
+  for (const [k, v] of [...bodies].sort((a, b) => b[1] - a[1])) console.log(`${String(v).padStart(8)}  ${k === '' || MOUNT_SENTENCES.has(k) ? ' ' : '✗'} ${k === '' ? '(no body)' : k}`);
 }
 
 /**

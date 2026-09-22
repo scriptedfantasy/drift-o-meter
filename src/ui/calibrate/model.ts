@@ -13,8 +13,9 @@
  *    `npx tsx tools/analysis/calibration-sweep.ts ceiling` — peak confidence runs 0.618 to
  *    0.864, median 0.750, so a 0.8 gate lights on 9 runs in 48 and a 0.74 one on 31. The
  *    spread, not a ceiling, is the fact; the engine naming its own bar is the fix.)
- *  • the words for a loose or shaking mount. They are `IntegrityMonitor`'s own message,
- *    verbatim, so this screen and the HUD never describe the same condition differently.
+ *  • the words for a loose or shaking mount. The TITLE is the HUD's own heading for the same
+ *    state, and any sentence this screen prints about a topic is `IntegrityMonitor`'s own
+ *    per-topic message (`firstClause`), so the two never describe one condition differently.
  *
  * ONE RULE RUNS THROUGH ALL OF IT: an absence of evidence is never reported as a verdict. The
  * monitor starts permissive (`calibrationOk` true before it has seen a sample, `mount` 'rigid'
@@ -23,7 +24,7 @@
  * not repeat it as one. Every function below reads `mountVerdict`, which says 'unknown' until
  * the cues mean something, and 'unknown' is a pass NOWHERE.
  */
-import { calibrationBand, calibrationHeadroom, verticalSettled, CALIBRATION_SHARP, DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
+import { calibrationBand, verticalSettled, CALIBRATION_SHARP, DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
 import { DEFAULT_MOUNT_OPTIONS, forwardProgress } from '../../engine/mount';
 import type { Vec3 } from '../../engine/types';
 import { G } from '../../engine/types';
@@ -97,14 +98,16 @@ export interface CalibrationFault {
  *
  * `permission` and `location` are separate because `DeviceSensorSource` can fail on either, and
  * telling a driver whose location is denied to turn on Motion & Fitness sends them to fix the
- * thing that already works. Every body here is verb-first: this screen's only job in a fault is
- * to name the one action.
+ * thing that already works. Every body here is verb-first AND nothing but the action: each one
+ * used to end with the physics behind it ("Gravity fixes which way is up; only the direction of
+ * travel fixes which way the car POINTS"), which is a sentence for this file, not for a driver
+ * holding a phone that will not start.
  */
 export const FAULTS: Record<CalibrationFaultKind, CalibrationFault> = {
   permission: {
     kind: 'permission',
     title: 'Motion access is off',
-    body: 'Turn on Motion & Fitness for Drift-O-Meter in the phone’s Settings, then come back and tap Try again. Calibration reads the accelerometer and gyroscope; without them there is no mount to measure.',
+    body: 'Turn on Motion & Fitness for Drift-O-Meter in the phone’s Settings, then come back and tap Try again.',
     retryable: true,
     destination: 'phone-settings',
     actionLabel: 'Open iPhone settings',
@@ -112,7 +115,7 @@ export const FAULTS: Record<CalibrationFaultKind, CalibrationFault> = {
   location: {
     kind: 'location',
     title: 'Location access is off',
-    body: 'Allow Location for Drift-O-Meter in the phone’s Settings, then come back and tap Try again. Gravity fixes which way is up; only the direction of travel fixes which way the car POINTS.',
+    body: 'Allow Location for Drift-O-Meter in the phone’s Settings, then come back and tap Try again.',
     retryable: true,
     destination: 'phone-settings',
     actionLabel: 'Open iPhone settings',
@@ -120,7 +123,7 @@ export const FAULTS: Record<CalibrationFaultKind, CalibrationFault> = {
   unsupported: {
     kind: 'unsupported',
     title: 'No motion sensors here',
-    body: 'Switch to the simulated source in this app’s settings to see what the judge does with a run. This device has no usable gyroscope, so there is no mount to calibrate.',
+    body: 'Switch to the simulated source in this app’s settings to see what the judge does with a run.',
     retryable: false,
     destination: 'app-settings',
     actionLabel: 'App settings',
@@ -128,7 +131,7 @@ export const FAULTS: Record<CalibrationFaultKind, CalibrationFault> = {
   services: {
     kind: 'services',
     title: 'Location Services are off',
-    body: 'Turn Location Services back on in the phone’s Settings → Privacy & Security, then come back and tap Try again. It is switched off for the whole phone, so no app can see the direction of travel.',
+    body: 'Turn Location Services back on in the phone’s Settings → Privacy & Security, then come back and tap Try again.',
     retryable: true,
     destination: 'phone-settings',
     actionLabel: 'Open iPhone settings',
@@ -136,7 +139,7 @@ export const FAULTS: Record<CalibrationFaultKind, CalibrationFault> = {
   failed: {
     kind: 'failed',
     title: 'Sensors would not start',
-    body: 'Close anything else reading the sensors — another fitness or navigation app — then tap Try again. The motion stream did not open.',
+    body: 'Close anything else reading the sensors — another fitness or navigation app — then tap Try again.',
     retryable: true,
     destination: 'app-settings',
     actionLabel: 'App settings',
@@ -358,10 +361,11 @@ export interface Light {
   key: 'level' | 'forward' | 'mount';
   label: string;
   /**
-   * `working` is "still listening" (cyan), `warn` is a verdict that is not fatal (gold), `bad`
-   * is one that is (red). `suspect` used to share cyan with `unknown`, so a mount the engine HAD
-   * judged looked exactly like one it had not — while the headline above painted that same
-   * state gold. Three lights read at arm's length have one job, which is to carry the verdict.
+   * `working` is "still listening" (blue), `warn` is a verdict that is not fatal (greenHot),
+   * `bad` is one that is (red). `suspect` used to share the working colour with `unknown`, so a
+   * mount the engine HAD judged looked exactly like one it had not — while the headline above
+   * painted that same state as a caution. Three lights read at arm's length have one job, which
+   * is to carry the verdict.
    */
   state: 'on' | 'working' | 'warn' | 'bad';
   detail: string;
@@ -407,49 +411,57 @@ export function lightsOf(r: CalibrationReading): Light[] {
 export interface Headline {
   kicker: string;
   title: string;
-  /** One clause, the reason — never a paragraph. */
-  because: string;
-  color: 'ember' | 'cyan' | 'green' | 'red' | 'gold';
+  /**
+   * A `theme.ts` token: `blue` while the engine is still working, `green` for a verdict in the
+   * driver's favour, `greenHot` for a caution, `red` for a stop. Nothing is green until the
+   * engine will believe the mount — green means a run is being measured, and `seeking` is not.
+   */
+  color: 'blue' | 'green' | 'greenHot' | 'red';
 }
 
+/**
+ * The two biggest words on the screen, and the kicker over them.
+ *
+ * THERE IS NO REASON LINE. Every branch used to carry a `because` clause under the title —
+ * "one hard pull in a straight line is what settles it", "gravity is telling it which way is
+ * up" — and this screen is read in a car, in a hurry, sometimes in the dark. The instruction is
+ * `stepsOf`, the measurement is `qualityBand` and `leaveOf`, and the condition is the title
+ * itself, so the clause could only ever repeat one of the three.
+ *
+ * Two of those clauses were load-bearing, and this is where they went:
+ *
+ *  • `blocked` and `unsteady` quoted `IntegrityMonitor.mountMessage` — never `message`, which
+ *    answers the ROOT CAUSE and so printed "GPS signal lost 5 s ago" under MOUNT SHAKING on
+ *    2,760 of 102,944 measured frames. The title is the HUD's own heading for the same state
+ *    (`HudChrome.tsx`) and says the same thing in two words, so the quote was the title again.
+ *    Where the monitor knows something the screen cannot say for itself — how long the GPS has
+ *    been gone — it is a caution row, per topic, in the monitor's words (`cautionsOf`).
+ *  • `ready` graded the number in prose, in three bands. `qualityBand().label` grades it in one
+ *    place, off the engine's own scale, which is why there is no second copy here.
+ */
 export function headlineOf(r: CalibrationReading): Headline {
   switch (phaseOf(r)) {
     case 'failed':
-      return { kicker: 'Cannot calibrate', title: r.fault?.title ?? 'Sensors unavailable', because: r.fault?.body ?? '', color: 'red' };
+      return { kicker: 'Cannot calibrate', title: r.fault?.title ?? 'Sensors unavailable', color: 'red' };
     case 'blocked':
-      // The biggest words on the loudest frame have to be the condition, not a noise. The name
-      // is the HUD's own heading for the same state, and the sentence under it is the
-      // monitor's ABOUT THE MOUNT, verbatim and once — there is no second banner repeating it.
-      return { kicker: 'Mount', title: r.handheld ? 'Hand-held' : 'Loose mount', because: r.mountMessage, color: 'red' };
+      // The biggest words on the loudest frame have to be the condition, not a noise.
+      return { kicker: 'Mount', title: r.handheld ? 'Hand-held' : 'Loose mount', color: 'red' };
     case 'unsteady':
-      // `mountMessage`, NOT `message`. The HUD's own heading for `mount === 'suspect'` is MOUNT
-      // SHAKING (`HudChrome.tsx`), and `message` answers a different question — the root cause —
-      // so under this title it printed "GPS signal lost 5 s ago" on 2,760 of 102,944 measured
-      // frames. A heading and its reason have to be about the same thing.
       return mountVerdict(r) === 'suspect'
-        ? { kicker: 'Mount', title: 'Mount shaking', because: r.mountMessage, color: 'gold' }
-        : { kicker: 'Mount', title: 'Still listening', because: 'the sway cues want a full window of data before they mean anything', color: 'cyan' };
+        ? { kicker: 'Mount', title: 'Mount shaking', color: 'greenHot' }
+        : { kicker: 'Mount', title: 'Still listening', color: 'blue' };
     case 'ready':
-      // The clause moves with the number: one sentence cannot honestly cover 30 % to 86 %.
-      return {
-        kicker: 'Calibrated',
-        title: 'Ready to measure',
-        // The VERDICT is the engine's band; only the wording varies by degree, off the engine's
-        // own scale rather than off a threshold this screen keeps.
-        because:
-          calibrationBand(r.quality, r.forwardResolved) === 'sharp'
-            ? 'the judge will take every angle this mount reports at face value'
-            : calibrationHeadroom(r.quality, r.forwardResolved) >= 0.5
-              ? 'clear of the bar — the results will still note the mount against every angle'
-              : 'barely past the bar: it will score, and every angle will carry a mount caveat',
-        color: calibrationBand(r.quality, r.forwardResolved) === 'sharp' ? 'green' : 'ember',
-      };
+      // ONE GREEN, not two. The old pair was ember for "past the bar" and green for "sharp",
+      // and the repaint (`theme.ts`) collapsed ember into green — two names for #8AF606 would
+      // now paint the same pixels while pretending to be a distinction. The distinction is
+      // real and it is `qualityBand().label`, which says which side of 0.75 this is.
+      return { kicker: 'Calibrated', title: 'Ready to measure', color: 'green' };
     case 'seeking':
-      return { kicker: 'Almost', title: 'Finding forward', because: 'one hard pull in a straight line is what settles it', color: 'ember' };
+      return { kicker: 'Almost', title: 'Finding forward', color: 'blue' };
     case 'levelling':
-      return { kicker: 'Working', title: 'Finding level', because: 'gravity is telling it which way is up', color: 'cyan' };
+      return { kicker: 'Working', title: 'Finding level', color: 'blue' };
     default:
-      return { kicker: 'Waking up', title: 'Listening', because: 'the first readings are on their way', color: 'cyan' };
+      return { kicker: 'Waking up', title: 'Listening', color: 'blue' };
   }
 }
 
@@ -465,8 +477,6 @@ function forwardDetail(r: CalibrationReading): string {
 export interface Step {
   n: string;
   title: string;
-  /** Why, in one clause. */
-  because: string;
   state: 'done' | 'active' | 'todo';
   /** 0..1 when the engine can say how far along this step is. */
   progress: number;
@@ -476,6 +486,19 @@ export interface Step {
  * The two things a driver has to do. Deliberately two: the calibrator needs no gesture and no
  * standing still — it takes the vertical from gravity by itself and the forward axis from the
  * car accelerating. Anything else on this list would be ceremony.
+ *
+ * TITLES ONLY. Each step used to print its reason underneath, and both reasons are true and
+ * neither is actionable: a driver clipping a phone into a cradle is not deciding whether to,
+ * and the second one explains a mechanism the FORWARD tile is already reporting progress on.
+ * They are kept here, where the next person to wonder why these two steps and no others is
+ * the one who needs them:
+ *
+ *  • 01 — a phone that shifts in its cradle reads as slip the car never made. That is the
+ *    whole of `IntegrityMonitor`'s mount block: cradle sway lands in the same rotation channel
+ *    the slip angle is read out of, and nothing downstream can tell the two apart.
+ *  • 02 — acceleration only ever points forwards, so one hard pull is the only thing that can
+ *    say which END of the line the car moves along is the windscreen (`signAcceptScore`). The
+ *    line itself comes free from driving; the sign does not.
  */
 export function stepsOf(r: CalibrationReading): Step[] {
   // `mount === 'unknown'` used to count here, so for the whole 4 s warm-up step 01 was struck
@@ -488,16 +511,12 @@ export function stepsOf(r: CalibrationReading): Step[] {
     {
       n: '01',
       title: 'Clip it to something rigid',
-      because: 'a phone that shifts in its cradle reads as slip the car never made',
       state: mountOk ? 'done' : 'active',
       progress: mountOk ? 1 : 0,
     },
     {
       n: '02',
       title: 'Drive off and accelerate hard, once, in a straight line',
-      // The title already gives the action and the headline gives the instruction; this is the
-      // only one of the three that has to carry the mechanism.
-      because: 'acceleration only ever points forwards — nothing else can fix the axis',
       state: r.forwardResolved ? 'done' : mountOk ? 'active' : 'todo',
       progress: r.forwardResolved ? 1 : evidence,
     },
@@ -507,9 +526,12 @@ export function stepsOf(r: CalibrationReading): Step[] {
 /** The button that leaves this screen, and what leaving actually costs. */
 export interface Leave {
   label: string;
-  /** Ember slab, or the quieter secondary. */
+  /** The green slab, or the quieter secondary. */
   primary: boolean;
-  /** One sentence. It has to be TRUE in this phase, which is why it is not one sentence. */
+  /**
+   * One clause under the button: a measurement, or what leaving costs. It has to be TRUE in
+   * this phase, which is why it is not one clause for all of them.
+   */
   note: string;
 }
 
@@ -527,9 +549,12 @@ export interface Leave {
  * the quiet button: a loose mount (leaving costs the whole run) and a shaking one (leaving
  * costs part of every angle).
  *
- * THEN THE SENTENCE. Every note is a measurement
+ * THEN THE SENTENCE — one clause of it. Every note is a measurement
  * (`npx tsx tools/analysis/calibration-sweep.ts`), and it has to hold on EVERY frame of the
- * phase, not on the frame it was measured from:
+ * phase, not on the frame it was measured from. What each one no longer carries is the second
+ * clause explaining the first: "it moves both ways as you drive", "a moving phone never
+ * reaches the judge's bar", "re-clip it and it is worth more". The first clause is the fact;
+ * the second was the screen arguing with the driver about it.
  *
  *  • READY said "As sharp as it gets — it peaks seconds after you drive off, and never climbs
  *    later". The measurement behind it compared FINAL to PEAK, and it was right about that: the
@@ -564,44 +589,72 @@ export function leaveOf(r: CalibrationReading): Leave {
     return {
       label: 'Drive',
       primary: true,
-      note: `Best so far ${Math.round(Math.max(0, Math.min(1, r.peakQuality)) * 100)}%. It moves both ways as you drive — past the bar is what counts.`,
+      note: `Best so far ${Math.round(Math.max(0, Math.min(1, r.peakQuality)) * 100)}%.`,
     };
   }
   if (phase === 'blocked') {
+    // Not "drive without a score": scoring is being deleted from this app, and the thing a
+    // loose mount actually costs is the measurement itself — the monitor will not believe one
+    // angle of it. 0 of 24 runs at looseness >= 0.5 ever reached the engine's bar.
     return {
-      label: 'Drive without a score',
+      label: 'Drive without measuring',
       primary: false,
-      note: 'Leave now and nothing in it is scored: a moving phone never reaches the judge’s bar.',
+      note: 'A moving phone never clears the bar.',
     };
   }
   if (mount === 'suspect') {
+    // THE ACTION, not the cost: `qualityBand().label` is already saying that part of every
+    // angle is the cradle, two lines above this, and for one frame the two said it in the
+    // identical words. What this note has that nothing else on the screen has is what
+    // re-clipping buys — and, under the bar, that driving on usually will not do instead:
+    // 3 of 31 measured `suspect` runs ever reached READY.
     return {
       label: 'Drive anyway',
       primary: false,
-      note: r.calibrationOk
-        ? 'It scores, but part of every angle is the cradle. Re-clip it and it is worth more.'
-        : 'The cradle is what holds it under the bar. Re-clip it — driving on rarely clears it.',
+      note: r.calibrationOk ? 'Re-clip it and the angles are the car’s alone.' : 'Re-clip it — driving on rarely clears it.',
     };
   }
   if (phase === 'unsteady') {
     return {
       label: 'Drive',
       primary: true,
-      note: 'Past the bar already — the sway cues are still filling, and driving is what fills them.',
+      note: 'Past the bar — the sway cues fill as you drive.',
     };
   }
   return {
     label: 'Drive',
     primary: true,
-    note: 'You need not sit here: the run calibrates itself before the first corner.',
+    note: 'It calibrates itself on the way.',
   };
 }
 
 /** A caution that is true but not fatal — the phone is flat, or it has been knocked. */
 export interface Caution {
   title: string;
+  /**
+   * At most one clause, and `''` when the heading has already said it. A caution is read at a
+   * glance in a car: the heading names the condition, and the body only earns its line by
+   * carrying something the heading cannot — a measurement ("GPS signal lost 8 s ago"), or when
+   * the condition is harmless ("Fine only on a pad that is stuck down").
+   */
   body: string;
-  tone: 'gold' | 'red';
+  tone: 'greenHot' | 'red';
+}
+
+/**
+ * The monitor's sentence, up to its em dash.
+ *
+ * `IntegrityMonitor` writes for the HUD, where there is room for one line and it has to say
+ * everything: a claim, then what to do about it — "GPS signal lost 8 s ago — waiting for it to
+ * come back", "Phone may be shifting in its mount — check it is tight". This screen already
+ * carries the instruction (`stepsOf`) and the cost (`leaveOf`), so a caution row takes the
+ * claim and drops the tail. Still the monitor's own words, never this screen's, and still per
+ * topic: a row headed GPS quoting `message` printed a mount sentence, which is the defect
+ * `gpsMessage` and `mountMessage` exist to prevent.
+ */
+function firstClause(s: string): string {
+  const dash = s.indexOf('\u2014');
+  return (dash < 0 ? s : s.slice(0, dash)).trim();
 }
 
 export function cautionsOf(r: CalibrationReading): Caution[] {
@@ -615,20 +668,23 @@ export function cautionsOf(r: CalibrationReading): Caution[] {
   if (isFlat(r)) {
     out.push({
       title: 'The phone is lying flat',
-      // Short, and it does not repeat step 01's clause back at the driver.
-      body: moving
-        ? 'Flat and already moving — on a seat or a loose pad it slides with every corner.'
-        : 'Fine on a dash pad that is stuck down. On a seat it will slide at the first corner.',
-      tone: moving ? 'red' : 'gold',
+      // The mild one earns its line by saying when flat is FINE, which the heading cannot; the
+      // harsh one is the verdict the heading cannot carry either, because the heading is the
+      // same in both. Neither repeats step 01 back at the driver.
+      body: moving ? 'Already moving.' : 'Fine only on a pad that is stuck down.',
+      tone: moving ? 'red' : 'greenHot',
     });
   }
-  // Only when the headline is not already carrying it, in the monitor's own words ABOUT THE
-  // MOUNT. Quoting `message` here put a forward-axis sentence under this title on 105,439 of
-  // 105,439 measured caution frames — 100 %, and structurally so: `message` answers the root
-  // cause, and the only way to reach this branch is for `calibrationOk` to be false, which IS
-  // the cause that outranks the mount. A title and its body have to be about one thing.
+  // NO BODY. This row used to quote the monitor underneath itself — "Phone may be shifting in
+  // its mount" under MOUNT LOOKS UNSTEADY — which is the heading again in the engine's words.
+  // Its history is why the coupling still matters: quoting `message` here put a forward-axis
+  // sentence under this title on 105,439 of 105,439 measured caution frames, 100 % and
+  // structurally so, because `message` answers the root cause and the only way to reach this
+  // branch is for `calibrationOk` to be false, which IS the cause that outranks the mount. The
+  // row is still gated on the monitor having something to say about the MOUNT (`mountMessage`),
+  // so it cannot appear for a condition the monitor never named.
   if (mount === 'suspect' && !isFlat(r) && phaseOf(r) !== 'unsteady' && r.mountMessage) {
-    out.push({ title: 'Mount looks unsteady', body: r.mountMessage, tone: 'gold' });
+    out.push({ title: 'Mount looks unsteady', body: '', tone: 'greenHot' });
   }
   // A GPS condition gets its OWN row rather than a stolen reason line. This screen has no GPS
   // light — three lights is what fits at arm's length — so before this the only place a
@@ -636,24 +692,26 @@ export function cautionsOf(r: CalibrationReading): Caution[] {
   // monitor decides when there is something to say: `gpsMessage` stays empty through the normal
   // first seconds of a session, when no fix has arrived yet and none is late.
   if (r.gpsMessage) {
-    out.push({ title: r.gps === 'poor' ? 'GPS is vague' : 'No GPS fix', body: r.gpsMessage, tone: 'gold' });
+    // The clause, not the sentence: "GPS signal lost 8 s ago" is the measurement this screen
+    // has nowhere else (there is no GPS light), and "waiting for it to come back" is the HUD
+    // telling a driver at 60 km/h not to worry, which is not this screen's job.
+    out.push({ title: r.gps === 'poor' ? 'GPS is vague' : 'No GPS fix', body: firstClause(r.gpsMessage), tone: 'greenHot' });
   }
   if (r.knocks > 0) {
     out.push({
       title: r.knocks === 1 ? 'The phone was knocked' : `The phone was knocked ${r.knocks} times`,
-      // "Nothing is lost" was unconditional, and it sat two rows above a footer reading "Leave
-      // now and nothing in it is scored" on a 0 % frame. What a knock costs depends on whether
-      // the calibration that followed it got anywhere, which the engine already says.
-      body: r.calibrationOk
-        ? 'It started again from the new position and has caught up. The mount is not holding, though.'
-        : 'It started again from the new position and has not caught up yet. The mount is not holding.',
-      tone: 'gold',
+      // "Nothing is lost" was unconditional, and it sat two rows above a footer saying the run
+      // was worth nothing on a 0 % frame. What a knock costs depends on whether the calibration
+      // that restarted after it got anywhere, which the engine already says. That is the whole
+      // body: "the mount is not holding" is what the heading means.
+      body: r.calibrationOk ? 'It has caught up.' : 'It has not caught up.',
+      tone: 'greenHot',
     });
   }
   if (r.has && Math.abs(r.gMag - G) > 1.2) {
     out.push({
       title: 'Gravity reads wrong',
-      body: `The phone is sensing ${r.gMag.toFixed(1)} m/s² where it should sense ${G.toFixed(1)}. Something is shaking it hard enough to matter.`,
+      body: `${r.gMag.toFixed(1)} m/s² where it should read ${G.toFixed(1)}.`,
       tone: 'red',
     });
   }
@@ -669,8 +727,9 @@ export function cautionsOf(r: CalibrationReading): Caution[] {
  */
 export interface Arrival {
   title: string;
+  /** One clause: the consequence the heading does not already carry. */
   body: string;
-  tone: 'red' | 'gold';
+  tone: 'red' | 'greenHot';
 }
 
 export function arrivalOf(why: CalibrateReason | null): Arrival | null {
@@ -684,22 +743,23 @@ export function arrivalOf(why: CalibrateReason | null): Arrival | null {
     case 'loose':
       return {
         title: 'The phone was moving in its mount',
-        body: 'It was scored, but cradle movement reads as slip the car never made. Rigid, the same driving is worth more.',
+        body: 'Cradle movement reads as slip the car never made.',
         tone: 'red',
       };
     case 'unresolved':
-      // What HAPPENED, and nothing else. The headline gives the instruction and step 02 gives
-      // the mechanism; all three said "one hard pull in a straight line" on the same frame.
+      // What HAPPENED, and nothing else. Step 02 gives the instruction; this used to give it
+      // again, and so did the headline, so "one hard pull in a straight line" appeared three
+      // times on one frame.
       return {
         title: 'Last run never worked out which way the car points',
-        body: 'Without a forward axis a slide and a lane change look alike, so none of it could be scored.',
-        tone: 'gold',
+        body: 'A slide and a lane change look alike without it.',
+        tone: 'greenHot',
       };
     case 'suspect':
       return {
         title: 'Last run’s mount looked unsteady',
-        body: 'Nothing was invalid, but some of the angle may have been cradle rattle rather than the car.',
-        tone: 'gold',
+        body: 'Some of the angle may have been cradle rattle.',
+        tone: 'greenHot',
       };
     default:
       return null;
@@ -711,8 +771,13 @@ export interface QualityBand {
   value: number;
   /** Percentage text, or `--` before there is anything to report. */
   display: string;
+  /**
+   * What that number means, in one line under the title. It is the ONLY place the confidence is
+   * graded in words, now that the headline does not, so it is where "sharp" and "past the bar"
+   * are distinguished — and it says nothing about scoring, which is being taken out of this app.
+   */
   label: string;
-  color: 'ember' | 'green' | 'red' | 'cyan' | 'gold';
+  color: 'blue' | 'green' | 'greenHot' | 'red';
 }
 
 /**
@@ -726,14 +791,17 @@ export function qualityBand(r: CalibrationReading): QualityBand {
   const display = r.samples === 0 ? '--' : `${Math.round(value * 100)}%`;
   const mount = mountVerdict(r);
   if (mount === 'loose') return { value, display, label: 'The mount is moving · nothing here can be believed', color: 'red' };
-  if (!r.forwardResolved) return { value, display, label: 'Forward axis not resolved · nothing is scored yet', color: 'cyan' };
-  if (mount === 'suspect') return { value, display, label: 'The cradle is moving · some of every angle is it', color: 'gold' };
-  if (mount === 'unknown') return { value, display, label: 'Still reading the mount · a few seconds more', color: 'cyan' };
+  // NOT "nothing is scored yet". Scoring is leaving this app, and the true statement is
+  // simpler: without a forward axis the engine cannot tell a slide from a lane change, so it
+  // measures nothing at all yet.
+  if (!r.forwardResolved) return { value, display, label: 'Forward axis not resolved · nothing measured yet', color: 'blue' };
+  if (mount === 'suspect') return { value, display, label: 'Part of every angle is the cradle', color: 'greenHot' };
+  if (mount === 'unknown') return { value, display, label: 'Still reading the mount', color: 'blue' };
   // The ENGINE's verdict, not a second copy of its threshold. `calibrationOk` already is
   // `quality >= minCalibrationQuality` with the forward axis resolved, and re-deriving it here
   // from `value >= TRUST_QUALITY` let the band say "below the bar" on a frame the headline was
   // calling READY. A screen may display the engine's number; it may not re-decide with it.
-  if (!r.calibrationOk) return { value, display, label: 'Below the bar the judge believes', color: 'red' };
-  if (calibrationBand(r.quality, r.forwardResolved) === 'sharp') return { value, display, label: 'Sharp · nothing will be qualified for the mount', color: 'green' };
-  return { value, display, label: 'Good enough to score', color: 'ember' };
+  if (!r.calibrationOk) return { value, display, label: 'Below the bar', color: 'red' };
+  if (calibrationBand(r.quality, r.forwardResolved) === 'sharp') return { value, display, label: 'Sharp · no mount caveat', color: 'green' };
+  return { value, display, label: 'Past the bar · a mount caveat on every angle', color: 'green' };
 }

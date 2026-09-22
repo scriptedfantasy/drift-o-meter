@@ -185,43 +185,50 @@ describe('stepsOf', () => {
 });
 
 describe('headlineOf', () => {
-  it('names the condition the HUD names, in the monitor’s own words', () => {
-    expect(headlineOf(LOOSE)).toMatchObject({ title: 'Hand-held', because: LOOSE.mountMessage, color: 'red' });
+  it('names the condition the HUD names', () => {
+    expect(headlineOf(LOOSE)).toMatchObject({ kicker: 'Mount', title: 'Hand-held', color: 'red' });
     expect(headlineOf(reading({ mount: 'loose', handheld: false, mountMessage: 'm' })).title).toBe('Loose mount');
-    expect(headlineOf(CRADLE)).toMatchObject({ title: 'Mount shaking', because: CRADLE.mountMessage, color: 'gold' });
-    // and it quotes the MOUNT sentence, not the root-cause one: `message` answers a different
-    // question and printed "GPS signal lost 5 s ago" under MOUNT SHAKING on 2.7 % of frames.
-    const shakingWithNoFix = reading({ mount: 'suspect', message: 'GPS signal lost 5 s ago — waiting for it to come back', mountMessage: 'Phone may be shifting in its mount — check it is tight' });
-    expect(headlineOf(shakingWithNoFix).because).toBe(shakingWithNoFix.mountMessage);
+    expect(headlineOf(CRADLE)).toMatchObject({ kicker: 'Mount', title: 'Mount shaking', color: 'greenHot' });
   });
 
-  it('moves the reason with the number instead of one clause for the whole range', () => {
-    const low = headlineOf(reading({ quality: 0.33 })).because;
-    const mid = headlineOf(reading({ quality: 0.6 })).because;
-    const high = headlineOf(SHARP).because;
-    expect(new Set([low, mid, high]).size).toBe(3);
-    expect(low).toMatch(/barely/);
-    expect(high).toMatch(/face value/);
+  it('is a kicker and a title and nothing else', () => {
+    // The reason line is gone from every branch. It said "one hard pull in a straight line is
+    // what settles it" over a step that says the same thing, and quoted the monitor under a
+    // title that is the monitor's own condition — this screen is read in a car, so a clause
+    // whose whole job is to explain the line above it does not go on it.
+    for (const r of [NOTHING, EARLY, LEVELLED, CRADLE, LOOSE, SHARP, FLAT, reading({ fault: FAULTS.permission })]) {
+      expect(Object.keys(headlineOf(r)).sort()).toEqual(['color', 'kicker', 'title']);
+    }
+  });
+
+  it('paints nothing green until the engine believes the mount', () => {
+    // `green` is "a run is being measured right now" (`theme.ts`), so a phase that is still
+    // working is blue whatever it has got to. The old ember/green pair for READY is one colour
+    // now: #8AF606 twice would be a distinction that paints no pixels differently.
     expect(headlineOf(SHARP).color).toBe('green');
-    expect(headlineOf(reading({ quality: 0.33 })).color).toBe('ember');
+    expect(headlineOf(reading({ quality: 0.33 })).color).toBe('green');
+    for (const r of [NOTHING, EARLY, LEVELLED]) expect(headlineOf(r).color).toBe('blue');
+    // and the grading the headline used to do in prose is the band's, in one place
+    expect(qualityBand(SHARP).label).not.toBe(qualityBand(reading({ quality: 0.33 })).label);
   });
 
   it('does not repeat the band label word for word', () => {
     // "good enough to score — a couple of degrees…" sat directly above "GOOD ENOUGH TO SCORE".
     for (const q of [0.31, 0.4, 0.55, 0.74, 0.8, 0.86]) {
       const r = reading({ quality: q });
-      const because = headlineOf(r).because.toLowerCase();
       const label = qualityBand(r).label.toLowerCase();
-      expect(because.includes(label)).toBe(false);
+      expect(label.includes(headlineOf(r).title.toLowerCase())).toBe(false);
+      expect(headlineOf(r).title.toLowerCase().includes(label)).toBe(false);
     }
   });
 
   it('says one idea once on the unresolved-arrival frame', () => {
+    // Three rows said "one hard pull in a straight line" on this frame. Only the step does now,
+    // and the arrival banner says what HAPPENED, which is the one thing the step cannot.
     const r = LEVELLED;
-    const sentences = [arrivalOf('unresolved')!.body, headlineOf(r).because, stepsOf(r)[1].because].map((s) => s.toLowerCase());
-    for (const s of sentences) expect(s.length).toBeGreaterThan(0);
-    // the instruction belongs to exactly one of them
-    expect(sentences.filter((s) => s.includes('straight line')).length).toBe(1);
+    const rows = [arrivalOf('unresolved')!.title, arrivalOf('unresolved')!.body, headlineOf(r).title, qualityBand(r).label, ...stepsOf(r).map((s) => s.title)];
+    for (const s of rows) expect(s.length).toBeGreaterThan(0);
+    expect(rows.map((s) => s.toLowerCase()).filter((s) => s.includes('straight line')).length).toBe(1);
   });
 });
 
@@ -237,19 +244,29 @@ describe('qualityBand', () => {
     // `src/ui/results/model.ts` adds a "Mount looked unsteady" note for a suspect mount at ANY
     // confidence, so a sharp number over a suspect mount is not an uncaveated score.
     const sharpButShaking = reading({ quality: 0.86, mount: 'suspect', elapsedS: 40 });
-    expect(qualityBand(sharpButShaking).label).not.toMatch(/nothing will be qualified/);
-    expect(qualityBand(sharpButShaking).color).toBe('gold');
-    expect(qualityBand(reading({ quality: 0.86, mountConfident: false })).color).toBe('cyan');
+    expect(qualityBand(sharpButShaking).label).not.toMatch(/no mount caveat/);
+    expect(qualityBand(sharpButShaking).color).toBe('greenHot');
+    expect(qualityBand(reading({ quality: 0.86, mountConfident: false })).color).toBe('blue');
   });
 
   it('bands a resolved, rigid mount by the number', () => {
     expect(qualityBand(SHARP)).toMatchObject({ label: expect.stringMatching(/^Sharp/), color: 'green' });
-    expect(qualityBand(reading({ quality: SHARP_QUALITY - 0.01 })).color).toBe('ember');
+    // past the bar but not sharp is the same green: what differs is what it says
+    expect(qualityBand(reading({ quality: SHARP_QUALITY - 0.01 })).color).toBe('green');
+    expect(qualityBand(reading({ quality: SHARP_QUALITY - 0.01 })).label).toMatch(/^Past the bar/);
     expect(qualityBand(reading({ quality: TRUST_QUALITY - 0.01, calibrationOk: false })).color).toBe('red');
     // the band reads the engine's verdict rather than re-deriving the same threshold
     expect(qualityBand(reading({ quality: 0.9, calibrationOk: false })).color).toBe('red');
     expect(qualityBand(LOOSE).color).toBe('red');
     expect(qualityBand(LEVELLED).label).toMatch(/not resolved/);
+  });
+
+  it('says what is not happening yet without reaching for a score', () => {
+    // "Forward axis not resolved · nothing is scored yet" named a thing this app is deleting.
+    // Nothing is MEASURED yet is the same fact in words that will still be true afterwards.
+    const label = qualityBand(LEVELLED).label;
+    expect(label).toBe('Forward axis not resolved · nothing measured yet');
+    expect(qualityBand(LEVELLED).color).toBe('blue');
   });
 });
 
@@ -350,14 +367,14 @@ describe('cautionsOf', () => {
   it('does not accuse a mount the monitor has not judged', () => {
     const flatEarly = reading({ elapsedS: 1, reclineDeg: 86, mount: 'loose', mountConfident: false });
     expect(mountVerdict(flatEarly)).toBe('unknown');
-    expect(cautionsOf(flatEarly)[0]).toMatchObject({ tone: 'gold' });
-    expect(cautionsOf(flatEarly)[0].body).not.toMatch(/already moving/);
+    expect(cautionsOf(flatEarly)[0]).toMatchObject({ tone: 'greenHot' });
+    expect(cautionsOf(flatEarly)[0].body).not.toMatch(/already moving/i);
   });
 
   it('is harsher once it has', () => {
     const flatLoose = reading({ elapsedS: 12, reclineDeg: 86, mount: 'loose' });
     expect(cautionsOf(flatLoose)[0]).toMatchObject({ tone: 'red' });
-    expect(cautionsOf(flatLoose)[0].body).toMatch(/already moving/);
+    expect(cautionsOf(flatLoose)[0].body).toMatch(/already moving/i);
   });
 
   it('does not repeat a headline that is already saying it', () => {
@@ -372,22 +389,28 @@ describe('cautionsOf', () => {
     });
     expect(phaseOf(stillSeeking)).toBe('seeking');
     const banner = cautionsOf(stillSeeking).find((c) => c.title === 'Mount looks unsteady');
-    // THE COUPLING, which is what was missing: a banner titled about the mount says what the
-    // monitor says about the MOUNT. Quoting `message` here printed the forward-axis sentence
-    // on 105,439 of 105,439 measured frames — and structurally so, because the only way to
-    // reach this branch is for `calibrationOk` to be false, which is the cause that outranks it.
-    expect(banner?.body).toBe(stillSeeking.mountMessage);
-    expect(banner?.body).not.toBe(stillSeeking.message);
+    // THE COUPLING, which is what was missing: this row exists only because the monitor has
+    // something to say ABOUT THE MOUNT, and it says nothing else underneath. Quoting `message`
+    // here printed the forward-axis sentence on 105,439 of 105,439 measured frames — and
+    // structurally so, because the only way to reach this branch is for `calibrationOk` to be
+    // false, which is the cause that outranks the mount. An empty body cannot be about the
+    // wrong topic, and "Phone may be shifting in its mount" was the heading again anyway.
+    expect(banner?.body).toBe('');
+    expect(cautionsOf({ ...stillSeeking, mountMessage: '' }).some((c) => c.title === 'Mount looks unsteady')).toBe(false);
   });
 
   it('gives a GPS condition its own row instead of a mount banner\u2019s body', () => {
     // This screen has no GPS light, so before this the only place a dropout surfaced was under
     // a mount heading. The words are the monitor's; the title names GPS.
+    // The CLAIM, not the whole sentence: the monitor writes one line for the HUD and it ends
+    // in reassurance ("waiting for it to come back") that this screen has no room for. The
+    // measurement is the part with the number in it.
     const lost = reading({ gps: 'none', gpsMessage: 'GPS signal lost 5 s ago — waiting for it to come back' });
     expect(cautionsOf(lost).map((c) => c.title)).toContain('No GPS fix');
-    expect(cautionsOf(lost).find((c) => c.title === 'No GPS fix')!.body).toBe(lost.gpsMessage);
+    expect(cautionsOf(lost).find((c) => c.title === 'No GPS fix')!.body).toBe('GPS signal lost 5 s ago');
     const vague = reading({ gps: 'poor', gpsMessage: 'GPS accuracy is poor (±16 m) — drift angles may be off' });
     expect(cautionsOf(vague).map((c) => c.title)).toContain('GPS is vague');
+    expect(cautionsOf(vague).find((c) => c.title === 'GPS is vague')!.body).toBe('GPS accuracy is poor (±16 m)');
     // and nothing is drawn while the monitor has nothing to say — which is the normal first
     // seconds of a session, before a first fix is late rather than missing.
     expect(cautionsOf(reading({ gps: 'none', gpsMessage: '' })).some((c) => /GPS/.test(c.title))).toBe(false);
@@ -404,8 +427,8 @@ describe('cautionsOf', () => {
     // nothing in it is scored", on a 0 % frame.
     const lost = cautionsOf(reading({ knocks: 1, quality: 0, peakQuality: 0, calibrationOk: false, forwardResolved: false })).find((c) => /knocked/.test(c.title))!;
     expect(lost.body).not.toMatch(/Nothing is lost/i);
-    expect(lost.body).toMatch(/not caught up/);
-    expect(cautionsOf(reading({ knocks: 1 })).find((c) => /knocked/.test(c.title))!.body).toMatch(/caught up/);
+    expect(lost.body).toBe('It has not caught up.');
+    expect(cautionsOf(reading({ knocks: 1 })).find((c) => /knocked/.test(c.title))!.body).toBe('It has caught up.');
   });
 });
 
@@ -420,7 +443,9 @@ describe('leaveOf', () => {
     // holds both ways.
     const note = leaveOf(SHARP).note;
     expect(note).not.toMatch(/sharpen|keeps? improving|nothing here is final|never|as sharp as it gets|peaks/i);
-    expect(note).toMatch(/^Best so far 86%\./);
+    // and it is the number, full stop: "It moves both ways as you drive — past the bar is what
+    // counts" was the screen explaining its own measurement to someone in a car.
+    expect(note).toBe('Best so far 86%.');
     // and the number in it is the ENGINE's running peak, not the current reading
     expect(leaveOf(reading({ quality: 0.59, peakQuality: 0.8 })).note).toMatch(/^Best so far 80%\./);
     expect(leaveOf(SHARP)).toMatchObject({ primary: true, label: 'Drive' });
@@ -455,7 +480,7 @@ describe('leaveOf', () => {
     expect(mountVerdict(shakingUnderTheBar)).toBe('suspect');
     const l = leaveOf(shakingUnderTheBar);
     expect(l.note).not.toMatch(/calibrates itself/);
-    expect(l.note).toMatch(/holds it under the bar/);
+    expect(l.note).toBe('Re-clip it \u2014 driving on rarely clears it.');
     expect(l).toMatchObject({ primary: false, label: 'Drive anyway' });
   });
 
@@ -467,7 +492,9 @@ describe('leaveOf', () => {
     expect(phaseOf(warming)).toBe('unsteady');
     expect(mountVerdict(warming)).toBe('unknown');
     expect(headlineOf(warming).title).toBe('Still listening');
-    expect(leaveOf(warming).note).not.toMatch(/cradle/);
+    // and it does not tell anyone to re-clip a mount the engine has not objected to either,
+    // which is what that branch says now
+    expect(leaveOf(warming).note).not.toMatch(/cradle|Re-clip/);
     expect(leaveOf(warming).primary).toBe(true);
   });
 
@@ -476,9 +503,11 @@ describe('leaveOf', () => {
     expect(phaseOf(LOOSE)).toBe('blocked');
     const { label, note, primary } = leaveOf(LOOSE);
     expect(primary).toBe(false);
-    expect(label).toBe('Drive without a score');
+    // not "Drive without a score": what a moving phone costs is the measurement, and scoring
+    // is being deleted from this app, so neither the button nor the note may name it.
+    expect(label).toBe('Drive without measuring');
     expect(note).not.toMatch(/do not have to sit here|calibrates itself/i);
-    expect(note).toMatch(/nothing in it is scored/i);
+    expect(note).toBe('A moving phone never clears the bar.');
     expect(note.length).toBeLessThanOrEqual(90);
   });
 
@@ -491,15 +520,30 @@ describe('leaveOf', () => {
     }
   });
 
-  it('tells a shaking mount what it is trading', () => {
+  it('tells a shaking mount what to do, and does not repeat the band doing it', () => {
+    // The note and the band label both shortened to their own core and met in the middle:
+    // "PART OF EVERY ANGLE IS THE CRADLE" sat two lines above "Part of every angle is the
+    // cradle." on the frame the shaking mount is photographed from.
     expect(mountVerdict(CRADLE)).toBe('suspect');
     expect(leaveOf(CRADLE)).toMatchObject({ primary: false, label: 'Drive anyway' });
-    expect(leaveOf(CRADLE).note).toMatch(/cradle/);
+    expect(leaveOf(CRADLE).note).toMatch(/^Re-clip it/);
+    const past = reading({ mount: 'suspect', quality: 0.86, elapsedS: 40 });
+    for (const r of [CRADLE, past]) {
+      expect(leaveOf(r).note.toLowerCase()).not.toContain(qualityBand(r).label.toLowerCase());
+      expect(qualityBand(r).label.toLowerCase()).not.toContain(leaveOf(r).note.toLowerCase().replace(/\.$/, ''));
+    }
   });
 
-  it('keeps every note short enough for the landscape rail', () => {
-    // 296 pt at 14 px Barlow is ~45 characters a line, and the rail allows two.
-    for (const r of [NOTHING, EARLY, LEVELLED, CRADLE, LOOSE, SHARP]) expect(leaveOf(r).note.length).toBeLessThanOrEqual(90);
+  it('keeps every note to one clause on one line', () => {
+    // 296 pt at 14 px Barlow is ~45 characters a line, and the rail allows two — but the reason
+    // to cap it is not the rail. A note under a button is read at a glance or not at all, so
+    // each one is a single sentence: one full stop, and it is the last character.
+    for (const r of [NOTHING, EARLY, LEVELLED, CRADLE, LOOSE, SHARP, reading({ mount: 'suspect', calibrationOk: false })]) {
+      const note = leaveOf(r).note;
+      expect(`${note} ${note.length <= 50}`).toBe(`${note} true`);
+      expect(note.split('.').length - 1).toBe(1);
+      expect(note.endsWith('.')).toBe(true);
+    }
   });
 });
 
@@ -588,8 +632,106 @@ describe('arrivalOf', () => {
     for (const why of ['rejected', 'loose', 'unresolved', 'suspect'] as const) {
       const a = arrivalOf(why)!;
       expect(a.title.length).toBeGreaterThan(0);
+      // one clause, and it is the consequence — the heading already says what happened
       expect(a.body.length).toBeGreaterThan(0);
-      expect(['red', 'gold']).toContain(a.tone);
+      expect(a.body.length).toBeLessThanOrEqual(60);
+      expect(a.body.split('.').length - 1).toBe(1);
+      expect(['red', 'greenHot']).toContain(a.tone);
+    }
+  });
+});
+
+/**
+ * EVERY STRING THIS SCREEN CAN PRINT, against the two rules it is now held to.
+ *
+ * 1. NO SCORING VOCABULARY. Scoring is being taken out of this app, and a screen that still
+ *    says "nothing is scored yet" or "Drive without a score" is describing a thing that will
+ *    not exist. The words went one at a time and came back the same way, so the ban is a
+ *    sweep over every string rather than a fix to the three that were caught.
+ * 2. NO PARAGRAPHS. This is a settings screen read in a car: a caution body, a leave note and
+ *    an arrival body carry one clause each — a measurement or a consequence — or nothing.
+ *    Only a FAULT body may run longer, because on a fault it is the one thing on the page.
+ */
+describe('the words a driver reads', () => {
+  /** Every user-facing string the model can produce for a reading. */
+  function stringsFor(r: CalibrationReading): string[] {
+    const h = headlineOf(r);
+    const b = qualityBand(r);
+    const l = leaveOf(r);
+    return [
+      h.kicker,
+      h.title,
+      b.label,
+      b.display,
+      l.label,
+      l.note,
+      attitudeWords(r),
+      ...stepsOf(r).map((s) => s.title),
+      ...lightsOf(r).flatMap((x) => [x.label, x.detail]),
+      ...cautionsOf(r).flatMap((c) => [c.title, c.body]),
+    ];
+  }
+
+  /** Full stops that end a sentence rather than sit inside a number. */
+  function sentences(s: string): number {
+    return [...s.matchAll(/\.(\s|$)/g)].length;
+  }
+
+  /** The vocabulary being deleted, or null. */
+  function scoringWordIn(s: string): string | null {
+    for (const m of s.matchAll(/\b(scored?|scores|scoring|grade[sd]?|chain|points?)\b/gi)) {
+      const w = m[1].toLowerCase();
+      // `points` is also the ordinary verb, and the whole question this screen answers is
+      // which way the car POINTS. Every other hit is the vocabulary that has to go.
+      if (w.startsWith('point') && /which way the car points/i.test(s)) continue;
+      return w;
+    }
+    return null;
+  }
+
+  const EVERY: CalibrationReading[] = [
+    NOTHING, EARLY, HANDHELD_EARLY, LEVELLED, CRADLE, LOOSE, SHARP, FLAT,
+    reading({ knocks: 1 }),
+    reading({ knocks: 3, calibrationOk: false, forwardResolved: false }),
+    reading({ gMag: 14 }),
+    reading({ gps: 'none', gpsMessage: 'GPS signal lost 8 s ago \u2014 waiting for it to come back' }),
+    reading({ gps: 'poor', gpsMessage: 'GPS accuracy is poor (\u00b116 m) \u2014 drift angles may be off' }),
+    reading({ mount: 'suspect', calibrationOk: false, forwardResolved: false, mountMessage: 'Phone may be shifting in its mount \u2014 check it is tight' }),
+  ];
+
+  it('never says score, grade, points or chain', () => {
+    for (const r of EVERY) {
+      for (const s of stringsFor(r)) {
+        expect(`${s} \u2192 ${scoringWordIn(s)}`).toBe(`${s} \u2192 null`);
+      }
+    }
+    for (const why of ['rejected', 'loose', 'unresolved', 'suspect'] as const) {
+      const a = arrivalOf(why)!;
+      for (const s of [a.title, a.body]) expect(`${s} \u2192 ${scoringWordIn(s)}`).toBe(`${s} \u2192 null`);
+    }
+  });
+
+  it('keeps a caution body to one clause, or to nothing at all', () => {
+    // "Fine on a dash pad that is stuck down. On a seat it will slide at the first corner."
+    // was two sentences of advice on a row whose heading is three words.
+    for (const r of EVERY) {
+      for (const c of cautionsOf(r)) {
+        expect(c.title.length).toBeGreaterThan(0);
+        expect(`${c.title}: ${c.body.length <= 44}`).toBe(`${c.title}: true`);
+        // sentences, not full stops: "14.0 m/s\u00b2 where it should read 9.8." is one clause
+        expect(`${c.title}: ${sentences(c.body) <= 1}`).toBe(`${c.title}: true`);
+      }
+    }
+  });
+
+  it('leaves the long form where it is the whole page', () => {
+    // A fault body is not prose: it is the only instruction on a screen that has nothing else
+    // on it, and it still has to name the switch and where the switch lives.
+    for (const f of Object.values(FAULTS)) {
+      expect(f.body.length).toBeGreaterThan(40);
+      // one action, one sentence: the physics that used to follow it is gone
+      expect(sentences(f.body)).toBe(1);
+      expect(scoringWordIn(f.body)).toBeNull();
     }
   });
 });
@@ -689,7 +831,7 @@ describe('nothing is claimed without evidence', () => {
       expect(['failed', 'blocked', 'unsteady', 'ready', 'seeking', 'levelling', 'starting']).toContain(p);
       const h = headlineOf(r);
       expect(h.title.length).toBeGreaterThan(0);
-      expect(h.because.length).toBeGreaterThan(0);
+      expect(h.kicker.length).toBeGreaterThan(0);
       const l = leaveOf(r);
       expect(l.label.length).toBeGreaterThan(0);
       // `expect(l.note.length).toBeGreaterThan(0)` used to be the whole of this: proof that a
@@ -697,17 +839,19 @@ describe('nothing is claimed without evidence', () => {
       // phase. Every branch's claim is now checked against the state it is claimed about.
       const mount = mountVerdict(r);
       if (p === 'ready') {
-        expect(l.note).toBe(`Best so far ${Math.round(r.peakQuality * 100)}%. It moves both ways as you drive — past the bar is what counts.`);
+        expect(l.note).toBe(`Best so far ${Math.round(r.peakQuality * 100)}%.`);
       } else if (p === 'blocked') {
         expect(mount).toBe('loose');
-        expect(l.note).toMatch(/nothing in it is scored/);
+        expect(l.note).toMatch(/never clears the bar/);
       } else if (mount === 'suspect') {
         // a cradle the engine HAS judged, and what it costs depends on the engine's own verdict
-        expect(l.note).toMatch(/cradle/);
-        expect(l.note).toMatch(r.calibrationOk ? /part of every angle/ : /holds it under the bar/);
+        expect(l.note).toMatch(/^Re-clip it/);
+        expect(l.note).toMatch(r.calibrationOk ? /the car\u2019s alone/ : /rarely clears it/);
+        // and the band two lines above it does not say the same thing
+        expect(l.note.toLowerCase()).not.toContain(qualityBand(r).label.toLowerCase());
       } else {
-        // nothing else may name a cradle, a lost run, or a number it is not showing
-        expect(l.note).not.toMatch(/cradle|nothing in it is scored|Best so far/);
+        // nothing else may tell a driver to re-clip, name a lost run, or show a number twice
+        expect(l.note).not.toMatch(/Re-clip|never clears the bar|Best so far/);
         // …and only a mount the engine has not objected to gets the self-calibration promise
         if (/calibrates itself/.test(l.note)) expect(mount).not.toBe('suspect');
       }
@@ -761,6 +905,8 @@ describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
     'Phone is moving in its mount \u2014 tighten it',
     'Phone may be shifting in its mount \u2014 check it is tight',
   ]);
+  /** The same sentences as this screen prints them: the claim, without the HUD's tail. */
+  const MOUNT_CLAIMS = new Set([...MOUNT_SENTENCES].map((s) => s.split('\u2014')[0].trim()));
 
   it('reaches every phase, every mount verdict and every light state', () => {
     const phases = new Set(ALL.map((f) => phaseOf(f.reading)));
@@ -777,18 +923,20 @@ describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
 
   it('never puts a sentence about something else under a heading about the mount', () => {
     // THE CLASS. Not "the caution is right on this fixture" — every frame of every recording,
-    // for every row this screen heads with the mount.
+    // for every row this screen heads with the mount. The rows carry no sentence at all now,
+    // and that is the assertion: a heading with nothing under it cannot be about the wrong
+    // thing, and the monitor's mount verdict is still the only thing that can raise one.
     let checked = 0;
     for (const f of ALL) {
       const h = headlineOf(f.reading);
       if (h.kicker === 'Mount' && h.title !== 'Still listening') {
-        expect(`${h.title} / ${h.because}`).toBe(`${h.title} / ${f.reading.mountMessage}`);
-        expect(MOUNT_SENTENCES.has(h.because)).toBe(true);
+        expect(`${f.t.toFixed(2)}s ${MOUNT_SENTENCES.has(f.reading.mountMessage)}`).toBe(`${f.t.toFixed(2)}s true`);
         checked++;
       }
       for (const c of cautionsOf(f.reading)) {
         if (!/mount/i.test(c.title)) continue;
-        expect(MOUNT_SENTENCES.has(c.body)).toBe(true);
+        expect(`${f.t.toFixed(2)}s ${c.title}: ${c.body}`).toBe(`${f.t.toFixed(2)}s ${c.title}: `);
+        expect(MOUNT_SENTENCES.has(f.reading.mountMessage)).toBe(true);
         checked++;
       }
     }
@@ -800,8 +948,11 @@ describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
     for (const f of ALL) {
       for (const c of cautionsOf(f.reading)) {
         if (!/GPS/.test(c.title)) continue;
-        expect(c.body).toBe(f.reading.gpsMessage);
-        expect(MOUNT_SENTENCES.has(c.body)).toBe(false);
+        // the monitor's own claim about GPS, with the HUD's reassuring tail cut off it
+        expect(f.reading.gpsMessage.startsWith(c.body)).toBe(true);
+        expect(c.body).toBe(f.reading.gpsMessage.split('\u2014')[0].trim());
+        expect(c.body).not.toBe('');
+        expect(MOUNT_CLAIMS.has(c.body)).toBe(false);
         checked++;
       }
     }
@@ -868,7 +1019,7 @@ describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
       // READY is the engine's own two conditions plus a rigid mount
       if (phase === 'ready') expect(`${where} ${r.calibrationOk} ${r.forwardResolved} ${mount}`).toBe(`${where} true true rigid`);
       // the headline, the band and the way out never describe three different mounts
-      if (mount === 'suspect' && r.forwardResolved) expect(`${where} ${qualityBand(r).color}`).toBe(`${where} gold`);
+      if (mount === 'suspect' && r.forwardResolved) expect(`${where} ${qualityBand(r).color}`).toBe(`${where} greenHot`);
       if (phase === 'blocked' || mount === 'suspect') expect(`${where} ${leaveOf(r).primary}`).toBe(`${where} false`);
       // the self-calibration promise is measured on rigid runs, so it is only made about them
       if (/calibrates itself/.test(leaveOf(r).note)) expect(`${where} ${mount}`).not.toMatch(/suspect|loose/);

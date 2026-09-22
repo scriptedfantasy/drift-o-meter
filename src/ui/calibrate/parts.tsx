@@ -7,10 +7,10 @@ import type { Caution, Light, Step } from './model';
 
 /**
  * Four tiers, because the engine reaches four states and the lights are read at arm's length.
- * `warn` (gold) is the one that was missing: `suspect` is a verdict the monitor HAS delivered,
- * and it shared cyan with `unknown` — "still listening" — while the headline two rows above
- * painted the same state gold. A light that cannot tell a verdict from an absence is not doing
- * the one job it has.
+ * `warn` is the one that was missing: `suspect` is a verdict the monitor HAS delivered, and it
+ * shared the working colour with `unknown` — "still listening" — while the headline two rows
+ * above painted the same state as a caution. A light that cannot tell a verdict from an absence
+ * is not doing the one job it has.
  */
 const LIGHT_COLORS = { on: colors.green, working: colors.blue, warn: colors.greenHot, bad: colors.red } as const;
 
@@ -49,18 +49,15 @@ export function Lights({ lights, compact = false, style }: { lights: readonly Li
 }
 
 /**
- * The two things a driver actually has to do, with the reason in one clause.
+ * The two things a driver actually has to do. Two lines, no reasons: each step used to print a
+ * clause explaining itself underneath, and the whole list is now shorter than one of those
+ * steps was — which is the point, on a screen read in a car with the engine running. The
+ * reasoning that earned those clauses is in `stepsOf`, where the next person to change the
+ * steps will read it.
  *
- * A step that is neither done nor doable yet keeps its title and loses its reason: the driver
- * cannot act on it, and those two lines were part of what pushed the call to action off the
- * bottom of the frame on the commonest route into this screen (`?why=rejected`).
- *
- * `compact` extends that rule to a DONE step. 393 px of landscape has to carry the instrument,
- * the verdict, a caution banner, the three lights and the way out before it gets here, and a
- * reason for something the driver has already done is the 38 px that decides whether the last
- * step clears the fold. The reason on the step they CAN act on keeps both its lines: capping it
- * to one turned "nothing else can fix the axis" into "nothing else can fix th…", and an
- * ellipsis mid-clause is worse than a row that ends at the fold.
+ * The tick and the strike-through are the state, and neither survives being read aloud, so the
+ * row carries the state in its own label: a screen reader gets "Done" or "Next" and the
+ * instruction, not a check mark it may or may not announce.
  */
 export function Steps({ steps, compact = false, style }: { steps: readonly Step[]; compact?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
@@ -70,7 +67,12 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
         const active = s.state === 'active';
         const color = done ? colors.green : active ? colors.green : colors.muted;
         return (
-          <View key={s.n} style={[styles.step, compact && styles.stepCompact, i > 0 && styles.stepBorder]} testID={`step-${s.n}`}>
+          <View
+            key={s.n}
+            style={[styles.step, compact && styles.stepCompact, i > 0 && styles.stepBorder]}
+            accessible
+            accessibilityLabel={`${done ? 'Done' : active ? 'Now' : 'Next'}: ${s.title}${active && s.progress > 0.02 && s.progress < 1 ? `, ${Math.round(s.progress * 100)}% of the way` : ''}`}
+            testID={`step-${s.n}`}>
             <View style={styles.stepMark}>
               <AppText variant="heading" color={color} style={styles.stepNo}>
                 {done ? '✓' : s.n}
@@ -80,7 +82,6 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
               <AppText variant="bodyStrong" color={done ? colors.muted : colors.text} style={done ? styles.stepDone : undefined}>
                 {s.title}
               </AppText>
-              {s.state === 'todo' || (compact && done) ? null : <Small numberOfLines={2}>{s.because}</Small>}
               {active && s.progress > 0.02 && s.progress < 1 ? (
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${Math.round(s.progress * 100)}%` }]} />
@@ -94,12 +95,17 @@ export function Steps({ steps, compact = false, style }: { steps: readonly Step[
   );
 }
 
-/** The loud state. Wording comes in from outside; this only decides how hard it shouts. */
-export function Banner({ title, body, tone, testID }: { title: string; body: string; tone: 'red' | 'gold'; testID?: string }) {
-  const color = tone === 'red' ? colors.red : colors.greenHot;
+/**
+ * The loud state. Wording comes in from outside; this only decides how hard it shouts.
+ *
+ * NO EARMARK. There was a 4 pt bar of the tone's colour down the left edge, and it said exactly
+ * what the border, the wash and the heading's own colour already say. Severity is the text
+ * colour (`theme.ts`), never a stripe down the side of a card.
+ */
+export function Banner({ title, body, tone, testID }: { title: string; body: string; tone: 'red' | 'greenHot'; testID?: string }) {
+  const color = colors[tone];
   return (
     <View style={[styles.banner, { borderColor: alpha(color, 0.85), backgroundColor: alpha(color, 0.14) }]} testID={testID}>
-      <View style={[styles.bannerBar, { backgroundColor: color }]} />
       <View style={styles.bannerText}>
         <AppText variant="subheading" color={color} numberOfLines={2} style={styles.bannerTitle}>
           {title}
@@ -168,8 +174,8 @@ const styles = StyleSheet.create({
   progressTrack: { height: 4, borderRadius: 2, backgroundColor: colors.bg2, overflow: 'hidden', marginTop: space[1] },
   progressFill: { height: '100%', backgroundColor: colors.green, borderRadius: 2 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', gap: space[3], borderWidth: 1, borderRadius: radii.md, paddingHorizontal: space[3], paddingVertical: space[2] },
-  bannerBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  // no `gap`: the row held the earmark and the text, and the earmark is gone
+  banner: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radii.md, paddingHorizontal: space[3], paddingVertical: space[2] },
   bannerText: { flex: 1, gap: 2 },
   bannerTitle: { fontSize: 18, lineHeight: 21 },
   cautions: { gap: space[2] },

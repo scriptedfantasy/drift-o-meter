@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-21T21:26:06.324Z",
+  "startedAt": "2026-09-22T12:16:22.691Z",
   "viewport": {
     "width": 393,
     "height": 852
@@ -624,13 +624,13 @@
     {
       "name": "calibrate-nothing",
       "path": "/calibrate?sim=harbor&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&hold=1",
+      "url": "http://127.0.0.1:41079/calibrate?sim=harbor&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-nothing.png",
       "video": null,
-      "ms": 3581,
+      "ms": 4380,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -656,47 +656,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 217784,
-        "goldPixels": 0,
+        "greenPixels": 217872,
         "redPixels": 0,
-        "cyanPixels": 38080,
-        "textPixels": 18144,
-        "nonBgFraction": 0.5829,
+        "bluePixels": 33232,
+        "hotPixels": 0,
+        "textPixels": 17956,
+        "nonBgFraction": 0.5133,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate",
       "path": "/calibrate?sim=harbor&at=0.5&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&at=0.5&hold=1",
+      "url": "http://127.0.0.1:37433/calibrate?sim=harbor&at=0.5&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate.png",
       "video": null,
-      "ms": 3646,
+      "ms": 4990,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -722,47 +722,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 217784,
-        "goldPixels": 0,
+        "greenPixels": 217872,
         "redPixels": 0,
-        "cyanPixels": 60496,
-        "textPixels": 18144,
-        "nonBgFraction": 0.5852,
+        "bluePixels": 54344,
+        "hotPixels": 0,
+        "textPixels": 17956,
+        "nonBgFraction": 0.5153,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:06:50.246Z"
     },
     {
       "name": "calibrate-level",
       "path": "/calibrate?sim=harbor&at=3&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&at=3&hold=1",
+      "url": "http://127.0.0.1:37433/calibrate?sim=harbor&at=3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-level.png",
       "video": null,
-      "ms": 3752,
+      "ms": 4038,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -774,7 +774,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 21,
-        "bodyTextNodes": 53,
+        "bodyTextNodes": 52,
         "otherTextNodes": 0
       },
       "skia": {
@@ -788,47 +788,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 242068,
-        "goldPixels": 0,
+        "greenPixels": 226236,
         "redPixels": 0,
-        "cyanPixels": 38564,
-        "textPixels": 14956,
-        "nonBgFraction": 0.628,
+        "bluePixels": 54980,
+        "hotPixels": 0,
+        "textPixels": 14912,
+        "nonBgFraction": 0.5156,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:06:50.246Z"
     },
     {
       "name": "calibrate-ready",
       "path": "/calibrate?sim=harbor&at=12&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&at=12&hold=1",
+      "url": "http://127.0.0.1:41079/calibrate?sim=harbor&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-ready.png",
       "video": null,
-      "ms": 3892,
+      "ms": 4324,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -840,7 +840,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 21,
-        "bodyTextNodes": 53,
+        "bodyTextNodes": 52,
         "otherTextNodes": 0
       },
       "skia": {
@@ -854,47 +854,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 280668,
-        "goldPixels": 16,
+        "greenPixels": 293364,
         "redPixels": 0,
-        "cyanPixels": 14032,
+        "bluePixels": 11824,
+        "hotPixels": 0,
         "textPixels": 4376,
-        "nonBgFraction": 0.651,
+        "nonBgFraction": 0.5194,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-loose",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
+      "url": "http://127.0.0.1:41079/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-loose.png",
       "video": null,
-      "ms": 3855,
+      "ms": 4302,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -920,47 +920,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5664,
-        "goldPixels": 0,
-        "redPixels": 47488,
-        "cyanPixels": 25356,
-        "textPixels": 42596,
-        "nonBgFraction": 0.5538,
+        "greenPixels": 5732,
+        "redPixels": 28652,
+        "bluePixels": 22876,
+        "hotPixels": 0,
+        "textPixels": 34232,
+        "nonBgFraction": 0.4696,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-flat",
       "path": "/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
+      "url": "http://127.0.0.1:32911/calibrate?sim=harbor&mount=flat-console&at=12&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-flat.png",
       "video": null,
-      "ms": 3869,
+      "ms": 4667,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -972,7 +972,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 22,
-        "bodyTextNodes": 54,
+        "bodyTextNodes": 53,
         "otherTextNodes": 0
       },
       "skia": {
@@ -986,47 +986,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 280412,
-        "goldPixels": 20856,
+        "greenPixels": 309416,
         "redPixels": 0,
-        "cyanPixels": 10200,
-        "textPixels": 18072,
-        "nonBgFraction": 0.729,
+        "bluePixels": 9756,
+        "hotPixels": 0,
+        "textPixels": 13932,
+        "nonBgFraction": 0.5824,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:12:26.756Z"
     },
     {
       "name": "calibrate-rejected",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "url": "http://127.0.0.1:41079/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-rejected.png",
       "video": null,
-      "ms": 3812,
+      "ms": 4141,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1052,47 +1052,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5664,
-        "goldPixels": 0,
-        "redPixels": 71444,
-        "cyanPixels": 25356,
-        "textPixels": 46824,
-        "nonBgFraction": 0.6038,
+        "greenPixels": 5732,
+        "redPixels": 46548,
+        "bluePixels": 22884,
+        "hotPixels": 0,
+        "textPixels": 38548,
+        "nonBgFraction": 0.5568,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-fault-permission",
       "path": "/calibrate?fault=permission",
-      "url": "http://127.0.0.1:37139/calibrate?fault=permission",
+      "url": "http://127.0.0.1:41079/calibrate?fault=permission",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-fault-permission.png",
       "video": null,
-      "ms": 2069,
+      "ms": 2271,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1104,7 +1104,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 20,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 25,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1118,47 +1118,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 212632,
-        "goldPixels": 0,
-        "redPixels": 54956,
-        "cyanPixels": 0,
-        "textPixels": 37444,
-        "nonBgFraction": 0.6251,
+        "greenPixels": 212716,
+        "redPixels": 50904,
+        "bluePixels": 0,
+        "hotPixels": 0,
+        "textPixels": 23800,
+        "nonBgFraction": 0.6198,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-fault-unsupported",
       "path": "/calibrate?fault=unsupported",
-      "url": "http://127.0.0.1:37139/calibrate?fault=unsupported",
+      "url": "http://127.0.0.1:41079/calibrate?fault=unsupported",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-fault-unsupported.png",
       "video": null,
-      "ms": 2132,
+      "ms": 2263,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1170,7 +1170,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 19,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 25,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1184,47 +1184,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 209744,
-        "goldPixels": 0,
-        "redPixels": 65452,
-        "cyanPixels": 0,
-        "textPixels": 22984,
-        "nonBgFraction": 0.5747,
+        "greenPixels": 209828,
+        "redPixels": 60564,
+        "bluePixels": 0,
+        "hotPixels": 0,
+        "textPixels": 11788,
+        "nonBgFraction": 0.5701,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-fault-services",
       "path": "/calibrate?fault=services",
-      "url": "http://127.0.0.1:37139/calibrate?fault=services",
+      "url": "http://127.0.0.1:41079/calibrate?fault=services",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-fault-services.png",
       "video": null,
-      "ms": 2061,
+      "ms": 2261,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1236,7 +1236,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 20,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 25,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1250,47 +1250,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 212632,
-        "goldPixels": 0,
-        "redPixels": 68120,
-        "cyanPixels": 0,
-        "textPixels": 35380,
-        "nonBgFraction": 0.6251,
+        "greenPixels": 212716,
+        "redPixels": 63464,
+        "bluePixels": 0,
+        "hotPixels": 0,
+        "textPixels": 24664,
+        "nonBgFraction": 0.6198,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-fault-failed",
       "path": "/calibrate?fault=failed",
-      "url": "http://127.0.0.1:37139/calibrate?fault=failed",
+      "url": "http://127.0.0.1:41079/calibrate?fault=failed",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-fault-failed.png",
       "video": null,
-      "ms": 2200,
+      "ms": 2287,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -1302,7 +1302,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 20,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 25,
         "otherTextNodes": 0
       },
       "skia": {
@@ -1316,36 +1316,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 212632,
-        "goldPixels": 0,
-        "redPixels": 65124,
-        "cyanPixels": 0,
-        "textPixels": 23140,
-        "nonBgFraction": 0.6251,
+        "greenPixels": 212716,
+        "redPixels": 60492,
+        "bluePixels": 0,
+        "hotPixels": 0,
+        "textPixels": 18784,
+        "nonBgFraction": 0.6198,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "drive-open",
@@ -5579,13 +5579,13 @@
     {
       "name": "calibrate-fault-location",
       "path": "/calibrate?fault=location",
-      "url": "http://127.0.0.1:37139/calibrate?fault=location",
+      "url": "http://127.0.0.1:41079/calibrate?fault=location",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-fault-location.png",
       "video": null,
-      "ms": 2141,
+      "ms": 2396,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5597,7 +5597,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 20,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 25,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5611,47 +5611,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 212632,
-        "goldPixels": 0,
-        "redPixels": 58988,
-        "cyanPixels": 0,
-        "textPixels": 34392,
-        "nonBgFraction": 0.6251,
+        "greenPixels": 212716,
+        "redPixels": 54720,
+        "bluePixels": 0,
+        "hotPixels": 0,
+        "textPixels": 21892,
+        "nonBgFraction": 0.6198,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "calibrate-shaking",
       "path": "/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
+      "url": "http://127.0.0.1:42849/calibrate?sim=touge&looseness=0.2&at=40&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-shaking.png",
       "video": null,
-      "ms": 3798,
+      "ms": 4569,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5663,7 +5663,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 21,
-        "bodyTextNodes": 53,
+        "bodyTextNodes": 52,
         "otherTextNodes": 0
       },
       "skia": {
@@ -5677,47 +5677,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5668,
-        "goldPixels": 62660,
+        "greenPixels": 78188,
         "redPixels": 0,
-        "cyanPixels": 15484,
-        "textPixels": 22376,
-        "nonBgFraction": 0.5795,
+        "bluePixels": 13172,
+        "hotPixels": 0,
+        "textPixels": 16908,
+        "nonBgFraction": 0.4714,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:16:31.415Z"
     },
     {
       "name": "calibrate-early",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
+      "url": "http://127.0.0.1:41079/calibrate?sim=harbor&looseness=1&dropouts=1&at=2&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-early.png",
       "video": null,
-      "ms": 3847,
+      "ms": 4037,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -5743,36 +5743,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5664,
-        "goldPixels": 0,
-        "redPixels": 49956,
-        "cyanPixels": 25208,
-        "textPixels": 42596,
-        "nonBgFraction": 0.5534,
+        "greenPixels": 5732,
+        "redPixels": 29444,
+        "bluePixels": 22748,
+        "hotPixels": 0,
+        "textPixels": 34232,
+        "nonBgFraction": 0.4693,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:08:05.177Z"
     },
     {
       "name": "drive-chain",
@@ -7915,13 +7915,13 @@
     {
       "name": "calibrate-cradle-banner",
       "path": "/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
+      "url": "http://127.0.0.1:42849/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-cradle-banner.png",
       "video": null,
-      "ms": 3915,
+      "ms": 4071,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7933,7 +7933,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 22,
-        "bodyTextNodes": 54,
+        "bodyTextNodes": 52,
         "otherTextNodes": 0
       },
       "skia": {
@@ -7947,47 +7947,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 30300,
-        "goldPixels": 55968,
+        "greenPixels": 77256,
         "redPixels": 0,
-        "cyanPixels": 18548,
-        "textPixels": 21944,
-        "nonBgFraction": 0.6664,
+        "bluePixels": 39212,
+        "hotPixels": 0,
+        "textPixels": 17108,
+        "nonBgFraction": 0.5206,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:16:31.415Z"
     },
     {
       "name": "calibrate-gps",
       "path": "/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1",
-      "url": "http://127.0.0.1:37139/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1",
+      "url": "http://127.0.0.1:32911/calibrate?sim=harbor&seed=2&dropouts=1&at=55&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-gps.png",
       "video": null,
-      "ms": 3836,
+      "ms": 4161,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -7999,7 +7999,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 22,
-        "bodyTextNodes": 54,
+        "bodyTextNodes": 53,
         "otherTextNodes": 0
       },
       "skia": {
@@ -8013,36 +8013,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 278260,
-        "goldPixels": 12932,
+        "greenPixels": 302836,
         "redPixels": 0,
-        "cyanPixels": 16632,
-        "textPixels": 9696,
-        "nonBgFraction": 0.7152,
+        "bluePixels": 14280,
+        "hotPixels": 0,
+        "textPixels": 6752,
+        "nonBgFraction": 0.5866,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:41:57.364Z"
+      "shotAt": "2026-09-22T12:12:26.756Z"
     },
     {
       "name": "replay-untrusted-leak",
@@ -9069,13 +9069,13 @@
     {
       "name": "calibrate-level-landscape",
       "path": "/calibrate?sim=harbor&at=3&hold=1",
-      "url": "http://127.0.0.1:40441/calibrate?sim=harbor&at=3&hold=1",
+      "url": "http://127.0.0.1:45069/calibrate?sim=harbor&at=3&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-level-landscape.png",
       "video": null,
-      "ms": 3679,
+      "ms": 3951,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9101,36 +9101,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 167444,
-        "goldPixels": 0,
+        "greenPixels": 157788,
         "redPixels": 0,
-        "cyanPixels": 37688,
-        "textPixels": 13772,
-        "nonBgFraction": 0.5813,
+        "bluePixels": 55440,
+        "hotPixels": 0,
+        "textPixels": 14188,
+        "nonBgFraction": 0.4896,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-22T12:08:59.322Z"
     },
     {
       "name": "calibrate-ready-landscape",
@@ -9333,13 +9333,13 @@
     {
       "name": "calibrate-rejected-landscape",
       "path": "/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
-      "url": "http://127.0.0.1:40441/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
+      "url": "http://127.0.0.1:45069/calibrate?sim=harbor&looseness=1&dropouts=1&at=12&hold=1&why=rejected",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-rejected-landscape.png",
       "video": null,
-      "ms": 3870,
+      "ms": 4316,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9365,47 +9365,47 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 5668,
-        "goldPixels": 0,
-        "redPixels": 136284,
-        "cyanPixels": 25180,
-        "textPixels": 46836,
-        "nonBgFraction": 0.6671,
+        "greenPixels": 5732,
+        "redPixels": 52092,
+        "bluePixels": 24208,
+        "hotPixels": 0,
+        "textPixels": 37876,
+        "nonBgFraction": 0.6109,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-22T12:08:59.322Z"
     },
     {
       "name": "calibrate-fault-permission-landscape",
       "path": "/calibrate?fault=permission",
-      "url": "http://127.0.0.1:40441/calibrate?fault=permission",
+      "url": "http://127.0.0.1:45069/calibrate?fault=permission",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-fault-permission-landscape.png",
       "video": null,
-      "ms": 2166,
+      "ms": 2315,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -9417,7 +9417,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 20,
-        "bodyTextNodes": 22,
+        "bodyTextNodes": 25,
         "otherTextNodes": 0
       },
       "skia": {
@@ -9431,36 +9431,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 207284,
-        "goldPixels": 0,
-        "redPixels": 59232,
-        "cyanPixels": 0,
-        "textPixels": 34976,
-        "nonBgFraction": 0.4947,
+        "greenPixels": 181784,
+        "redPixels": 51088,
+        "bluePixels": 0,
+        "hotPixels": 80,
+        "textPixels": 22484,
+        "nonBgFraction": 0.4955,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-22T12:08:59.322Z"
     },
     {
       "name": "calibrate-fault-unsupported-landscape",
@@ -16199,13 +16199,13 @@
     {
       "name": "calibrate-cradle-banner-landscape",
       "path": "/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
-      "url": "http://127.0.0.1:40441/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
+      "url": "http://127.0.0.1:45069/calibrate?sim=harbor&seed=3&looseness=0.2&dropouts=1&at=40&hold=1",
       "ok": true,
       "errors": [],
       "warnings": [],
       "screenshot": "artifacts/shots/calibrate-cradle-banner-landscape.png",
       "video": null,
-      "ms": 3889,
+      "ms": 4173,
       "fonts": {
         "status": "loaded",
         "families": [
@@ -16217,7 +16217,7 @@
           "Barlow_600SemiBold"
         ],
         "displayTextNodes": 22,
-        "bodyTextNodes": 53,
+        "bodyTextNodes": 52,
         "otherTextNodes": 0
       },
       "skia": {
@@ -16231,36 +16231,36 @@
         "corners": {
           "topLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "topRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomLeft": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           },
           "bottomRight": {
             "r": 7,
-            "g": 9,
-            "b": 13
+            "g": 13,
+            "b": 24
           }
         },
         "cornersOnBg": true,
         "cornersNearBg": true,
-        "emberPixels": 30276,
-        "goldPixels": 61284,
+        "greenPixels": 83936,
         "redPixels": 0,
-        "cyanPixels": 17136,
-        "textPixels": 21360,
-        "nonBgFraction": 0.6455,
+        "bluePixels": 38952,
+        "hotPixels": 0,
+        "textPixels": 16200,
+        "nonBgFraction": 0.5741,
         "regions": []
       },
-      "shotAt": "2026-09-21T07:54:17.472Z"
+      "shotAt": "2026-09-22T12:08:59.322Z"
     },
     {
       "name": "calibrate-gps-landscape",
@@ -16851,13 +16851,11 @@
       "shotAt": "2026-09-21T21:19:02.722Z"
     }
   ],
-  "finishedAt": "2026-09-21T21:26:32.468Z",
+  "finishedAt": "2026-09-22T12:16:31.415Z",
   "failed": 0,
   "failedAll": 0,
   "shotThisRun": [
-    "garage",
-    "drive-peak",
-    "results",
-    "replay-spin"
+    "calibrate-shaking",
+    "calibrate-cradle-banner"
   ]
 }

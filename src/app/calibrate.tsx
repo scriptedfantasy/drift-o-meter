@@ -9,8 +9,9 @@
  *
  * Four rules it keeps:
  *   • nothing is claimed before there is evidence for it — see `phaseOf`;
- *   • a loose or shaking mount is `IntegrityMonitor`'s own sentence, said once, under the
- *     biggest words on the screen, which name the condition the HUD's own heading names;
+ *   • every line is an instruction or a measurement. It is read in a car, in a hurry, often in
+ *     the dark, so a clause that explains the line above it does not go on the screen — it
+ *     goes in the source, where the next person to change the line will read it;
  *   • every word about leaving is a measured claim about what leaving costs — `leaveOf`;
  *   • the words live in `model.ts`, not here. This file decides where they sit and how loud
  *     they are, and renders the strings that a test can read.
@@ -124,10 +125,7 @@ export default function CalibrateScreen() {
                   style={[styles.bloom, landscape && styles.bloomLandscape]}
                   pointerEvents="none"
                 />
-                <View style={styles.kickerRow}>
-                  <View style={[styles.slab, { backgroundColor: colors.red }]} />
-                  <Micro color="red">Cannot calibrate</Micro>
-                </View>
+                <Micro color="red">Cannot calibrate</Micro>
                 <AppText variant="title" color="red" style={styles.faultTitle} accessibilityRole="header">
                   {fault.title}
                 </AppText>
@@ -150,8 +148,8 @@ export default function CalibrateScreen() {
                     A reassurance that is false is worse than no reassurance. */}
                 <Small style={styles.faultBody} testID="calibrate-fault-consequence">
                   {fault.kind === 'unsupported'
-                    ? 'Driving will stop here too — it opens these same sensors. The simulated source runs a full recording through the real judge in the meantime.'
-                    : 'Driving will stop here too: DRIVE opens these same sensors and ends on this same message. Nothing is recorded until it is fixed.'}
+                    ? 'Driving stops here too — the simulated source is the way round it.'
+                    : 'Driving stops here too: nothing records until this is fixed.'}
                 </Small>
                 <View style={styles.faultActions}>
                   {/* One action gets the slab. On a retryable fault that is Try again; on
@@ -197,46 +195,52 @@ export default function CalibrateScreen() {
           testID="mount-dial"
         />
       </View>
-      {/* The one honest number, and what it has to clear. Beside the glyph, never over it. */}
+      {/* The one honest number. Beside the glyph, never over it.
+
+          NO LEGEND UNDER IT. `Bar 30% · no caveats 75%` was a caption naming two numbers whose
+          only use is knowing which side of them this one falls, and the dial draws both as
+          ticks through its own arc — so the caption was the marks again, in 11 pt, in a place
+          a driver has to stop and parse. What the ticks cannot do is be read aloud, so the two
+          of them are in this block's accessibility label instead. */}
       <View style={styles.readout}>
-        {/* `--` is the absence of a number, not a number: muted and smaller, so it reads as
-            nothing-to-report rather than as a bright cyan bar where a figure should be. */}
-        <AppText
-          variant="hero"
-          color={band.display === '--' ? colors.muted : colors[band.color]}
-          numeric
-          style={[styles.percent, band.display === '--' && styles.percentEmpty]}
-          testID="confidence">
-          {band.display}
-        </AppText>
-        <Micro color={band.color === 'red' ? 'red' : 'muted'} numberOfLines={1}>
-          {/* the landscape rail is 296 pt wide and `CONFIDENCE IN THIS MOUNT` truncated in it */}
-          {landscape ? 'Confidence' : 'Confidence in this mount'}
-        </Micro>
-        <Micro style={styles.legend} numberOfLines={1}>
-          Bar {Math.round(TRUST_QUALITY * 100)}% · no caveats {Math.round(SHARP_QUALITY * 100)}%
-        </Micro>
+        <View
+          accessible
+          accessibilityLabel={`Confidence in this mount ${
+            band.display === '--' ? 'is not measured yet' : band.display
+          }. The bar is ${Math.round(TRUST_QUALITY * 100)}%; past ${Math.round(SHARP_QUALITY * 100)}% no angle carries a mount caveat.`}>
+          {/* `--` is the absence of a number, not a number: muted and smaller, so it reads as
+              nothing-to-report rather than as a bright bar where a figure should be. */}
+          <AppText
+            variant="hero"
+            color={band.display === '--' ? colors.muted : colors[band.color]}
+            numeric
+            style={[styles.percent, band.display === '--' && styles.percentEmpty]}
+            testID="confidence">
+            {band.display}
+          </AppText>
+          <Micro color={band.color === 'red' ? 'red' : 'muted'} numberOfLines={1}>
+            {/* the landscape rail is 296 pt wide and `CONFIDENCE IN THIS MOUNT` truncated in it */}
+            {landscape ? 'Confidence' : 'Confidence in this mount'}
+          </Micro>
+        </View>
         <Tag label={attitudeWords(reading)} color={colors.blue} style={styles.attitude} />
       </View>
     </View>
   );
 
+  // THREE LINES, and the third is a measurement. The kicker had a skewed slab beside it and the
+  // title had a reason under it — "one hard pull in a straight line is what settles it" — and
+  // both are gone: the slab because severity is the text colour (`theme.ts`) and never a stripe
+  // down the side of anything, the reason because `stepsOf` already gives the instruction and
+  // the FORWARD tile already gives how far it has got.
   const verdict = (
     <View style={styles.verdict}>
-      <View style={styles.kickerRow}>
-        <View style={[styles.slab, { backgroundColor: colors[head.color] }]} />
-        <Micro color={head.color}>{head.kicker}</Micro>
-      </View>
+      <Micro color={head.color}>{head.kicker}</Micro>
       <AppText variant="title" color={head.color} numberOfLines={2} style={styles.title} accessibilityRole="header">
         {head.title}
       </AppText>
-      {head.because ? (
-        <Small color={phase === 'blocked' || phase === 'unsteady' ? colors.text : colors.muted} numberOfLines={3} style={styles.because} testID="calibrate-because">
-          {head.because}
-        </Small>
-      ) : null}
       {phase === 'blocked' ? null : (
-        <Micro color={band.color === 'gold' ? 'gold' : 'muted'} numberOfLines={2} style={styles.bandLabel} testID="calibrate-band">
+        <Micro color={band.color === 'greenHot' ? 'greenHot' : 'muted'} numberOfLines={2} style={styles.bandLabel} testID="calibrate-band">
           {band.label}
         </Micro>
       )}
@@ -363,14 +367,10 @@ const styles = StyleSheet.create({
   readout: { flex: 1, minWidth: 0, gap: 0 },
   percent: { fontSize: 52, lineHeight: 50, letterSpacing: -2.5, includeFontPadding: false },
   percentEmpty: { fontSize: 36, lineHeight: 42, opacity: 0.6 },
-  legend: { marginTop: 2, opacity: 0.75, textTransform: 'none', letterSpacing: 0.3 },
   attitude: { marginTop: space[2], flexShrink: 1, maxWidth: '100%', alignSelf: 'flex-start' },
 
   verdict: { gap: 2, alignSelf: 'stretch' },
-  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  slab: { width: 5, height: 14, transform: [{ skewX: '-8deg' }] },
   title: { fontSize: 33, lineHeight: 34 },
-  because: { maxWidth: 460 },
   bandLabel: { marginTop: 2 },
 
   actions: { gap: space[2] },
