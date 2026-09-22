@@ -101,7 +101,66 @@ You are not expected to understand anything it prints.
    tap **View in TestFlight**, tap **Install**.
 
 Internal testers do not wait for review. The app is on your phone as soon as Apple finishes
-processing. (External testers — friends — need a one-time Beta App Review, usually a day.)
+processing.
+
+---
+
+## Inviting a friend
+
+A friend is an **external** tester, and that one word decides everything below.
+
+**Do not add them as an internal tester.** Internal testers have to be people on your App Store
+Connect team, which means giving them a role in your developer account. That is real access to
+your account, for the sake of installing an app. External testing exists precisely so you do not
+have to do that.
+
+External testing costs you one thing internal testing does not: a **Beta App Review**. Apple
+looks at the build before strangers can install it. It is much lighter than a real App Store
+review — usually under a day, sometimes a few hours — and you only pay it once per version, not
+per build.
+
+### Before you can invite anyone
+
+App Store Connect → your app → **TestFlight** → **Test Information** in the left sidebar. This
+is required for external testing and the review will bounce without it:
+
+- **What to Test** — what you want them to actually do. "Mount the phone, drive, hit STOP, tell
+  me if the angle looked right" is a better answer than "test the app".
+- **Feedback email** — where their reports land.
+- **Contact details** — Apple uses these if the review has a question.
+
+If the app asks for permissions a reviewer cannot exercise, say so here. This one reads the
+gyroscope and GPS **while driving**, which a reviewer at a desk cannot reproduce, so tell them
+that in What to Test rather than letting them conclude the app does nothing.
+
+### Then
+
+1. Left sidebar → **External Testing** → **+** beside Groups → name it (`Friends` is fine).
+2. Add the build to the group. **This is what submits it for Beta App Review** — there is no
+   separate submit button, and it is the step people miss.
+3. Add your friend, by either route:
+   - **By email.** **+** → their address. It does not have to be an Apple ID; whatever they open
+     the mail on, they sign into TestFlight with their own Apple ID.
+   - **By public link.** Toggle **Public Link** on the group and copy the URL. Anyone with it can
+     join, up to a cap you set. Easier, and you never need to ask them for an email address.
+4. Wait for the review email. Nothing you do speeds this up.
+5. Once it is approved: they install **TestFlight** from the App Store first, then open your link
+   or invite on the **iPhone itself**. A TestFlight link opened on a laptop goes nowhere useful.
+
+### Things that will otherwise surprise you
+
+- **A build expires 90 days after upload.** Not the invite — the build. After that they see an
+  expired build and cannot install until you push a new one.
+- **A new version number means a new Beta App Review.** More builds of the *same* version
+  usually go out to existing testers without waiting.
+- **Their iPhone has to be new enough** for the deployment target in `app.json`.
+- **You do not pay per tester.** Up to 10,000 external testers, 100 internal.
+- Their crash reports and feedback come back to you in the TestFlight tab, which is most of the
+  reason to do this rather than sideloading.
+
+Apple moves these buttons around between App Store Connect redesigns. The shape has been stable
+for years — Test Information, then a group, then the build, then the people — so if a label has
+moved, look for that order.
 
 ---
 
