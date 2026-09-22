@@ -284,7 +284,7 @@ function ReviewPage({
     untrusted && refusal ? (
       <View style={styles.refusal} testID="not-scored">
         <View style={styles.refusalHead}>
-          <Tag label="NOT SCORED" color={colors.red} filled />
+          <Tag label="NOT JUDGED" color={colors.red} filled />
           {fault ? <Tag label={`${fault.label.toUpperCase()} · ${fault.value}`} color={fault.tone === 'severe' ? colors.red : colors.greenHot} /> : null}
         </View>
         <AppText variant="bodyStrong" color="red" style={styles.refusalText} testID="verdict">

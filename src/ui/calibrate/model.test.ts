@@ -87,7 +87,7 @@ const HANDHELD_EARLY = reading({
   samples: 200, elapsedS: 2, upQuality: 0.55, upAged: true, quality: 0.09, peakQuality: 0.09,
   forwardResolved: false, calibrationOk: false, mount: 'loose', mountConfident: false, handheld: true,
   message: "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
-  mountMessage: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
+  mountMessage: 'Phone looks hand-held — clip it into a rigid mount',
 });
 /** `?sim=harbor&at=3` — the vertical has settled, the forward axis has not resolved. */
 const LEVELLED = reading({
@@ -103,8 +103,8 @@ const CRADLE = reading({
 /** `?sim=harbor&looseness=1&at=12` — hand-held, cues confident. */
 const LOOSE = reading({
   quality: 0.03, peakQuality: 0.06, forwardResolved: false, calibrationOk: false, mount: 'loose', handheld: true,
-  message: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
-  mountMessage: 'Phone looks hand-held — clip it into a rigid mount to score drifts',
+  message: 'Phone looks hand-held — clip it into a rigid mount',
+  mountMessage: 'Phone looks hand-held — clip it into a rigid mount',
 });
 /** The best seed measured at the simulator's default vibration: 0.864. */
 const SHARP = reading({ quality: 0.864, peakQuality: 0.864 });
@@ -901,7 +901,7 @@ describe('against a real MountCalibrator + IntegrityMonitor replay', () => {
 
   /** Every sentence `IntegrityMonitor` can publish about a mount, and nothing else. */
   const MOUNT_SENTENCES = new Set([
-    'Phone looks hand-held \u2014 clip it into a rigid mount to score drifts',
+    'Phone looks hand-held \u2014 clip it into a rigid mount',
     'Phone is moving in its mount \u2014 tighten it',
     'Phone may be shifting in its mount \u2014 check it is tight',
   ]);

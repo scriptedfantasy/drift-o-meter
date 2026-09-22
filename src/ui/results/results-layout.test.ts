@@ -116,18 +116,18 @@ describe('resultsLayout', () => {
 
 describe('refusalFrom', () => {
   // exactly what the engine composes for the hand-held fixture
-  const HANDHELD = "100% of this run's sliding could not be trusted — Phone looks hand-held — clip it into a rigid mount to score drifts";
+  const HANDHELD = "100% of this run's sliding could not be trusted — Phone looks hand-held — clip it into a rigid mount";
 
   it('leads with the monitor\'s own line, not the statistic', () => {
     const r = refusalFrom(HANDHELD);
-    expect(r.remedy).toBe('Phone looks hand-held — clip it into a rigid mount to score drifts.');
+    expect(r.remedy).toBe('Phone looks hand-held — clip it into a rigid mount.');
     expect(r.reason).toBe("100% of this run's sliding could not be trusted.");
   });
 
   it('names something the driver can physically do', () => {
     // every message the integrity monitor can compose for a refused run, verbatim
     const MONITOR = [
-      'Phone looks hand-held — clip it into a rigid mount to score drifts',
+      'Phone looks hand-held — clip it into a rigid mount',
       'Phone is moving in its mount — tighten it',
       "Can't tell which way the car points — mount the phone firmly and drive straight for a few seconds",
       'Sensor readings are spinning faster than any car can turn — check the phone is fixed to the car',

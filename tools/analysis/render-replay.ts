@@ -890,7 +890,7 @@ function bottomHud(f: Frame): string {
   // to withhold any more; what is withheld is the ramp, everywhere on the frame.
   if (!r.info.trusted) {
     s += `<rect x="${f2(W - 18 - 74)}" y="${f2(ly - 11)}" width="74" height="16" rx="3" fill="${RED}" opacity="0.9"/>`;
-    s += text(W - 18 - 37, ly + 1, 'NOT SCORED', { size: T_LABEL, fill: '#000', anchor: 'middle', weight: 800, spacing: 1.2 });
+    s += text(W - 18 - 37, ly + 1, 'NOT JUDGED', { size: T_LABEL, fill: '#000', anchor: 'middle', weight: 800, spacing: 1.2 });
   }
   // The slide count and the biggest angle so far, MASKED to elapsed time: "BEST 71°" on the
   // opening frame is a small forward-looking spoiler. SO FAR, because it is a running best over

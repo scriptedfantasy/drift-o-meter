@@ -18,7 +18,7 @@ import { buildFixtureSession, FIXTURES } from '../results/fixture';
 import { mountAdvice } from './advice';
 
 /** What `IntegrityMonitor` composes: a percentage, an em dash, then its own pill. */
-const REJECTION = "100% of this run's sliding could not be trusted — Phone looks hand-held — clip it into a rigid mount to score drifts";
+const REJECTION = "100% of this run's sliding could not be trusted — Phone looks hand-held — clip it into a rigid mount";
 
 /**
  * Qualities picked by asking the engine which band they are in, not by writing thresholds down
@@ -74,7 +74,7 @@ describe('mountAdvice', () => {
     expect(a?.body).toMatch(/no angle/i);
     expect(a?.body).toMatch(/board/i);
     // …and ended, so the monitor's pill reads as prose instead of arriving glued.
-    expect(a?.quote).toBe("100% of this run's sliding could not be trusted. Phone looks hand-held — clip it into a rigid mount to score drifts.");
+    expect(a?.quote).toBe("100% of this run's sliding could not be trusted. Phone looks hand-held — clip it into a rigid mount.");
   });
 
   it('never leaves a capital standing after a dash, on the run the engine really refused', () => {

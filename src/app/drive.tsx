@@ -219,7 +219,7 @@ function VerdictRecorded({ verdict }: { verdict: RunVerdict }) {
 function VerdictRefused({ verdict }: { verdict: RunVerdict }) {
   return (
     <View style={styles.verdictRefused} testID="hud-verdict">
-      <AppText style={styles.verdictNotScored}>NOT SCORED</AppText>
+      <AppText style={styles.verdictNotScored}>NOT JUDGED</AppText>
       {verdict.message ? (
         <Body color="muted" numberOfLines={3}>
           {verdict.message}

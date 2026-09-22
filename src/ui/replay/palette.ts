@@ -196,3 +196,13 @@ export function eventColor(kind: ReplayEventKind): string {
  * instead of Barlow Condensed. The 132 pt `slam` went with the grade it existed to land.
  */
 export const TYPE = { hero: 56, value: 34, label: 13, body: 14, clock: 12 } as const;
+
+/**
+ * What a run the engine will not vouch for is called, everywhere.
+ *
+ * It read NOT SCORED on the replay, the run review and the drive display, and NOT JUDGED in
+ * the garage — one refusal with two names, on screens a driver sees one after the other.
+ * Scoring is deleted, so SCORED was the wrong half of the pair to keep: the run WAS measured,
+ * at a hundred samples a second, and what the engine declines to do is judge it.
+ */
+export const REFUSED_PLATE = 'NOT JUDGED';

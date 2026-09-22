@@ -47,6 +47,7 @@ import {
   GHOST,
   GROUND,
   KERB_PALE,
+  REFUSED_PLATE,
   RUNOFF,
   TYPE,
   VERGE,
@@ -1400,9 +1401,9 @@ function drawStageNotices(canvas: SkCanvas, f: Frame): void {
     // own words, as a SENTENCE in Barlow. It used to be two full-width lines of uppercase
     // Barlow Condensed, 100 characters of shouting, on top of two more NOT SCORED chips.
     const maxW = Math.min(320, lay.w - lay.insets.left - lay.insets.right - 36);
-    const plate = measure(f, label, 'NOT SCORED', 1.6) + 14;
+    const plate = measure(f, label, REFUSED_PLATE, 1.6) + 14;
     canvas.drawRect({ x: left, y: y - 12, width: plate, height: 18 }, fillPaint(f, colors.red));
-    drawStr(canvas, f, label, 'NOT SCORED', left + 7, y + 1, { color: '#000000', tracking: 1.6 });
+    drawStr(canvas, f, label, REFUSED_PLATE, left + 7, y + 1, { color: '#000000', tracking: 1.6 });
     y += 24;
     const body = f.fonts.body ?? label;
     for (const line of wrapText(f, body, sentence(f.view.untrustedBody), maxW, 2)) {

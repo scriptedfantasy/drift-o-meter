@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { sessionIntegrity, type IntegrityInput } from './verdict';
 
-const LOOSE = { mount: 'loose' as const, physics: 'ok' as const, gps: 'good' as const, message: 'Phone looks hand-held — clip it into a rigid mount to score drifts' };
+const LOOSE = { mount: 'loose' as const, physics: 'ok' as const, gps: 'good' as const, message: 'Phone looks hand-held — clip it into a rigid mount' };
 
 function verdict(over: Partial<IntegrityInput> = {}) {
   return sessionIntegrity({

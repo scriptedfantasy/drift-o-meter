@@ -778,7 +778,7 @@ export class IntegrityMonitor {
 
   /** What the monitor has to say about the MOUNT, whatever else is also wrong. */
   private mountSentence(): string {
-    if (this.handheld) return 'Phone looks hand-held — clip it into a rigid mount to score drifts';
+    if (this.handheld) return 'Phone looks hand-held — clip it into a rigid mount';
     if (this.mount === 'loose') return 'Phone is moving in its mount — tighten it';
     if (this.mount === 'suspect') return 'Phone may be shifting in its mount — check it is tight';
     return '';

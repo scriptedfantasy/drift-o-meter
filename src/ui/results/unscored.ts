@@ -4,7 +4,7 @@
  * The engine composes `SessionIntegrity.message` as the fraction of sliding it could not
  * believe, an em dash, and then the integrity monitor's own live line — and that second half is
  * the only sentence on the screen that names something physical to do about it ("Phone looks
- * hand-held — clip it into a rigid mount to score drifts", "Phone is moving in its mount —
+ * hand-held — clip it into a rigid mount", "Phone is moving in its mount —
  * tighten it"). See `src/engine/integrity/verdict.ts` (sessionIntegrity) and
  * `src/engine/integrity/monitor.ts` (composeMessage).
  *

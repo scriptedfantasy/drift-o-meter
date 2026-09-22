@@ -227,7 +227,7 @@ has to be measured where the driver READS it, not at the end of the run.
 | `calibrate-rejected` | arrived because a run was thrown out — the normal way into this screen |
 | `calibrate-shaking` | `mount === 'suspect'`: everything resolved, 34 % confidence, and the screen says MOUNT SHAKING rather than "Ready to measure" |
 | `calibrate-early` | 2 s into a hand-held recording. The mount cues reach `loose` first (0.67–1.25 s at looseness 1), so this frame is the monitor having decided; the vertical has not settled and no step is ticked |
-| `calibrate-cradle-banner` | the gold MOUNT LOOKS UNSTEADY banner under a FINDING FORWARD headline — the two sentences that used to be the same one |
+| `calibrate-cradle-banner` | the MOUNT LOOKS UNSTEADY banner under a FINDING FORWARD headline, with no sentence under it — the monitor's own words were the heading again |
 | `calibrate-gps` | a GPS dropout getting its own row on a screen with no GPS light, on a READY frame reading 61 % that peaked at 76 % |
 | `calibrate-fault-permission` | motion access denied |
 | `calibrate-fault-location` | location access denied — a different switch from the one above, so a different fault |
@@ -262,8 +262,15 @@ outrank a shifting cradle — which is right for the HUD's one integrity line an
 heading this screen chose. Quoting it printed a forward-axis sentence under MOUNT LOOKS
 UNSTEADY on 105,439 of 105,439 measured caution frames and a GPS sentence under MOUNT SHAKING
 on 2,760 of 102,944. `IntegrityState.mountMessage` and `gpsMessage` answer per topic; `message`
-still ranks. `npx tsx tools/analysis/calibration-sweep.ts rows` counts the rendered strings:
-**174,848 of 174,848** mount-titled rows now carry a mount sentence.
+still ranks.
+
+The screen has since stopped printing a sentence under a mount banner AT ALL — the monitor's
+own words were the heading again in longer form, and a utility screen read in a car does not
+want the same thing twice. So the rule survives inverted: a mount-titled row now carries an
+EMPTY body, and `npx tsx tools/analysis/calibration-sweep.ts rows` counts that instead
+(**174,848 of 174,848**, all `(no body)`). The invariant that mattered is unchanged — such a
+row still cannot exist for a condition the monitor never named, because `mountMessage` has to
+be one of its three sentences before the banner is drawn.
 
 **Why the screen's bar is not `docs/DESIGN.md`'s 0.8.** The calibrator's confidence is
 `upQuality × (0.4 + 0.6·min(lineQuality, signQuality))`, and `upQuality` is capped by the

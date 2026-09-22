@@ -292,7 +292,7 @@ function ready(): void {
 function rows(): void {
   console.log('\n=== MOUNT-TITLED ROWS — is the body about the mount? ===');
   const MOUNT_SENTENCES = new Set([
-    'Phone looks hand-held — clip it into a rigid mount to score drifts',
+    'Phone looks hand-held — clip it into a rigid mount',
     'Phone is moving in its mount — tighten it',
     'Phone may be shifting in its mount — check it is tight',
   ]);

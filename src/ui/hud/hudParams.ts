@@ -37,7 +37,7 @@ const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
 // mount or impossible physics means nothing derived from the reading may be shown in colour.
 const INTEGRITY_PRESETS: Record<string, LiveFrame['integrity']> = {
   // The wording is the IntegrityMonitor's own, so the override shows what a real loose mount says.
-  loose: { mount: 'loose', physics: 'ok', gps: 'good', message: 'Phone looks hand-held — clip it into a rigid mount to score drifts', believable: false },
+  loose: { mount: 'loose', physics: 'ok', gps: 'good', message: 'Phone looks hand-held — clip it into a rigid mount', believable: false },
   suspect: { mount: 'suspect', physics: 'ok', gps: 'good', message: 'Mount is shaking — angles may read high', believable: true },
   'gps-poor': { mount: 'rigid', physics: 'ok', gps: 'poor', message: 'Weak GPS — drive into the open', believable: true },
   'gps-none': { mount: 'rigid', physics: 'ok', gps: 'none', message: 'No GPS fix — scoring is paused', believable: true },

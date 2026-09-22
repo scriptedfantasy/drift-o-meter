@@ -10,7 +10,7 @@
  * what was wrong rather than offering a chore. Where the integrity monitor already has a
  * sentence for the condition, that sentence gets its own line rather than being glued into a
  * template: gluing produced "100% of this run's sliding could not be trusted — Phone looks
- * hand-held — clip it into a rigid mount to score drifts. Nothing from that drive was scored.",
+ * hand-held — clip it into a rigid mount. Nothing from that drive was scored.",
  * two em-dash clauses and a capital P mid-sentence.
  *
  * Its own line was only half of it. The monitor writes for a HUD PILL — "reason — advice", no

@@ -45,7 +45,7 @@ export function WhyUnscored({ notes, reason, refused = true, run, reduceMotion =
   const [open, setOpen] = useState(initiallyOpen);
   const count = notes.length;
   const tint = refused ? colors.red : colors.muted;
-  const label = refused ? 'Why it was not scored' : 'What qualifies these numbers';
+  const label = refused ? 'Why it was not judged' : 'What qualifies these numbers';
   return (
     <View style={styles.wrap} testID={testID}>
       <Pressable
