@@ -217,6 +217,15 @@ export interface MountOptions {
   /** Correlation score at which the forward sign is accepted / flipped. */
   signAcceptScore: number;
   /**
+   * Line quality at which the forward AXIS counts as found, 0..1.
+   *
+   * `lineQuality` is anisotropy times capped evidence, so this is a joint bar: abundant
+   * evidence smeared across two axes fails it exactly as a single clean pull that is too
+   * short does. That is the point — a phone lying flat on a dash accumulates acceleration
+   * all day without ever telling you which way the car points.
+   */
+  lineAcceptQuality: number;
+  /**
    * Tilt the UP axis off the gravity vertical by the estimated road pitch, so it follows the
    * road normal (which is what the phone is bolted to) rather than gravity. On the simulator's
    * −6 % touge that is 2.8° of otherwise irreducible up error.
@@ -300,6 +309,7 @@ export const DEFAULT_MOUNT_OPTIONS: MountOptions = {
   gpsVoteTau: 12,
   gpsVoteMinEvidence: 3,
   signAcceptScore: 0.5,
+  lineAcceptQuality: 0.5,
   gradeCompensation: false,
   gradeTau: 25,
   gradeMaxRad: 0.25,
@@ -1788,7 +1798,7 @@ export class MountCalibrator {
 
     // ---- forward resolution and overall quality
     const signQ = clamp(Math.abs(this.signScore), 0, 1);
-    const resolved = this.lineValid && lineQ >= 0.5 && Math.abs(this.signScore) >= o.signAcceptScore;
+    const resolved = forwardProgress({ lineQuality: lineQ, signScore: this.signScore }, o).resolved;
     if (resolved && !this.forwardResolved) this.forwardResolvedAt = this.lastT;
     this.forwardResolved = resolved;
     let q: number;
@@ -1805,4 +1815,40 @@ export class MountCalibrator {
 
 function fin(v: number): number {
   return Number.isFinite(v) ? v : 0;
+}
+
+/** What the forward axis still needs, and how close each part of it is. */
+export interface ForwardProgress {
+  /** Finding the LINE the car moves along: 0..1 toward `lineAcceptQuality`. */
+  axis: number;
+  /** Finding which END of that line is forward: 0..1 toward `signAcceptScore`. */
+  direction: number;
+  /** Whichever is further from done, or null once the axis is resolved. */
+  blocking: 'axis' | 'direction' | null;
+  resolved: boolean;
+}
+
+/**
+ * How far the forward axis is, as two separate questions.
+ *
+ * SEPARATE, because they fail independently and a screen that reports only one of them lies
+ * in exactly the case a driver is most likely to hit. A phone lying flat on a dash gathers
+ * straight-line evidence for as long as you drive, so an "evidence over the minimum" readout
+ * climbs forever — it was seen at 1730 % on a mount that had resolved nothing — while what is
+ * actually stuck is that the evidence is smeared across two axes, or that the line is known
+ * and which end of it points at the windscreen is not.
+ *
+ * Both parts are RATIOS TO THEIR OWN BAR, clamped, so 100 % means done rather than meaning
+ * whatever the last person to read it assumed. `blocking` names the part that is further
+ * away, which is the one worth telling a driver about.
+ */
+export function forwardProgress(
+  r: { lineQuality: number; signScore: number },
+  o: Pick<MountOptions, 'lineAcceptQuality' | 'signAcceptScore'> = DEFAULT_MOUNT_OPTIONS,
+): ForwardProgress {
+  // `lineQuality` is already 0 while the line is invalid, so there is nothing else to ask.
+  const axis = o.lineAcceptQuality > 0 ? clamp(r.lineQuality / o.lineAcceptQuality, 0, 1) : 0;
+  const direction = o.signAcceptScore > 0 ? clamp(Math.abs(r.signScore) / o.signAcceptScore, 0, 1) : 0;
+  const resolved = axis >= 1 && direction >= 1;
+  return { axis, direction, blocking: resolved ? null : axis <= direction ? 'axis' : 'direction', resolved };
 }

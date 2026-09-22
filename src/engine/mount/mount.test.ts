@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { simulateRun, type SimulateOptions, type SimulatedRun } from '../../sim';
 import type { MountPreset } from '../../sim/sensors';
 import type { GpsSample, MotionSample } from '../types';
-import { DEFAULT_MOUNT_OPTIONS, MountCalibrator, type MountOptions } from './calibrator';
+import { DEFAULT_MOUNT_OPTIONS, forwardProgress, MountCalibrator, type MountOptions } from './calibrator';
 import { angleBetweenDeg, rowOf } from './math';
 
 /**
@@ -484,5 +484,59 @@ describe('MountCalibrator — boundary behaviour', () => {
       if (m.t > 1 && m.t < 1.02) cal.markStationary();
     }
     expect(angleBetweenDeg(rowOf(cal.calibration.r, 2), rowOf(run.mount, 2))).toBeLessThan(2);
+  });
+});
+
+describe('forwardProgress', () => {
+  /**
+   * The readout that printed "1730% there".
+   *
+   * A phone lying flat on a dash gathers straight-line acceleration for as long as you drive,
+   * so a tile showing evidence over its minimum climbs without bound — while what is actually
+   * stuck is that the evidence is smeared across two axes, or that the line is known and which
+   * end of it faces the windscreen is not. Both parts are ratios to their own bar, clamped, so
+   * 100 % means done.
+   */
+  const OPTS = { lineAcceptQuality: DEFAULT_MOUNT_OPTIONS.lineAcceptQuality, signAcceptScore: DEFAULT_MOUNT_OPTIONS.signAcceptScore };
+
+  it('never reports more than done, however much evidence piles up', () => {
+    const p = forwardProgress({ lineQuality: 100, signScore: 40 }, OPTS);
+    expect(p.axis).toBe(1);
+    expect(p.direction).toBe(1);
+    expect(p.resolved).toBe(true);
+  });
+
+  it('blames the axis when the line is smeared, even with the direction settled', () => {
+    // The flat-on-the-dash case: plenty of acceleration, no single line through it.
+    const p = forwardProgress({ lineQuality: 0.05, signScore: 10 }, OPTS);
+    expect(p.blocking).toBe('axis');
+    expect(p.resolved).toBe(false);
+    expect(p.direction).toBe(1);
+  });
+
+  it('blames the direction when the line is found but not which end is forward', () => {
+    const p = forwardProgress({ lineQuality: 10, signScore: 0.01 }, OPTS);
+    expect(p.blocking).toBe('direction');
+    expect(p.resolved).toBe(false);
+    expect(p.axis).toBe(1);
+  });
+
+  it('reports nothing found before any evidence', () => {
+    const p = forwardProgress({ lineQuality: 0, signScore: 0 }, OPTS);
+    expect(p.axis).toBe(0);
+    expect(p.direction).toBe(0);
+    expect(p.blocking).toBe('axis');
+  });
+
+  it('agrees with the calibrator it is the gate for', () => {
+    // Both bars exactly met is resolved; a hair under either is not.
+    expect(forwardProgress({ lineQuality: OPTS.lineAcceptQuality, signScore: OPTS.signAcceptScore }, OPTS).resolved).toBe(true);
+    expect(forwardProgress({ lineQuality: OPTS.lineAcceptQuality * 0.999, signScore: OPTS.signAcceptScore }, OPTS).resolved).toBe(false);
+    expect(forwardProgress({ lineQuality: OPTS.lineAcceptQuality, signScore: OPTS.signAcceptScore * 0.999 }, OPTS).resolved).toBe(false);
+  });
+
+  it('takes a negative sign score as evidence, not as absence', () => {
+    // The sign says WHICH end; a strong negative is as resolved as a strong positive.
+    expect(forwardProgress({ lineQuality: 10, signScore: -10 }, OPTS).resolved).toBe(true);
   });
 });

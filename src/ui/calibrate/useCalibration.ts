@@ -118,6 +118,7 @@ export function useCalibration(): Calibration {
         speedKmh: h.speedKmh,
         lineEvidenceS: diag.lineEvidence,
         lineAnisotropy: diag.lineAnisotropy,
+        lineQuality: diag.lineQuality,
         signScore: diag.signScore,
         knocks: diag.knocks,
       });

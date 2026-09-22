@@ -113,6 +113,7 @@ export function replayReadings(spec: ReplaySpec, snapshotHz = 12): Frame[] {
         peakQuality: diag.peakQuality,
         lineEvidenceS: diag.lineEvidence,
         lineAnisotropy: diag.lineAnisotropy,
+        lineQuality: diag.lineQuality,
         signScore: diag.signScore,
         knocks: diag.knocks,
       },

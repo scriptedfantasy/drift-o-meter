@@ -24,7 +24,7 @@
  * the cues mean something, and 'unknown' is a pass NOWHERE.
  */
 import { calibrationBand, calibrationHeadroom, verticalSettled, CALIBRATION_SHARP, DEFAULT_INTEGRITY_OPTIONS, type GpsState, type MountState } from '../../engine/integrity';
-import { DEFAULT_MOUNT_OPTIONS } from '../../engine/mount';
+import { DEFAULT_MOUNT_OPTIONS, forwardProgress } from '../../engine/mount';
 import type { Vec3 } from '../../engine/types';
 import { G } from '../../engine/types';
 // the bare module, never the `platform` barrel: that one reaches expo-sensors and this file
@@ -226,6 +226,14 @@ export interface CalibrationReading {
   lineEvidenceS: number;
   /** How well that evidence lines up on one axis, 0..1. */
   lineAnisotropy: number;
+  /**
+   * The engine's own line quality, 0..1: anisotropy times capped evidence.
+   *
+   * Carried rather than recomputed from the two above, because the cap is the whole point —
+   * a screen multiplying them itself is one refactor away from dropping it and printing
+   * 1730 % again.
+   */
+  lineQuality: number;
   /** Which end of that axis is forward: |score| past `signAcceptScore` settles it. */
   signScore: number;
   /** Times the phone was knocked out of position since the screen opened. */
@@ -261,6 +269,7 @@ export const IDLE_READING: CalibrationReading = {
   speedKmh: 0,
   lineEvidenceS: 0,
   lineAnisotropy: 0,
+  lineQuality: 0,
   signScore: 0,
   knocks: 0,
 };
@@ -378,7 +387,13 @@ export function lightsOf(r: CalibrationReading): Light[] {
       // Short enough to survive one line in a third of the screen: `26% of the evidence` wrapped
       // to two lines in portrait and truncated in the compact landscape chip.
       state: r.forwardResolved ? 'on' : 'working',
-      detail: r.forwardResolved ? 'Resolved' : r.lineEvidenceS > 0.05 ? `${Math.round((r.lineEvidenceS / DEFAULT_MOUNT_OPTIONS.lineMinEvidence) * 100)}% there` : 'Needs a pull',
+      // Two questions, not one: finding the LINE the car moves along, and finding which END of
+      // it points at the windscreen. They fail independently, and reporting only the evidence
+      // behind the first printed "1730% there" on a mount that had resolved neither — a phone
+      // lying flat gathers straight-line evidence all day while the line itself stays smeared
+      // across two axes. `forwardProgress` is the engine's own gate, so this cannot drift from
+      // the condition it is reporting on.
+      detail: forwardDetail(r),
     },
     {
       key: 'mount',
@@ -436,6 +451,15 @@ export function headlineOf(r: CalibrationReading): Headline {
     default:
       return { kicker: 'Waking up', title: 'Listening', because: 'the first readings are on their way', color: 'cyan' };
   }
+}
+
+/** What the forward tile says: the part that is further from done, as a share of its own bar. */
+function forwardDetail(r: CalibrationReading): string {
+  if (r.forwardResolved) return 'Resolved';
+  const p = forwardProgress({ lineQuality: r.lineQuality, signScore: r.signScore });
+  if (p.axis <= 0 && p.direction <= 0) return 'Needs a pull';
+  const share = p.blocking === 'direction' ? p.direction : p.axis;
+  return `${Math.round(share * 100)}%`;
 }
 
 export interface Step {
