@@ -292,6 +292,34 @@ describe('lightsOf', () => {
       expect(d.length).toBeLessThanOrEqual(14);
     }
   });
+
+  it('shows 1–99% or "Needs a pull" until forward resolves, however much evidence piles up', () => {
+    // A phone on a desk printed "928% there": 7.42 s of line evidence over a 0.8 s minimum.
+    for (const lineEvidenceS of [0, 0.8, 7.42, 600]) {
+      for (const lineQuality of [0, 0.004, 0.29, 0.499, 0.5, 9]) {
+        for (const signScore of [0, 0.1, -0.3, 0.499, 0.5, -4]) {
+          const d = lightsOf(reading({ forwardResolved: false, lineEvidenceS, lineQuality, signScore }))[1].detail;
+          const where = `evidence ${lineEvidenceS} line ${lineQuality} sign ${signScore}: ${d}`;
+          const pct = /^(\d+)%$/.exec(d);
+          if (!pct) expect(where).toBe(`evidence ${lineEvidenceS} line ${lineQuality} sign ${signScore}: Needs a pull`);
+          else expect([where, Number(pct[1]) >= 1 && Number(pct[1]) <= 99]).toEqual([where, true]);
+        }
+      }
+    }
+  });
+
+  it('asks for a pull, not "0%", when the line is found and which end is forward is not', () => {
+    // The same desk: axis fit 100%, fore/aft unset, no GPS. Only driving moves the direction.
+    const d = lightsOf(reading({ forwardResolved: false, lineEvidenceS: 7.42, lineAnisotropy: 1, lineQuality: 1, signScore: 0 }))[1].detail;
+    expect(d).toBe('Needs a pull');
+  });
+
+  it('reports whichever part is blocking once it has started', () => {
+    // Line found, direction at a fifth of its bar.
+    expect(lightsOf(reading({ forwardResolved: false, lineQuality: 1, signScore: 0.1 }))[1].detail).toBe('20%');
+    // Line smeared across two axes, direction settled: the axis is what is blocking.
+    expect(lightsOf(reading({ forwardResolved: false, lineQuality: 0.145, signScore: 3 }))[1].detail).toBe('29%');
+  });
 });
 
 describe('orientationOf / attitudeWords', () => {

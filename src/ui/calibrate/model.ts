@@ -465,13 +465,23 @@ export function headlineOf(r: CalibrationReading): Headline {
   }
 }
 
-/** What the forward tile says: the part that is further from done, as a share of its own bar. */
+/**
+ * What the forward tile says: the part that is further from done, as a share of its own bar.
+ *
+ * "Needs a pull" whenever THAT part has not started, not only when nothing has. A phone on a
+ * desk finds its line from the odd nudge and then read "0%" for the direction, which was true
+ * and told nobody anything: nothing done at a standstill moves it, and the step above already
+ * says what does.
+ *
+ * Held to 1–99 while unresolved, so 100% only ever appears as "Resolved". Rounded, not
+ * floored: 0.29 × 100 is 28.999… in floating point.
+ */
 function forwardDetail(r: CalibrationReading): string {
   if (r.forwardResolved) return 'Resolved';
   const p = forwardProgress({ lineQuality: r.lineQuality, signScore: r.signScore });
-  if (p.axis <= 0 && p.direction <= 0) return 'Needs a pull';
   const share = p.blocking === 'direction' ? p.direction : p.axis;
-  return `${Math.round(share * 100)}%`;
+  if (!(share > 0)) return 'Needs a pull';
+  return `${Math.min(99, Math.max(1, Math.round(share * 100)))}%`;
 }
 
 export interface Step {
