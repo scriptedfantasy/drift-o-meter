@@ -166,14 +166,23 @@ moved, look for that order.
 
 ## Later builds
 
-Once the above has worked once, every future version is one command:
+Once the above has worked once, every future version is two commands, run inside the
+`drift-o-meter` folder:
 
 ```bash
+git pull
 npx eas-cli@latest build --platform ios --profile production --auto-submit
 ```
 
+**Do not skip `git pull`.** EAS builds whatever is in the folder on your computer, not what is
+on GitHub. Without it you get the old app again with a new build number, and nothing tells you.
+
 No questions the second time. `eas.json` sets `autoIncrement`, so the build number goes up by
 itself and Apple will not reject the upload as a duplicate.
+
+To check the phone has the new one: open **TestFlight**, tap Drift-O-Mania, and compare the
+build number in brackets (for example `1.0.0 (4)`) with the one the build printed. If it offers
+**Update**, tap it — TestFlight does not always install new builds by itself.
 
 ---
 
