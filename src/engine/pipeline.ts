@@ -512,6 +512,22 @@ export class DriftPipeline implements DriftPipelineApi {
   private readonly calIntervalS: number;
   private integritySnapshot: LiveFrame['integrity'];
 
+  /**
+   * The monitor's verdict and the calibration as they stood the LAST TIME THE CAR WAS BEING
+   * DRIVEN (`IntegrityMonitor.driven`: GPS says moving, above slide speed). `finish()` publishes
+   * these.
+   *
+   * It used to publish whatever they were when STOP was tapped, and the way a run ends is that
+   * the car stops and somebody picks the phone up. A harbor run that read `rigid` on all 13,013
+   * of its samples came out `loose`, with the calibration reset to 0 by the knock, from three
+   * seconds of being lifted out of the cradle after the car had parked — and the garage printed
+   * "the phone was moving in its mount" over it until the next run. Both references are to
+   * snapshots that already exist, so this costs no allocation. Null until the car first gets
+   * up to speed; a run that never does is read at its end, as before.
+   */
+  private drivenIntegrity: LiveFrame['integrity'] | null = null;
+  private drivenCal: MountCalibration | null = null;
+
   // ---- the estimator input is one reused scratch object (no per-sample allocation)
   private readonly motionIn: SlipMotionInput = {
     t: 0,
@@ -688,6 +704,10 @@ export class DriftPipeline implements DriftPipelineApi {
     const slideDt = det.phase !== 'idle' && dt > 0 && dt <= 0.25 ? dt : 0;
     this.slideWindow.push(slideDt, tick.counting ? slideDt : 0);
     const integrity = this.readIntegrity(state.valid);
+    if (this.integrity.driven) {
+      this.drivenIntegrity = integrity;
+      this.drivenCal = this.cal;
+    }
     const frame: LiveFrame = {
       t,
       state,
@@ -825,7 +845,9 @@ export class DriftPipeline implements DriftPipelineApi {
     const track = this.trackBuilder.build();
     this.built = track;
     const states = this.stateStore.materialise();
-    const iState = this.integrity.state;
+    // The verdict on the drive, not on the moment it was stopped (see `drivenIntegrity`).
+    const iState = this.drivenIntegrity ?? this.integrity.state;
+    const cal = this.drivenCal ?? this.calibrator.calibration;
     const b = scoreSession(this._drifts, states, track, this.opts.score, {
       plausible: this.plausibleMask.toArray(states.length),
       integrity: { mount: iState.mount, physics: iState.physics, gps: iState.gps, message: iState.message },
@@ -873,7 +895,7 @@ export class DriftPipeline implements DriftPipelineApi {
       score,
       track,
       integrity: b.integrity,
-      calibration: this.calibrator.calibration,
+      calibration: cal,
       // the pipeline's own provenance first, the caller's keys last: an app that knows better
       // (the track id, the driver, the phone model) wins over anything derived here
       meta: {
@@ -883,8 +905,8 @@ export class DriftPipeline implements DriftPipelineApi {
         nanGuards: diag.nanGuards,
         motionHz: this.storeIntervalS > 0 ? Math.round(1 / this.storeIntervalS) : 0,
         gpsFixes: diag.gpsSamples,
-        calibrationQuality: Math.round(diag.calibrationQuality * 1000) / 1000,
-        forwardResolved: diag.calibrationForwardResolved,
+        calibrationQuality: Math.round(cal.quality * 1000) / 1000,
+        forwardResolved: cal.forwardResolved,
         gpsLatencyS: Math.round(this.estimator.gpsLatency * 1000) / 1000,
         lapsDetected: this.trackBuilder.laps.length,
         driftTimeS: Math.round(b.driftTimeS * 100) / 100,
@@ -894,9 +916,9 @@ export class DriftPipeline implements DriftPipelineApi {
         combined: b.combined,
         steadiness: b.steadiness,
         crossLapConsistency: b.crossLapConsistency ?? -1,
-        mount: diag.mount,
-        physics: diag.physics,
-        integrity: diag.integrityMessage,
+        mount: iState.mount,
+        physics: iState.physics,
+        integrity: iState.message,
         // The integrity BLOCK the score depends on. These belong on `Session` as one
         // `SessionIntegrity` object; types.ts is owned elsewhere, so they ride in `meta`
         // (string | number | boolean only) until the field exists. See the report.
@@ -941,6 +963,8 @@ export class DriftPipeline implements DriftPipelineApi {
     this.cal = this.calibrator.calibration;
     this.calT = -Infinity;
     this.integritySnapshot = this.readIntegrity();
+    this.drivenIntegrity = null;
+    this.drivenCal = null;
     this.liveId = null;
     this.usedIds.clear();
     this.idRemap.clear();

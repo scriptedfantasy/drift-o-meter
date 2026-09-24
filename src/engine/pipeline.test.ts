@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { simulateRun, type SimulateOptions, type SimulatedRun, type TrackId } from '../sim';
 import { buildReplay } from './replay';
 import { DriftPipeline, type DriftPipelineOptions, type LiveFrame } from './pipeline';
-import { radToDeg, type Session, type TruthSample } from './types';
+import { radToDeg, type MotionSample, type Session, type TruthSample } from './types';
 
 // ─────────────────────────────────────────────────────────────────── helpers
 
@@ -537,5 +537,80 @@ describe('DriftPipeline end to end', () => {
       `   sloppy ${SLOPPY_VERDICTS.map((v) => `s${v.seed}:${v.grade}(${v.combined.toFixed(0)})`).join(' ')}\n`;
     process.stdout.write(table);
     expect(rows.length).toBe(all.length);
+  });
+});
+
+/**
+ * The run's verdict is what the monitor saw while the car was being driven, not what it saw
+ * when STOP was tapped.
+ *
+ * The way a run ends is that the car stops and somebody picks the phone up. When the verdict
+ * was read at STOP, those last seconds decided it: this harbor run read `rigid` on every sample
+ * it was driven for, came out `loose` with its calibration reset to 0 by the knock, and the
+ * garage printed "the phone was moving in its mount" over it until the next run replaced it.
+ */
+describe('the verdict belongs to the drive, not to how it was stopped', () => {
+  type Ending = 'at speed' | 'parked' | 'lifted out';
+
+  function stopped(ending: Ending, looseness: number): { session: Session; atStop: string } {
+    const run = simulateRun('harbor', { seed: 3, laps: 2, looseness });
+    const p = new DriftPipeline({ ...BASE, name: `ending-${ending}` });
+    drive(p, run);
+    const last = run.motion[run.motion.length - 1];
+    const fix = run.gps.reduce((a, b) => (b.t > a.t ? b : a));
+    const g0 = last.gravity;
+    let t = last.t;
+    const still: Omit<MotionSample, 't' | 'gravity'> = { accel: { x: 0, y: 0, z: 0 }, rotationRate: { x: 0, y: 0, z: 0 } };
+    if (ending !== 'at speed') {
+      // Six seconds parked with the phone still in the cradle, GPS reporting a standstill.
+      for (let k = 1; k <= 600; k++) {
+        t += 0.01;
+        if (k % 100 === 0) p.pushGps({ ...fix, t, speed: 0 });
+        p.pushMotion({ t, gravity: g0, ...still });
+      }
+    }
+    if (ending === 'lifted out') {
+      // Three seconds of lifting it out of the cradle towards the driver's face, to tap STOP.
+      for (let k = 1; k <= 300; k++) {
+        t += 0.01;
+        const s = k * 0.01;
+        const tilt = Math.sin((Math.PI / 2) * Math.min(1, s)) + 0.15 * Math.sin(2 * Math.PI * 1.7 * s);
+        const rate = (s < 1 ? (Math.PI / 2) * Math.cos((Math.PI / 2) * s) : 0) + 0.15 * 2 * Math.PI * 1.7 * Math.cos(2 * Math.PI * 1.7 * s);
+        const c = Math.cos(tilt);
+        const n = Math.sin(tilt);
+        if (k % 100 === 0) p.pushGps({ ...fix, t, speed: 0 });
+        p.pushMotion({
+          t,
+          accel: { x: 0.3 * Math.sin(37 * s), y: 0.3 * Math.cos(29 * s), z: 0.3 * Math.sin(23 * s) },
+          gravity: { x: g0.x, y: c * g0.y - n * g0.z, z: n * g0.y + c * g0.z },
+          rotationRate: { x: rate, y: 0.4 * Math.sin(2 * Math.PI * 2.3 * s), z: 0.3 * Math.cos(2 * Math.PI * 1.1 * s) },
+        });
+      }
+    }
+    const atStop = p.integrity.state.mount;
+    return { session: p.finish(), atStop };
+  }
+
+  it('a rigid mount stays rigid when the phone is lifted out to stop the run', () => {
+    const clean = stopped('at speed', 0).session;
+    const lifted = stopped('lifted out', 0);
+    // The premise: at the instant STOP was tapped, the monitor really was saying `loose`.
+    expect(lifted.atStop).toBe('loose');
+    expect(clean.integrity.mount).toBe('rigid');
+    expect(lifted.session.integrity.mount).toBe('rigid');
+    expect(lifted.session.meta.mount).toBe('rigid');
+    // ...and the calibration published is the one the drive ran on, not the one the knock reset.
+    expect(lifted.session.calibration.forwardResolved).toBe(true);
+    expect(lifted.session.calibration.quality).toBeCloseTo(clean.calibration.quality, 2);
+    expect(lifted.session.integrity.scoreTrusted).toBe(clean.integrity.scoreTrusted);
+  });
+
+  it('a loose mount stays loose when it goes quiet after the car has parked', () => {
+    const parked = stopped('parked', 1);
+    // At STOP the phone had been sitting still for six seconds and the monitor had relaxed.
+    expect(parked.atStop).not.toBe('loose');
+    expect(parked.session.integrity.mount).toBe('loose');
+    expect(parked.session.meta.mount).toBe('loose');
+    expect(stopped('lifted out', 1).session.integrity.mount).toBe('loose');
   });
 });

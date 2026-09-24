@@ -354,6 +354,7 @@ export class IntegrityMonitor {
   private speedOk = false;
   private gpsVeto = false;
   private driftPlausible = false;
+  private drivenNow = false;
   /** Latest mount calibration, NaN quality until one is pushed (then the veto is inactive). */
   private calQuality = NaN;
   private calForward = true;
@@ -438,6 +439,7 @@ export class IntegrityMonitor {
     this.speedOk = false;
     this.gpsVeto = false;
     this.driftPlausible = false;
+    this.drivenNow = false;
     this.calQuality = NaN;
     this.calForward = true;
     this.calOk = true;
@@ -465,6 +467,19 @@ export class IntegrityMonitor {
    */
   get plausible(): boolean {
     return this.driftPlausible;
+  }
+
+  /**
+   * Is the car being driven right now: a fresh GPS fix says it is moving, and the slip state is
+   * above slide speed. A plain boolean read, like `plausible`.
+   *
+   * GPS is the half that cannot be faked from inside the car. The slip state's speed is carried
+   * between fixes by the IMU, and a phone being lifted out of its cradle reads to the IMU as a car
+   * pulling away hard — a parked harbor run sat above slide speed for most of the three seconds
+   * it was being handled. That is precisely the moment this has to say no.
+   */
+  get driven(): boolean {
+    return this.drivenNow;
   }
 
   /** Current verdicts. Every read returns a fresh, independent snapshot that is safe to keep or mutate. */
@@ -734,6 +749,7 @@ export class IntegrityMonitor {
     const o = this.opts;
     const gpsFresh = this.hasFix && this.gpsAgeS <= o.gpsMaxAgeS;
     this.gpsVeto = gpsFresh && this.gpsSpeed >= 0 && this.gpsSpeed < o.minGpsSpeed;
+    this.drivenNow = gpsFresh && this.gpsSpeed >= o.minGpsSpeed && this.speedOk;
     // The calibrator's own verdict is an INDEPENDENT veto: the sway cues are tuned on a
     // signature, and a mount can sit in a gap between their thresholds while the calibration
     // behind every angle in the run has already fallen apart.
